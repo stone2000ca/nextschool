@@ -7,6 +7,8 @@ import { createPageUrl } from "../../utils";
 import ContactSchoolModal from './ContactSchoolModal';
 
 export default function SchoolDetail({ school, onClose, onToggleShortlist, isShortlisted }) {
+  const [showContactModal, setShowContactModal] = useState(false);
+  
   if (!school) return null;
 
   const getCurrencySymbol = (currency) => {
@@ -15,14 +17,32 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-xl font-bold truncate">{school.name}</h2>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
+    <>
+      <div className="h-full flex flex-col bg-white">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-xl font-bold truncate">{school.name}</h2>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowContactModal(true)}
+              size="sm"
+              className="bg-teal-600 hover:bg-teal-700"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Send Inquiry
+            </Button>
+            <Button
+              onClick={() => onToggleShortlist(school.id)}
+              variant={isShortlisted ? "default" : "outline"}
+              size="sm"
+            >
+              <Heart className={`h-4 w-4 mr-2 ${isShortlisted ? 'fill-current' : ''}`} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
 
       {/* Hero Image */}
       <div className="relative h-48 bg-slate-200">
