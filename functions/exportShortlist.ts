@@ -1,0 +1,168 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { userId, schoolIds } = await req.json();
+
+    // Verify user is accessing their own data
+    if (userId !== user.id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Process token transaction
+    const tokenResult = await base44.functions.invoke('processTokenTransaction', {
+      action: 'pdf_export',
+      sessionId: 'shortlist_export'
+    });
+
+    if (tokenResult.data.needsUpgrade) {
+      return Response.json({ 
+        error: 'Insufficient tokens',
+        needsUpgrade: true 
+      }, { status: 402 });
+    }
+
+    // Fetch schools
+    const schools = [];
+    for (const schoolId of schoolIds) {
+      const schoolData = await base44.entities.School.filter({ id: schoolId });
+      if (schoolData && schoolData.length > 0) {
+        schools.push(schoolData[0]);
+      }
+    }
+
+    // Generate HTML content
+    const currencySymbols = { CAD: 'CA$', USD: '$', EUR: '€', GBP: '£' };
+    
+    let htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    h1 { color: #14b8a6; border-bottom: 3px solid #14b8a6; padding-bottom: 10px; }
+    h2 { color: #0f766e; margin-top: 30px; }
+    .school-card { background: #f8fafc; padding: 20px; margin: 20px 0; border-left: 4px solid #14b8a6; }
+    .info-row { display: flex; justify-content: space-between; margin: 10px 0; }
+    .label { font-weight: bold; color: #475569; }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .comparison-table th { background: #14b8a6; color: white; padding: 12px; text-align: left; }
+    .comparison-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+    .footer { margin-top: 40px; text-align: center; color: #64748b; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>My School Shortlist</h1>
+  <p>Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+  <p><strong>${schools.length} schools</strong> in your shortlist</p>
+`;
+
+    // Individual school details
+    schools.forEach(school => {
+      const tuition = school.tuition 
+        ? `${currencySymbols[school.currency] || '$'}${school.tuition.toLocaleString()}`
+        : 'Contact for pricing';
+      
+      htmlContent += `
+  <div class="school-card">
+    <h2>${school.name}</h2>
+    <div class="info-row">
+      <span class="label">Location:</span>
+      <span>${school.city}, ${school.provinceState || school.country}</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Grades:</span>
+      <span>${school.gradesServed || 'N/A'}</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Tuition:</span>
+      <span>${tuition}/year</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Enrollment:</span>
+      <span>${school.enrollment || 'N/A'} students</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Curriculum:</span>
+      <span>${school.curriculumType || 'N/A'}</span>
+    </div>
+    ${school.specializations?.length ? `
+    <div class="info-row">
+      <span class="label">Specializations:</span>
+      <span>${school.specializations.join(', ')}</span>
+    </div>
+    ` : ''}
+    ${school.website ? `
+    <div class="info-row">
+      <span class="label">Website:</span>
+      <span>${school.website}</span>
+    </div>
+    ` : ''}
+  </div>
+`;
+    });
+
+    // Comparison table
+    if (schools.length > 1) {
+      htmlContent += `
+  <h2>Quick Comparison</h2>
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Criteria</th>
+        ${schools.map(s => `<th>${s.name}</th>`).join('')}
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="label">Tuition</td>
+        ${schools.map(s => `<td>${s.tuition ? `${currencySymbols[s.currency] || '$'}${s.tuition.toLocaleString()}` : 'N/A'}</td>`).join('')}
+      </tr>
+      <tr>
+        <td class="label">Class Size</td>
+        ${schools.map(s => `<td>${s.avgClassSize || 'N/A'}</td>`).join('')}
+      </tr>
+      <tr>
+        <td class="label">Student:Teacher</td>
+        ${schools.map(s => `<td>${s.studentTeacherRatio || 'N/A'}</td>`).join('')}
+      </tr>
+      <tr>
+        <td class="label">Curriculum</td>
+        ${schools.map(s => `<td>${s.curriculumType || 'N/A'}</td>`).join('')}
+      </tr>
+      <tr>
+        <td class="label">Financial Aid</td>
+        ${schools.map(s => `<td>${s.financialAidAvailable ? 'Yes' : 'No'}</td>`).join('')}
+      </tr>
+    </tbody>
+  </table>
+`;
+    }
+
+    htmlContent += `
+  <div class="footer">
+    <p>Generated by NextSchool - Your AI Education Consultant</p>
+    <p>This is a summary of your shortlisted schools. Visit individual school websites for complete details.</p>
+  </div>
+</body>
+</html>
+`;
+
+    return Response.json({
+      content: htmlContent,
+      schoolCount: schools.length,
+      generatedAt: new Date().toISOString(),
+      remainingTokens: tokenResult.data.remainingBalance
+    });
+
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});
