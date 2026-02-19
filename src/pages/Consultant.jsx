@@ -335,7 +335,14 @@ export default function Consultant() {
       // Handle showing schools - show grid if we got results
       if (response.data.shouldShowSchools && response.data.schools?.length > 0) {
         setSchools(response.data.schools);
-        setCurrentView('schools');
+        const msgLower = messageText.toLowerCase();
+        const isCompareIntent = msgLower.includes('compare') || msgLower.includes(' vs ') || msgLower.includes('versus');
+        if (isCompareIntent && response.data.schools?.length >= 2) {
+          setComparisonData(response.data.schools.slice(0, 3));
+          setCurrentView('comparison-table');
+        } else {
+          setCurrentView('schools');
+        }
       }
 
       // Simulate typing delay
