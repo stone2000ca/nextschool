@@ -267,6 +267,8 @@ export default function Consultant() {
         timestamp: new Date().toISOString()
       };
       setMessages([greeting]);
+      // Clear conversation context for new conversations to prevent memory leaks
+      setCurrentConversation({ ...convo, conversationContext: {} });
     } else {
       setMessages(msgs);
     }
