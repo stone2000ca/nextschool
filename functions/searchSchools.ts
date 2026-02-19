@@ -71,10 +71,35 @@ Deno.serve(async (req) => {
     // Build filter
     let schools = await base44.entities.School.filter({ status: 'active' });
 
-    // Apply location filters with smart matching
-    if (city) {
-      const cityLower = city.toLowerCase().trim();
-      schools = schools.filter(s => s.city?.toLowerCase().includes(cityLower));
+    // Handle region aliases (e.g., "GTA" -> cities list)
+    let aliasedCities = [];
+    if (region) {
+      const regionLower = region.toLowerCase().trim();
+      const aliasEntry = regionAliases[regionLower];
+      
+      if (aliasEntry) {
+        // It's a known alias - expand to cities or provinces
+        if (aliasEntry.length > 0 && aliasEntry[0] && !['Massachusetts', 'Connecticut', 'Rhode Island', 'Vermont', 'New Hampshire', 'Maine', 'British Columbia', 'Washington', 'Oregon'].includes(aliasEntry[0])) {
+          // City-based alias
+          aliasedCities = aliasEntry;
+        } else if (regionLower === 'new england') {
+          // States based alias
+          const neStates = ['Massachusetts', 'Connecticut', 'Rhode Island', 'Vermont', 'New Hampshire', 'Maine'];
+          schools = schools.filter(s => s.provinceState && neStates.some(state => s.provinceState.toLowerCase() === state.toLowerCase()));
+        } else if (regionLower === 'pacific northwest') {
+          // Provinces/states based alias
+          const pnwRegions = ['British Columbia', 'Washington', 'Oregon'];
+          schools = schools.filter(s => s.provinceState && pnwRegions.some(pr => s.provinceState.toLowerCase() === pr.toLowerCase()));
+        }
+      }
+    }
+
+    // Apply city filter (including aliased cities)
+    if (city || aliasedCities.length > 0) {
+      const citiesToMatch = aliasedCities.length > 0 ? aliasedCities : [city];
+      schools = schools.filter(s => 
+        citiesToMatch.some(c => s.city?.toLowerCase().includes(c.toLowerCase()))
+      );
     }
 
     if (provinceState) {
@@ -96,10 +121,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Apply region filter
-    if (region) {
-      schools = schools.filter(s => s.region === region);
-    }
     if (country) {
       schools = schools.filter(s => s.country === country);
     }
