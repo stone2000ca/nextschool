@@ -305,7 +305,7 @@ export default function Consultant() {
         }
       }
 
-      // Call orchestrateConversation with current schools context
+      // Call orchestrateConversation with current schools context and user location
       const response = await base44.functions.invoke('orchestrateConversation', {
         message: messageText,
         conversationHistory: messages,
@@ -314,7 +314,12 @@ export default function Consultant() {
         userId: user?.id,
         currentSchools: schools,
         userNotes,
-        shortlistedSchools
+        shortlistedSchools,
+        userLocation: userLocation ? {
+          lat: userLocation.lat,
+          lng: userLocation.lng,
+          address: userLocation.address
+        } : null
       });
 
       console.log('=== ORCHESTRATE RESPONSE ===', response.data);
