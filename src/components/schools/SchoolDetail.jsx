@@ -209,12 +209,12 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
       </div>
     </div>
 
-    {showContactModal && (
-      <ContactSchoolModal
-        school={school}
-        onClose={() => setShowContactModal(false)}
-      />
-    )}
-  </>
+      {showContactModal && (
+        <ContactSchoolModal
+          school={school}
+          onClose={() => setShowContactModal(false)}
+        />
+      )}
+    </>
   );
 }
