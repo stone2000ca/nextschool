@@ -1,5 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+//
 
 export default function ComparisonView({ schools, onBack }) {
   if (!schools || schools.length === 0) {
