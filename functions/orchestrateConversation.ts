@@ -224,6 +224,8 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
       }
       if (intentResponse.filterCriteria.minTuition) searchParams.minTuition = intentResponse.filterCriteria.minTuition;
       if (intentResponse.filterCriteria.maxTuition) searchParams.maxTuition = intentResponse.filterCriteria.maxTuition;
+       if (intentResponse.filterCriteria.curriculumType) searchParams.curriculumType = intentResponse.filterCriteria.curriculumType;
+
       if (intentResponse.filterCriteria.specializations?.length > 0) {
         searchParams.specializations = intentResponse.filterCriteria.specializations;
       }
