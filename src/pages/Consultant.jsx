@@ -370,6 +370,14 @@ export default function Consultant() {
       setMessages(finalMessages);
       setIsTyping(false);
 
+       // Deduct 1 token and persist to database
+       if (isAuthenticated && user) {
+         const newTokenBalance = Math.max(0, tokenBalance - 1);
+         setTokenBalance(newTokenBalance);
+         await base44.auth.updateMe({ tokenBalance: newTokenBalance });
+       }
+
+
       // Extract and save AI memories
       if (isAuthenticated && user) {
         try {
