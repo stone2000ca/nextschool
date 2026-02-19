@@ -45,6 +45,12 @@ LOCATION EXTRACTION:
 - Extract province/state (BC, British Columbia, Ontario, California, etc.) to filterCriteria.provinceState
 - Extract city (Toronto, Vancouver, etc.) to filterCriteria.city
 - Extract broad region (Canada, US, Europe) to filterCriteria.region
+- IMPORTANT: Recognize city names WITH OR WITHOUT prepositions:
+  * "show me toronto schools" → city: Toronto
+  * "show me schools in toronto" → city: Toronto
+  * "show me schools in toronto, ontario" → city: Toronto, provinceState: Ontario
+  * "schools near vancouver" → city: Vancouver
+  * "schools in BC" → provinceState: BC
 
 INTENT OPTIONS:
 - SHOW_SCHOOLS: Show matching schools (new search/filter request)
