@@ -801,12 +801,14 @@ Return empty array if user didn't provide any of these facts.`;
                 onViewSchoolProfile={async (slug) => {
                   const school = schools.find(s => s.slug === slug);
                   if (school) {
-                    handleViewSchoolDetail(school);
+                    setSelectedSchool(school);
+                    setCurrentView('detail');
                   } else {
                     try {
                       const results = await base44.entities.School.filter({ slug });
                       if (results.length > 0) {
-                        handleViewSchoolDetail(results[0]);
+                        setSelectedSchool(results[0]);
+                        setCurrentView('detail');
                       }
                     } catch (error) {
                       console.error('Error finding school:', error);
