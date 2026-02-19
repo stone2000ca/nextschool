@@ -225,8 +225,12 @@ export default function Consultant() {
       setIsTyping(false);
 
       // Handle comparison view
-      if (intent === 'COMPARE_SCHOOLS' && response.data.command?.params?.schoolIds) {
-        await handleCompareSchools(response.data.command.params);
+      if (intent === 'COMPARE_SCHOOLS') {
+        // Extract school IDs from matchingSchools or try to find them
+        const schoolIds = response.data.matchingSchools || [];
+        if (schoolIds.length >= 2) {
+          await handleCompareSchools({ schoolIds: schoolIds.slice(0, 2) });
+        }
       }
 
       // Update conversation if authenticated
