@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { MapPin, Users, DollarSign, Calendar, Award, Globe2, Heart, Mail, Phone, ExternalLink, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
+import ContactSchoolModal from '@/components/schools/ContactSchoolModal';
 
 export default function SchoolProfile() {
   const location = useLocation();
@@ -415,6 +416,13 @@ export default function SchoolProfile() {
           </div>
         </div>
       </div>
+
+      {showContactModal && (
+        <ContactSchoolModal
+          school={school}
+          onClose={() => setShowContactModal(false)}
+        />
+      )}
     </div>
   );
 }

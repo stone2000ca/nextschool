@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, Heart, MapPin, Users, DollarSign, Award } from "lucide-react";
+import { X, Heart, MapPin, Users, DollarSign, Award, Mail } from "lucide-react";
 import { createPageUrl } from "../../utils";
+import ContactSchoolModal from './ContactSchoolModal';
 
 export default function SchoolDetail({ school, onClose, onToggleShortlist, isShortlisted }) {
   if (!school) return null;
