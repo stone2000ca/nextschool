@@ -412,7 +412,6 @@ export default function Consultant() {
                 </Button>
               </div>
 
-              {/* Shortlisted & Notes - Above History */}
               <div className="border-b bg-white p-3 space-y-2">
                 <button 
                   className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 text-sm transition-colors"
