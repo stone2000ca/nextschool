@@ -420,19 +420,19 @@ export default function Consultant() {
                 >
                   <div className="flex items-center gap-2">
                     <Heart className="h-4 w-4 text-teal-600" />
-                      <span className="font-medium">Shortlisted</span>
-                    </div>
-                    <span className="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-medium">
-                      {user?.shortlist?.length || 0}
-                    </span>
-                  </button>
-                </Link>
-                <Link to={createPageUrl('ParentDashboard')}>
-                  <button className="w-full flex items-center gap-2 p-3 rounded-lg hover:bg-slate-50 text-sm transition-colors">
-                    <FileText className="h-4 w-4 text-slate-600" />
-                    <span className="font-medium">Notes</span>
-                  </button>
-                </Link>
+                    <span className="font-medium">Shortlisted</span>
+                  </div>
+                  <span className="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-medium">
+                    {user?.shortlist?.length || 0}
+                  </span>
+                </button>
+                <button 
+                  className="w-full flex items-center gap-2 p-3 rounded-lg hover:bg-slate-50 text-sm transition-colors"
+                  onClick={() => setShowNotesPanel(true)}
+                >
+                  <FileText className="h-4 w-4 text-slate-600" />
+                  <span className="font-medium">Notes</span>
+                </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
