@@ -87,6 +87,7 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
               city: { type: "string" },
               provinceState: { type: "string" },
               region: { type: "string" },
+              nearMe: { type: "boolean" },
               grade: { type: "number" },
               minTuition: { type: "number" },
               maxTuition: { type: "number" },
