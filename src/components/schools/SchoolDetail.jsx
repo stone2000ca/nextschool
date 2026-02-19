@@ -199,14 +199,6 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
 
       {/* Actions */}
       <div className="p-4 border-t space-y-2">
-        <Button
-          className={`w-full ${isShortlisted ? 'bg-teal-600 hover:bg-teal-700' : ''}`}
-          variant={isShortlisted ? "default" : "outline"}
-          onClick={() => onToggleShortlist(school.id)}
-        >
-          <Heart className={`h-4 w-4 mr-2 ${isShortlisted ? 'fill-current' : ''}`} />
-          {isShortlisted ? 'Remove from Shortlist' : 'Add to Shortlist'}
-        </Button>
         <Button 
           variant="outline" 
           className="w-full"
@@ -216,5 +208,13 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
         </Button>
       </div>
     </div>
+
+    {showContactModal && (
+      <ContactSchoolModal
+        school={school}
+        onClose={() => setShowContactModal(false)}
+      />
+    )}
+  </>
   );
 }
