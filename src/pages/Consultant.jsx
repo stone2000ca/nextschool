@@ -55,11 +55,19 @@ export default function Consultant() {
       if (authenticated) {
         const userData = await base44.auth.me();
         setUser(userData);
-        setTokenBalance(userData.tokenBalance || 100);
+        
+        // Set token balance from user data, default to 100 if not set
+        const currentBalance = userData.tokenBalance !== undefined ? userData.tokenBalance : 100;
+        setTokenBalance(currentBalance);
+        
         setIsPremium(userData.subscriptionPlan === 'premium');
         await loadConversations(userData.id);
       } else {
-        // For guest users, show welcome message immediately
+        // For guest users, check localStorage for balance
+        const guestBalance = parseInt(localStorage.getItem('guestTokenBalance') || '100');
+        setTokenBalance(guestBalance);
+        
+        // Show welcome message
         const greeting = {
           role: 'assistant',
           content: "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?",
