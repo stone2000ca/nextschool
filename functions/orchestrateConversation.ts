@@ -82,7 +82,55 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
     
     // If narrowing from current schools, filter those instead of searching database
     if (intentResponse.intent === 'NARROW_DOWN' && currentSchools && currentSchools.length > 0) {
-      matchingSchools = currentSchools;
+      // Filter from currently displayed schools
+      let filtered = currentSchools;
+      
+      if (intentResponse.filterCriteria?.specializations?.length > 0) {
+        filtered = filtered.filter(s =>
+          s.specializations && 
+          intentResponse.filterCriteria.specializations.some(spec => s.specializations.includes(spec))
+        );
+      }
+      
+      // Check curriculum type (IB, Montessori, etc.)
+      const criteriaText = message.toLowerCase();
+      if (criteriaText.includes('ib')) {
+        filtered = filtered.filter(s => s.curriculumType === 'IB' || s.specializations?.includes('IB'));
+      }
+      if (criteriaText.includes('montessori')) {
+        filtered = filtered.filter(s => s.curriculumType === 'Montessori');
+      }
+      if (criteriaText.includes('waldorf')) {
+        filtered = filtered.filter(s => s.curriculumType === 'Waldorf');
+      }
+      
+      // Apply tuition filter if mentioned
+      if (intentResponse.filterCriteria?.minTuition || intentResponse.filterCriteria?.maxTuition) {
+        filtered = filtered.filter(s => {
+          if (!s.tuition) return false;
+          if (intentResponse.filterCriteria.minTuition && s.tuition < intentResponse.filterCriteria.minTuition) return false;
+          if (intentResponse.filterCriteria.maxTuition && s.tuition > intentResponse.filterCriteria.maxTuition) return false;
+          return true;
+        });
+      }
+      
+      matchingSchools = filtered;
+    } else if (intentResponse.intent === 'COMPARE_SCHOOLS') {
+      // Extract school names from the message
+      const schoolNamesPattern = /compare\s+(.+?)\s+and\s+(.+?)(?:\.|$)/i;
+      const match = message.match(schoolNamesPattern);
+      
+      if (match) {
+        const school1Name = match[1].trim();
+        const school2Name = match[2].trim();
+        
+        // Search for these schools in database
+        const allSchools = await base44.asServiceRole.entities.School.filter({});
+        matchingSchools = allSchools.filter(s => 
+          s.name.toLowerCase().includes(school1Name.toLowerCase()) ||
+          s.name.toLowerCase().includes(school2Name.toLowerCase())
+        );
+      }
     } else if (intentResponse.shouldShowSchools && intentResponse.filterCriteria) {
       const filters = {};
       if (intentResponse.filterCriteria.city) filters.city = intentResponse.filterCriteria.city;
