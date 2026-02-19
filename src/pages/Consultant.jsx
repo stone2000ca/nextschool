@@ -142,6 +142,15 @@ export default function Consultant() {
     }
   }, [isTyping]);
 
+  const getPlanLimits = (plan) => {
+    const limits = {
+      free: { total: 100, dailyReplenishment: 3 },
+      pro: { total: 1000, dailyReplenishment: 33 },
+      enterprise: { total: 5000, dailyReplenishment: 166 }
+    };
+    return limits[plan] || limits.free;
+  };
+
   const checkAuth = async () => {
     try {
       const authenticated = await base44.auth.isAuthenticated();
@@ -151,11 +160,29 @@ export default function Consultant() {
         const userData = await base44.auth.me();
         setUser(userData);
         
-        // Set token balance from user data, default to 100 if not set
-        const currentBalance = userData.tokenBalance !== undefined ? userData.tokenBalance : 100;
-        setTokenBalance(currentBalance);
+        // Check daily token replenishment
+        const plan = userData.subscriptionPlan || 'free';
+        const limits = getPlanLimits(plan);
+        const today = new Date().toISOString().split('T')[0];
+        const renewalDate = userData.renewalDate ? userData.renewalDate.split('T')[0] : null;
         
-        setIsPremium(userData.subscriptionPlan === 'premium');
+        let newBalance = userData.tokenBalance !== undefined ? userData.tokenBalance : limits.total;
+        let needsUpdate = false;
+        
+        // Replenish tokens if it's a new day
+        if (!renewalDate || today > renewalDate) {
+          newBalance = Math.min(newBalance + limits.dailyReplenishment, limits.total);
+          needsUpdate = true;
+          
+          // Update user with new balance and renewal date
+          await base44.auth.updateMe({
+            tokenBalance: newBalance,
+            renewalDate: new Date().toISOString()
+          });
+        }
+        
+        setTokenBalance(newBalance);
+        setIsPremium(plan === 'pro' || plan === 'enterprise');
         await loadConversations(userData.id);
       } else {
         // For guest users, check localStorage for balance
