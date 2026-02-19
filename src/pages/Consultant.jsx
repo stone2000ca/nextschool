@@ -130,15 +130,16 @@ export default function Consultant() {
   };
 
   const handleSendMessage = async (messageText) => {
-    // Check auth and tokens
+    // Deduct token first
     if (!isAuthenticated) {
       const guestTokens = parseInt(localStorage.getItem('guestTokenBalance') || '100');
       if (guestTokens <= 0) {
         setShowUpgradeModal(true);
         return;
       }
-      localStorage.setItem('guestTokenBalance', (guestTokens - 1).toString());
-      setTokenBalance(guestTokens - 1);
+      const newBalance = guestTokens - 1;
+      localStorage.setItem('guestTokenBalance', newBalance.toString());
+      setTokenBalance(newBalance);
     } else {
       try {
         const tokenResult = await base44.functions.invoke('processTokenTransaction', {
@@ -151,7 +152,12 @@ export default function Consultant() {
           return;
         }
 
+        // Update token balance in state
         setTokenBalance(tokenResult.data.remainingBalance);
+        
+        // Also refresh user data to sync
+        const userData = await base44.auth.me();
+        setUser(userData);
       } catch (error) {
         console.error('Token transaction failed:', error);
       }
@@ -178,9 +184,14 @@ export default function Consultant() {
         userId: user?.id
       });
 
-      // If AI says to show schools, fetch and display them
-      if (response.data.shouldShowSchools && response.data.filterCriteria) {
-        await handleSearchSchools(response.data.filterCriteria);
+      // Only fetch schools if intent is SHOW_SCHOOLS or NARROW_DOWN
+      const intent = response.data.intent;
+      if ((intent === 'SHOW_SCHOOLS' || intent === 'NARROW_DOWN') && response.data.matchingSchools) {
+        const schoolData = await base44.entities.School.filter({
+          id: { $in: response.data.matchingSchools }
+        });
+        setSchools(schoolData);
+        setCurrentView('schools');
       }
 
       // Simulate typing delay
@@ -197,9 +208,9 @@ export default function Consultant() {
       setMessages(finalMessages);
       setIsTyping(false);
 
-      // Handle other commands from AI
-      if (response.data.command && response.data.command.action !== 'search_schools') {
-        await handleAICommand(response.data.command);
+      // Handle comparison view
+      if (intent === 'COMPARE_SCHOOLS' && response.data.command?.params?.schoolIds) {
+        await handleCompareSchools(response.data.command.params);
       }
 
       // Update conversation if authenticated
@@ -314,8 +325,9 @@ export default function Consultant() {
 
   const handleCompareSchools = async (params) => {
     try {
+      const schoolIds = params.schoolIds || params;
       const result = await base44.functions.invoke('generateComparison', {
-        schoolIds: params.schoolIds
+        schoolIds: Array.isArray(schoolIds) ? schoolIds : [schoolIds]
       });
       setComparisonData(result.data);
       setCurrentView('comparison');
