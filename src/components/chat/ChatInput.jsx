@@ -1,10 +1,17 @@
-import { useState } from 'react';
+import { useState, forwardRef, useImperativeHandle, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2 } from "lucide-react";
 
-export default function ChatInput({ onSend, disabled, tokenBalance, isPremium }) {
+const ChatInput = forwardRef(({ onSend, disabled, tokenBalance, isPremium }, ref) => {
   const [message, setMessage] = useState('');
+  const textareaRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      textareaRef.current?.focus();
+    }
+  }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -43,6 +50,7 @@ export default function ChatInput({ onSend, disabled, tokenBalance, isPremium })
 
       <form onSubmit={handleSubmit} className="flex gap-2">
         <Textarea
+          ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -65,4 +73,8 @@ export default function ChatInput({ onSend, disabled, tokenBalance, isPremium })
       </form>
     </div>
   );
-}
+});
+
+ChatInput.displayName = 'ChatInput';
+
+export default ChatInput;
