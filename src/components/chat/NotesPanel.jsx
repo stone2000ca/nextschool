@@ -199,6 +199,27 @@ export default function NotesPanel({ userId, onClose }) {
           Add Note
         </Button>
       </div>
+
+       <AlertDialog open={clearMemoryDialogOpen} onOpenChange={setClearMemoryDialogOpen}>
+         <AlertDialogContent>
+           <AlertDialogHeader>
+             <AlertDialogTitle className="flex items-center gap-2">
+               <AlertCircle className="h-5 w-5 text-red-600" />
+               Clear AI Memory
+             </AlertDialogTitle>
+             <AlertDialogDescription>
+               This will delete all stored memories that the AI has learned about you. This action cannot be undone. Are you sure?
+             </AlertDialogDescription>
+           </AlertDialogHeader>
+           <AlertDialogFooter>
+             <AlertDialogCancel>Cancel</AlertDialogCancel>
+             <AlertDialogAction onClick={handleClearMemory} className="bg-red-600 hover:bg-red-700">
+               Delete Memory
+             </AlertDialogAction>
+           </AlertDialogFooter>
+         </AlertDialogContent>
+       </AlertDialog>
+
     </div>
   );
 }
