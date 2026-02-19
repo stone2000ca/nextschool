@@ -267,6 +267,12 @@ export default function Consultant() {
   };
 
   const handleSendMessage = async (messageText) => {
+    // Check if user has tokens
+    if (tokenBalance <= 0) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     // Deduct token first
     if (!isAuthenticated) {
       const guestTokens = parseInt(localStorage.getItem('guestTokenBalance') || '100');
