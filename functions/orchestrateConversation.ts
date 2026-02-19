@@ -235,6 +235,15 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
         ).join('\n')
       : '\n\n[NO SCHOOLS AVAILABLE TO SHOW]';
 
+    // Add user context
+    let userContextText = '';
+    if (userNotes && userNotes.length > 0) {
+      userContextText += `\n\nUSER'S PERSONAL NOTES:\n${userNotes.map(note => `- ${note}`).join('\n')}`;
+    }
+    if (shortlistedSchools && shortlistedSchools.length > 0) {
+      userContextText += `\n\nUSER'S SHORTLISTED SCHOOLS:\n${shortlistedSchools.map(school => `- ${school}`).join('\n')}`;
+    }
+
     // Second pass: Generate response with school context
     const responsePrompt = `You are an experienced education consultant helping parents find the right private school.
 
@@ -245,9 +254,11 @@ CRITICAL RULES - NEVER BREAK THESE:
 4. BE CONCISE: Maximum 2-3 sentences. Lead with value (school names from list only, specific recommendations).
 5. INCLUDE ACCURATE DETAILS: When mentioning a school, use its exact name, city, and details from the list above.
 6. VARY YOUR OPENINGS: Don't start every response with "It's great to hear..."
+7. CONSIDER USER CONTEXT: Reference the user's notes and shortlisted schools when relevant to provide personalized advice.
 
 CONVERSATION CONTEXT:
 ${conversationSummary || 'First message in conversation.'}
+${userContextText}
 
 INTENT DETECTED: ${isCompareIntent ? 'COMPARE_SCHOOLS' : intentResponse.intent}
 ${schoolContext}
