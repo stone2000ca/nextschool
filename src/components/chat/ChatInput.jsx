@@ -15,7 +15,7 @@ const ChatInput = forwardRef(({ onSend, disabled, tokenBalance, isPremium }, ref
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (message.trim() && !disabled) {
+    if (message.trim()) {
       onSend(message);
       setMessage('');
     }

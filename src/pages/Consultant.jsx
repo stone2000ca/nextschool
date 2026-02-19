@@ -949,7 +949,7 @@ export default function Consultant() {
           <ChatInput
             ref={inputRef}
             onSend={handleSendMessage}
-            disabled={isTyping || tokenBalance <= 0}
+            disabled={isTyping}
             tokenBalance={tokenBalance}
             isPremium={isPremium}
           />
