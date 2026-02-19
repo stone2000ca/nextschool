@@ -213,10 +213,11 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
       matchingSchools = schools.slice(0, 10); // Limit to 10 results
     }
 
-    // Build school context for AI - use currentSchools for NARROW_DOWN, matchingSchools otherwise
-    const schoolsToDescribe = (intentResponse.intent === 'NARROW_DOWN' && currentSchools?.length > 0) 
-      ? currentSchools 
-      : matchingSchools;
+    // Build school context for AI
+    const schoolsToDescribe = isCompareIntent ? matchingSchools :
+                              (intentResponse.intent === 'NARROW_DOWN' && currentSchools?.length > 0) 
+                                ? currentSchools 
+                                : matchingSchools;
     
     const schoolContext = schoolsToDescribe.length > 0 
       ? `\n\nSCHOOLS AVAILABLE (${schoolsToDescribe.length} total):\n` + 
