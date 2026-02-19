@@ -34,8 +34,10 @@ CURRENT STATE:
 ${currentSchools && currentSchools.length > 0 ? `- Currently viewing ${currentSchools.length} schools on screen` : ''}
 
 DECISION LOGIC:
+- If user is asking to SEE, FIND, BROWSE, or LIST schools IN ANY WAY → shouldShowSchools: true
+  (This includes: "show", "find", "see schools", "list", "looking for", "interested in", "what about", "any", "are there", "give me", "tell me about")
+- If message mentions a curriculum type (Montessori, IB, Waldorf, AP, Traditional) → shouldShowSchools: true (search all schools or filtered area)
 - If message contains grade AND (city/province/region) → shouldShowSchools: true
-- If message contains "show", "find", "see schools", "list" → shouldShowSchools: true  
 - If asking "narrow down" or "which of these" → intent: NARROW_DOWN, shouldShowSchools: false (filter from current)
 - If asking about specific school details → intent: VIEW_DETAIL, shouldShowSchools: false
 - If asking to compare schools → intent: COMPARE_SCHOOLS
@@ -57,6 +59,15 @@ LOCATION EXTRACTION:
    * "greater vancouver schools" → region: Greater Vancouver
    * "new england schools" → region: New England
    * "pacific northwest" → region: Pacific Northwest
+- IMPORTANT: Recognize country-level searches:
+   * "all schools in Canada" → region: Canada
+   * "schools in the US" → region: US
+   * "european schools" → region: Europe
+
+CURRICULUM TYPE EXTRACTION:
+- Extract curriculum types mentioned: Traditional, Montessori, IB, Waldorf, AP, Other
+- Put matching curriculum type in filterCriteria.curriculumType
+- If user mentions curriculum WITHOUT location, still set shouldShowSchools: true
 
 INTENT OPTIONS:
 - SHOW_SCHOOLS: Show matching schools (new search/filter request)
