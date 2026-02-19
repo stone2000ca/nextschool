@@ -10,16 +10,17 @@ export default function SchoolGrid({ schools, onViewDetails, onToggleShortlist, 
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="flex flex-wrap gap-4">
       {schools.map((school, index) => (
-        <SchoolCard
-          key={school.id}
-          school={school}
-          index={index}
-          onViewDetails={() => onViewDetails(school.id)}
-          onToggleShortlist={onToggleShortlist}
-          isShortlisted={shortlistedIds.includes(school.id)}
-        />
+        <div key={school.id} className="w-full sm:w-[250px]">
+          <SchoolCard
+            school={school}
+            index={index}
+            onViewDetails={() => onViewDetails(school.id)}
+            onToggleShortlist={onToggleShortlist}
+            isShortlisted={shortlistedIds.includes(school.id)}
+          />
+        </div>
       ))}
     </div>
   );
