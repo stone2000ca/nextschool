@@ -234,9 +234,9 @@ export default function Consultant() {
           }).then(() => loadConversations());
         }
 
-        // Trigger summarization every 8 messages
-        if (finalMessages.length % 8 === 0) {
-          base44.functions.invoke('summarizeConversation', {
+        // Trigger summarization if more than 5 messages
+        if (finalMessages.length > 5 && finalMessages.length % 3 === 0) {
+          base44.functions.invoke('summarizeConversationMessages', {
             conversationId: currentConversation.id
           });
         }
