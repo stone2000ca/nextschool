@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Edit2, Save, Brain } from 'lucide-react';
+import { X, Plus, Trash2, Edit2, Save, Brain, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { base44 } from '@/api/base44Client';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function NotesPanel({ userId, onClose }) {
   const [notes, setNotes] = useState([]);
@@ -11,6 +12,7 @@ export default function NotesPanel({ userId, onClose }) {
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState('');
   const [memories, setMemories] = useState([]);
+  const [clearMemoryDialogOpen, setClearMemoryDialogOpen] = useState(false);
 
   useEffect(() => {
     loadNotes();
