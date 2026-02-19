@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { message, conversationHistory, conversationContext, region, userId } = await req.json();
+    const { message, conversationHistory, conversationContext, region, userId, currentSchools } = await req.json();
 
     const context = conversationContext || {};
     const history = conversationHistory || [];
@@ -13,6 +13,13 @@ Deno.serve(async (req) => {
     const conversationSummary = recentMessages
       .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
       .join('\n');
+
+    // Check if user is asking to narrow/filter from currently displayed schools
+    const isNarrowingFromCurrent = currentSchools && currentSchools.length > 0 && 
+      (message.toLowerCase().includes('narrow') || 
+       message.toLowerCase().includes('which of these') ||
+       message.toLowerCase().includes('recommend') ||
+       message.toLowerCase().includes('best of these'));
 
     // First pass: Determine intent and extract filter criteria
     const intentPrompt = `You are analyzing a parent's message to determine their intent and extract school search criteria.
@@ -24,17 +31,19 @@ CURRENT STATE:
 - Child grade: ${context.childGrade || 'unknown'}
 - Location: ${context.location || 'not specified'}
 - Region: ${context.region || region || 'not specified'}
+${currentSchools && currentSchools.length > 0 ? `- Currently viewing ${currentSchools.length} schools on screen` : ''}
 
 DECISION LOGIC:
 - If message contains grade AND (city/region) → shouldShowSchools: true
 - If message contains "show", "find", "see schools", "list" → shouldShowSchools: true  
+- If asking "narrow down" or "which of these" → intent: NARROW_DOWN, shouldShowSchools: false (filter from current)
 - If asking about specific school details → intent: VIEW_DETAIL, shouldShowSchools: false
 - If asking to compare schools → intent: COMPARE_SCHOOLS
 - If only greeting with no info → shouldShowSchools: false
 
 INTENT OPTIONS:
-- SHOW_SCHOOLS: Show matching schools (search/filter request)
-- NARROW_DOWN: Refine existing criteria
+- SHOW_SCHOOLS: Show matching schools (new search/filter request)
+- NARROW_DOWN: Refine from currently displayed schools
 - COMPARE_SCHOOLS: Compare specific schools
 - VIEW_DETAIL: Details on one school
 - ASK_QUESTION: General question about shown schools
@@ -70,7 +79,11 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
 
     // Fetch matching schools if needed
     let matchingSchools = [];
-    if (intentResponse.shouldShowSchools && intentResponse.filterCriteria) {
+    
+    // If narrowing from current schools, filter those instead of searching database
+    if (intentResponse.intent === 'NARROW_DOWN' && currentSchools && currentSchools.length > 0) {
+      matchingSchools = currentSchools;
+    } else if (intentResponse.shouldShowSchools && intentResponse.filterCriteria) {
       const filters = {};
       if (intentResponse.filterCriteria.city) filters.city = intentResponse.filterCriteria.city;
       if (intentResponse.filterCriteria.region) filters.region = intentResponse.filterCriteria.region;
@@ -124,11 +137,12 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
     // Second pass: Generate response with school context
     const responsePrompt = `You are an experienced education consultant helping parents find the right private school.
 
-CRITICAL RULES:
-1. BE CONCISE: Maximum 2-3 sentences. Lead with value (school names, specific recommendations).
-2. ONLY REFERENCE SCHOOLS FROM DATABASE RESULTS: Never invent school names. Only mention schools listed below.
-3. INCLUDE ACCURATE DETAILS: When mentioning a school, use its correct city and details from the database.
-4. VARY YOUR OPENINGS: Don't start every response with "It's great to hear..."
+CRITICAL RULES - NEVER BREAK THESE:
+1. YOU MAY ONLY MENTION SCHOOLS FROM THE PROVIDED DATABASE RESULTS BELOW. Never invent or fabricate school names, locations, or details.
+2. If no schools match the criteria, say "I found 0 schools matching your criteria in our database" - do not suggest fictional schools.
+3. BE CONCISE: Maximum 2-3 sentences. Lead with value (school names from database only, specific recommendations).
+4. INCLUDE ACCURATE DETAILS: When mentioning a school, use its exact name, city, and details from the database results.
+5. VARY YOUR OPENINGS: Don't start every response with "It's great to hear..."
 
 CONVERSATION CONTEXT:
 ${conversationSummary || 'First message in conversation.'}
@@ -138,7 +152,7 @@ ${schoolContext}
 
 Parent's message: "${message}"
 
-Generate a natural, helpful response (2-3 sentences max). Reference specific schools from the database results if available.`;
+Generate a natural, helpful response (2-3 sentences max). ONLY reference schools from the database results above. If asking to compare, extract school names from the database results and set them in command.params.schoolIds.`;
 
     const finalResponse = await base44.integrations.Core.InvokeLLM({
       prompt: responsePrompt
