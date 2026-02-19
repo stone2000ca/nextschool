@@ -52,6 +52,7 @@ import Pricing from './pages/Pricing';
 import Consultant from './pages/Consultant';
 import SchoolProfile from './pages/SchoolProfile';
 import ParentDashboard from './pages/ParentDashboard';
+import SchoolAdmin from './pages/SchoolAdmin';
 
 
 export const PAGES = {
@@ -60,6 +61,7 @@ export const PAGES = {
     "Consultant": Consultant,
     "SchoolProfile": SchoolProfile,
     "ParentDashboard": ParentDashboard,
+    "SchoolAdmin": SchoolAdmin,
 }
 
 export const pagesConfig = {
