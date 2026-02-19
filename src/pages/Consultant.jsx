@@ -242,16 +242,23 @@ export default function Consultant() {
         // Count user messages to determine when to generate title
         const userMessageCount = finalMessages.filter(m => m.role === 'user').length;
         
-        // Generate title after 2 user messages
-        if (userMessageCount === 2) {
-          const titleResult = await base44.functions.invoke('generateConversationTitle', {
-            conversationId: currentConversation.id
-          });
-          
-          // Update the conversation in state with new title
-          if (titleResult.data.title) {
-            setCurrentConversation({ ...currentConversation, title: titleResult.data.title });
-            await loadConversations(user.id);
+        // Generate title after first user message
+        if (userMessageCount === 1 && currentConversation.title === 'New Conversation') {
+          try {
+            const titleResult = await base44.functions.invoke('generateConversationTitle', {
+              conversationId: currentConversation.id
+            });
+            
+            // Update the conversation in state with new title
+            if (titleResult.data?.title) {
+              const updatedConvo = { ...currentConversation, title: titleResult.data.title };
+              setCurrentConversation(updatedConvo);
+              
+              // Reload conversations to refresh sidebar
+              await loadConversations(user.id);
+            }
+          } catch (titleError) {
+            console.error('Failed to generate title:', titleError);
           }
         }
 
