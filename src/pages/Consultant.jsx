@@ -691,7 +691,7 @@ Return empty array if user didn't provide any of these facts.`;
         {/* CENTER CONTENT AREA */}
         <main className="flex-1 overflow-hidden bg-white">
           {currentView === 'welcome' && (
-            <WelcomeState onQuickStart={handleSendMessage} />
+            <WelcomeState onPromptClick={handleSendMessage} />
           )}
 
           {currentView === 'schools' && schools.length > 0 && (
