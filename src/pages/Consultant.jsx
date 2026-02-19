@@ -172,9 +172,16 @@ export default function Consultant() {
       // Call orchestrateConversation
       const response = await base44.functions.invoke('orchestrateConversation', {
         message: messageText,
-        conversationId: currentConversation?.id,
-        region: user?.profileRegion || 'Canada'
+        conversationHistory: messages,
+        conversationContext: currentConversation?.conversationContext || {},
+        region: user?.profileRegion || 'Canada',
+        userId: user?.id
       });
+
+      // If AI says to show schools, fetch and display them
+      if (response.data.shouldShowSchools && response.data.filterCriteria) {
+        await handleSearchSchools(response.data.filterCriteria);
+      }
 
       // Simulate typing delay
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -190,8 +197,8 @@ export default function Consultant() {
       setMessages(finalMessages);
       setIsTyping(false);
 
-      // Handle commands from AI
-      if (response.data.command) {
+      // Handle other commands from AI
+      if (response.data.command && response.data.command.action !== 'search_schools') {
         await handleAICommand(response.data.command);
       }
 
@@ -237,13 +244,56 @@ export default function Consultant() {
 
   const handleSearchSchools = async (params) => {
     try {
-      const result = await base44.functions.invoke('searchSchools', {
-        ...params,
-        userLat: user?.profileLat,
-        userLng: user?.profileLng
-      });
+      // Build query filters from params
+      const filters = {};
       
-      setSchools(result.data.schools || []);
+      if (params.city) {
+        filters.city = params.city;
+      }
+      
+      if (params.region) {
+        filters.region = params.region;
+      }
+      
+      // Fetch schools from database with filters
+      let filteredSchools = await base44.entities.School.filter(filters);
+      
+      // Apply grade range filter
+      if (params.grade) {
+        filteredSchools = filteredSchools.filter(school => 
+          school.lowestGrade <= params.grade && school.highestGrade >= params.grade
+        );
+      }
+      
+      // Apply tuition filter
+      if (params.minTuition || params.maxTuition) {
+        filteredSchools = filteredSchools.filter(school => {
+          if (!school.tuition) return false;
+          if (params.minTuition && school.tuition < params.minTuition) return false;
+          if (params.maxTuition && school.tuition > params.maxTuition) return false;
+          return true;
+        });
+      }
+      
+      // Apply specializations filter
+      if (params.specializations && params.specializations.length > 0) {
+        filteredSchools = filteredSchools.filter(school =>
+          school.specializations && 
+          params.specializations.some(spec => school.specializations.includes(spec))
+        );
+      }
+      
+      // If no exact matches and region was specified, show all in region
+      if (filteredSchools.length === 0 && params.region) {
+        filteredSchools = await base44.entities.School.filter({ region: params.region });
+      }
+      
+      // If still no results, show all schools
+      if (filteredSchools.length === 0) {
+        filteredSchools = await base44.entities.School.list();
+      }
+      
+      setSchools(filteredSchools);
       setCurrentView('schools');
     } catch (error) {
       console.error('School search failed:', error);
