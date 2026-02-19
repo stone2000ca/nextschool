@@ -227,11 +227,20 @@ export default function Consultant() {
           messages: finalMessages
         });
 
-        // Generate title after 2 messages
-        if (finalMessages.length === 2) {
-          base44.functions.invoke('generateConversationTitle', {
+        // Count user messages to determine when to generate title
+        const userMessageCount = finalMessages.filter(m => m.role === 'user').length;
+        
+        // Generate title after 2 user messages
+        if (userMessageCount === 2) {
+          const titleResult = await base44.functions.invoke('generateConversationTitle', {
             conversationId: currentConversation.id
-          }).then(() => loadConversations());
+          });
+          
+          // Update the conversation in state with new title
+          if (titleResult.data.title) {
+            setCurrentConversation({ ...currentConversation, title: titleResult.data.title });
+            await loadConversations(user.id);
+          }
         }
 
         // Trigger summarization if more than 5 messages
