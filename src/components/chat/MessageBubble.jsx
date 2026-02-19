@@ -4,14 +4,14 @@ export default function MessageBubble({ message, isUser, onViewSchoolProfile }) 
   return (
     <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
-        <div className="h-8 w-8 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0">
-          <span className="text-teal-600 text-sm font-semibold">AI</span>
+        <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+          <span className="text-blue-600 text-sm font-semibold">AI</span>
         </div>
       )}
       <div className={`max-w-[85%] ${isUser && 'flex flex-col items-end'}`}>
         <div className={`rounded-2xl px-4 py-3 ${
           isUser 
-            ? 'bg-teal-600 text-white' 
+            ? 'bg-blue-600 text-white' 
             : 'bg-white border border-slate-200 text-slate-900'
         }`}>
           {isUser ? (
