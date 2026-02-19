@@ -251,24 +251,18 @@ ${isCompareIntent ? 'Generate a brief response (1-2 sentences) confirming which 
       prompt: responsePrompt
     });
 
-    // For COMPARE intent, extract school IDs for comparison
-    let comparisonSchoolIds = [];
-    if (intentResponse.intent === 'COMPARE_SCHOOLS' && matchingSchools.length >= 2) {
-      comparisonSchoolIds = matchingSchools.slice(0, 2).map(s => s.id);
-    }
-
+    // Determine final intent and action
+    const finalIntent = isCompareIntent ? 'COMPARE_SCHOOLS' : intentResponse.intent;
+    
     return Response.json({
       message: finalResponse,
-      intent: intentResponse.intent,
-      command: {
-        action: intentResponse.intent === 'COMPARE_SCHOOLS' ? 'compare' : 
-                intentResponse.intent === 'VIEW_DETAIL' ? 'view_detail' : 
-                intentResponse.shouldShowSchools ? 'search_schools' : null,
-        params: intentResponse.intent === 'COMPARE_SCHOOLS' 
-          ? { schoolIds: comparisonSchoolIds }
-          : (intentResponse.filterCriteria || {}),
-        reasoning: `Intent: ${intentResponse.intent}`
-      },
+      intent: finalIntent,
+      action: finalIntent === 'COMPARE_SCHOOLS' ? 'COMPARE' : 
+              finalIntent === 'VIEW_DETAIL' ? 'view_detail' : 
+              intentResponse.shouldShowSchools ? 'search_schools' : null,
+      schools: isCompareIntent && matchingSchools.length >= 2 
+        ? matchingSchools.slice(0, 2)  // Return full school objects
+        : matchingSchools,
       shouldShowSchools: intentResponse.shouldShowSchools || intentResponse.intent === 'NARROW_DOWN',
       filterCriteria: intentResponse.filterCriteria || null,
       matchingSchools: matchingSchools.map(s => s.id)
