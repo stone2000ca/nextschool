@@ -592,51 +592,68 @@ export default function Consultant() {
     }
   };
 
-  const handleToggleDistances = () => {
+  const handleToggleDistances = async () => {
     if (!showDistances) {
-      // Get user location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const location = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            setUserLocation(location);
-            
-            // Calculate distances for all schools
-            const schoolsWithDistance = schools.map(school => {
-              if (school.lat && school.lng) {
-                const distance = calculateHaversineDistance(
-                  location.lat,
-                  location.lng,
-                  school.lat,
-                  school.lng
-                );
-                return { ...school, distanceKm: distance };
-              }
-              return school;
-            });
-            
-            // Sort by distance
-            const sorted = schoolsWithDistance.sort((a, b) => 
-              (a.distanceKm || Infinity) - (b.distanceKm || Infinity)
-            );
-            
-            setSchools(sorted);
-            setShowDistances(true);
-          },
-          (error) => {
-            console.error('Geolocation error:', error);
-            alert('Unable to get your location. Please enable location services.');
-          }
-        );
+      // Use saved location if available, otherwise prompt for manual entry
+      if (userLocation && userLocation.lat && userLocation.lng) {
+        applyDistancesToSchools(userLocation);
       } else {
-        alert('Geolocation is not supported by your browser.');
+        // Prompt for manual location entry
+        const locationInput = prompt('Enter your city or postal code:');
+        if (locationInput) {
+          try {
+            const apiKey = 'AIzaSyCJNHWSvBWXVfYXYxlz4Kg4NzQ9gCfMzIw';
+            const response = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(locationInput)}&key=${apiKey}`
+            );
+            const data = await response.json();
+            
+            if (data.results && data.results.length > 0) {
+              const { lat, lng } = data.results[0].geometry.location;
+              const location = {
+                lat,
+                lng,
+                address: data.results[0].formatted_address
+              };
+              setUserLocation(location);
+              localStorage.setItem('userLocation', JSON.stringify(location));
+              applyDistancesToSchools(location);
+            } else {
+              alert('Unable to find that location. Please try again.');
+            }
+          } catch (error) {
+            console.error('Geocoding error:', error);
+            alert('Failed to geocode location.');
+          }
+        }
       }
     } else {
       setShowDistances(false);
     }
+  };
+
+  const applyDistancesToSchools = (location) => {
+    // Calculate distances for all schools
+    const schoolsWithDistance = schools.map(school => {
+      if (school.lat && school.lng) {
+        const distance = calculateHaversineDistance(
+          location.lat,
+          location.lng,
+          school.lat,
+          school.lng
+        );
+        return { ...school, distanceKm: distance };
+      }
+      return school;
+    });
+    
+    // Sort by distance
+    const sorted = schoolsWithDistance.sort((a, b) => 
+      (a.distanceKm || Infinity) - (b.distanceKm || Infinity)
+    );
+    
+    setSchools(sorted);
+    setShowDistances(true);
   };
 
   // Haversine formula to calculate distance between two coordinates
