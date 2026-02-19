@@ -44,13 +44,23 @@ DECISION LOGIC:
 LOCATION EXTRACTION:
 - Extract province/state (BC, British Columbia, Ontario, California, etc.) to filterCriteria.provinceState
 - Extract city (Toronto, Vancouver, etc.) to filterCriteria.city
+- Extract metro areas/regions to filterCriteria.region, INCLUDING ALIASES:
+  * "GTA" or "Greater Toronto Area" → region: "gta"
+  * "Lower Mainland" or "Metro Vancouver" → region: "lower mainland"
+  * "Greater Vancouver" → region: "greater vancouver"
+  * "Montreal" or "Greater Montreal" → region: "montreal"
+  * "Golden Horseshoe" → region: "golden horseshoe"
+  * "New England" → region: "new england"
+  * "Pacific Northwest" → region: "pacific northwest"
 - Extract broad region (Canada, US, Europe) to filterCriteria.region
+- SPECIAL CASE: If user says "near me" or "near my location", set: nearMe: true
 - IMPORTANT: Recognize city names WITH OR WITHOUT prepositions:
   * "show me toronto schools" → city: Toronto
   * "show me schools in toronto" → city: Toronto
   * "show me schools in toronto, ontario" → city: Toronto, provinceState: Ontario
   * "schools near vancouver" → city: Vancouver
   * "schools in BC" → provinceState: BC
+  * "show me schools near the gta" → region: "gta"
 
 INTENT OPTIONS:
 - SHOW_SCHOOLS: Show matching schools (new search/filter request)
