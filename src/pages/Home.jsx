@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, MessageSquare, Search, Heart, Globe2, Users } from "lucide-react";
+import { ArrowRight, MessageSquare, Search, Heart, Globe2, Users, Sparkles } from "lucide-react";
 import { createPageUrl } from "../utils";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/navigation/Navbar";
