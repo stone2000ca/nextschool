@@ -949,7 +949,7 @@ export default function Consultant() {
           <ChatInput
             ref={inputRef}
             onSend={handleSendMessage}
-            disabled={isTyping}
+            disabled={isTyping || tokenBalance <= 0}
             tokenBalance={tokenBalance}
             isPremium={isPremium}
           />
@@ -1040,17 +1040,20 @@ export default function Consultant() {
                   Sign In
                 </Button>
               )}
-              <Link to={createPageUrl('Pricing')}>
-                <Button className="w-full bg-amber-600 hover:bg-amber-700">
-                  Upgrade to Premium
-                </Button>
-              </Link>
+              {isAuthenticated && (
+                <Link to={createPageUrl('Pricing')}>
+                  <Button className="w-full bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white font-semibold py-6 shadow-lg">
+                    <Sparkles className="h-5 w-5 mr-2" />
+                    Upgrade Plan
+                  </Button>
+                </Link>
+              )}
               <Button 
                 variant="outline" 
-                className="w-full"
+                className="w-full border-2 font-semibold"
                 onClick={() => setShowUpgradeModal(false)}
               >
-                Maybe Later
+                {isAuthenticated ? 'Come Back Tomorrow' : 'Maybe Later'}
               </Button>
             </div>
           </div>
