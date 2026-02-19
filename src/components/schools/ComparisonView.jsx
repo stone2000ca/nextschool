@@ -26,10 +26,7 @@ export default function ComparisonView({ schools, onBack }) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center gap-4 p-6 border-b border-slate-200 bg-white">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
+      <div className="p-6 border-b border-slate-200 bg-white">
         <div>
           <h2 className="text-2xl font-bold">School Comparison</h2>
           <p className="text-sm text-slate-600">Comparing {schools.length} schools</p>
