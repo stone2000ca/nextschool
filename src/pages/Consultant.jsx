@@ -77,7 +77,52 @@ export default function Consultant() {
 
   useEffect(() => {
     checkAuth();
+    loadUserLocation();
   }, []);
+
+  const loadUserLocation = async () => {
+    // Check localStorage first
+    const savedLocation = localStorage.getItem('userLocation');
+    if (savedLocation) {
+      setUserLocation(JSON.parse(savedLocation));
+      return;
+    }
+
+    // Try browser geolocation
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Reverse geocode to get address
+          try {
+            const apiKey = 'AIzaSyCJNHWSvBWXVfYXYxlz4Kg4NzQ9gCfMzIw'; // From secrets
+            const response = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+            );
+            const data = await response.json();
+            
+            const location = {
+              lat: latitude,
+              lng: longitude,
+              address: data.results[0]?.formatted_address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+            };
+            
+            setUserLocation(location);
+            localStorage.setItem('userLocation', JSON.stringify(location));
+          } catch (error) {
+            console.error('Geocoding failed:', error);
+            const location = { lat: latitude, lng: longitude, address: null };
+            setUserLocation(location);
+            localStorage.setItem('userLocation', JSON.stringify(location));
+          }
+        },
+        (error) => {
+          console.log('Geolocation denied or failed:', error);
+        }
+      );
+    }
+  };
 
   // Rotate thinking messages
   useEffect(() => {

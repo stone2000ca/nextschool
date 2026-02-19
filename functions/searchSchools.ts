@@ -6,6 +6,8 @@ Deno.serve(async (req) => {
     const { 
       region, 
       country,
+      city,
+      provinceState,
       minGrade, 
       maxGrade, 
       minTuition, 
@@ -18,10 +20,69 @@ Deno.serve(async (req) => {
       limit = 20
     } = await req.json();
 
+    // Province/State abbreviation mappings
+    const provinceAbbreviations = {
+      'BC': 'British Columbia',
+      'AB': 'Alberta',
+      'SK': 'Saskatchewan',
+      'MB': 'Manitoba',
+      'ON': 'Ontario',
+      'QC': 'Quebec',
+      'NB': 'New Brunswick',
+      'NS': 'Nova Scotia',
+      'PE': 'Prince Edward Island',
+      'PEI': 'Prince Edward Island',
+      'NL': 'Newfoundland and Labrador',
+      'YT': 'Yukon',
+      'NT': 'Northwest Territories',
+      'NU': 'Nunavut'
+    };
+
+    const stateAbbreviations = {
+      'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+      'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
+      'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho',
+      'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
+      'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+      'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi',
+      'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
+      'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
+      'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma',
+      'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+      'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
+      'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
+      'WI': 'Wisconsin', 'WY': 'Wyoming', 'DC': 'District of Columbia'
+    };
+
     // Build filter
     let schools = await base44.entities.School.filter({ status: 'active' });
 
-    // Apply filters
+    // Apply location filters with smart matching
+    if (city) {
+      const cityLower = city.toLowerCase().trim();
+      schools = schools.filter(s => s.city?.toLowerCase().includes(cityLower));
+    }
+
+    if (provinceState) {
+      const psUpper = provinceState.toUpperCase().trim();
+      const psLower = provinceState.toLowerCase().trim();
+      
+      // Check if it's an abbreviation
+      const fullProvinceName = provinceAbbreviations[psUpper] || stateAbbreviations[psUpper];
+      
+      schools = schools.filter(s => {
+        if (!s.provinceState) return false;
+        const schoolPS = s.provinceState.toLowerCase();
+        
+        // Match full name, abbreviation, or partial match
+        return schoolPS === psLower || 
+               schoolPS === fullProvinceName?.toLowerCase() ||
+               schoolPS.includes(psLower) ||
+               (fullProvinceName && schoolPS === fullProvinceName.toLowerCase());
+      });
+    }
+
+    // Apply region filter
     if (region) {
       schools = schools.filter(s => s.region === region);
     }
