@@ -100,6 +100,43 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
       }
     });
 
+    // DETERMINISTIC FALLBACK: Override LLM shouldShowSchools for clear location/school requests
+    const _msgL = message.toLowerCase();
+    const _locationKws = ['gta','greater toronto','lower mainland','metro vancouver','greater vancouver','toronto','vancouver','montreal','calgary','ottawa','edmonton','london','victoria','kelowna','hamilton','mississauga','brampton','burnaby','richmond','surrey','ontario','british columbia','alberta','quebec','bc','ab','on','qc','new york','california','massachusetts','connecticut','boston','los angeles','chicago','near me','near my','nearby','europe','london uk','paris','zurich'];
+    const _showKws = ['show','find','search','list','recommend','suggest','school','schools','near','in','around','within'];
+    const _hasLocation = _locationKws.some(kw => _msgL.includes(kw));
+    const _hasShowIntent = _showKws.some(kw => _msgL.includes(kw));
+    if (_hasLocation && _hasShowIntent && !intentResponse.shouldShowSchools) {
+      intentResponse.shouldShowSchools = true;
+      intentResponse.intent = intentResponse.intent || 'SHOW_SCHOOLS';
+      if (!intentResponse.filterCriteria) intentResponse.filterCriteria = {};
+      if (_msgL.includes('gta') || _msgL.includes('greater toronto')) {
+        intentResponse.filterCriteria.region = 'gta';
+      } else if (_msgL.includes('lower mainland') || _msgL.includes('metro vancouver') || _msgL.includes('greater vancouver')) {
+        intentResponse.filterCriteria.region = 'lower mainland';
+      } else if (_msgL.includes('toronto')) {
+        intentResponse.filterCriteria.city = 'Toronto';
+      } else if (_msgL.includes('vancouver')) {
+        intentResponse.filterCriteria.city = 'Vancouver';
+      } else if (_msgL.includes('montreal')) {
+        intentResponse.filterCriteria.city = 'Montreal';
+      } else if (_msgL.includes('calgary')) {
+        intentResponse.filterCriteria.city = 'Calgary';
+      } else if (_msgL.includes('ottawa')) {
+        intentResponse.filterCriteria.city = 'Ottawa';
+      } else if (_msgL.includes('edmonton')) {
+        intentResponse.filterCriteria.city = 'Edmonton';
+      } else if (_msgL.includes('ontario') || (_msgL.includes(' on ') && !_msgL.includes('on the'))) {
+        intentResponse.filterCriteria.provinceState = 'Ontario';
+      } else if (_msgL.includes('british columbia') || _msgL.endsWith(' bc') || _msgL.includes(' bc ')) {
+        intentResponse.filterCriteria.provinceState = 'British Columbia';
+      } else if (_msgL.includes('alberta') || _msgL.includes(' ab ')) {
+        intentResponse.filterCriteria.provinceState = 'Alberta';
+      } else if (_msgL.includes('near me') || _msgL.includes('near my') || _msgL.includes('nearby')) {
+        intentResponse.filterCriteria.nearMe = true;
+      }
+    }
+
     // Simple string-based comparison detection
     const msgLower = message.toLowerCase();
     const isCompareIntent = msgLower.includes('compare') || 
