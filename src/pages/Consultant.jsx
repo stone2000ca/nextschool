@@ -285,6 +285,14 @@ export default function Consultant() {
     setCurrentView('schools');
   };
 
+  const handleComparisonBack = () => {
+    if (previousSearchResults.length > 0) {
+      setSchools(previousSearchResults);
+    }
+    setComparisonData(null);
+    setCurrentView('schools');
+  };
+
   const handleSendMessage = async (messageText) => {
     // Check if user has tokens (skip for premium)
     if (!isPremium && tokenBalance <= 0) {
