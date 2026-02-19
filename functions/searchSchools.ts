@@ -227,10 +227,7 @@ async function performSearch(req) {
       total: schools.length,
       returned: condensedSchools.length
     });
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
-  }
-});
+}
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Earth's radius in km
