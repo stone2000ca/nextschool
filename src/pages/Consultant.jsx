@@ -200,9 +200,16 @@ export default function Consultant() {
         currentSchools: schools
       });
 
+      // Handle different response actions
+      const action = response.data.action;
+      
+      // Handle COMPARE action - render ComparisonView immediately
+      if (action === 'COMPARE' && response.data.schools?.length >= 2) {
+        setComparisonData(response.data.schools);
+        setCurrentView('comparison');
+      }
       // Only fetch schools if intent is SHOW_SCHOOLS or NARROW_DOWN
-      const intent = response.data.intent;
-      if ((intent === 'SHOW_SCHOOLS' || intent === 'NARROW_DOWN') && response.data.matchingSchools) {
+      else if ((response.data.intent === 'SHOW_SCHOOLS' || response.data.intent === 'NARROW_DOWN') && response.data.matchingSchools) {
         const schoolData = await base44.entities.School.filter({
           id: { $in: response.data.matchingSchools }
         });
@@ -217,21 +224,12 @@ export default function Consultant() {
         role: 'assistant',
         content: response.data.message,
         timestamp: new Date().toISOString(),
-        metadata: response.data.command
+        metadata: { action: response.data.action }
       };
 
       const finalMessages = [...updatedMessages, aiMessage];
       setMessages(finalMessages);
       setIsTyping(false);
-
-      // Handle comparison view
-      if (intent === 'COMPARE_SCHOOLS') {
-        // Extract school IDs from matchingSchools or try to find them
-        const schoolIds = response.data.matchingSchools || [];
-        if (schoolIds.length >= 2) {
-          await handleCompareSchools({ schoolIds: schoolIds.slice(0, 2) });
-        }
-      }
 
       // Update conversation if authenticated
       if (isAuthenticated && currentConversation) {
