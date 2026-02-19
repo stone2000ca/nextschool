@@ -10,7 +10,19 @@ Deno.serve(async (req) => {
     );
     
     const searchPromise = performSearch(req);
-    const base44 = createClientFromRequest(req);
+    
+    return await Promise.race([searchPromise, timeoutPromise]);
+  } catch (error) {
+    console.error('Search error:', error.message);
+    return Response.json({ 
+      error: error.message === 'Search request timeout' ? 'Search timed out - try being more specific' : error.message, 
+      status: 500 
+    }, { status: 500 });
+  }
+});
+
+async function performSearch(req) {
+  const base44 = createClientFromRequest(req);
     const { 
       region, 
       country,
