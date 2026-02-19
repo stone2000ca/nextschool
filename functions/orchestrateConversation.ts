@@ -34,12 +34,17 @@ CURRENT STATE:
 ${currentSchools && currentSchools.length > 0 ? `- Currently viewing ${currentSchools.length} schools on screen` : ''}
 
 DECISION LOGIC:
-- If message contains grade AND (city/region) → shouldShowSchools: true
+- If message contains grade AND (city/province/region) → shouldShowSchools: true
 - If message contains "show", "find", "see schools", "list" → shouldShowSchools: true  
 - If asking "narrow down" or "which of these" → intent: NARROW_DOWN, shouldShowSchools: false (filter from current)
 - If asking about specific school details → intent: VIEW_DETAIL, shouldShowSchools: false
 - If asking to compare schools → intent: COMPARE_SCHOOLS
 - If only greeting with no info → shouldShowSchools: false
+
+LOCATION EXTRACTION:
+- Extract province/state (BC, British Columbia, Ontario, California, etc.) to filterCriteria.provinceState
+- Extract city (Toronto, Vancouver, etc.) to filterCriteria.city
+- Extract broad region (Canada, US, Europe) to filterCriteria.region
 
 INTENT OPTIONS:
 - SHOW_SCHOOLS: Show matching schools (new search/filter request)
@@ -64,6 +69,7 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
             type: "object",
             properties: {
               city: { type: "string" },
+              provinceState: { type: "string" },
               region: { type: "string" },
               grade: { type: "number" },
               minTuition: { type: "number" },
@@ -180,73 +186,32 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
       
       matchingSchools = filtered;
     } else if (intentResponse.shouldShowSchools && intentResponse.filterCriteria) {
-      const filters = {};
-      if (intentResponse.filterCriteria.city) filters.city = intentResponse.filterCriteria.city;
-      if (intentResponse.filterCriteria.provinceState) filters.provinceState = intentResponse.filterCriteria.provinceState;
-      if (intentResponse.filterCriteria.region) filters.region = intentResponse.filterCriteria.region;
+      // Call searchSchools function with extracted criteria
+      const searchParams = {
+        limit: 20
+      };
       
-      let schools = await base44.asServiceRole.entities.School.filter(filters);
-      
-      // Apply grade filter
+      if (intentResponse.filterCriteria.city) searchParams.city = intentResponse.filterCriteria.city;
+      if (intentResponse.filterCriteria.provinceState) searchParams.provinceState = intentResponse.filterCriteria.provinceState;
+      if (intentResponse.filterCriteria.region) searchParams.region = intentResponse.filterCriteria.region;
       if (intentResponse.filterCriteria.grade) {
-        schools = schools.filter(s => 
-          s.lowestGrade <= intentResponse.filterCriteria.grade && 
-          s.highestGrade >= intentResponse.filterCriteria.grade
-        );
+        searchParams.minGrade = intentResponse.filterCriteria.grade;
+        searchParams.maxGrade = intentResponse.filterCriteria.grade;
       }
-      
-      // Apply tuition filter
-      if (intentResponse.filterCriteria.minTuition || intentResponse.filterCriteria.maxTuition) {
-        schools = schools.filter(s => {
-          if (!s.tuition) return false;
-          if (intentResponse.filterCriteria.minTuition && s.tuition < intentResponse.filterCriteria.minTuition) return false;
-          if (intentResponse.filterCriteria.maxTuition && s.tuition > intentResponse.filterCriteria.maxTuition) return false;
-          return true;
-        });
-      }
-      
-      // Apply specializations filter
+      if (intentResponse.filterCriteria.minTuition) searchParams.minTuition = intentResponse.filterCriteria.minTuition;
+      if (intentResponse.filterCriteria.maxTuition) searchParams.maxTuition = intentResponse.filterCriteria.maxTuition;
       if (intentResponse.filterCriteria.specializations?.length > 0) {
-        schools = schools.filter(s =>
-          s.specializations && 
-          intentResponse.filterCriteria.specializations.some(spec => s.specializations.includes(spec))
-        );
+        searchParams.specializations = intentResponse.filterCriteria.specializations;
+      }
+      if (userLocation?.lat && userLocation?.lng) {
+        searchParams.userLat = userLocation.lat;
+        searchParams.userLng = userLocation.lng;
       }
 
-      // Calculate distances if user location provided
-      if (userLocation?.lat && userLocation?.lng) {
-        schools = schools.map(school => {
-          if (school.lat && school.lng) {
-            const distance = calculateDistance(userLocation.lat, userLocation.lng, school.lat, school.lng);
-            return { ...school, distanceKm: distance };
-          }
-          return school;
-        });
-        
-        // Sort by distance (closest first)
-        schools.sort((a, b) => (a.distanceKm || 999999) - (b.distanceKm || 999999));
-      }
-      
-      // Fallback: if no results, show all in region
-      if (schools.length === 0 && intentResponse.filterCriteria.region) {
-        schools = await base44.asServiceRole.entities.School.filter({ 
-          region: intentResponse.filterCriteria.region 
-        });
-      }
+      const searchResult = await base44.functions.invoke('searchSchools', searchParams);
+      let schools = searchResult.data.schools || [];
       
       matchingSchools = schools.slice(0, 10); // Limit to 10 results
-    }
-
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = 
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
     }
 
     // Build school context for AI
