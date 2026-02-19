@@ -611,6 +611,39 @@ export default function Consultant() {
           </div>
         </div>
       )}
+
+      {/* Shortlist Panel */}
+      {showShortlistPanel && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/20 z-40"
+            onClick={() => setShowShortlistPanel(false)}
+          />
+          <ShortlistPanel
+            shortlist={schools.filter(s => user?.shortlist?.includes(s.id))}
+            onClose={() => setShowShortlistPanel(false)}
+            onRemove={handleToggleShortlist}
+            onViewSchool={(id) => {
+              handleViewSchoolDetail(id);
+              setShowShortlistPanel(false);
+            }}
+          />
+        </>
+      )}
+
+      {/* Notes Panel */}
+      {showNotesPanel && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/20 z-40"
+            onClick={() => setShowNotesPanel(false)}
+          />
+          <NotesPanel
+            userId={user?.id}
+            onClose={() => setShowNotesPanel(false)}
+          />
+        </>
+      )}
     </div>
   );
 }
