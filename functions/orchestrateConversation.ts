@@ -240,12 +240,12 @@ CRITICAL RULES - NEVER BREAK THESE:
 CONVERSATION CONTEXT:
 ${conversationSummary || 'First message in conversation.'}
 
-INTENT DETECTED: ${intentResponse.intent}
+INTENT DETECTED: ${isCompareIntent ? 'COMPARE_SCHOOLS' : intentResponse.intent}
 ${schoolContext}
 
 Parent's message: "${message}"
 
-Generate a natural, helpful response (2-3 sentences max). State the CORRECT number of schools from the list above.`;
+${isCompareIntent ? 'Generate a brief response (1-2 sentences) confirming which schools are being compared.' : 'Generate a natural, helpful response (2-3 sentences max). State the CORRECT number of schools from the list above.'}`;
 
     const finalResponse = await base44.integrations.Core.InvokeLLM({
       prompt: responsePrompt
