@@ -249,8 +249,8 @@ export default function ParentDashboard() {
               <div className="space-y-4">
                 <Card className="p-6 bg-gradient-to-br from-teal-50 to-teal-100">
                   <h3 className="font-bold text-lg mb-2">Current Balance</h3>
-                  <div className="text-4xl font-bold text-teal-700 mb-4">{user?.tokenBalance} tokens</div>
-                  {user?.tokenBalance <= 20 && (
+                  <div className="text-4xl font-bold text-teal-700 mb-4">{user?.tokenBalance || 0} tokens</div>
+                  {(user?.tokenBalance || 0) <= 20 && (
                     <Link to={createPageUrl('Pricing')}>
                       <Button className="bg-teal-600 hover:bg-teal-700">
                         Upgrade to Premium
