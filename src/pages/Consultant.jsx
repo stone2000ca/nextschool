@@ -697,9 +697,9 @@ Return empty array if user didn't provide any of these facts.`;
               <div className="flex-1 overflow-auto p-4">
                 <SchoolGrid
                   schools={schools}
-                  onSelectSchool={handleViewSchoolDetail}
+                  onViewDetails={handleViewSchoolDetail}
                   onToggleShortlist={handleToggleShortlist}
-                  isShortlistedMap={user?.shortlist ? Object.fromEntries(user.shortlist.map(id => [id, true])) : {}}
+                  shortlistedIds={user?.shortlist || []}
                   showDistances={showDistances}
                 />
               </div>
