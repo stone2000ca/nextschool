@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Heart, DollarSign, Users } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted }) {
   const getCurrencySymbol = (currency) => {
@@ -43,7 +44,16 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="font-bold text-lg mb-1 line-clamp-1">{school.name}</h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <h3 className="font-bold text-lg mb-1 line-clamp-2 cursor-default">{school.name}</h3>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">{school.name}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <div className="flex items-center gap-1 text-sm text-slate-600 mb-3">
             <MapPin className="h-3 w-3" />
             <span className="line-clamp-1">{school.city}, {school.provinceState}</span>

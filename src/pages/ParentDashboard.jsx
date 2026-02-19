@@ -125,7 +125,7 @@ export default function ParentDashboard() {
                 </div>
                 <div>
                   <div className="text-2xl font-bold">
-                    {user?.subscriptionPlan === 'premium' ? '∞' : user?.tokenBalance}
+                    {user?.subscriptionPlan === 'premium' ? '∞' : (user?.tokenBalance || 0)}
                   </div>
                   <div className="text-sm text-slate-600">
                     {user?.subscriptionPlan === 'premium' ? 'Premium Account' : 'Tokens Remaining'}

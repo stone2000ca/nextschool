@@ -304,32 +304,7 @@ export default function Consultant() {
   return (
     <div className="h-screen flex flex-col bg-slate-50">
       {/* Header */}
-      <header className="bg-white border-b px-4 py-3 flex items-center justify-between flex-shrink-0">
-        <Link to={createPageUrl('Home')} className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-bold text-lg">NextSchool</span>
-        </Link>
-        
-        {!isAuthenticated ? (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
-          >
-            <LogIn className="h-4 w-4 mr-2" />
-            Sign In
-          </Button>
-        ) : (
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-600 hidden sm:inline">{user?.email}</span>
-            <Link to={createPageUrl('ParentDashboard')}>
-              <Button variant="outline" size="sm">Dashboard</Button>
-            </Link>
-          </div>
-        )}
-      </header>
+      <Navbar variant="minimal" />
 
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT SIDEBAR */}
@@ -347,6 +322,27 @@ export default function Consultant() {
                   <Plus className="h-4 w-4 mr-2" />
                   New Conversation
                 </Button>
+              </div>
+
+              {/* Shortlisted & Notes - Above History */}
+              <div className="border-b bg-white p-3 space-y-2">
+                <Link to={createPageUrl('ParentDashboard')}>
+                  <button className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 text-sm transition-colors">
+                    <div className="flex items-center gap-2">
+                      <Heart className="h-4 w-4 text-teal-600" />
+                      <span className="font-medium">Shortlisted</span>
+                    </div>
+                    <span className="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-medium">
+                      {user?.shortlist?.length || 0}
+                    </span>
+                  </button>
+                </Link>
+                <Link to={createPageUrl('ParentDashboard')}>
+                  <button className="w-full flex items-center gap-2 p-3 rounded-lg hover:bg-slate-50 text-sm transition-colors">
+                    <FileText className="h-4 w-4 text-slate-600" />
+                    <span className="font-medium">Notes</span>
+                  </button>
+                </Link>
               </div>
 
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -369,22 +365,6 @@ export default function Consultant() {
                     </div>
                   </button>
                 ))}
-              </div>
-
-              <div className="border-t bg-white p-3 space-y-2">
-                <button className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Heart className="h-4 w-4 text-slate-400" />
-                    <span className="font-medium">Shortlisted</span>
-                  </div>
-                  <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full font-medium">
-                    {user?.shortlist?.length || 0}
-                  </span>
-                </button>
-                <button className="w-full flex items-center gap-2 p-3 rounded-lg hover:bg-slate-50 text-sm">
-                  <FileText className="h-4 w-4 text-slate-400" />
-                  <span className="font-medium">Notes</span>
-                </button>
               </div>
             </>
           )}
@@ -424,13 +404,32 @@ export default function Consultant() {
           )}
           
           {currentView === 'detail' && selectedSchool && (
-            <div className="h-full">
-              <SchoolDetail
-                school={selectedSchool}
-                onClose={() => setCurrentView('schools')}
-                onToggleShortlist={handleToggleShortlist}
-                isShortlisted={user?.shortlist?.includes(selectedSchool.id) || false}
-              />
+            <div className="h-full flex flex-col">
+              {/* Breadcrumb & Back Button */}
+              <div className="bg-white border-b px-6 py-4 flex items-center gap-3">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleBackToResults}
+                  className="gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Results
+                </Button>
+                <div className="text-sm text-slate-500">
+                  Results <span className="mx-2">›</span> 
+                  <span className="text-slate-900 font-medium">{selectedSchool.name}</span>
+                </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                <SchoolDetail
+                  school={selectedSchool}
+                  onClose={() => setCurrentView('schools')}
+                  onToggleShortlist={handleToggleShortlist}
+                  isShortlisted={user?.shortlist?.includes(selectedSchool.id) || false}
+                />
+              </div>
             </div>
           )}
           
