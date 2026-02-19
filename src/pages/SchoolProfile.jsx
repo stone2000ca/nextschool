@@ -361,7 +361,14 @@ export default function SchoolProfile() {
           <div className="space-y-6">
             <Card className="p-6 sticky top-24">
               <Button 
-                className={`w-full mb-4 ${isShortlisted ? 'bg-teal-600 hover:bg-teal-700' : ''}`}
+                className="w-full mb-3 bg-teal-600 hover:bg-teal-700"
+                onClick={() => setShowContactModal(true)}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Contact This School
+              </Button>
+              <Button 
+                className={`w-full mb-4 ${isShortlisted ? 'bg-amber-600 hover:bg-amber-700' : ''}`}
                 variant={isShortlisted ? "default" : "outline"}
                 onClick={handleToggleShortlist}
               >
