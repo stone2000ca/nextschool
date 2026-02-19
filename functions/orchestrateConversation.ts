@@ -253,7 +253,7 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
       matchingSchools = schools.slice(0, 20); // Show up to 20 results
     }
 
-    // Build school context for AI
+    // Build school context for AI - CONDENSED format to avoid token limits
     const schoolsToDescribe = isCompareIntent ? matchingSchools :
                               (intentResponse.intent === 'NARROW_DOWN' && currentSchools?.length > 0) 
                                 ? currentSchools 
@@ -261,9 +261,11 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
     
     const schoolContext = schoolsToDescribe.length > 0 
       ? `\n\nSCHOOLS AVAILABLE (${schoolsToDescribe.length} total):\n` + 
-        schoolsToDescribe.map(s => 
-          `- ${s.name} (${s.city}, ${s.region}) | Grades ${s.lowestGrade}-${s.highestGrade} | ${s.tuition ? s.currency + ' ' + s.tuition.toLocaleString() : 'N/A'} | Curriculum: ${s.curriculumType || 'N/A'} | Specializations: ${s.specializations?.join(', ') || 'N/A'}`
-        ).join('\n')
+        schoolsToDescribe.map(s => {
+          const tuitionStr = s.tuition ? `${s.currency || 'CAD'} ${s.tuition.toLocaleString()}` : 'N/A';
+          const specStr = s.specializations?.length ? s.specializations.join(', ') : 'General';
+          return `- ${s.name} | ${s.city} | Gr${s.lowestGrade}-${s.highestGrade} | ${tuitionStr} | ${s.curriculumType || 'Trad'} | ${specStr}`;
+        }).join('\n')
       : '\n\n[NO SCHOOLS AVAILABLE TO SHOW]';
 
     // Add user context
