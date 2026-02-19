@@ -88,8 +88,8 @@ Deno.serve(async (req) => {
       }
     };
 
-    // Build filter
-    let schools = await base44.entities.School.filter({ status: 'active' });
+    // Build filter - fetch all active schools with high limit
+    let schools = await base44.entities.School.filter({ status: 'active' }, '-created_date', 1000);
 
     // Check for regional aliases first
     let aliasedCities = [];
@@ -103,25 +103,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Apply aliased cities filter
+    // Apply aliased cities filter - exact match
     if (aliasedCities.length > 0) {
       schools = schools.filter(s => 
-        aliasedCities.some(c => s.city?.toLowerCase().includes(c.toLowerCase()))
+        aliasedCities.some(c => s.city?.toLowerCase() === c.toLowerCase())
       );
     }
-    // Apply aliased provinces filter
+    // Apply aliased provinces filter - exact match
     else if (aliasedProvinces.length > 0) {
       schools = schools.filter(s => {
         if (!s.provinceState) return false;
         const schoolPS = s.provinceState.toLowerCase();
-        return aliasedProvinces.some(p => schoolPS === p.toLowerCase() || schoolPS.includes(p.toLowerCase()));
+        return aliasedProvinces.some(p => schoolPS === p.toLowerCase());
       });
     }
 
-    // Apply city filter (if no aliases matched)
+    // Apply city filter (if no aliases matched) - exact match
     if (city && aliasedCities.length === 0) {
       const cityLower = city.toLowerCase().trim();
-      schools = schools.filter(s => s.city?.toLowerCase().includes(cityLower));
+      schools = schools.filter(s => s.city?.toLowerCase() === cityLower);
     }
 
     if (provinceState && aliasedProvinces.length === 0) {
@@ -135,11 +135,8 @@ Deno.serve(async (req) => {
         if (!s.provinceState) return false;
         const schoolPS = s.provinceState.toLowerCase();
         
-        // Match full name, abbreviation, or partial match
-        return schoolPS === psLower || 
-               schoolPS === fullProvinceName?.toLowerCase() ||
-               schoolPS.includes(psLower) ||
-               (fullProvinceName && schoolPS === fullProvinceName.toLowerCase());
+        // Match full name or abbreviation - exact match
+        return schoolPS === psLower || schoolPS === fullProvinceName?.toLowerCase();
       });
     }
 
