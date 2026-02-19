@@ -174,13 +174,17 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
       matchingSchools = schools.slice(0, 10); // Limit to 10 results
     }
 
-    // Build school context for AI
-    const schoolContext = matchingSchools.length > 0 
-      ? `\n\nMATCHING SCHOOLS FROM DATABASE (${matchingSchools.length} found):\n` + 
-        matchingSchools.map(s => 
-          `- ${s.name} (${s.city}, ${s.region}) | Grades ${s.lowestGrade}-${s.highestGrade} | ${s.tuition ? s.currency + ' ' + s.tuition : 'N/A'} | Specializations: ${s.specializations?.join(', ') || 'N/A'}`
+    // Build school context for AI - use currentSchools for NARROW_DOWN, matchingSchools otherwise
+    const schoolsToDescribe = (intentResponse.intent === 'NARROW_DOWN' && currentSchools?.length > 0) 
+      ? currentSchools 
+      : matchingSchools;
+    
+    const schoolContext = schoolsToDescribe.length > 0 
+      ? `\n\nSCHOOLS AVAILABLE (${schoolsToDescribe.length} total):\n` + 
+        schoolsToDescribe.map(s => 
+          `- ${s.name} (${s.city}, ${s.region}) | Grades ${s.lowestGrade}-${s.highestGrade} | ${s.tuition ? s.currency + ' ' + s.tuition.toLocaleString() : 'N/A'} | Curriculum: ${s.curriculumType || 'N/A'} | Specializations: ${s.specializations?.join(', ') || 'N/A'}`
         ).join('\n')
-      : '';
+      : '\n\n[NO SCHOOLS AVAILABLE TO SHOW]';
 
     // Second pass: Generate response with school context
     const responsePrompt = `You are an experienced education consultant helping parents find the right private school.
