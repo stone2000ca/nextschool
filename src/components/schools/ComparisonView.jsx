@@ -1,6 +1,4 @@
 export default function ComparisonView({ schools, onBack }) {
-
-export default function ComparisonView({ schools, onBack }) {
   if (!schools || schools.length === 0) {
     return (
       <div className="p-8 text-center">
