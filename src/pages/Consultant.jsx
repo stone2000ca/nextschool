@@ -284,21 +284,6 @@ export default function Consultant() {
     setCurrentView('schools');
   };
 
-  const handleViewSchoolProfile = async (slug) => {
-    try {
-      // Fetch full school data by slug
-      const allSchools = await base44.asServiceRole.entities.School.list('', 1000);
-      const school = allSchools.find(s => s.slug === slug);
-      
-      if (school) {
-        setSelectedSchool(school);
-        setCurrentView('profile');
-      }
-    } catch (error) {
-      console.error('Failed to fetch school profile:', error);
-    }
-  };
-
   const handleSendMessage = async (messageText) => {
     // Check if user has tokens (skip for premium)
     if (!isPremium && tokenBalance <= 0) {
@@ -748,29 +733,6 @@ Return empty array if user didn't provide any of these facts.`;
               onBack={() => setCurrentView(schools.length > 0 ? 'schools' : 'welcome')}
             />
           )}
-
-           {currentView === 'profile' && selectedSchool && (
-             <div className="h-full flex flex-col">
-               <div className="p-4 border-b flex items-center gap-2">
-                 <button
-                   onClick={handleBackToResults}
-                   className="text-slate-600 hover:text-slate-900"
-                 >
-                   <ArrowLeft className="h-5 w-5" />
-                 </button>
-                 <h2 className="text-lg font-semibold text-slate-900">{selectedSchool.name}</h2>
-               </div>
-               <div className="flex-1 overflow-auto">
-                 <SchoolDetail
-                   school={selectedSchool}
-                   onClose={handleBackToResults}
-                   onToggleShortlist={handleToggleShortlist}
-                   isShortlisted={user?.shortlist?.includes(selectedSchool.id) || false}
-                 />
-               </div>
-             </div>
-           )}
-
 
            {currentView === 'comparison-table' && comparisonData && (
              <div className="flex flex-col h-full">
