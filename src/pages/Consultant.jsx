@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus, Heart, FileText, Sparkles, LogIn, Menu } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Heart, FileText, Sparkles, LogIn, Menu, ArrowLeft, Badge } from "lucide-react";
 import MessageBubble from '@/components/chat/MessageBubble';
 import ChatInput from '@/components/chat/ChatInput';
 import TypingIndicator from '@/components/chat/TypingIndicator';
@@ -10,6 +10,8 @@ import SchoolGrid from '@/components/schools/SchoolGrid';
 import SchoolDetail from '@/components/schools/SchoolDetail';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import Navbar from '@/components/navigation/Navbar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Consultant() {
   const [user, setUser] = useState(null);
@@ -73,26 +75,25 @@ export default function Consultant() {
     }
 
     try {
+      // Add initial AI greeting first
+      const greeting = {
+        role: 'assistant',
+        content: "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?",
+        timestamp: new Date().toISOString()
+      };
+
       const newConvo = await base44.entities.ChatHistory.create({
         userId: user.id,
-        messages: [],
+        messages: [greeting],
         conversationContext: {},
         isActive: true,
         title: 'New Conversation'
       });
       
       setCurrentConversation(newConvo);
-      setMessages([]);
+      setMessages([greeting]);
       setCurrentView('welcome');
       setConversations([newConvo, ...conversations]);
-      
-      // Add initial AI greeting
-      const greeting = {
-        role: 'assistant',
-        content: "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?",
-        timestamp: new Date().toISOString()
-      };
-      setMessages([greeting]);
     } catch (error) {
       console.error('Failed to create conversation:', error);
     }
@@ -100,8 +101,24 @@ export default function Consultant() {
 
   const loadConversation = async (convo) => {
     setCurrentConversation(convo);
-    setMessages(convo.messages || []);
+    const msgs = convo.messages || [];
+    // If no messages, add initial greeting
+    if (msgs.length === 0) {
+      const greeting = {
+        role: 'assistant',
+        content: "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?",
+        timestamp: new Date().toISOString()
+      };
+      setMessages([greeting]);
+    } else {
+      setMessages(msgs);
+    }
     setCurrentView('welcome');
+  };
+
+  const handleBackToResults = () => {
+    setSelectedSchool(null);
+    setCurrentView('schools');
   };
 
   const handleSendMessage = async (messageText) => {
