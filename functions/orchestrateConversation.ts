@@ -209,31 +209,32 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
       }
       
       matchingSchools = filtered;
-    } else if (intentResponse.shouldShowSchools && intentResponse.filterCriteria) {
+    } else if (intentResponse.shouldShowSchools) {
       // Call searchSchools function with extracted criteria
       const searchParams = {
-        limit: 20
+        limit: 50
       };
       
-      if (intentResponse.filterCriteria.city) searchParams.city = intentResponse.filterCriteria.city;
-      if (intentResponse.filterCriteria.provinceState) searchParams.provinceState = intentResponse.filterCriteria.provinceState;
-      if (intentResponse.filterCriteria.region) searchParams.region = intentResponse.filterCriteria.region;
-      if (intentResponse.filterCriteria.grade) {
+      if (intentResponse.filterCriteria?.city) searchParams.city = intentResponse.filterCriteria.city;
+      if (intentResponse.filterCriteria?.provinceState) searchParams.provinceState = intentResponse.filterCriteria.provinceState;
+      if (intentResponse.filterCriteria?.region) searchParams.region = intentResponse.filterCriteria.region;
+      if (intentResponse.filterCriteria?.grade) {
         searchParams.minGrade = intentResponse.filterCriteria.grade;
         searchParams.maxGrade = intentResponse.filterCriteria.grade;
       }
-      if (intentResponse.filterCriteria.minTuition) searchParams.minTuition = intentResponse.filterCriteria.minTuition;
-      if (intentResponse.filterCriteria.maxTuition) searchParams.maxTuition = intentResponse.filterCriteria.maxTuition;
-       if (intentResponse.filterCriteria.curriculumType) searchParams.curriculumType = intentResponse.filterCriteria.curriculumType;
+      if (intentResponse.filterCriteria?.minTuition) searchParams.minTuition = intentResponse.filterCriteria.minTuition;
+      if (intentResponse.filterCriteria?.maxTuition) searchParams.maxTuition = intentResponse.filterCriteria.maxTuition;
+      if (intentResponse.filterCriteria?.curriculumType) searchParams.curriculumType = intentResponse.filterCriteria.curriculumType;
 
-      if (intentResponse.filterCriteria.specializations?.length > 0) {
+      if (intentResponse.filterCriteria?.specializations?.length > 0) {
         searchParams.specializations = intentResponse.filterCriteria.specializations;
       }
       
       // Check if user is asking for schools "near me" or similar
       const isNearMe = message.toLowerCase().includes('near me') || 
                        message.toLowerCase().includes('near my location') ||
-                       message.toLowerCase().includes('closest');
+                       message.toLowerCase().includes('closest') ||
+                       message.toLowerCase().includes('find schools near me');
       
       // For "near me" requests, pass coordinates to search by distance
       if (isNearMe && userLocation?.lat && userLocation?.lng) {
@@ -249,7 +250,7 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
       const searchResult = await base44.functions.invoke('searchSchools', searchParams);
       let schools = searchResult.data.schools || [];
       
-      matchingSchools = schools.slice(0, 10); // Limit to 10 results
+      matchingSchools = schools.slice(0, 20); // Show up to 20 results
     }
 
     // Build school context for AI
