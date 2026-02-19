@@ -12,7 +12,7 @@ export default function SchoolGrid({ schools, onViewDetails, onToggleShortlist, 
   return (
     <div className="flex flex-wrap gap-4">
       {schools.map((school, index) => (
-        <div key={school.id} className="w-full sm:w-[250px]">
+        <div key={school.id} className="w-full sm:w-[250px] flex-shrink-0">
           <SchoolCard
             school={school}
             index={index}
