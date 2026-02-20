@@ -20,98 +20,63 @@ Deno.serve(async (req) => {
       .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
       .join('\n');
 
-    // Check if user is asking to narrow/filter from currently displayed schools
-    const isNarrowingFromCurrent = currentSchools && currentSchools.length > 0 && 
-      (message.toLowerCase().includes('narrow') || 
-       message.toLowerCase().includes('which of these') ||
-       message.toLowerCase().includes('recommend') ||
-       message.toLowerCase().includes('best of these'));
-
-    // First pass: Determine intent and extract filter criteria
-    const intentPrompt = `You are analyzing a parent's message to determine their intent and extract school search criteria.
-
-CONVERSATION CONTEXT:
-${conversationSummary || 'First message in conversation.'}
-
-CURRENT STATE:
-- Child grade: ${context.childGrade || 'unknown'}
-- Location: ${context.location || 'not specified'}
-- Region: ${context.region || region || 'not specified'}
-${currentSchools && currentSchools.length > 0 ? `- Currently viewing ${currentSchools.length} schools on screen` : ''}
-
-DECISION LOGIC:
-- If user is asking to SEE, FIND, BROWSE, or LIST schools IN ANY WAY → shouldShowSchools: true
-  (This includes: "show", "find", "see schools", "list", "looking for", "interested in", "what about", "any", "are there", "give me", "tell me about")
-- If message mentions a curriculum type (Montessori, IB, Waldorf, AP, Traditional) → shouldShowSchools: true (search all schools or filtered area)
-- If message contains grade AND (city/province/region) → shouldShowSchools: true
-- If asking "narrow down" or "which of these" → intent: NARROW_DOWN, shouldShowSchools: false (filter from current)
-- If asking about specific school details → intent: VIEW_DETAIL, shouldShowSchools: false
-- If asking to compare schools → intent: COMPARE_SCHOOLS
-- If only greeting with no info → shouldShowSchools: false
-
-LOCATION EXTRACTION:
-- Extract province/state (BC, British Columbia, Ontario, California, etc.) to filterCriteria.provinceState
-- Extract city (Toronto, Vancouver, etc.) to filterCriteria.city
-- Extract broad region (Canada, US, Europe) OR region aliases to filterCriteria.region
-- IMPORTANT: Recognize city names WITH OR WITHOUT prepositions:
-   * "show me toronto schools" → city: Toronto
-   * "show me schools in toronto" → city: Toronto
-   * "show me schools in toronto, ontario" → city: Toronto, provinceState: Ontario
-   * "schools near vancouver" → city: Vancouver
-   * "schools in BC" → provinceState: BC
-- IMPORTANT: Recognize region aliases (GTA, Lower Mainland, Greater Vancouver, Montreal, Golden Horseshoe, New England, Pacific Northwest):
-   * "show me schools near GTA" → region: GTA
-   * "schools in lower mainland" → region: Lower Mainland
-   * "greater vancouver schools" → region: Greater Vancouver
-   * "new england schools" → region: New England
-   * "pacific northwest" → region: Pacific Northwest
-- IMPORTANT: Recognize country-level searches:
-   * "all schools in Canada" → region: Canada
-   * "schools in the US" → region: US
-   * "european schools" → region: Europe
-
-CURRICULUM TYPE EXTRACTION:
-- Extract curriculum types mentioned: Traditional, Montessori, IB, Waldorf, AP, Other
-- Put matching curriculum type in filterCriteria.curriculumType
-- If user mentions curriculum WITHOUT location, still set shouldShowSchools: true
-
-INTENT OPTIONS:
-- SHOW_SCHOOLS: Show matching schools (new search/filter request)
-- NARROW_DOWN: Refine from currently displayed schools
-- COMPARE_SCHOOLS: Compare specific schools
-- VIEW_DETAIL: Details on one school
-- ASK_QUESTION: General question about shown schools
-- NO_ACTION: Just greeting
-
-Parent's message: "${message}"
-
-Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if applicable).`;
-
-    const intentResponse = await base44.integrations.Core.InvokeLLM({
-      prompt: intentPrompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          intent: { type: "string" },
-          shouldShowSchools: { type: "boolean" },
-          filterCriteria: {
-            type: "object",
-            properties: {
-              city: { type: "string" },
-              provinceState: { type: "string" },
-              region: { type: "string" },
-              grade: { type: "number" },
-              minTuition: { type: "number" },
-              maxTuition: { type: "number" },
-              curriculumType: { type: "string" },
-              specializations: { type: "array", items: { type: "string" } }
-            }
-          },
-          schoolIds: { type: "array", items: { type: "string" } }
-        },
-        required: ["intent", "shouldShowSchools"]
-      }
-    });
+    // SIMPLIFIED INTENT DETECTION - No LLM call
+    const msgLower = message.toLowerCase();
+    
+    // Extract intent via keyword matching
+    let intent = 'SHOW_SCHOOLS'; // default
+    let shouldShowSchools = true;
+    let filterCriteria = {};
+    
+    // Compare intent
+    if (msgLower.includes('compare') || msgLower.includes(' vs ') || msgLower.includes('versus')) {
+      intent = 'COMPARE_SCHOOLS';
+      shouldShowSchools = false;
+    }
+    // Narrow down intent
+    else if (currentSchools?.length > 0 && (msgLower.includes('narrow') || msgLower.includes('filter') || msgLower.includes('only show'))) {
+      intent = 'NARROW_DOWN';
+      shouldShowSchools = false;
+    }
+    // Pure greetings
+    else if (/^(hi|hello|hey|greetings|good morning|good afternoon)[\s!.]*$/i.test(msgLower.trim())) {
+      intent = 'NO_ACTION';
+      shouldShowSchools = false;
+    }
+    
+    // Extract filter criteria using regex/string matching
+    // City extraction
+    const cityMatch = message.match(/\b(?:in|near|at|around)\s+([A-Z][a-zA-Z\s]+?)(?:\s*,|\s+(?:ontario|bc|quebec|california|new york)|$)/i) ||
+                     message.match(/\b(Toronto|Vancouver|Montreal|Calgary|Edmonton|Ottawa|Victoria|Winnipeg|Hamilton|Quebec City|London|Kitchener|Halifax|Oakville|Burlington|Richmond Hill|Markham|Mississauga)\b/i);
+    if (cityMatch) filterCriteria.city = cityMatch[1].trim();
+    
+    // Province/State extraction
+    const provinceMatch = message.match(/\b(Ontario|British Columbia|BC|Quebec|Alberta|Manitoba|Saskatchewan|Nova Scotia|New Brunswick|Newfoundland|PEI|California|New York|Texas|Florida)\b/i);
+    if (provinceMatch) filterCriteria.provinceState = provinceMatch[1];
+    
+    // Region extraction
+    const regionMatch = message.match(/\b(Canada|US|USA|United States|Europe|GTA|Greater Toronto|Lower Mainland|Greater Vancouver)\b/i);
+    if (regionMatch) filterCriteria.region = regionMatch[1];
+    
+    // Curriculum extraction
+    const curriculumMatch = message.match(/\b(Montessori|IB|International Baccalaureate|Waldorf|AP|Advanced Placement|Traditional)\b/i);
+    if (curriculumMatch) {
+      let curr = curriculumMatch[1];
+      if (curr.toLowerCase().includes('international')) curr = 'IB';
+      if (curr.toLowerCase().includes('advanced')) curr = 'AP';
+      filterCriteria.curriculumType = curr;
+    }
+    
+    // Grade extraction
+    const gradeMatch = message.match(/\bgrade\s*(\d+)\b/i) || message.match(/\b(\d+)(?:th|st|nd|rd)\s*grade\b/i);
+    if (gradeMatch) filterCriteria.grade = parseInt(gradeMatch[1]);
+    
+    // Specializations
+    if (msgLower.includes('stem')) filterCriteria.specializations = ['STEM'];
+    else if (msgLower.includes('arts')) filterCriteria.specializations = ['Arts'];
+    else if (msgLower.includes('sports')) filterCriteria.specializations = ['Sports'];
+    
+    const intentResponse = { intent, shouldShowSchools, filterCriteria };
 
     // Simple string-based comparison detection
     const msgLower = message.toLowerCase();
