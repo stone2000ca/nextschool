@@ -57,7 +57,7 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
                   {school.city}, {school.region}
                 </p>
                 <p className="text-xs text-slate-500 mb-3">
-                  Grades {school.lowestGrade}-{school.highestGrade} • {school.currency} {school.tuition?.toLocaleString()}
+                  Grades {formatGradeRange(school.lowestGrade, school.highestGrade)} • {school.currency} {school.tuition?.toLocaleString()}
                 </p>
                 <Button
                   size="sm"
