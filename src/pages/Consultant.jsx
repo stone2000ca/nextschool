@@ -720,10 +720,24 @@ Return empty array if user didn't provide any of these facts.`;
                           : 'hover:bg-white'
                       }`}
                     >
-                      <p className="text-sm font-medium truncate text-slate-900">{convo.title}</p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {new Date(convo.updated_date).toLocaleDateString()}
-                      </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate text-slate-900">{convo.title}</p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {new Date(convo.updated_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => toggleStarConversation(convo, e)}
+                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          {convo.starred ? (
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          ) : (
+                            <Star className="h-4 w-4 text-slate-400 hover:text-yellow-400" />
+                          )}
+                        </button>
+                      </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
