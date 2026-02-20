@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Heart, DollarSign, Users, Navigation } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { HeaderPhotoDisplay, LogoDisplay, isClearbitUrl } from '@/components/schools/HeaderPhotoHelper';
 
 export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0 }) {
   const getCurrencySymbol = (currency) => {
