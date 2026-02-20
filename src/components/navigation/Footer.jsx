@@ -16,21 +16,21 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div>
             <h3 className="text-white font-semibold text-sm mb-4">PRODUCT</h3>
-            <Link to={createPageUrl('Home')} className="block text-sm hover:text-white transition-colors mb-3">How It Works</Link>
+            <Link to={createPageUrl('HowItWorks')} className="block text-sm hover:text-white transition-colors mb-3">How It Works</Link>
             <Link to={createPageUrl('SchoolDirectory')} className="block text-sm hover:text-white transition-colors mb-3">Schools</Link>
             <Link to={createPageUrl('Pricing')} className="block text-sm hover:text-white transition-colors">Pricing</Link>
           </div>
           
           <div>
             <h3 className="text-white font-semibold text-sm mb-4">FOR SCHOOLS</h3>
+            <Link to={createPageUrl('ForSchools')} className="block text-sm hover:text-white transition-colors mb-3">For Schools</Link>
             <Link to={createPageUrl('SchoolDirectory')} className="block text-sm hover:text-white transition-colors">Claim Your School</Link>
-            <Link to={createPageUrl('SchoolAdmin')} className="block text-sm hover:text-white transition-colors">School Admin</Link>
           </div>
           
           <div>
             <h3 className="text-white font-semibold text-sm mb-4">COMPANY</h3>
-            <a href="#" className="block text-sm hover:text-white transition-colors mb-3">About</a>
-            <a href="mailto:contact@nextschool.com" className="block text-sm hover:text-white transition-colors">Contact</a>
+            <Link to={createPageUrl('About')} className="block text-sm hover:text-white transition-colors mb-3">About</Link>
+            <Link to={createPageUrl('Contact')} className="block text-sm hover:text-white transition-colors">Contact</Link>
           </div>
           
           <div>
