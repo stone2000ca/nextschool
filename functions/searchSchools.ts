@@ -181,30 +181,71 @@ async function performSearch(req) {
       locationFiltered = locationFiltered.filter(s => s.country === country);
     }
 
-    // Step 2: Score remaining schools based on other criteria
-    const scored = locationFiltered.map(school => {
-      let score = 0;
+    // STAGE 1: HARD FILTERS (eliminate schools that don't meet constraints)
+    let hardFiltered = locationFiltered.filter(school => {
+      // Hard filter 1: GRADE - child's grade must be within school's range
+      if (minGrade !== undefined && (school.lowestGrade === null || school.highestGrade === null)) {
+        return false; // School has no grade info
+      }
+      if (minGrade !== undefined && !(school.lowestGrade <= minGrade && school.highestGrade >= minGrade)) {
+        return false; // Child's grade not served
+      }
       
-      // Grade range: +2 for exact match, +1 for overlap
-      if (minGrade !== undefined || maxGrade !== undefined) {
-        const targetGrade = minGrade !== undefined ? minGrade : maxGrade;
-        if (school.lowestGrade <= targetGrade && school.highestGrade >= targetGrade) {
-          score += 2; // Exact match
-        } else if (minGrade !== undefined && maxGrade !== undefined) {
-          if (school.lowestGrade <= maxGrade && school.highestGrade >= minGrade) {
-            score += 1; // Overlap
-          }
+      // Hard filter 2: BUDGET - tuition must be within hard limits
+      if (maxTuition && school.tuition) {
+        const hardLimit = school.financialAidAvailable ? maxTuition * 1.3 : maxTuition;
+        if (school.tuition > hardLimit) {
+          console.log(`Hard-filtered ${school.name}: tuition $${school.tuition} exceeds hard limit $${hardLimit}`);
+          return false;
         }
       }
       
-      // Tuition: +2 for in range, +1 for close
-      if (minTuition !== undefined || maxTuition !== undefined) {
-        if (school.tuition) {
-          if ((!minTuition || school.tuition >= minTuition) && (!maxTuition || school.tuition <= maxTuition)) {
-            score += 2;
-          } else if (minTuition && school.tuition >= minTuition * 0.8 && school.tuition <= minTuition * 1.2) {
-            score += 1;
-          }
+      // Hard filter 3: RELIGIOUS DEALBREAKER - if marked, exclude non-secular schools
+      if (familyProfile?.dealbreakers?.includes('religious') || familyProfile?.dealbreakers?.includes('Religious')) {
+        if (school.religiousAffiliation && school.religiousAffiliation !== 'None' && school.religiousAffiliation !== 'none') {
+          console.log(`Hard-filtered ${school.name}: religious affiliation (${school.religiousAffiliation}) conflicts with family dealbreaker`);
+          return false;
+        }
+      }
+      
+      // Hard filter 4: GENDER PREFERENCE - school type must match if specified
+      if (familyProfile?.preferences?.genderPreference) {
+        const genderPref = familyProfile.preferences.genderPreference;
+        if (genderPref === 'boy' && school.schoolType !== 'All-Boys') return false;
+        if (genderPref === 'girl' && school.schoolType !== 'All-Girls') return false;
+        if (genderPref === 'coed' && (school.schoolType === 'All-Boys' || school.schoolType === 'All-Girls')) return false;
+      }
+      
+      // Hard filter 5: COMMUTE TOLERANCE - distance must not exceed tolerance
+      if (familyProfile?.commuteToleranceMinutes && school.distanceKm) {
+        const estimatedCommute = school.distanceKm * 2; // Rough: 1km ≈ 2 min
+        if (estimatedCommute > familyProfile.commuteToleranceMinutes) {
+          console.log(`Hard-filtered ${school.name}: commute ${estimatedCommute}min exceeds tolerance ${familyProfile.commuteToleranceMinutes}min`);
+          return false;
+        }
+      }
+      
+      return true;
+    });
+    
+    console.log(`Hard filters: ${locationFiltered.length} → ${hardFiltered.length} schools`);
+
+    // STAGE 2: RELEVANCE SCORING (rank what remains)
+    const scored = hardFiltered.map(school => {
+      let score = 0;
+      
+      // Grade range: +2 for exact match
+      if (minGrade !== undefined) {
+        const targetGrade = minGrade !== undefined ? minGrade : maxGrade;
+        if (school.lowestGrade <= targetGrade && school.highestGrade >= targetGrade) {
+          score += 2; // Exact match
+        }
+      }
+      
+      // Tuition: +2 for in range
+      if (maxTuition !== undefined && school.tuition) {
+        if (school.tuition <= maxTuition) {
+          score += 2;
         }
       }
       
