@@ -31,8 +31,8 @@ Deno.serve(async (req) => {
       shouldShowSchools = false;
     }
     // Pure greetings
-    else if (/^(hi|hello|hey|greetings|good morning|good afternoon)[\s!.]*$/i.test(msgLower.trim())) {
-      intent = 'NO_ACTION';
+    else if (/^(hi|hello|hey|greetings|good morning|good afternoon|howdy|welcome)[\s!.]*$/i.test(msgLower.trim())) {
+      intent = 'GREETING';
       shouldShowSchools = false;
     }
     // SEARCH_SCHOOLS intent - when user is actively looking for schools
