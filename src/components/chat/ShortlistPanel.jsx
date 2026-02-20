@@ -2,6 +2,24 @@ import { X, Heart, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+function formatGrade(grade) {
+  if (grade === null || grade === undefined) return '';
+  const num = Number(grade);
+  if (num <= -2) return 'PK';
+  if (num === -1) return 'JK';
+  if (num === 0) return 'K';
+  return String(num);
+}
+
+function formatGradeRange(gradeFrom, gradeTo) {
+  const from = formatGrade(gradeFrom);
+  const to = formatGrade(gradeTo);
+  if (!from && !to) return '';
+  if (!from) return to;
+  if (!to) return from;
+  return `${from}-${to}`;
+}
+
 export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool }) {
   return (
     <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-50 flex flex-col border-l border-slate-200">
