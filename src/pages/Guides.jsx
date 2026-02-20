@@ -6,7 +6,7 @@ import Footer from '@/components/navigation/Footer';
 import { ArrowRight, Clock, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function Blog() {
+export default function Guides() {
   const [hoveredCard, setHoveredCard] = useState(null);
 
   const articles = [
