@@ -264,9 +264,9 @@ export default function Consultant() {
   };
 
   const createNewConversation = async () => {
-    // Check conversation limit for non-authenticated users
+    // If not authenticated, return to consultant selection
     if (!isAuthenticated) {
-      setLimitReachedOpen(true);
+      setSelectedConsultant(null);
       return;
     }
 
