@@ -5,10 +5,12 @@ export function isClearbitUrl(url) {
 }
 
 export function HeaderPhotoDisplay({ headerPhotoUrl, heroImage, schoolName, height = 'h-96' }) {
-  const isSmallLogo = isClearbitUrl(headerPhotoUrl);
-  const hasValidHeaderPhoto = headerPhotoUrl && !isSmallLogo;
-  const hasFallback = hasValidHeaderPhoto || heroImage;
+  const isHeaderPhotoClearbit = isClearbitUrl(headerPhotoUrl);
+  const isHeroImageClearbit = isClearbitUrl(heroImage);
+  const hasValidHeaderPhoto = headerPhotoUrl && !isHeaderPhotoClearbit;
+  const hasValidHeroImage = heroImage && !isHeroImageClearbit;
 
+  // BUG FIX #7: Check both headerPhotoUrl and heroImage for Clearbit
   if (hasValidHeaderPhoto) {
     return (
       <img 
@@ -19,7 +21,7 @@ export function HeaderPhotoDisplay({ headerPhotoUrl, heroImage, schoolName, heig
     );
   }
 
-  if (heroImage) {
+  if (hasValidHeroImage) {
     return (
       <img 
         src={heroImage} 
