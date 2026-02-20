@@ -3,10 +3,12 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, FileText, MessageSquare, Settings, Sparkles, Coins } from "lucide-react";
+import { Heart, FileText, MessageSquare, Settings, Sparkles, Coins, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import SchoolCard from '@/components/schools/SchoolCard';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from 'sonner';
 
 export default function ParentDashboard() {
   const [user, setUser] = useState(null);
