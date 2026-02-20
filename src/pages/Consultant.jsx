@@ -53,26 +53,12 @@ export default function Consultant() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState(null);
   
-  // Funny thinking messages
-  const [thinkingMessage, setThinkingMessage] = useState('');
-  const thinkingMessages = [
-    "Checking if the principal is cool...",
-    "Cross-referencing with helicopter parents...",
-    "Calculating recess-to-homework ratio...",
-    "Asking the school mascots for opinions...",
-    "Reviewing cafeteria food quality...",
-    "Counting how many Nobel laureates graduated...",
-    "Measuring distance to nearest ice cream shop...",
-    "Checking if they allow nap time...",
-    "Consulting with PTA parents...",
-    "Evaluating playground slide quality...",
-    "Analyzing teacher coffee consumption levels...",
-    "Checking WiFi speed in classrooms...",
-    "Rating school bus comfort levels...",
-    "Investigating library book collection size...",
-    "Surveying student happiness index...",
-    "Determining optimal snack break times...",
-    "Assessing playground equipment awesomeness..."
+  // Progressive loading states
+  const [loadingStage, setLoadingStage] = useState(0);
+  const loadingStages = [
+    "Analyzing request...",
+    "Searching schools...",
+    "Preparing recommendations..."
   ];
   
   const messagesEndRef = useRef(null);
@@ -127,14 +113,16 @@ export default function Consultant() {
     }
   };
 
-  // Rotate thinking messages
+  // Progress through loading stages
   useEffect(() => {
     if (isTyping) {
-      setThinkingMessage(thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)]);
-      const interval = setInterval(() => {
-        setThinkingMessage(thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)]);
-      }, 2500);
-      return () => clearInterval(interval);
+      setLoadingStage(0);
+      const timer1 = setTimeout(() => setLoadingStage(1), 2000);
+      const timer2 = setTimeout(() => setLoadingStage(2), 4000);
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
   }, [isTyping]);
 
