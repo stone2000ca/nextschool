@@ -204,9 +204,20 @@ Deno.serve(async (req) => {
       });
     }
     
-    if (currentState === STATES.SEARCHING) {
-      // SEARCHING → perform school search
-      // (falls through to school search logic below)
+    // STEP 4B: School search ONLY in SEARCHING state
+    // Do NOT fall through for other states
+    if (currentState !== STATES.SEARCHING) {
+      // State machine is the sole gate—if we're not in SEARCHING, return error fallback
+      console.log(`STATE MACHINE BLOCK: currentState=${currentState}, no search performed`);
+      return Response.json({
+        message: 'I encountered an unexpected state. Please try again.',
+        state: currentState,
+        intent: intentResponse.intent,
+        schools: [],
+        familyProfile: conversationFamilyProfile,
+        filterCriteria: intentResponse.filterCriteria || {},
+        conversationContext: context
+      });
     }
 
     const isCompareIntent = intentResponse.intent === 'COMPARE_SCHOOLS';
@@ -482,12 +493,6 @@ Deno.serve(async (req) => {
       }
       
       currentState = STATES.RESULTS;
-    } else if (currentState === STATES.INTAKE || currentState === STATES.BRIEF_EDIT) {
-      // Already handled above—should not reach here
-      aiMessage = 'I encountered an unexpected state. Please try again.';
-    } else {
-      // Fallback for any other state
-      aiMessage = 'I encountered an unexpected state. Please try again.';
     }
 
     // LATEST INFORMATION WINS: Update conversationContext with new filter criteria (overwrite old values)
