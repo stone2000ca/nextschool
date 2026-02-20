@@ -231,14 +231,16 @@ Deno.serve(async (req) => {
       
       if (generateResult.data.timeout) {
         responseTimedOut = true;
-        aiMessage = 'Here are the schools I found:';
+        // FIX #4: If schools exist, use the AI message even if timed out
+        aiMessage = generateResult.data.message || 'Here are the schools I found:';
       } else {
         aiMessage = generateResult.data.message;
       }
     } catch (error) {
       console.error('generateResponse error:', error);
       responseTimedOut = true;
-      aiMessage = 'Here are the schools I found:';
+      // FIX #4: Don't contradict the display - if schools exist, acknowledge them
+      aiMessage = matchingSchools.length > 0 ? 'Here are the schools I found:' : 'I don\'t have any schools matching that criteria.';
     }
 
     // Update user memory with insights from this message (non-blocking)
@@ -246,6 +248,12 @@ Deno.serve(async (req) => {
       await base44.functions.invoke('updateUserMemory', { userId, userMessage: message });
     } catch (e) {
       console.error('updateUserMemory failed:', e);
+    }
+
+    // FIX #4: Ensure AI message matches the schools array
+    // If no schools found, AI should say so. If schools exist, AI should acknowledge them.
+    if (matchingSchools.length === 0 && !aiMessage.includes('don\'t have') && !aiMessage.includes('no ')) {
+      aiMessage = 'I don\'t have any schools matching that criteria yet. Our database is growing - try a nearby city or broader criteria.';
     }
 
     // DEBUG: Log critical values before returning
