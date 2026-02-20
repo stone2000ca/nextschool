@@ -59,25 +59,25 @@ export default function ComparisonTable({ schools, onBack }) {
         </Button>
       </div>
 
-      {/* Scrollable Comparison Table - FIX #3: Show both columns without horizontal scroll */}
+      {/* Scrollable Comparison Table - FIX #3: Both columns visible with balanced widths */}
       <div className="flex-1 overflow-auto p-4">
         <table className="w-full border-collapse table-fixed">
           <colgroup>
-            <col style={{ width: '180px' }} />
+            <col style={{ width: '25%' }} />
             {schools.map((school) => (
-              <col key={school.id} style={{ width: `${Math.floor((100 - 18) / schools.length)}%` }} />
+              <col key={school.id} style={{ width: `${75 / schools.length}%` }} />
             ))}
           </colgroup>
           <tbody>
             {attributes.map((attr) => (
               <tr key={attr.key} className="border-b border-slate-200">
-                <td className="bg-slate-50 p-3 font-semibold text-slate-900 align-top">
+                <td className="bg-slate-50 p-2 font-semibold text-slate-900 align-top text-sm">
                   {attr.label}
                 </td>
                 {schools.map((school) => (
                   <td 
                     key={school.id} 
-                    className="p-3 text-sm text-slate-700 border-l border-slate-200 break-words"
+                    className="p-2 text-sm text-slate-700 border-l border-slate-200 break-words align-top"
                   >
                     {getValue(school, attr.key)}
                   </td>

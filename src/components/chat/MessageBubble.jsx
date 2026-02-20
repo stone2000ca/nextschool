@@ -39,27 +39,6 @@ export default function MessageBubble({ message, isUser, onViewSchoolProfile }) 
                     );
                   }
                   return <a href={href} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">{children}</a>;
-                },
-                // Catch raw markdown links that weren't processed
-                text: ({ children }) => {
-                  const text = String(children);
-                  const linkMatch = text.match(/\[([^\]]+)\]\(school:([^)]+)\)/);
-                  if (linkMatch && onViewSchoolProfile) {
-                    const [fullMatch, schoolName, slug] = linkMatch;
-                    return (
-                      <>
-                        {text.substring(0, text.indexOf(fullMatch))}
-                        <button
-                          onClick={() => onViewSchoolProfile(slug)}
-                          className="text-teal-600 hover:underline cursor-pointer font-semibold"
-                        >
-                          {schoolName}
-                        </button>
-                        {text.substring(text.indexOf(fullMatch) + fullMatch.length)}
-                      </>
-                    );
-                  }
-                  return <>{text}</>;
                 }
               }}
             >
