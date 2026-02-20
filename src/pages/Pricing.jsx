@@ -1,239 +1,164 @@
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ArrowRight, Check, HelpCircle } from "lucide-react";
 import { createPageUrl } from "../utils";
+import { Link } from "react-router-dom";
+import { useState } from "react";
 import Navbar from "@/components/navigation/Navbar";
 import Footer from "@/components/navigation/Footer";
 
 export default function Pricing() {
+  const [expandedFaq, setExpandedFaq] = useState(null);
+
+  const faqItems = [
+    {
+      question: "How many schools can I search for free?",
+      answer: "The free tier gives you enough for a full consultation including intake, brief, and your first set of recommendations. You'll have access to unlimited school comparisons and the ability to shortlist your favorites."
+    },
+    {
+      question: "Do I need to create an account?",
+      answer: "No! You can start a consultation immediately without signing up. If you want to save your progress and access it later, you can create an account at any time."
+    },
+    {
+      question: "How is this different from a school directory?",
+      answer: "Directories give you lists. NextSchool gives you a consultant that understands your family's specific needs and explains why each school is a match. We provide personalized reasoning, not just data."
+    },
+    {
+      question: "Is my family's information private?",
+      answer: "Absolutely. Your conversation data and family profile are private and never shared with schools without your explicit consent. You control what information is visible to schools at all times."
+    }
+  ];
+
+  const features = {
+    free: [
+      "AI education consultant",
+      "Personalized match cards",
+      "The Brief (family summary)",
+      "School comparison tool",
+      "Shortlisting & notes",
+      "100 free tokens"
+    ],
+    premium: [
+      "Everything in Free",
+      "Unlimited conversations",
+      "Action plans & deadlines",
+      "Tour prep briefs",
+      "Draft communications",
+      "Priority support"
+    ]
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-white">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h1>
-          <p className="text-xl text-slate-600">Choose the plan that works for you</p>
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-slate-900 to-slate-800 py-20 sm:py-28 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-5xl sm:text-6xl font-bold mb-6">Simple, Transparent Pricing</h1>
+          <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+            Start free. Upgrade when you need more.
+          </p>
         </div>
+      </section>
 
-        {/* Parent Plans */}
-        <div className="mb-16">
-          <h2 className="text-2xl font-bold text-center mb-8">For Parents</h2>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Free Plan */}
-            <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-200 p-8">
-              <h3 className="text-2xl font-bold mb-2">Free</h3>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">$0</span>
-                <span className="text-slate-600">/month</span>
+      {/* Pricing Tiers */}
+      <section className="py-20 sm:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-16">
+            {/* Free Tier */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 relative">
+              <h3 className="text-3xl font-bold text-slate-900 mb-2">Free</h3>
+              <p className="text-slate-600 mb-6">Get started with everything you need</p>
+              <div className="mb-8">
+                <span className="text-5xl font-bold text-teal-600">$0</span>
+                <span className="text-slate-600 ml-2">/month</span>
               </div>
-              <ul className="space-y-3 mb-8">
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm">100 tokens to get started</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm">AI consultant conversations</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm">Browse all schools</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm">Create shortlist</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm">Take notes</span>
-                </li>
-              </ul>
               <Link to={createPageUrl('Consultant')}>
-                <Button variant="outline" className="w-full">
-                  Get Started
+                <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 mb-8">
+                  Start Free Consultation
                 </Button>
               </Link>
+              <div className="space-y-4">
+                {features.free.map((feature, idx) => (
+                  <div key={idx} className="flex gap-3">
+                    <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-slate-700">{feature}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Premium Plan */}
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl shadow-lg border-2 border-teal-600 p-8 relative">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-teal-600 text-white px-4 py-1 rounded-full text-sm font-medium">
-                Most Popular
+            {/* Premium Tier */}
+            <div className="bg-gradient-to-br from-teal-50 to-amber-50 rounded-2xl border-2 border-teal-600 p-8 relative">
+              <div className="absolute top-0 right-0 bg-teal-600 text-white px-4 py-1 text-sm font-semibold rounded-bl-lg rounded-tr-2xl">
+                Coming Soon
               </div>
-              <h3 className="text-2xl font-bold mb-2">Premium</h3>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">$29</span>
-                <span className="text-slate-600">/month</span>
+              <h3 className="text-3xl font-bold text-slate-900 mb-2">Premium</h3>
+              <p className="text-slate-600 mb-6">Everything plus advanced features</p>
+              <div className="mb-8">
+                <span className="text-5xl font-bold text-slate-900">Coming Soon</span>
               </div>
-              <ul className="space-y-3 mb-8">
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm font-semibold">Unlimited tokens</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm">Unlimited AI conversations</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm">Advanced school comparisons</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm">Deep analysis reports</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm">Export shortlist to PDF</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                  <span className="text-sm">Priority support</span>
-                </li>
-              </ul>
-              <Button className="w-full bg-teal-600 hover:bg-teal-700">
-                Upgrade to Premium
+              <Button className="w-full bg-slate-400 text-white py-6 mb-8 cursor-not-allowed" disabled>
+                Coming Soon
               </Button>
+              <div className="space-y-4">
+                {features.premium.map((feature, idx) => (
+                  <div key={idx} className="flex gap-3">
+                    <Check className="h-5 w-5 text-teal-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-slate-700">{feature}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* School Plans */}
-        <div>
-          <h2 className="text-2xl font-bold text-center mb-8">For Schools</h2>
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {/* Free */}
-            <div className="bg-white rounded-2xl shadow-sm border p-6">
-              <h3 className="text-xl font-bold mb-2">Free Listing</h3>
-              <div className="mb-6">
-                <span className="text-3xl font-bold">$0</span>
-                <span className="text-slate-600">/month</span>
+      {/* FAQ Section */}
+      <section className="py-20 sm:py-28 bg-slate-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl font-bold text-slate-900 mb-12 text-center">Frequently Asked Questions</h2>
+          <div className="space-y-4">
+            {faqItems.map((item, idx) => (
+              <div key={idx} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                <button
+                  onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <HelpCircle className="h-5 w-5 text-teal-600 flex-shrink-0" />
+                    <span className="font-semibold text-slate-900 text-left">{item.question}</span>
+                  </div>
+                  <span className={`text-2xl text-slate-400 transform transition-transform ${expandedFaq === idx ? "rotate-180" : ""}`}>
+                    ▼
+                  </span>
+                </button>
+                {expandedFaq === idx && (
+                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
+                    <p className="text-slate-700 leading-relaxed">{item.answer}</p>
+                  </div>
+                )}
               </div>
-              <ul className="space-y-2 mb-6 text-sm">
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-teal-600 flex-shrink-0 mt-0.5" />
-                  <span>Basic profile</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-teal-600 flex-shrink-0 mt-0.5" />
-                  <span>1 photo</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-teal-600 flex-shrink-0 mt-0.5" />
-                  <span>Appear in search</span>
-                </li>
-              </ul>
-              <Button variant="outline" className="w-full" size="sm">
-                Start Free
-              </Button>
-            </div>
-
-            {/* Basic */}
-            <div className="bg-white rounded-2xl shadow-sm border p-6">
-              <h3 className="text-xl font-bold mb-2">Basic</h3>
-              <div className="mb-6">
-                <span className="text-3xl font-bold">$99</span>
-                <span className="text-slate-600">/month</span>
-              </div>
-              <ul className="space-y-2 mb-6 text-sm">
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-teal-600 flex-shrink-0 mt-0.5" />
-                  <span>Enhanced profile</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-teal-600 flex-shrink-0 mt-0.5" />
-                  <span>Photo gallery (10 photos)</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-teal-600 flex-shrink-0 mt-0.5" />
-                  <span>Video tours</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-teal-600 flex-shrink-0 mt-0.5" />
-                  <span>Inquiry management</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-teal-600 flex-shrink-0 mt-0.5" />
-                  <span>Basic analytics</span>
-                </li>
-              </ul>
-              <Button className="w-full bg-teal-600 hover:bg-teal-700" size="sm">
-                Upgrade
-              </Button>
-            </div>
-
-            {/* Premium */}
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl shadow-sm border-2 border-amber-500 p-6">
-              <h3 className="text-xl font-bold mb-2">Premium</h3>
-              <div className="mb-6">
-                <span className="text-3xl font-bold">$249</span>
-                <span className="text-slate-600">/month</span>
-              </div>
-              <ul className="space-y-2 mb-6 text-sm">
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>Premium profile</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>Unlimited photos</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>Featured placement</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>Priority in AI recommendations</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>Advanced analytics</span>
-                </li>
-                <li className="flex gap-2">
-                  <Check className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>Verified badge</span>
-                </li>
-              </ul>
-              <Button className="w-full bg-amber-600 hover:bg-amber-700" size="sm">
-                Go Premium
-              </Button>
-            </div>
+            ))}
           </div>
         </div>
+      </section>
 
-        {/* Token Usage */}
-        <div className="mt-16 bg-slate-50 rounded-2xl p-8 max-w-3xl mx-auto">
-          <h3 className="text-xl font-bold mb-4 text-center">How Tokens Work (Free Plan)</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-3xl font-bold text-teal-600 mb-1">1</div>
-              <div className="text-sm text-slate-600">Send message</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-teal-600 mb-1">2</div>
-              <div className="text-sm text-slate-600">Get recommendations</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-teal-600 mb-1">3</div>
-              <div className="text-sm text-slate-600">Compare schools</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-teal-600 mb-1">5</div>
-              <div className="text-sm text-slate-600">Deep analysis</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-teal-600 mb-1">2</div>
-              <div className="text-sm text-slate-600">Export PDF</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-teal-600 mb-1">0</div>
-              <div className="text-sm text-slate-600">View profiles</div>
-            </div>
-          </div>
+      {/* CTA Section */}
+      <section className="py-20 sm:py-28 bg-gradient-to-r from-teal-50 to-amber-50 border-t border-b border-slate-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl font-bold text-slate-900 mb-6">Ready to Get Started?</h2>
+          <p className="text-xl text-slate-700 mb-8">
+            Your free consultation is waiting. No credit card required.
+          </p>
+          <Link to={createPageUrl('Consultant')}>
+            <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-7 text-lg">
+              Start Your Free Consultation
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
         </div>
-      </div>
+      </section>
 
       <Footer />
     </div>
