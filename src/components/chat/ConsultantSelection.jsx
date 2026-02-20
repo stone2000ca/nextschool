@@ -1,83 +1,135 @@
 import { Button } from "@/components/ui/button";
-import { Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function ConsultantSelection({ onSelectConsultant }) {
+  const consultants = [
+    {
+      name: 'Jackie',
+      title: 'The Warm & Supportive Consultant',
+      tagline: 'Empathetic, encouraging, and emotionally attuned',
+      description: 'Jackie excels at understanding family dynamics and emotional needs. She validates concerns, celebrates strengths, and makes families feel truly heard throughout the school search journey.',
+      color: 'from-rose-500 to-pink-500',
+      avatar: '👩‍🏫'
+    },
+    {
+      name: 'Liam',
+      title: 'The Direct & Strategic Consultant',
+      tagline: 'Data-driven, efficient, and results-oriented',
+      description: 'Liam cuts through the noise with clear analysis and strategic recommendations. He focuses on matching your priorities with school data and gets you to the best fit quickly.',
+      color: 'from-blue-500 to-cyan-500',
+      avatar: '👨‍💼'
+    }
+  ];
+
   return (
-    <div className="h-full flex flex-col items-center justify-center p-8 bg-gradient-to-b from-slate-50 to-white">
-      <div className="max-w-2xl w-full">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+      <div className="max-w-5xl w-full">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Users className="h-8 w-8 text-teal-600" />
-            <h1 className="text-3xl font-bold text-slate-900">Meet Your Consultant</h1>
-          </div>
-          <p className="text-lg text-slate-600">
-            Choose the consultant style that feels right for your family
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-bold text-white mb-4">
+            Meet Your Consultant
+          </h1>
+          <p className="text-xl text-slate-300">
+            Choose the consultant style that works best for your family
           </p>
         </div>
 
         {/* Consultant Cards */}
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          {/* Jackie Card */}
-          <div className="bg-white rounded-2xl border-2 border-slate-200 p-8 hover:border-teal-400 hover:shadow-lg transition-all cursor-pointer"
-               onClick={() => onSelectConsultant('Jackie')}>
-            <div className="flex flex-col items-center text-center">
-              {/* Avatar Placeholder */}
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center mb-4 border-3 border-rose-200">
-                <span className="text-4xl font-bold text-rose-600">J</span>
-              </div>
+        <div className="grid md:grid-cols-2 gap-8">
+          {consultants.map((consultant) => (
+            <div
+              key={consultant.name}
+              className="group relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-700 to-slate-600 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100" />
               
-              <h2 className="text-2xl font-bold text-slate-900 mb-1">Jackie</h2>
-              <p className="text-teal-600 font-semibold mb-4">Warm & Supportive</p>
-              
-              <p className="text-slate-600 italic mb-6">
-                "I'll help you find a school where your child feels at home."
-              </p>
-              
-              <Button 
-                className="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectConsultant('Jackie');
-                }}
-              >
-                Talk to Jackie
-              </Button>
-            </div>
-          </div>
+              <div className="relative bg-slate-800 border border-slate-700 rounded-2xl p-8 hover:border-slate-500 transition-all h-full flex flex-col">
+                {/* Consultant Avatar & Name */}
+                <div className="mb-6">
+                  <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${consultant.color} flex items-center justify-center text-4xl mb-4 shadow-lg`}>
+                    {consultant.avatar}
+                  </div>
+                  <h2 className="text-3xl font-bold text-white mb-1">
+                    {consultant.name}
+                  </h2>
+                  <p className="text-sm font-semibold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-pink-400">
+                    {consultant.title}
+                  </p>
+                </div>
 
-          {/* Liam Card */}
-          <div className="bg-white rounded-2xl border-2 border-slate-200 p-8 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer"
-               onClick={() => onSelectConsultant('Liam')}>
-            <div className="flex flex-col items-center text-center">
-              {/* Avatar Placeholder */}
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-slate-100 flex items-center justify-center mb-4 border-3 border-blue-200">
-                <span className="text-4xl font-bold text-blue-600">L</span>
+                {/* Tagline */}
+                <div className="mb-4">
+                  <p className="text-slate-400 italic text-sm">
+                    "{consultant.tagline}"
+                  </p>
+                </div>
+
+                {/* Description */}
+                <p className="text-slate-300 mb-8 flex-1 leading-relaxed">
+                  {consultant.description}
+                </p>
+
+                {/* Traits */}
+                <div className="mb-8 grid grid-cols-2 gap-2">
+                  {consultant.name === 'Jackie' ? (
+                    <>
+                      <div className="bg-slate-700/50 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Style</p>
+                        <p className="text-sm font-medium text-white">Warm & Encouraging</p>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Strength</p>
+                        <p className="text-sm font-medium text-white">Emotional Intelligence</p>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Pace</p>
+                        <p className="text-sm font-medium text-white">Thoughtful & Thorough</p>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Best For</p>
+                        <p className="text-sm font-medium text-white">Families in Transition</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-slate-700/50 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Style</p>
+                        <p className="text-sm font-medium text-white">Direct & Clear</p>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Strength</p>
+                        <p className="text-sm font-medium text-white">Strategic Analysis</p>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Pace</p>
+                        <p className="text-sm font-medium text-white">Efficient & Focused</p>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Best For</p>
+                        <p className="text-sm font-medium text-white">Goal-Driven Families</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* CTA Button */}
+                <Button
+                  onClick={() => onSelectConsultant(consultant.name)}
+                  className={`w-full bg-gradient-to-r ${consultant.color} hover:shadow-lg hover:shadow-${consultant.color.split('-')[1]}-500/50 text-white font-semibold py-6 transition-all`}
+                >
+                  Meet {consultant.name}
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
               </div>
-              
-              <h2 className="text-2xl font-bold text-slate-900 mb-1">Liam</h2>
-              <p className="text-blue-600 font-semibold mb-4">Direct & Strategic</p>
-              
-              <p className="text-slate-600 italic mb-6">
-                "I'll help you find the best fit based on what matters most."
-              </p>
-              
-              <Button 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectConsultant('Liam');
-                }}
-              >
-                Talk to Liam
-              </Button>
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* Info Text */}
-        <div className="text-center text-sm text-slate-500">
-          <p>Both consultants have access to the same schools and expertise. Choose the style that feels right for you.</p>
+        {/* Footer Note */}
+        <div className="mt-16 text-center">
+          <p className="text-slate-400 text-sm">
+            You can also switch consultants anytime in a new conversation
+          </p>
         </div>
       </div>
     </div>
