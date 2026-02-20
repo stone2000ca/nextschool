@@ -70,30 +70,42 @@ export default function AdminSchools() {
   };
 
   const handleEnrichAllSchools = async () => {
-    const confirmEnrich = confirm('Enrich all schools? This may take several minutes and will process each school sequentially.');
+    const confirmEnrich = confirm('Enrich all schools? This may take several minutes and will process in batches of 5.');
     if (!confirmEnrich) return;
 
     setEnrichingAll(true);
     setEnrichmentProgress({ current: 0, total: schools.length });
 
-    for (let i = 0; i < schools.length; i++) {
-      const school = schools[i];
-      setEnrichmentProgress({ current: i + 1, total: schools.length });
-      
-      if (!school.website) {
-        console.warn(`Skipping ${school.name} - no website`);
-        continue;
-      }
+    const BATCH_SIZE = 5;
+    const BATCH_DELAY = 2000; // 2 second delay between batches
 
-      try {
-        await base44.functions.invoke('enrichSchoolData', { schoolId: school.id });
-      } catch (error) {
-        console.error(`Failed to enrich ${school.name}:`, error);
+    for (let i = 0; i < schools.length; i += BATCH_SIZE) {
+      const batch = schools.slice(i, i + BATCH_SIZE);
+      
+      // Process batch in parallel
+      const batchPromises = batch.map(async (school) => {
+        const schoolIndex = schools.indexOf(school) + 1;
+        setEnrichmentProgress({ current: schoolIndex, total: schools.length });
+        
+        try {
+          await base44.functions.invoke('enrichSchoolData', { schoolId: school.id });
+          console.log(`✓ Enriched ${school.name}`);
+        } catch (error) {
+          console.error(`✗ Failed to enrich ${school.name}:`, error);
+        }
+      });
+
+      await Promise.all(batchPromises);
+      
+      // Delay between batches to prevent timeouts
+      if (i + BATCH_SIZE < schools.length) {
+        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
       }
     }
 
     toast.success('All schools enrichment complete');
     setEnrichingAll(false);
+    setEnrichmentProgress({ current: 0, total: 0 });
     loadSchools();
   };
 
