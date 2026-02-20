@@ -379,9 +379,18 @@ export default function Consultant() {
         } : null
       });
 
+      // Handle onboarding response
+      if (response.data.onboardingPhase && response.data.onboardingComplete === false) {
+        // Still in onboarding - stay in welcome/chat view, don't show schools
+        setCurrentView('welcome');
+      }
+      // Handle onboarding complete - transition to school search
+      else if (response.data.onboardingComplete === true && response.data.shouldShowSchools) {
+        setCurrentView('schools');
+      }
       // BUG FIX #1 & #6: Improved view switching logic
       // Handle comparison intent first
-      if (response.data.intent === 'COMPARE_SCHOOLS' && response.data.schools?.length >= 2) {
+      else if (response.data.intent === 'COMPARE_SCHOOLS' && response.data.schools?.length >= 2) {
         setPreviousSearchResults(schools);
         setComparisonData(response.data.schools);
         setCurrentView('comparison-table');
