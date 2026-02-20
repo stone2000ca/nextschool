@@ -59,6 +59,7 @@ import SchoolProfile from './pages/SchoolProfile';
 import SchoolAdminDashboard from './pages/SchoolAdminDashboard';
 import HowItWorks from './pages/HowItWorks';
 import About from './pages/About';
+import ForSchools from './pages/ForSchools';
 
 
 export const PAGES = {
@@ -74,6 +75,7 @@ export const PAGES = {
     "SchoolAdminDashboard": SchoolAdminDashboard,
     "HowItWorks": HowItWorks,
     "About": About,
+    "ForSchools": ForSchools,
 }
 
 export const pagesConfig = {
