@@ -89,7 +89,7 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
           </div>
           <div>
             <div className="text-slate-600 mb-1">Grades</div>
-            <div className="font-medium">{school.gradesServed}</div>
+            <div className="font-medium">{formatGradeRange(school.lowestGrade, school.highestGrade)}</div>
           </div>
           <div>
             <div className="text-slate-600 mb-1">Tuition</div>
