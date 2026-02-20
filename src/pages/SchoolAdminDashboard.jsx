@@ -6,6 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink, Settings, Edit, Image, FileText, User, Menu, X } from 'lucide-react';
 import ProfileCompletenessRing from '@/components/school-admin/ProfileCompletenessRing';
 import EditProfileForm from '@/components/school-admin/EditProfileForm';
+import PhotosMediaSection from '@/components/school-admin/PhotosMediaSection';
+import AdmissionsSection from '@/components/school-admin/AdmissionsSection';
+import AccountSection from '@/components/school-admin/AccountSection';
 import { createPageUrl } from '../utils';
 
 export default function SchoolAdminDashboard() {
