@@ -20,6 +20,13 @@ Deno.serve(async (req) => {
         shortlistedSchools
       } = await req.json();
 
+      // HALLUCINATION FIX: If no schools, return "no matches" message immediately without AI call
+      if (!schools || schools.length === 0) {
+        return Response.json({
+          message: "I don't have any schools in our database that match your criteria yet. Our database is growing - please try a nearby city or broader search criteria."
+        });
+      }
+
       const context = conversationContext || {};
       const history = conversationHistory || [];
 
