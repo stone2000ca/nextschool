@@ -182,7 +182,17 @@ Deno.serve(async (req) => {
       
       console.log('schools found:', schools.length);
       
-      matchingSchools = schools.slice(0, 20); // Show up to 20 results
+      // Deduplicate by school name (keep first occurrence)
+      const seen = new Set();
+      const deduplicated = [];
+      for (const school of schools) {
+        if (!seen.has(school.name)) {
+          seen.add(school.name);
+          deduplicated.push(school);
+        }
+      }
+      
+      matchingSchools = deduplicated.slice(0, 20); // Show up to 20 results
     }
 
     // STEP 3: Generate AI response (can timeout)

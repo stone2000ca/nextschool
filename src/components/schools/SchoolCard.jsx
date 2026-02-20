@@ -20,6 +20,16 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
 
   const badge = getRegionBadge(school.region);
 
+  // Format grade range to show PK/K instead of -1/0
+  const formatGradeRange = (gradesServed, lowestGrade, highestGrade) => {
+    if (gradesServed && gradesServed !== '-1-12' && gradesServed !== '0-12') {
+      return gradesServed;
+    }
+    const low = lowestGrade === -1 ? 'PK' : lowestGrade === 0 ? 'K' : lowestGrade;
+    const high = highestGrade;
+    return `${low}-${high}`;
+  };
+
   return (
     <Card 
       className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group school-card"
@@ -89,7 +99,7 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
 
           <div className="flex flex-wrap gap-2 mb-3 text-xs">
             <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md">
-              {school.gradesServed}
+              {formatGradeRange(school.gradesServed, school.lowestGrade, school.highestGrade)}
             </span>
             <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md">
               {school.curriculumType}
