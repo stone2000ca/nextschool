@@ -6,7 +6,7 @@ export function isClearbitUrl(url) {
   return url.includes('clearbit.com') || url.includes('logo.clearbit');
 }
 
-export function HeaderPhotoDisplay({ headerPhotoUrl, heroImage, schoolName, height = 'h-96' }) {
+export function HeaderPhotoDisplay({ headerPhotoUrl, heroImage, schoolName = '', height = 'h-96' }) {
   const [showFallback, setShowFallback] = useState(false);
   
   const isHeaderPhotoClearbit = isClearbitUrl(headerPhotoUrl);
