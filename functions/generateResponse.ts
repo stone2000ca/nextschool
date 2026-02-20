@@ -23,33 +23,38 @@ Deno.serve(async (req) => {
 
       // Handle GENERATE_BRIEF intent
       if (intent === 'GENERATE_BRIEF' && familyProfileData) {
-        const { childName, childGrade, locationArea, budgetRange, maxTuition, interests, priorities, dealbreakers } = familyProfileData;
+        const { childName, childGrade, locationArea, budgetRange, maxTuition, interests, priorities, dealbreakers, currentSituation, academicStrengths } = familyProfileData;
         
-        const briefPrompt = `You are a warm, empathetic education consultant. Generate "The Brief" - a reflection message that mirrors back what you heard from a parent about their child and family needs.
+        const briefPrompt = `You are a warm, empathetic education consultant. Generate "The Brief" - a reflection message that mirrors back EXACTLY what you heard from a parent about their child and family needs.
 
-FAMILY PROFILE:
+CRITICAL: Use ONLY the actual data provided below. DO NOT invent or hallucinate any details that are not listed.
+
+ACTUAL FAMILY DATA:
 - Child's Name: ${childName || 'Not shared'}
-- Grade: ${childGrade ? `Grade ${childGrade}` : 'Not specified'}
-- Location: ${locationArea || 'Not specified'}
-- Budget: ${budgetRange || 'Not specified'}${maxTuition ? ` (max $${maxTuition}/year)` : ''}
+- Grade Level: ${childGrade ? `Grade ${childGrade}` : 'Not specified'}
+- Location/Area: ${locationArea || 'Not specified'}
+- Current School Situation: ${currentSituation || 'Not shared'}
+- Child's Academic Strengths: ${academicStrengths?.length > 0 ? academicStrengths.join(', ') : 'Not specified'}
 - Child's Interests: ${interests?.length > 0 ? interests.join(', ') : 'Not specified'}
 - Family Priorities: ${priorities?.length > 0 ? priorities.join(', ') : 'Not specified'}
+- Budget Range: ${budgetRange || 'Not specified'}${maxTuition ? ` (up to $${maxTuition}/year)` : ''}
 - Dealbreakers: ${dealbreakers?.length > 0 ? dealbreakers.join(', ') : 'None mentioned'}
 
-GENERATE THE BRIEF with these components:
-1. Warm opening: Start with "Here's what I'm taking away..." - sound like a helpful consultant who genuinely understands.
-2. Mirror what you heard: Reflect key details about the child's personality, strengths, and what matters to the family.
-3. Read between the lines: Identify any unstated needs or deeper aspirations from what they shared.
-4. Honest constraint flagging: Set realistic expectations about how many schools might match (use language like "Given these parameters..." or "At this budget in this area..."). Be honest but encouraging.
-5. Confirmation request: End with "Does that feel right? Anything I'm missing or that needs adjustment?"
+GENERATE THE BRIEF:
+1. Warm opening: "Here's what I'm taking away from what you've shared..."
+2. Reflect back the EXACT details they mentioned - use their words when possible (e.g., if they said "art and drama" say "art and drama", not "STEM").
+3. Acknowledge what you understand about their family's needs and constraints.
+4. Set realistic expectations: "Given a budget of $${maxTuition || budgetRange} in the ${locationArea} area, here's what we're working with..."
+5. End with: "Does that match what you're looking for? Anything I'm missing or that needs adjustment?"
 
-CRITICAL RULES:
-- NO school names - this is a reflection moment, not recommendations yet.
-- Keep it concise but warm - 2-3 paragraphs max.
-- Sound empathetic and collaborative, not clinical.
-- If any key info is missing, gently acknowledge it without pressure.
-
-Example tone: "Based on what you've shared about [Child's Name], I'm picturing a [personality type] student who thrives when [from interests/strengths]. Your family seems to value [from priorities], which is wonderful..."`;
+ABSOLUTE RULES:
+- ONLY reflect data they actually provided. NO assumptions or hallucination.
+- If something is blank/not specified, say "You haven't mentioned..." - do NOT invent details.
+- If they said "art and drama" - say "art and drama" (NOT "STEM" or "science and math").
+- If they said "Leaside" - say "Leaside" (NOT "downtown").
+- If they said "$28K" - reflect "$28K" (NOT "$20-25K").
+- NO school names or recommendations - this is reflection only.
+- Keep to 2-3 warm, concise paragraphs.`;
 
         try {
           const briefResult = await base44.integrations.Core.InvokeLLM({
@@ -63,7 +68,7 @@ Example tone: "Based on what you've shared about [Child's Name], I'm picturing a
         } catch (error) {
           console.error('Brief generation error:', error);
           return Response.json({
-            message: `Based on everything you've shared, here's what I'm understanding about ${childName}: they're heading into Grade ${childGrade}, and your family values ${priorities?.length > 0 ? priorities.slice(0, 2).join(' and ') : 'education'}. In the ${locationArea} area with a budget around ${budgetRange}, we're looking at a focused set of options. Does that capture it?`
+            message: `Here's what I'm taking away: ${childName ? `${childName} is in Grade ${childGrade}` : `Your child is in Grade ${childGrade}`}${currentSituation ? ` and ${currentSituation}` : ''}. Your family is looking in the ${locationArea} area${budgetRange || maxTuition ? ` with a budget of ${maxTuition ? `$${maxTuition}/year` : budgetRange}` : ''}${interests?.length > 0 ? `, and ${childName || 'they'} is interested in ${interests.join(', ')}` : ''}. Does that capture it? Anything I should adjust?`
           });
         }
       }
