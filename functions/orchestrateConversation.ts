@@ -182,6 +182,9 @@ Deno.serve(async (req) => {
         schools = schools.filter(s => s.schoolType !== 'Special Needs');
       }
       
+      // BUG FIX #2: Exclude public schools - only private/independent schools
+      schools = schools.filter(s => s.schoolType !== 'Public');
+      
       console.log('schools found:', schools.length);
       
       // Deduplicate by school name (keep first occurrence)
