@@ -53,6 +53,9 @@ export default function Consultant() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState(null);
   
+  // Limit reached dialog
+  const [limitReachedOpen, setLimitReachedOpen] = useState(false);
+  
   // Progressive loading states
   const [loadingStage, setLoadingStage] = useState(0);
   const loadingStages = [
