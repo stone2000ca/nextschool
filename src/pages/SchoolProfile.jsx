@@ -250,29 +250,37 @@ export default function SchoolProfile() {
                   </Card>
                 )}
 
-                <Card className="p-6">
-                  <h3 className="text-xl font-bold mb-4">Key Facts</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Founded</span>
-                      <span className="font-medium">{school.founded}</span>
+                {(school.founded || school.studentTeacherRatio || school.financialAidAvailable !== null || school.religiousAffiliation) && (
+                  <Card className="p-6">
+                    <h3 className="text-xl font-bold mb-4">Key Facts</h3>
+                    <div className="space-y-3">
+                      {school.founded && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Founded</span>
+                          <span className="font-medium">{school.founded}</span>
+                        </div>
+                      )}
+                      {school.studentTeacherRatio && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Student:Teacher Ratio</span>
+                          <span className="font-medium">{school.studentTeacherRatio}</span>
+                        </div>
+                      )}
+                      {school.financialAidAvailable !== null && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Financial Aid</span>
+                          <span className="font-medium">{school.financialAidAvailable ? 'Available' : 'Not Available'}</span>
+                        </div>
+                      )}
+                      {school.religiousAffiliation && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Religious Affiliation</span>
+                          <span className="font-medium">{school.religiousAffiliation}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Student:Teacher Ratio</span>
-                      <span className="font-medium">{school.studentTeacherRatio}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Financial Aid</span>
-                      <span className="font-medium">{school.financialAidAvailable ? 'Available' : 'Not Available'}</span>
-                    </div>
-                    {school.religiousAffiliation && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-600">Religious Affiliation</span>
-                        <span className="font-medium">{school.religiousAffiliation}</span>
-                      </div>
-                    )}
-                  </div>
-                </Card>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="programs" className="space-y-6">
