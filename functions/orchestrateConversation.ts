@@ -435,6 +435,7 @@ Deno.serve(async (req) => {
           schools: matchingSchools,
           conversationHistory: conversationHistory || [],
           conversationContext: context,
+          consultantName: consultantName,
           userNotes: userNotes || [],
           shortlistedSchools: shortlistedSchools || []
         });
