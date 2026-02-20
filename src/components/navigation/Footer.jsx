@@ -36,7 +36,7 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-semibold text-sm mb-4">LEGAL</h3>
             <Link to={createPageUrl('Privacy')} className="block text-sm hover:text-white transition-colors mb-3">Privacy Policy</Link>
-            <a href="#" className="block text-sm hover:text-white transition-colors">Terms of Service</a>
+            <Link to={createPageUrl('Terms')} className="block text-sm hover:text-white transition-colors">Terms of Service</Link>
           </div>
         </div>
         
