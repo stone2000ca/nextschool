@@ -13,6 +13,103 @@ Deno.serve(async (req) => {
 
     const context = conversationContext || {};
     const msgLower = message.toLowerCase();
+    
+    // STATE MACHINE STATES
+    const STATES = {
+      GREETING: 'GREETING',
+      INTAKE: 'INTAKE',
+      BRIEF: 'BRIEF',
+      BRIEF_EDIT: 'BRIEF_EDIT',
+      SEARCHING: 'SEARCHING',
+      RESULTS: 'RESULTS',
+      COMPARING: 'COMPARING'
+    };
+    
+    // STEP 0: Initialize/retrieve conversation-scoped FamilyProfile
+    let conversationFamilyProfile = null;
+    const conversationId = context.conversationId;
+    
+    if (userId && conversationId) {
+      try {
+        // Try to get conversation-scoped FamilyProfile
+        const profiles = await base44.entities.FamilyProfile.filter({
+          userId,
+          conversationId: conversationId
+        });
+        conversationFamilyProfile = profiles.length > 0 ? profiles[0] : null;
+      } catch (e) {
+        console.error('Failed to fetch conversation-scoped FamilyProfile:', e);
+      }
+    }
+    
+    // STEP 1: ENTITY EXTRACTION - Run BEFORE state machine
+    let extractedData = {};
+    try {
+      const extractionResult = await base44.functions.invoke('extractEntityData', {
+        userMessage: message,
+        conversationHistory: conversationHistory || [],
+        currentProfile: conversationFamilyProfile
+      });
+      extractedData = extractionResult.data?.extracted || {};
+    } catch (e) {
+      console.warn('Entity extraction failed, continuing:', e);
+    }
+    
+    // Merge extracted data into conversation-scoped profile (without overwriting existing non-null values)
+    if (conversationFamilyProfile && Object.keys(extractedData).length > 0) {
+      for (const [key, value] of Object.entries(extractedData)) {
+        if (value !== null && value !== undefined && !conversationFamilyProfile[key]) {
+          conversationFamilyProfile[key] = value;
+        }
+      }
+      // Update profile in DB
+      try {
+        conversationFamilyProfile = await base44.entities.FamilyProfile.update(conversationFamilyProfile.id, extractedData);
+      } catch (e) {
+        console.error('Failed to update FamilyProfile with extracted data:', e);
+      }
+    }
+    
+    // STEP 2: DETERMINE CURRENT STATE
+    let currentState = context.state || STATES.GREETING;
+    
+    // First message after greeting → move to INTAKE
+    if (currentState === STATES.GREETING && conversationHistory && conversationHistory.length > 0) {
+      currentState = STATES.INTAKE;
+    }
+    
+    // Check if we have minimum intake data (grade + location + at least one priority)
+    const hasMinimumData = conversationFamilyProfile && 
+      conversationFamilyProfile.childGrade !== null &&
+      conversationFamilyProfile.locationArea &&
+      (conversationFamilyProfile.interests?.length > 0 || conversationFamilyProfile.priorities?.length > 0);
+    
+    // Safety valve: 4+ parent messages in intake without enough data → force BRIEF
+    const parentMessageCount = conversationHistory?.filter(m => m.role === 'user').length || 0;
+    const shouldForceBrief = currentState === STATES.INTAKE && parentMessageCount >= 4 && conversationFamilyProfile;
+    
+    // INTAKE → BRIEF transition
+    if ((currentState === STATES.INTAKE && hasMinimumData) || shouldForceBrief) {
+      currentState = STATES.BRIEF;
+    }
+    
+    // BRIEF → SEARCHING transition (if parent confirms)
+    if (currentState === STATES.BRIEF) {
+      const msgLowerTrim = msgLower.trim();
+      const isConfirming = /\b(exactly right|sounds good|yes|proceed|start search|that's right|thats right|correct|perfect|great|looks good|go ahead|let's go|let's search|sounds perfect)\b/i.test(msgLowerTrim);
+      const isAdjusting = /\b(adjust|change|edit|not right|add context|add more|wait|hold on|actually|let me|different)\b/i.test(msgLowerTrim);
+      
+      if (isConfirming) {
+        currentState = STATES.SEARCHING;
+      } else if (isAdjusting) {
+        currentState = STATES.BRIEF_EDIT;
+      }
+    }
+    
+    console.log(`STATE MACHINE: ${context.state || 'INIT'} → ${currentState}, extracted: ${Object.keys(extractedData).join(',')}`);
+    
+    // Update context with new state
+    context.state = currentState;
 
     // STEP 1: Detect intent (fast string parsing)
     const intentResult = await base44.functions.invoke('detectIntent', {
