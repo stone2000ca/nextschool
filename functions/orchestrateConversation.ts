@@ -84,58 +84,66 @@ Deno.serve(async (req) => {
     // Fetch matching schools if needed
     let matchingSchools = [];
     
-    // COMPARE SCHOOLS - Extract school names and find them
+    // COMPARE SCHOOLS - Word-based scoring system
     if (isCompareIntent) {
-      // Helper function to normalize text by stripping periods and apostrophes
-      const normalize = (text) => text.replace(/[.']/g, '').toLowerCase();
+      // Remove comparison keywords and extract words
+      let cleanedMessage = message.toLowerCase()
+        .replace(/^compare\s+/i, '')
+        .replace(/\s+(with|and|vs|versus|to|side\s*by\s*side)\s+/gi, ' ')
+        .trim();
       
-      // Extract potential school names from the message
-      let extractedNames = [];
+      const messageWords = cleanedMessage.split(/\s+/).filter(w => w.length > 2);
       
-      // Split on comparison keywords: with, and, vs, versus, to
-      let remainingText = message.toLowerCase();
-      
-      // Remove "compare" prefix if present
-      remainingText = remainingText.replace(/^compare\s+/i, '');
-      
-      // Split on any of the comparison keywords
-      const splitRegex = /\s+(with|and|vs|versus|to)\s+/i;
-      const parts = remainingText.split(splitRegex);
-      
-      // Extract non-keyword parts as school names
-      for (let i = 0; i < parts.length; i++) {
-        const part = parts[i].trim();
-        // Skip if it's a keyword or empty
-        if (part && !['with', 'and', 'vs', 'versus', 'to'].includes(part)) {
-          extractedNames.push(part);
-        }
-      }
-      
-      // Try fuzzy matching against currentSchools first with punctuation normalization
-      if (currentSchools && currentSchools.length > 0 && extractedNames.length > 0) {
-        for (const searchTerm of extractedNames) {
-          const normalizedSearch = normalize(searchTerm);
-          const found = currentSchools.find(s => {
-            const normalizedSchoolName = normalize(s.name);
-            return normalizedSchoolName.includes(normalizedSearch);
-          });
-          if (found && !matchingSchools.some(ms => ms.id === found.id)) {
-            matchingSchools.push(found);
+      // Score each school in currentSchools
+      if (currentSchools && currentSchools.length > 0) {
+        const scored = currentSchools.map(school => {
+          const schoolWords = school.name.toLowerCase().split(/\s+/);
+          let matchCount = 0;
+          
+          for (const msgWord of messageWords) {
+            for (const schoolWord of schoolWords) {
+              if (schoolWord.includes(msgWord) || msgWord.includes(schoolWord)) {
+                matchCount++;
+                break;
+              }
+            }
           }
-        }
+          
+          const score = matchCount / schoolWords.length;
+          return { school, score };
+        });
+        
+        // Take top 2 with score > 0.5
+        const topMatches = scored
+          .filter(s => s.score > 0.5)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 2);
+        
+        matchingSchools = topMatches.map(m => m.school);
       }
       
-      // Fallback: search all schools if not found in currentSchools
-      if (matchingSchools.length < 2 && extractedNames.length > 0) {
-        const allSchools = await base44.asServiceRole.entities.School.filter({});
-        for (const searchTerm of extractedNames) {
-          const normalizedSearch = normalize(searchTerm);
-          const found = allSchools.find(s => {
-            const normalizedSchoolName = normalize(s.name);
-            return normalizedSchoolName.includes(normalizedSearch);
-          });
-          if (found && !matchingSchools.some(ms => ms.id === found.id)) {
-            matchingSchools.push(found);
+      // Fallback: targeted DB search if < 2 found
+      if (matchingSchools.length < 2) {
+        // Split message into potential school name fragments
+        const fragments = cleanedMessage.split(/\s+and\s+|\s+vs\s+|\s+versus\s+/);
+        
+        for (const fragment of fragments) {
+          if (fragment.trim().length > 3 && matchingSchools.length < 2) {
+            try {
+              const results = await base44.asServiceRole.entities.School.filter({
+                name: { $regex: fragment.trim(), $options: 'i' }
+              });
+              
+              // Add first match that's not already in matchingSchools
+              for (const school of results.slice(0, 3)) {
+                if (!matchingSchools.some(ms => ms.id === school.id)) {
+                  matchingSchools.push(school);
+                  if (matchingSchools.length >= 2) break;
+                }
+              }
+            } catch (e) {
+              console.error('DB search fragment error:', e);
+            }
           }
         }
       }
