@@ -62,24 +62,15 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
       `}</style>
       <div onClick={onViewDetails} className="flex-1 flex flex-col">
         {/* Image */}
-        <div className="relative h-48 bg-slate-200 overflow-hidden">
-          {school.headerPhotoUrl ? (
-            <img 
-              src={school.headerPhotoUrl} 
-              alt={school.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        <div className="relative h-48 bg-slate-200 overflow-hidden group-hover:scale-105 transition-transform duration-300">
+          <div className="absolute inset-0">
+            <HeaderPhotoDisplay 
+              headerPhotoUrl={school.headerPhotoUrl}
+              heroImage={school.heroImage}
+              schoolName={school.name}
+              height="h-48"
             />
-          ) : school.heroImage ? (
-            <img 
-              src={school.heroImage} 
-              alt={school.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-teal-100 to-teal-200">
-              <Users className="h-16 w-16 text-teal-400" />
-            </div>
-          )}
+          </div>
           {/* Region Badge */}
           <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
             {badge.emoji} {school.region}
