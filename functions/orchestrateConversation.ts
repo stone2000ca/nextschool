@@ -11,6 +11,31 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { message, conversationHistory, conversationContext, region, userId, currentSchools, userNotes, shortlistedSchools, userLocation } = await req.json();
 
+    // STEP 1: Check for onboarding - fetch FamilyProfile
+    if (userId) {
+      try {
+        const familyProfiles = await base44.entities.FamilyProfile.filter({ userId });
+        const familyProfile = familyProfiles.length > 0 ? familyProfiles[0] : null;
+
+        // If onboarding is not complete, delegate to onboardUser
+        if (!familyProfile || !familyProfile.onboardingComplete) {
+          const onboardResult = await base44.functions.invoke('onboardUser', {
+            message,
+            userId,
+            conversationHistory: conversationHistory || [],
+            familyProfileData: familyProfile
+          });
+          return Response.json(onboardResult.data);
+        }
+        
+        // If onboarding is complete, enhance searchSchools with FamilyProfile defaults
+        // This will be used later in the intent-based search flow
+      } catch (error) {
+        console.error('Onboarding check error:', error);
+        // Continue with normal flow if error
+      }
+    }
+
     const context = conversationContext || {};
     const msgLower = message.toLowerCase();
 
