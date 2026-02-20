@@ -62,7 +62,13 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
       <div onClick={onViewDetails} className="flex-1 flex flex-col">
         {/* Image */}
         <div className="relative h-48 bg-slate-200 overflow-hidden">
-          {school.heroImage ? (
+          {school.headerPhotoUrl ? (
+            <img 
+              src={school.headerPhotoUrl} 
+              alt={school.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : school.heroImage ? (
             <img 
               src={school.heroImage} 
               alt={school.name}
@@ -81,7 +87,20 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
 
         {/* Content */}
         <div className="p-4 flex-1 flex flex-col">
-          <h3 className="font-bold text-lg mb-1 line-clamp-2 min-h-[3.5rem]">{school.name}</h3>
+          <div className="flex items-center gap-2 mb-2">
+            {school.logoUrl ? (
+              <img 
+                src={school.logoUrl} 
+                alt={school.name}
+                className="h-5 w-5 rounded object-cover"
+              />
+            ) : (
+              <div className="h-5 w-5 rounded bg-teal-600 text-white text-xs font-bold flex items-center justify-center">
+                {school.name.charAt(0)}
+              </div>
+            )}
+            <h3 className="font-bold text-lg line-clamp-1">{school.name}</h3>
+          </div>
           <div className="flex items-center gap-1 text-sm text-slate-600 mb-3">
             <MapPin className="h-3 w-3" />
             <span className="line-clamp-1">{school.city}, {school.provinceState}</span>

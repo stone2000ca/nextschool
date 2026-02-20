@@ -1,3 +1,5 @@
+import { Sparkles } from 'lucide-react';
+
 export default function ComparisonView({ schools, onBack }) {
   if (!schools || schools.length === 0) {
     return (
@@ -35,13 +37,58 @@ export default function ComparisonView({ schools, onBack }) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="text-left p-4 font-semibold text-sm text-slate-700 sticky left-0 bg-slate-50 z-10">
+                <tr className="bg-white border-b border-slate-200">
+                  <th className="text-left p-4 font-semibold text-sm text-slate-700 sticky left-0 bg-white z-10 w-32">
                     Criteria
                   </th>
                   {schools.map((school) => (
-                    <th key={school.id} className="text-left p-4 font-semibold text-sm text-slate-900 min-w-[200px]">
-                      {school.name}
+                    <th key={school.id} className="text-left p-0 font-semibold text-sm text-slate-900 min-w-[250px] bg-white">
+                      <div className="border-l border-slate-200">
+                        {/* Header Photo */}
+                        <div className="relative h-32 bg-slate-100 overflow-hidden">
+                          {school.headerPhotoUrl ? (
+                            <img 
+                              src={school.headerPhotoUrl} 
+                              alt={school.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                              <Sparkles className="h-8 w-8 text-slate-400" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Logo and Name */}
+                        <div className="p-3 border-b border-slate-200">
+                          <div className="flex items-center gap-2 mb-2">
+                            {school.logoUrl ? (
+                              <img 
+                                src={school.logoUrl} 
+                                alt={school.name}
+                                className="h-6 w-6 rounded object-cover"
+                              />
+                            ) : (
+                              <div className="h-6 w-6 rounded bg-teal-600 text-white text-xs font-bold flex items-center justify-center">
+                                {school.name.charAt(0)}
+                              </div>
+                            )}
+                            <span className="text-xs font-semibold text-slate-900 line-clamp-2">{school.name}</span>
+                          </div>
+                        </div>
+
+                        {/* Highlights */}
+                        {school.highlights && school.highlights.length > 0 && (
+                          <div className="p-3 border-b border-slate-200 bg-teal-50">
+                            {school.highlights.slice(0, 3).map((highlight, idx) => (
+                              <div key={idx} className="flex gap-2 mb-1.5 last:mb-0">
+                                <Sparkles className="h-3 w-3 text-teal-600 flex-shrink-0 mt-0.5" />
+                                <span className="text-xs text-teal-900 leading-snug">{highlight}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </th>
                   ))}
                 </tr>
@@ -53,7 +100,7 @@ export default function ComparisonView({ schools, onBack }) {
                       {row.label}
                     </td>
                     {schools.map((school) => (
-                      <td key={school.id} className="p-4 text-sm text-slate-600">
+                      <td key={school.id} className="p-4 text-sm text-slate-600 border-l border-slate-200">
                         {row.key(school)}
                       </td>
                     ))}

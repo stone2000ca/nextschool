@@ -113,7 +113,13 @@ export default function SchoolProfile() {
 
       {/* Hero Section */}
       <div className="relative h-96 bg-slate-200">
-        {school.heroImage ? (
+        {school.headerPhotoUrl ? (
+          <img 
+            src={school.headerPhotoUrl} 
+            alt={school.name}
+            className="w-full h-full object-cover"
+          />
+        ) : school.heroImage ? (
           <img 
             src={school.heroImage} 
             alt={school.name}
@@ -130,7 +136,16 @@ export default function SchoolProfile() {
             <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-3 ${badge.color}`}>
               {badge.emoji} {school.region}
             </div>
-            <h1 className="text-4xl font-bold mb-2">{school.name}</h1>
+            <div className="flex items-center gap-3 mb-2">
+              {school.logoUrl && (
+                <img 
+                  src={school.logoUrl} 
+                  alt={school.name}
+                  className="h-12 w-12 rounded object-cover bg-white/20"
+                />
+              )}
+              <h1 className="text-4xl font-bold">{school.name}</h1>
+            </div>
             <div className="flex items-center gap-4 text-sm">
               <span className="flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
