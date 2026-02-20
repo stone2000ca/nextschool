@@ -386,8 +386,18 @@ export default function Consultant() {
         } : null
       });
 
+      // Update onboarding phase from response
+      if (response.data.onboardingPhase) {
+        setOnboardingPhase(response.data.onboardingPhase);
+      }
+
+      // Handle BRIEF_DELIVERY state - no schools shown
+      if (response.data.onboardingPhase === 'BRIEF_DELIVERY') {
+        setCurrentView('brief-review');
+        setSchools([]);
+      }
       // FIX #3: First priority - if schools are returned, display them
-      if (response.data.schools && response.data.schools.length > 0) {
+      else if (response.data.schools && response.data.schools.length > 0) {
         // Reorder schools to match the order mentioned in AI response
         const aiResponse = response.data.message;
         const orderedSchools = [...response.data.schools];
@@ -424,14 +434,10 @@ export default function Consultant() {
         setComparisonData(response.data.schools);
         setCurrentView('comparison-table');
       }
-      // Handle onboarding response
+      // Handle onboarding response (still in intake)
       else if (response.data.onboardingPhase && response.data.onboardingComplete === false) {
         // Still in onboarding - stay in welcome/chat view, don't show schools
         setCurrentView('welcome');
-      }
-      // Handle onboarding complete
-      else if (response.data.onboardingComplete === true) {
-        setCurrentView('schools');
       }
       else {
         // No schools found - keep welcome or previous view
