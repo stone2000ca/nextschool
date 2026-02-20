@@ -25,6 +25,8 @@ export default function Consultant() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [selectedConsultant, setSelectedConsultant] = useState(null);
+  const [showResponseChips, setShowResponseChips] = useState(false);
   
   // View states
   const [currentView, setCurrentView] = useState('welcome');
