@@ -144,7 +144,7 @@ async function performSearch(req) {
     // Apply city filter (if no aliases matched) - FIX #2: Also filter by distance if city is mentioned
     if (city && aliasedCities.length === 0) {
       const cityLower = city.toLowerCase().trim();
-      schools = schools.filter(s => s.city?.toLowerCase() === cityLower);
+      schools = schools.filter(s => s.city?.toLowerCase().trim() === cityLower);
       
       // FIX #2: If user mentions a location, apply 50km radius filter
       // First calculate distances for all schools if not already done
