@@ -21,6 +21,53 @@ Deno.serve(async (req) => {
         familyProfileData
       } = await req.json();
 
+      // Handle GENERATE_BRIEF intent
+      if (intent === 'GENERATE_BRIEF' && familyProfileData) {
+        const { childName, childGrade, locationArea, budgetRange, maxTuition, interests, priorities, dealbreakers } = familyProfileData;
+        
+        const briefPrompt = `You are a warm, empathetic education consultant. Generate "The Brief" - a reflection message that mirrors back what you heard from a parent about their child and family needs.
+
+FAMILY PROFILE:
+- Child's Name: ${childName || 'Not shared'}
+- Grade: ${childGrade ? `Grade ${childGrade}` : 'Not specified'}
+- Location: ${locationArea || 'Not specified'}
+- Budget: ${budgetRange || 'Not specified'}${maxTuition ? ` (max $${maxTuition}/year)` : ''}
+- Child's Interests: ${interests?.length > 0 ? interests.join(', ') : 'Not specified'}
+- Family Priorities: ${priorities?.length > 0 ? priorities.join(', ') : 'Not specified'}
+- Dealbreakers: ${dealbreakers?.length > 0 ? dealbreakers.join(', ') : 'None mentioned'}
+
+GENERATE THE BRIEF with these components:
+1. Warm opening: Start with "Here's what I'm taking away..." - sound like a helpful consultant who genuinely understands.
+2. Mirror what you heard: Reflect key details about the child's personality, strengths, and what matters to the family.
+3. Read between the lines: Identify any unstated needs or deeper aspirations from what they shared.
+4. Honest constraint flagging: Set realistic expectations about how many schools might match (use language like "Given these parameters..." or "At this budget in this area..."). Be honest but encouraging.
+5. Confirmation request: End with "Does that feel right? Anything I'm missing or that needs adjustment?"
+
+CRITICAL RULES:
+- NO school names - this is a reflection moment, not recommendations yet.
+- Keep it concise but warm - 2-3 paragraphs max.
+- Sound empathetic and collaborative, not clinical.
+- If any key info is missing, gently acknowledge it without pressure.
+
+Example tone: "Based on what you've shared about [Child's Name], I'm picturing a [personality type] student who thrives when [from interests/strengths]. Your family seems to value [from priorities], which is wonderful..."`;
+
+        try {
+          const briefResult = await base44.integrations.Core.InvokeLLM({
+            prompt: briefPrompt,
+            add_context_from_internet: false
+          });
+          
+          return Response.json({
+            message: briefResult
+          });
+        } catch (error) {
+          console.error('Brief generation error:', error);
+          return Response.json({
+            message: `Based on everything you've shared, here's what I'm understanding about ${childName}: they're heading into Grade ${childGrade}, and your family values ${priorities?.length > 0 ? priorities.slice(0, 2).join(' and ') : 'education'}. In the ${locationArea} area with a budget around ${budgetRange}, we're looking at a focused set of options. Does that capture it?`
+          });
+        }
+      }
+
       // HALLUCINATION FIX: If no schools, return "no matches" message immediately without AI call
       if (!schools || schools.length === 0) {
         return Response.json({
