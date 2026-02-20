@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, Heart, MapPin, Users, DollarSign, Award, Mail } from "lucide-react";
+import { X, Heart, MapPin, Users, DollarSign, Award, Mail, Phone, Globe2, ExternalLink } from "lucide-react";
 import { createPageUrl } from "../../utils";
 import ContactSchoolModal from './ContactSchoolModal';
+import { HeaderPhotoDisplay, LogoDisplay, isClearbitUrl } from './HeaderPhotoHelper';
 
 export default function SchoolDetail({ school, onClose, onToggleShortlist, isShortlisted }) {
   const [showContactModal, setShowContactModal] = useState(false);
