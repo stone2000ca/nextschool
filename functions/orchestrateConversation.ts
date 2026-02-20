@@ -12,76 +12,18 @@ Deno.serve(async (req) => {
     const { message, conversationHistory, conversationContext, region, userId, currentSchools, userNotes, shortlistedSchools, userLocation } = await req.json();
 
     const context = conversationContext || {};
-    const history = conversationHistory || [];
-    
-    // Get last 10 messages for context
-    const recentMessages = history.slice(-10);
-    const conversationSummary = recentMessages
-      .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
-      .join('\n');
-
-    // SIMPLIFIED INTENT DETECTION - No LLM call
     const msgLower = message.toLowerCase();
-    
-    // Extract intent via keyword matching
-    let intent = 'SHOW_SCHOOLS'; // default
-    let shouldShowSchools = true;
-    let filterCriteria = {};
-    
-    // Compare intent - FIX #4: Trigger comparison table view
-    if (msgLower.includes('compare') || msgLower.includes(' vs ') || msgLower.includes('versus') || 
-        msgLower.includes('side by side') || msgLower.includes('side-by-side')) {
-      intent = 'COMPARE_SCHOOLS';
-      shouldShowSchools = false;
-    }
-    // Narrow down intent
-    else if (currentSchools?.length > 0 && (msgLower.includes('narrow') || msgLower.includes('filter') || msgLower.includes('only show'))) {
-      intent = 'NARROW_DOWN';
-      shouldShowSchools = false;
-    }
-    // Pure greetings
-    else if (/^(hi|hello|hey|greetings|good morning|good afternoon)[\s!.]*$/i.test(msgLower.trim())) {
-      intent = 'NO_ACTION';
-      shouldShowSchools = false;
-    }
-    
-    // Extract filter criteria using regex/string matching
-    // City extraction
-    const cityMatch = message.match(/\b(?:in|near|at|around)\s+([A-Z][a-zA-Z\s]+?)(?:\s*,|\s+(?:ontario|bc|quebec|california|new york)|$)/i) ||
-                     message.match(/\b(Toronto|Vancouver|Montreal|Calgary|Edmonton|Ottawa|Victoria|Winnipeg|Hamilton|Quebec City|London|Kitchener|Halifax|Oakville|Burlington|Richmond Hill|Markham|Mississauga)\b/i);
-    if (cityMatch) filterCriteria.city = cityMatch[1].trim();
-    
-    // Province/State extraction
-    const provinceMatch = message.match(/\b(Ontario|British Columbia|BC|Quebec|Alberta|Manitoba|Saskatchewan|Nova Scotia|New Brunswick|Newfoundland|PEI|California|New York|Texas|Florida)\b/i);
-    if (provinceMatch) filterCriteria.provinceState = provinceMatch[1];
-    
-    // Region extraction
-    const regionMatch = message.match(/\b(Canada|US|USA|United States|Europe|GTA|Greater Toronto|Lower Mainland|Greater Vancouver)\b/i);
-    if (regionMatch) filterCriteria.region = regionMatch[1];
-    
-    // Curriculum extraction
-    const curriculumMatch = message.match(/\b(Montessori|IB|International Baccalaureate|Waldorf|AP|Advanced Placement|Traditional)\b/i);
-    if (curriculumMatch) {
-      let curr = curriculumMatch[1];
-      if (curr.toLowerCase().includes('international')) curr = 'IB';
-      if (curr.toLowerCase().includes('advanced')) curr = 'AP';
-      filterCriteria.curriculumType = curr;
-    }
-    
-    // Grade extraction
-    const gradeMatch = message.match(/\bgrade\s*(\d+)\b/i) || message.match(/\b(\d+)(?:th|st|nd|rd)\s*grade\b/i);
-    if (gradeMatch) filterCriteria.grade = parseInt(gradeMatch[1]);
-    
-    // Specializations
-    if (msgLower.includes('stem')) filterCriteria.specializations = ['STEM'];
-    else if (msgLower.includes('arts')) filterCriteria.specializations = ['Arts'];
-    else if (msgLower.includes('sports')) filterCriteria.specializations = ['Sports'];
-    
-    const intentResponse = { intent, shouldShowSchools, filterCriteria };
 
-    const isCompareIntent = intent === 'COMPARE_SCHOOLS';
+    // STEP 1: Detect intent (fast string parsing)
+    const intentResult = await base44.functions.invoke('detectIntent', {
+      message,
+      conversationHistory: conversationHistory || []
+    });
+    const intentResponse = intentResult.data;
 
-    // Fetch matching schools if needed
+    const isCompareIntent = intentResponse.intent === 'COMPARE_SCHOOLS';
+
+    // STEP 2: Fetch matching schools based on intent
     let matchingSchools = [];
     
     // COMPARE SCHOOLS - Word-based scoring system
@@ -243,56 +185,31 @@ Deno.serve(async (req) => {
       matchingSchools = schools.slice(0, 20); // Show up to 20 results
     }
 
-    // Build school context for AI - ULTRA CONDENSED
-    const schoolsToDescribe = isCompareIntent ? matchingSchools :
-                              (intentResponse.intent === 'NARROW_DOWN' && currentSchools?.length > 0) 
-                                ? currentSchools 
-                                : matchingSchools;
+    // STEP 3: Generate AI response (can timeout)
+    let aiMessage = '';
+    let responseTimedOut = false;
     
-    const schoolContext = schoolsToDescribe.length > 0 
-      ? `\n\nSCHOOLS (${schoolsToDescribe.length}):\n` + 
-        schoolsToDescribe.map(s => 
-          `${s.name}|${s.city}|Gr${s.lowestGrade}-${s.highestGrade}|${s.curriculumType||'Trad'}|${s.tuition||'N/A'}`
-        ).join('\n')
-      : '\n\n[NONE]';
-
-    // Add user context - MINIMAL
-    let userContextText = '';
-    if (shortlistedSchools?.length > 0) {
-      userContextText += `\nShortlist: ${shortlistedSchools.join(', ')}`;
-    }
-
-    // Generate response - ENHANCED PROMPT WITH UX FIXES
-    const responsePrompt = `You are a warm, empathetic education consultant helping parents find private schools for their children.
-
-CRITICAL RULES:
-1. NEVER recommend special needs schools unless the parent explicitly mentions their child has special needs or learning differences
-2. ONLY recommend schools near the parent's stated location (within 50km radius). If there aren't enough local results, tell the parent rather than suggesting distant schools
-3. NEVER auto-shortlist schools. Only mention the shortlist if the parent explicitly asks about it or wants to save a school. DO NOT add schools to shortlist automatically.
-4. When parents express feeling overwhelmed, acknowledge their emotions and provide structured, step-by-step guidance (e.g., "Here are 3 steps to get started...")
-5. Keep responses warm, reassuring, and concise (2-3 sentences when showing schools)
-6. When parent asks to COMPARE schools, simply acknowledge their request briefly (e.g., "Sure, I've pulled up a comparison table for you.") The system will automatically show them a comparison table.
-
-Recent chat:
-${conversationSummary}
-${schoolContext}${userContextText}
-
-Parent: "${message}"
-
-Reply naturally and empathetically. Describe schools, answer questions, or suggest next steps.`;
-    
-    console.log('prompt length:', responsePrompt.length);
-
-    let aiResponse;
     try {
-      aiResponse = await base44.integrations.Core.InvokeLLM({
-        prompt: responsePrompt
+      const generateResult = await base44.functions.invoke('generateResponse', {
+        message,
+        intent: intentResponse.intent,
+        schools: matchingSchools,
+        conversationHistory: conversationHistory || [],
+        conversationContext: context,
+        userNotes: userNotes || [],
+        shortlistedSchools: shortlistedSchools || []
       });
-      console.log('LLM response received successfully');
+      
+      if (generateResult.data.timeout) {
+        responseTimedOut = true;
+        aiMessage = 'Here are the schools I found:';
+      } else {
+        aiMessage = generateResult.data.message;
+      }
     } catch (error) {
-      console.error('InvokeLLM error:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
-      throw error;
+      console.error('generateResponse error:', error);
+      responseTimedOut = true;
+      aiMessage = 'Here are the schools I found:';
     }
 
     // Update user memory with insights from this message (non-blocking)
@@ -302,18 +219,8 @@ Reply naturally and empathetically. Describe schools, answer questions, or sugge
       console.error('updateUserMemory failed:', e);
     }
 
-    // Replace school names with markdown links (school:slug format)
-    let messageWithLinks = aiResponse;
-    if (matchingSchools.length > 0) {
-      matchingSchools.forEach(school => {
-        // Replace full school name with markdown link, case-insensitive
-        const regex = new RegExp(`\\b${school.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
-        messageWithLinks = messageWithLinks.replace(regex, `[${school.name}](school:${school.slug})`);
-      });
-    }
-
     return Response.json({
-      message: messageWithLinks,
+      message: aiMessage,
       intent: intentResponse.intent,
       shouldShowSchools: matchingSchools.length > 0,
       schools: matchingSchools,
@@ -327,9 +234,12 @@ Reply naturally and empathetically. Describe schools, answer questions, or sugge
     if (error.message === 'TIMEOUT') {
       return Response.json({ 
         error: 'Request took too long. Try being more specific or search fewer schools.',
-        message: "I apologize - that search is taking too long. Could you narrow down your criteria? Try specifying a city or curriculum type."
-      }, { status: 200 });
+        status: 408 
+      }, { status: 408 });
     }
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ 
+      error: 'Sorry, something went wrong. Please try again.',
+      status: 500 
+    }, { status: 500 });
   }
 });
