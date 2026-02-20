@@ -12,6 +12,7 @@ import ShortlistPanel from '@/components/chat/ShortlistPanel';
 import NotesPanel from '@/components/chat/NotesPanel';
 import ComparisonView from '@/components/schools/ComparisonView';
 import ComparisonTable from '@/components/schools/ComparisonTable';
+import SortControl from '@/components/schools/SortControl';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import Navbar from '@/components/navigation/Navbar';
