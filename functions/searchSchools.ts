@@ -120,6 +120,10 @@ async function performSearch(req) {
     // Filter to only active schools
     schools = schools.filter(s => s.status === 'active');
 
+    // FIX #1: LOCATION-FIRST WITH RELEVANCE SCORING
+    // Step 1: Apply strict location filters to reduce dataset
+    let locationFiltered = schools;
+
     // Check for regional aliases first
     let aliasedCities = [];
     let aliasedProvinces = [];
@@ -134,13 +138,13 @@ async function performSearch(req) {
 
     // Apply aliased cities filter - exact match
     if (aliasedCities.length > 0) {
-      schools = schools.filter(s => 
+      locationFiltered = locationFiltered.filter(s => 
         aliasedCities.some(c => s.city?.toLowerCase() === c.toLowerCase())
       );
     }
     // Apply aliased provinces filter - exact match
     else if (aliasedProvinces.length > 0) {
-      schools = schools.filter(s => {
+      locationFiltered = locationFiltered.filter(s => {
         if (!s.provinceState) return false;
         const schoolPS = s.provinceState.toLowerCase();
         return aliasedProvinces.some(p => schoolPS === p.toLowerCase());
@@ -150,7 +154,7 @@ async function performSearch(req) {
     // Apply city filter (if no aliases matched) - case-insensitive regex match
     if (city && aliasedCities.length === 0) {
       const cityRegex = new RegExp(`^${city.trim()}$`, 'i');
-      schools = schools.filter(s => s.city && cityRegex.test(s.city));
+      locationFiltered = locationFiltered.filter(s => s.city && cityRegex.test(s.city));
     }
 
     if (provinceState && aliasedProvinces.length === 0) {
@@ -160,9 +164,8 @@ async function performSearch(req) {
       const fullProvinceName = provinceAbbreviations[psUpper] || stateAbbreviations[psUpper];
       const normalizedProvince = fullProvinceName || toTitleCase(provinceState.trim());
       
-      // BUG FIX #5: Use case-insensitive regex for province/state matching
       const provinceRegex = new RegExp(`^${normalizedProvince}$`, 'i');
-      schools = schools.filter(s => {
+      locationFiltered = locationFiltered.filter(s => {
         if (!s.provinceState) return false;
         return provinceRegex.test(s.provinceState);
       });
@@ -170,35 +173,62 @@ async function performSearch(req) {
 
     // Apply general region filter (Canada, US, Europe) - only if no aliases were used
     if (region && !aliasedCities.length && !aliasedProvinces.length) {
-      schools = schools.filter(s => s.region === region);
+      locationFiltered = locationFiltered.filter(s => s.region === region);
     }
     if (country) {
-      schools = schools.filter(s => s.country === country);
+      locationFiltered = locationFiltered.filter(s => s.country === country);
     }
-    if (minGrade !== undefined) {
-      schools = schools.filter(s => s.lowestGrade <= minGrade && s.highestGrade >= minGrade);
-    }
-    if (maxGrade !== undefined) {
-      schools = schools.filter(s => s.lowestGrade <= maxGrade && s.highestGrade >= maxGrade);
-    }
-    if (minTuition !== undefined) {
-      schools = schools.filter(s => s.tuition >= minTuition);
-    }
-    if (maxTuition !== undefined) {
-      schools = schools.filter(s => s.tuition <= maxTuition);
-    }
-    if (curriculumType) {
-      schools = schools.filter(s => s.curriculumType === curriculumType);
-    }
-     if (schoolType) {
-       schools = schools.filter(s => s.schoolType === schoolType);
-     }
 
-    if (specializations && specializations.length > 0) {
-      schools = schools.filter(s => 
-        s.specializations && specializations.some(spec => s.specializations.includes(spec))
-      );
-    }
+    // Step 2: Score remaining schools based on other criteria
+    const scored = locationFiltered.map(school => {
+      let score = 0;
+      
+      // Grade range: +2 for exact match, +1 for overlap
+      if (minGrade !== undefined || maxGrade !== undefined) {
+        const targetGrade = minGrade !== undefined ? minGrade : maxGrade;
+        if (school.lowestGrade <= targetGrade && school.highestGrade >= targetGrade) {
+          score += 2; // Exact match
+        } else if (minGrade !== undefined && maxGrade !== undefined) {
+          if (school.lowestGrade <= maxGrade && school.highestGrade >= minGrade) {
+            score += 1; // Overlap
+          }
+        }
+      }
+      
+      // Tuition: +2 for in range, +1 for close
+      if (minTuition !== undefined || maxTuition !== undefined) {
+        if (school.tuition) {
+          if ((!minTuition || school.tuition >= minTuition) && (!maxTuition || school.tuition <= maxTuition)) {
+            score += 2;
+          } else if (minTuition && school.tuition >= minTuition * 0.8 && school.tuition <= minTuition * 1.2) {
+            score += 1;
+          }
+        }
+      }
+      
+      // Curriculum: +3 for exact match
+      if (curriculumType && school.curriculumType === curriculumType) {
+        score += 3;
+      }
+      
+      // School type: +2 for exact match
+      if (schoolType && school.schoolType === schoolType) {
+        score += 2;
+      }
+      
+      // Specializations: +1 per match
+      if (specializations && specializations.length > 0) {
+        if (school.specializations) {
+          const matches = specializations.filter(spec => school.specializations.includes(spec)).length;
+          score += matches;
+        }
+      }
+      
+      return { school, score };
+    });
+
+    // Step 3: Sort by score (descending) - keeps location-matched schools
+    schools = scored.sort((a, b) => b.score - a.score).map(s => s.school);
 
     // Calculate distances if user location provided
     if (userLat && userLng) {
