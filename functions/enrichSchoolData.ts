@@ -15,18 +15,57 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'schoolId is required' }, { status: 400 });
     }
 
-    const school = await base44.entities.School.get(schoolId);
+    let school = await base44.entities.School.get(schoolId);
     if (!school) {
       return Response.json({ error: 'School not found' }, { status: 404 });
     }
-    if (!school.website) {
-      return Response.json({ error: 'School website not available for enrichment' }, { status: 400 });
+
+    // Step 1: Intelligently find the correct school website using AI
+    let schoolWebsite = school.website;
+    if (!schoolWebsite) {
+      console.log(`Discovering website for ${school.name} in ${school.city}, ${school.country}`);
+      
+      try {
+        const websiteDiscoveryResult = await base44.integrations.Core.InvokeLLM({
+          prompt: `Find the official website URL for the school: ${school.name}, located in ${school.city}, ${school.country || school.provinceState}. 
+          
+Return ONLY the official school website URL. If you cannot find a reliable URL, return null.
+Make sure the URL starts with http:// or https://.`,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              website_url: { type: ["string", "null"], description: "The official school website URL" }
+            }
+          }
+        });
+
+        if (websiteDiscoveryResult.website_url) {
+          schoolWebsite = websiteDiscoveryResult.website_url;
+          console.log(`Found website: ${schoolWebsite}`);
+          // Update the school record with the discovered website
+          await base44.asServiceRole.entities.School.update(schoolId, { website: schoolWebsite });
+          school.website = schoolWebsite;
+        }
+      } catch (error) {
+        console.error('Failed to discover website:', error);
+      }
     }
 
-    // Fetch website content
+    if (!schoolWebsite) {
+      return Response.json({ error: 'School website not available for enrichment', status: 'no_website' }, { status: 400 });
+    }
+
+    // Step 2: Fetch website content
     let websiteContent = '';
     try {
-      const response = await fetch(school.website, {
+      // Ensure URL starts with http:// or https://
+      let urlToFetch = schoolWebsite;
+      if (!urlToFetch.startsWith('http://') && !urlToFetch.startsWith('https://')) {
+        urlToFetch = 'https://' + urlToFetch;
+      }
+
+      const response = await fetch(urlToFetch, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
@@ -38,8 +77,9 @@ Deno.serve(async (req) => {
       console.error('Failed to fetch website:', error);
     }
 
+    // Step 3: If no website content, use AI general knowledge
     if (!websiteContent) {
-      return Response.json({ error: 'Could not fetch website content' }, { status: 500 });
+      console.log('No website content available, will use AI general knowledge');
     }
 
     // Define extraction schema
