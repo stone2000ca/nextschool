@@ -68,12 +68,14 @@ export default function Navbar({ variant = "default" }) {
           </div>
           <span className="text-xl font-bold text-slate-900">NextSchool</span>
         </Link>
-        <nav className="hidden md:flex gap-6 items-center">
-          <a href="#how-it-works" className="text-slate-600 hover:text-teal-600">How it Works</a>
-          <Link to={createPageUrl('Consultant')} className="text-slate-600 hover:text-teal-600">
+        <nav className="hidden md:flex gap-8 items-center">
+          <Link to={createPageUrl('HowItWorks')} className="text-slate-600 hover:text-teal-600 text-sm">How it Works</Link>
+          <Link to={createPageUrl('Consultant')} className="text-slate-600 hover:text-teal-600 text-sm">
             Browse Schools
           </Link>
-          <Link to={createPageUrl('Pricing')} className="text-slate-600 hover:text-teal-600">Pricing</Link>
+          <Link to={createPageUrl('Pricing')} className="text-slate-600 hover:text-teal-600 text-sm">Pricing</Link>
+          <Link to={createPageUrl('ForSchools')} className="text-slate-600 hover:text-teal-600 text-sm">For Schools</Link>
+          <Link to={createPageUrl('About')} className="text-slate-600 hover:text-teal-600 text-sm">About</Link>
         </nav>
         {isAuthenticated && user ? (
           <Link to={createPageUrl('ParentDashboard')}>
