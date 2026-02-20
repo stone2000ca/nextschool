@@ -210,7 +210,13 @@ export default function AdminSchools() {
                   <td className="p-4 text-sm">
                     {school.website ? (
                       <a href={school.website} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline truncate max-w-[200px] block">
-                        {new URL(school.website).hostname}
+                        {(() => {
+                          try {
+                            return new URL(school.website).hostname;
+                          } catch {
+                            return school.website.substring(0, 30);
+                          }
+                        })()}
                       </a>
                     ) : (
                       <span className="text-slate-400">No website</span>
