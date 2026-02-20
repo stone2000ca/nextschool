@@ -424,9 +424,13 @@ Deno.serve(async (req) => {
     let aiMessage = '';
     let responseTimedOut = false;
     
-    // Handle greetings with friendly response (skip search logic)
+    // Handle greetings with consultant-specific response (skip search logic)
     if (intentResponse.intent === 'GREETING') {
-      aiMessage = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
+      // Greeting already handled in Consultant.js via handleSelectConsultant
+      // This is just a fallback
+      aiMessage = consultantName === 'Jackie'
+        ? "Hi, I'm Jackie! I help families find the right private school for their child. I'll ask a few questions about your family, and then I'll show you schools that actually fit — not just a generic list. What's bringing you here today?"
+        : "Hi, I'm Liam. I help families find the right private school by matching what matters most to you with real school data. I'll ask a few focused questions, then show you your strongest options. What's bringing you here today?";
     } else {
       try {
         const generateResult = await base44.functions.invoke('generateResponse', {
@@ -436,7 +440,8 @@ Deno.serve(async (req) => {
           conversationHistory: conversationHistory || [],
           conversationContext: context,
           userNotes: userNotes || [],
-          shortlistedSchools: shortlistedSchools || []
+          shortlistedSchools: shortlistedSchools || [],
+          consultantName: consultantName || 'Jackie'
         });
         
         if (generateResult.data.timeout) {
