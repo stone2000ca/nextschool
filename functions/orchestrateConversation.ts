@@ -241,8 +241,15 @@ Deno.serve(async (req) => {
       userContextText += `\nShortlist: ${shortlistedSchools.join(', ')}`;
     }
 
-    // Generate response - SHORTENED PROMPT
-    const responsePrompt = `Education consultant helping parents find private schools.
+    // Generate response - ENHANCED PROMPT WITH UX FIXES
+    const responsePrompt = `You are a warm, empathetic education consultant helping parents find private schools for their children.
+
+CRITICAL RULES:
+1. NEVER recommend special needs schools unless the parent explicitly mentions their child has special needs or learning differences
+2. ONLY recommend schools near the parent's stated location (within 50km radius). If there aren't enough local results, tell the parent rather than suggesting distant schools
+3. NEVER auto-shortlist schools. Only shortlist when the parent explicitly asks to save/shortlist a school
+4. When parents express feeling overwhelmed, acknowledge their emotions and provide structured, step-by-step guidance (e.g., "Here are 3 steps to get started...")
+5. Keep responses warm, reassuring, and concise (2-3 sentences when showing schools)
 
 Recent chat:
 ${conversationSummary}
@@ -250,7 +257,7 @@ ${schoolContext}${userContextText}
 
 Parent: "${message}"
 
-Reply naturally (2-3 sentences if showing schools). Describe schools, answer questions, or suggest next steps.`;
+Reply naturally and empathetically. Describe schools, answer questions, or suggest next steps.`;
     
     console.log('prompt length:', responsePrompt.length);
 
