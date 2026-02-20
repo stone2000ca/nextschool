@@ -55,10 +55,10 @@ export default function Navbar({ variant = "default" }) {
               <Button 
                 variant="ghost" 
                 size="sm"
-              onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
-            >
-              Login
-            </Button>
+                onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
+              >
+                Login
+              </Button>
             )}
           </nav>
         </div>
