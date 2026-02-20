@@ -232,6 +232,12 @@ Deno.serve(async (req) => {
       const searchResult = await base44.functions.invoke('searchSchools', searchParams);
       let schools = searchResult.data.schools || [];
       
+      // RULE: Exclude special needs schools unless explicitly mentioned
+      if (!msgLower.includes('special needs') && !msgLower.includes('learning disabilities') && 
+          !msgLower.includes('adhd') && !msgLower.includes('autism')) {
+        schools = schools.filter(s => s.schoolType !== 'Special Needs');
+      }
+      
       console.log('schools found:', schools.length);
       
       matchingSchools = schools.slice(0, 20); // Show up to 20 results
