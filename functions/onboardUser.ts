@@ -145,23 +145,32 @@ async function extractPhaseData(base44, message, currentPhase, profile) {
 
   const phasePrompts = {
     open_warm: `Extract information about the child and current school situation from this message. 
+CRITICAL: Use the EXACT words and phrases from the parent's message - do NOT normalize, expand, or interpret.
 Child name is most important. Grade is also critical. Also capture what's not working with current school if mentioned.
-Return any fields found, others can be null. Be liberal in extracting what's there.`,
+Return any fields found, others can be null.`,
     
     child_profile: `Extract information about the child's academic profile, interests, personality, and learning style.
-Look for strengths, struggles, learning differences (ADHD, dyslexia, giftedness, etc.), interests (sports, arts, STEM, music, etc.), personality traits (social, introverted, creative, etc.), and learning style preference.
+CRITICAL RULE: Use the EXACT interests/strengths the parent mentioned. Do NOT substitute or expand.
+- If parent said "art and drama" - return ["art and drama"] - NOT ["arts", "performance"]
+- If parent said "good at math" - return ["math"] - do NOT add "STEM" or "science"
+- Extract exactly what was said, preserve the parent's own language.
+Look for strengths, struggles, learning differences, interests, personality traits, and learning style preference.
 Return any fields found. Can be null if not mentioned.`,
     
     family_logistics: `Extract practical logistics about location, budget, and timing.
-Location: city/neighborhood area. Budget: extract as range (under_20k, 20k_35k, 35k_plus, flexible) and/or max tuition number.
-Also check for boarding preference, siblings, timeline (next_september, mid_year, exploring).
+CRITICAL: Use the EXACT location/budget words from parent's message:
+- If parent said "Leaside" - store "Leaside" EXACTLY - do NOT expand to "downtown Toronto" or other areas
+- If parent said "$28K" - store "$28K" EXACTLY - do NOT round to "$20-25K" or interpret as range
+- Location: city/neighborhood area (use their exact words). Budget: extract as range (under_20k, 20k_35k, 35k_plus, flexible) and/or exact max tuition number.
+Also check for boarding preference, siblings, timeline.
 Return any fields found.`,
     
     priorities: `Extract the family's priorities, dealbreakers, and curriculum preferences.
+CRITICAL: Use the EXACT phrases the parent used. Do NOT substitute or interpret.
 Priorities might include: academics/rigor, class size, arts programs, athletics, university prep, diversity, French/bilingual, special needs support, community feel, religious values, sports.
 Dealbreakers might be: co-ed vs single-gender, religious affiliation, uniform, etc.
 Curriculum: IB, AP, Traditional, Montessori, Waldorf, Progressive.
-Return arrays for these. Also capture what triggered the search and what they liked/disliked about previous schools.`
+Return arrays with EXACT parent words. Also capture what triggered the search and what they liked/disliked about previous schools.`
   };
 
   const schema = schemas[currentPhase] || {};
