@@ -862,6 +862,16 @@ Return empty array if user didn't provide any of these facts.`;
             <WelcomeState onPromptClick={handleSendMessage} />
           )}
 
+          {currentView === 'brief-review' && (
+            <div className="h-full flex items-center justify-center p-6 text-center">
+              <div className="text-slate-600">
+                <div className="animate-spin h-8 w-8 border-4 border-teal-200 border-t-teal-600 rounded-full mx-auto mb-4" />
+                <p className="text-lg font-medium">Your consultant is reviewing your profile...</p>
+                <p className="text-sm text-slate-500 mt-2">Preparing a personalized summary</p>
+              </div>
+            </div>
+          )}
+
           {currentView === 'schools' && schools.length > 0 && (
             <div className="h-full flex flex-col">
               <div className="p-4 border-b flex items-center justify-between">
