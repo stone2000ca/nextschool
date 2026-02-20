@@ -125,7 +125,7 @@ export default function SchoolProfile() {
         {school.logoUrl && !isClearbitUrl(school.headerPhotoUrl) && (
           <div className="absolute bottom-0 left-0 p-8 pb-0">
             <div className="transform translate-y-1/2">
-              <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} size="h-24 w-24" />
+              <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-24 w-24" />
             </div>
           </div>
         )}
@@ -136,7 +136,7 @@ export default function SchoolProfile() {
             </div>
             <div className="flex items-center gap-3 mb-2">
               {school.logoUrl && isClearbitUrl(school.headerPhotoUrl) && (
-                <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} size="h-12 w-12" />
+                <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-12 w-12" />
               )}
               <h1 className="text-4xl font-bold">{school.name}</h1>
             </div>
@@ -284,9 +284,64 @@ export default function SchoolProfile() {
               </TabsContent>
 
               <TabsContent value="programs" className="space-y-6">
+                {/* Curriculum & Core Programs */}
+                <Card className="p-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
+                  <h3 className="text-lg font-bold mb-4">Academic Programs</h3>
+                  <div className="space-y-3">
+                    {school.curriculumType && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">Curriculum</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.curriculumType}</span>
+                      </div>
+                    )}
+                    {school.lowestGrade !== null && school.highestGrade !== null && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">Grade Levels</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.gradesServed}</span>
+                      </div>
+                    )}
+                    {school.avgClassSize && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">Average Class Size</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.avgClassSize} students</span>
+                      </div>
+                    )}
+                    {school.studentTeacherRatio && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">Student-Teacher Ratio</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.studentTeacherRatio}</span>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+
+                {/* Specializations */}
+                {school.specializations && school.specializations.length > 0 && (
+                  <Card className="p-6">
+                    <h3 className="text-lg font-bold mb-4">Areas of Specialization</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {school.specializations.map((spec, index) => {
+                        const colors = {
+                          'STEM': 'bg-purple-100 text-purple-700',
+                          'Arts': 'bg-amber-100 text-amber-700',
+                          'Languages': 'bg-indigo-100 text-indigo-700',
+                          'Sports': 'bg-teal-100 text-teal-700',
+                          'Leadership': 'bg-orange-100 text-orange-700',
+                          'Environmental': 'bg-green-100 text-green-700'
+                        };
+                        return (
+                          <span key={index} className={`px-3 py-1 rounded-full text-sm font-medium ${colors[spec] || 'bg-slate-100 text-slate-700'}`}>
+                            {spec}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                )}
+
                 {school.artsPrograms && school.artsPrograms.length > 0 && (
                   <Card className="p-6">
-                    <h3 className="text-xl font-bold mb-3">Arts Programs</h3>
+                    <h3 className="text-lg font-bold mb-3">Arts Programs</h3>
                     <div className="flex flex-wrap gap-2">
                       {school.artsPrograms.map((program, index) => (
                         <span key={index} className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
@@ -299,7 +354,7 @@ export default function SchoolProfile() {
 
                 {school.sportsPrograms && school.sportsPrograms.length > 0 && (
                   <Card className="p-6">
-                    <h3 className="text-xl font-bold mb-3">Sports Programs</h3>
+                    <h3 className="text-lg font-bold mb-3">Sports Programs</h3>
                     <div className="flex flex-wrap gap-2">
                       {school.sportsPrograms.map((program, index) => (
                         <span key={index} className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm">
@@ -312,7 +367,7 @@ export default function SchoolProfile() {
 
                 {school.languages && school.languages.length > 0 && (
                   <Card className="p-6">
-                    <h3 className="text-xl font-bold mb-3">Language Programs</h3>
+                    <h3 className="text-lg font-bold mb-3">Language Programs</h3>
                     <div className="flex flex-wrap gap-2">
                       {school.languages.map((language, index) => (
                         <span key={index} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
@@ -325,7 +380,7 @@ export default function SchoolProfile() {
 
                 {school.clubs && school.clubs.length > 0 && (
                   <Card className="p-6">
-                    <h3 className="text-xl font-bold mb-3">Clubs & Activities</h3>
+                    <h3 className="text-lg font-bold mb-3">Clubs & Extracurricular Activities</h3>
                     <div className="flex flex-wrap gap-2">
                       {school.clubs.map((club, index) => (
                         <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
@@ -353,30 +408,38 @@ export default function SchoolProfile() {
                     </div>
                   )}
                   {school.admissionRequirements && school.admissionRequirements.length > 0 && (
-                    <div>
-                      <span className="text-slate-600 font-medium block mb-2">Requirements:</span>
-                      <ul className="list-disc list-inside space-y-1 text-slate-700">
+                    <div className="mb-4">
+                      <span className="text-slate-600 font-medium mb-2 block">Requirements:</span>
+                      <ul className="list-disc ml-6 text-slate-700 space-y-1">
                         {school.admissionRequirements.map((req, index) => (
                           <li key={index}>{req}</li>
                         ))}
                       </ul>
                     </div>
                   )}
+                  {school.openHouseDates && school.openHouseDates.length > 0 && (
+                    <div>
+                      <span className="text-slate-600 font-medium mb-2 block">Open House Dates:</span>
+                      <div className="space-y-1 text-slate-700">
+                        {school.openHouseDates.map((date, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-teal-600" />
+                            {date}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </Card>
               </TabsContent>
 
-              <TabsContent value="photos">
+              <TabsContent value="photos" className="space-y-6">
                 <Card className="p-6">
-                  <h3 className="text-xl font-bold mb-4">Photo Gallery</h3>
+                  <h3 className="text-xl font-bold mb-4">Gallery</h3>
                   {school.photoGallery && school.photoGallery.length > 0 ? (
                     <div className="grid grid-cols-2 gap-4">
                       {school.photoGallery.map((photo, index) => (
-                        <img 
-                          key={index}
-                          src={photo} 
-                          alt={`${school.name} ${index + 1}`}
-                          className="w-full h-48 object-cover rounded-lg"
-                        />
+                        <img key={index} src={photo} alt={`${school.name} ${index + 1}`} className="rounded-lg w-full h-48 object-cover" />
                       ))}
                     </div>
                   ) : (
@@ -426,7 +489,7 @@ export default function SchoolProfile() {
                   <div className="flex items-center gap-2 text-sm">
                     <Globe2 className="h-4 w-4 text-slate-400" />
                     <a 
-                      href={`https://${school.website}`} 
+                      href={school.website.startsWith('http') ? school.website : `https://${school.website}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-teal-600 hover:underline flex items-center gap-1"
