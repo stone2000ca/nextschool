@@ -112,10 +112,48 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
-            <div>
-              <h3 className="font-semibold mb-2">Mission</h3>
-              <p className="text-sm text-slate-700 leading-relaxed">{school.missionStatement}</p>
-            </div>
+            {school.missionStatement && (
+              <div>
+                <h3 className="font-semibold mb-2">Mission</h3>
+                <p className="text-sm text-slate-700 leading-relaxed">{school.missionStatement}</p>
+              </div>
+            )}
+            
+            {(school.phone || school.email || school.website) && (
+              <div>
+                <h3 className="font-semibold mb-2">Contact Information</h3>
+                <div className="space-y-2">
+                  {school.phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-slate-400" />
+                      <span>{school.phone}</span>
+                    </div>
+                  )}
+                  {school.email && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-slate-400" />
+                      <a href={`mailto:${school.email}`} className="text-teal-600 hover:underline">
+                        {school.email}
+                      </a>
+                    </div>
+                  )}
+                  {school.website && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Globe2 className="h-4 w-4 text-slate-400" />
+                      <a 
+                        href={`https://${school.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-teal-600 hover:underline flex items-center gap-1"
+                      >
+                        Visit Website
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             
             {school.curriculumType && (
               <div>
