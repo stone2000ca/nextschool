@@ -331,7 +331,7 @@ export default function Consultant() {
         } : null
       });
 
-      // Handle showing schools - show grid if we got results
+      // Show schools immediately if available (before AI response)
       if (response.data.shouldShowSchools && response.data.schools?.length > 0) {
         setSchools(response.data.schools);
         const msgLower = messageText.toLowerCase();
@@ -344,9 +344,6 @@ export default function Consultant() {
           setCurrentView('schools');
         }
       }
-
-      // Simulate typing delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const aiMessage = {
         role: 'assistant',
@@ -810,7 +807,7 @@ Return empty array if user didn't provide any of these facts.`;
                 }}
               />
             ))}
-            {isTyping && <TypingIndicator message={thinkingMessage} />}
+            {isTyping && <TypingIndicator message={loadingStages[loadingStage]} />}
             <div ref={messagesEndRef} />
           </div>
 
