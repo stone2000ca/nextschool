@@ -1023,6 +1023,36 @@ Return empty array if user didn't provide any of these facts.`;
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Suggested Response Chips for BRIEF_DELIVERY */}
+          {onboardingPhase === 'BRIEF_DELIVERY' && (
+            <div className="p-4 border-t bg-slate-50 flex flex-wrap gap-2 justify-center">
+              <Button 
+                variant="outline" 
+                onClick={() => handleSendMessage("That's exactly right")}
+                disabled={isTyping}
+                className="text-xs"
+              >
+                That's exactly right
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => handleSendMessage("Let me adjust something")}
+                disabled={isTyping}
+                className="text-xs"
+              >
+                Let me adjust
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => handleSendMessage("I'd like to add more context")}
+                disabled={isTyping}
+                className="text-xs"
+              >
+                Add context
+              </Button>
+            </div>
+          )}
+
           {/* Chat Input */}
           <ChatInput
             ref={inputRef}
