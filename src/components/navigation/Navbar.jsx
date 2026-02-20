@@ -73,6 +73,7 @@ export default function Navbar({ variant = "default" }) {
           <Link to={createPageUrl('Consultant')} className="text-slate-600 hover:text-teal-600 text-sm">
             Browse Schools
           </Link>
+          <Link to={createPageUrl('Blog')} className="text-slate-600 hover:text-teal-600 text-sm">Guides</Link>
           <Link to={createPageUrl('Pricing')} className="text-slate-600 hover:text-teal-600 text-sm">Pricing</Link>
           <Link to={createPageUrl('ForSchools')} className="text-slate-600 hover:text-teal-600 text-sm">For Schools</Link>
           <Link to={createPageUrl('About')} className="text-slate-600 hover:text-teal-600 text-sm">About</Link>
