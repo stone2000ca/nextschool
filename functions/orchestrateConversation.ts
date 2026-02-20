@@ -173,19 +173,48 @@ Deno.serve(async (req) => {
       console.log('FIX #5: NARROW_DOWN complete. Output count:', matchingSchools.length);
     } else if (intentResponse.shouldShowSchools) {
       // Call searchSchools function with extracted criteria
+      // First, get FamilyProfile for defaults if onboarding is complete
+      let familyProfileDefaults = {};
+      if (userId) {
+        try {
+          const familyProfiles = await base44.entities.FamilyProfile.filter({ userId });
+          if (familyProfiles.length > 0 && familyProfiles[0].onboardingComplete) {
+            const fp = familyProfiles[0];
+            familyProfileDefaults = {
+              childGrade: fp.childGrade,
+              locationArea: fp.locationArea,
+              budgetRange: fp.budgetRange,
+              maxTuition: fp.maxTuition,
+              priorities: fp.priorities,
+              curriculumPreference: fp.curriculumPreference
+            };
+          }
+        } catch (e) {
+          console.error('Failed to fetch FamilyProfile for defaults:', e);
+        }
+      }
+
       const searchParams = {
         limit: 50
       };
       
       if (intentResponse.filterCriteria?.city) searchParams.city = intentResponse.filterCriteria.city;
+      else if (familyProfileDefaults.locationArea) searchParams.city = familyProfileDefaults.locationArea;
+      
       if (intentResponse.filterCriteria?.provinceState) searchParams.provinceState = intentResponse.filterCriteria.provinceState;
       if (intentResponse.filterCriteria?.region) searchParams.region = intentResponse.filterCriteria.region;
       if (intentResponse.filterCriteria?.grade) {
         searchParams.minGrade = intentResponse.filterCriteria.grade;
         searchParams.maxGrade = intentResponse.filterCriteria.grade;
+      } else if (familyProfileDefaults.childGrade) {
+        searchParams.minGrade = familyProfileDefaults.childGrade;
+        searchParams.maxGrade = familyProfileDefaults.childGrade;
       }
+      
       if (intentResponse.filterCriteria?.minTuition) searchParams.minTuition = intentResponse.filterCriteria.minTuition;
       if (intentResponse.filterCriteria?.maxTuition) searchParams.maxTuition = intentResponse.filterCriteria.maxTuition;
+      else if (familyProfileDefaults.maxTuition) searchParams.maxTuition = familyProfileDefaults.maxTuition;
+      
       if (intentResponse.filterCriteria?.curriculumType) searchParams.curriculumType = intentResponse.filterCriteria.curriculumType;
        if (intentResponse.filterCriteria?.schoolType) searchParams.schoolType = intentResponse.filterCriteria.schoolType;
 
@@ -200,6 +229,22 @@ Deno.serve(async (req) => {
 
       if (intentResponse.filterCriteria?.specializations?.length > 0) {
         searchParams.specializations = intentResponse.filterCriteria.specializations;
+      } else if (familyProfileDefaults.priorities?.length > 0) {
+        // Map family priorities to specializations
+        const priorityToSpec = {
+          'Arts': 'Arts',
+          'STEM': 'STEM',
+          'Sports': 'Sports',
+          'Languages': 'Languages',
+          'Leadership': 'Leadership',
+          'Environmental': 'Environmental'
+        };
+        const mappedSpecs = familyProfileDefaults.priorities
+          .map(p => priorityToSpec[p])
+          .filter(Boolean);
+        if (mappedSpecs.length > 0) {
+          searchParams.specializations = mappedSpecs;
+        }
       }
       
       // FIX #3: DISTANCE CALCULATION - Use user's actual location
