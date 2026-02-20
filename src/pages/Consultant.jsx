@@ -1054,33 +1054,65 @@ Return empty array if user didn't provide any of these facts.`;
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Suggested Response Chips for confirm_brief phase (The Brief) */}
-          {onboardingPhase === 'confirm_brief' && (
+          {/* Suggested Response Chips - After greeting or for confirm_brief phase */}
+          {(showResponseChips || onboardingPhase === 'confirm_brief') && (
             <div className="p-4 border-t bg-slate-50 flex flex-wrap gap-2 justify-center">
-              <Button 
-                variant="outline" 
-                onClick={() => handleSendMessage("That's exactly right")}
-                disabled={isTyping}
-                className="text-xs"
-              >
-                That's exactly right
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => handleSendMessage("Let me adjust something")}
-                disabled={isTyping}
-                className="text-xs"
-              >
-                Let me adjust
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => handleSendMessage("I'd like to add more context")}
-                disabled={isTyping}
-                className="text-xs"
-              >
-                Add context
-              </Button>
+              {showResponseChips && !onboardingPhase && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleSendMessage("My child needs a new school")}
+                    disabled={isTyping}
+                    className="text-xs"
+                  >
+                    My child needs a new school
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleSendMessage("I'm comparing a few schools already")}
+                    disabled={isTyping}
+                    className="text-xs"
+                  >
+                    I'm comparing a few schools already
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleSendMessage("I'm not sure where to start")}
+                    disabled={isTyping}
+                    className="text-xs"
+                  >
+                    I'm not sure where to start
+                  </Button>
+                </>
+              )}
+              {onboardingPhase === 'confirm_brief' && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleSendMessage("That's exactly right")}
+                    disabled={isTyping}
+                    className="text-xs"
+                  >
+                    That's exactly right
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleSendMessage("Let me adjust something")}
+                    disabled={isTyping}
+                    className="text-xs"
+                  >
+                    Let me adjust
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleSendMessage("I'd like to add more context")}
+                    disabled={isTyping}
+                    className="text-xs"
+                  >
+                    Add context
+                  </Button>
+                </>
+              )}
             </div>
           )}
 
