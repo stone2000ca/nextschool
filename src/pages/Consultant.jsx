@@ -199,7 +199,13 @@ export default function Consultant() {
   const loadConversations = async (userId) => {
     try {
       const convos = await base44.entities.ChatHistory.filter({ userId, isActive: true });
-      setConversations(convos.sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date)));
+      // Sort: starred first (by date), then unstarred (by date)
+      const sorted = convos.sort((a, b) => {
+        if (a.starred && !b.starred) return -1;
+        if (!a.starred && b.starred) return 1;
+        return new Date(b.updated_date) - new Date(a.updated_date);
+      });
+      setConversations(sorted);
     } catch (error) {
       console.error('Failed to load conversations:', error);
     }
