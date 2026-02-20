@@ -354,7 +354,7 @@ Deno.serve(async (req) => {
 
       const searchParams = {
         limit: 50,
-        familyProfile: fullFamilyProfile // PASS FULL PROFILE FOR HARD FILTERS
+        familyProfile: conversationFamilyProfile || fullFamilyProfile // PASS FULL PROFILE FOR HARD FILTERS
       };
       
       if (intentResponse.filterCriteria?.city) searchParams.city = intentResponse.filterCriteria.city;
