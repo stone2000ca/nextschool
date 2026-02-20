@@ -99,7 +99,9 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
           </div>
           <div>
             <div className="text-slate-600 mb-1">Class Size</div>
-            <div className="font-medium">{school.avgClassSize} students</div>
+            <div className="font-medium">
+              {school.avgClassSize && school.avgClassSize > 0 ? `${school.avgClassSize} students` : 'Not available'}
+            </div>
           </div>
         </div>
       </div>
