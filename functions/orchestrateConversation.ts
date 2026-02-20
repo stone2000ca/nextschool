@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
     }
     // If narrowing from current schools, filter those instead of searching database
     else if (intentResponse.intent === 'NARROW_DOWN' && currentSchools && currentSchools.length > 0) {
+      console.log('FIX #5: NARROW_DOWN intent - filtering existing schools. Input count:', currentSchools.length);
       // Filter from currently displayed schools
       let filtered = currentSchools;
       
@@ -101,18 +102,24 @@ Deno.serve(async (req) => {
         filtered = filtered.filter(s => s.schoolType !== 'Special Needs');
       }
       
-      // FIX #5: ESL/Language support filter
-      if (msgLower.includes('esl') || msgLower.includes('english as second') || msgLower.includes('language support')) {
+      // FIX #5: ESL/Language support filter - now using filterCriteria from detectIntent
+      if (intentResponse.filterCriteria?.specializations?.includes('Languages')) {
+        console.log('FIX #5: Applying Languages specialization filter for ESL/language support');
         filtered = filtered.filter(s => 
           s.languages?.length > 0 || s.specializations?.includes('Languages')
         );
+        console.log('FIX #5: Schools after Languages filter:', filtered.length);
       }
       
+      // Apply other specialization filters from detectIntent
       if (intentResponse.filterCriteria?.specializations?.length > 0) {
-        filtered = filtered.filter(s =>
-          s.specializations && 
-          intentResponse.filterCriteria.specializations.some(spec => s.specializations.includes(spec))
-        );
+        const nonLanguageSpecs = intentResponse.filterCriteria.specializations.filter(s => s !== 'Languages');
+        if (nonLanguageSpecs.length > 0) {
+          filtered = filtered.filter(s =>
+            s.specializations && 
+            nonLanguageSpecs.some(spec => s.specializations.includes(spec))
+          );
+        }
       }
       
       // Check curriculum type (IB, Montessori, etc.)
@@ -138,6 +145,7 @@ Deno.serve(async (req) => {
       }
       
       matchingSchools = filtered;
+      console.log('FIX #5: NARROW_DOWN complete. Output count:', matchingSchools.length);
     } else if (intentResponse.shouldShowSchools) {
       // Call searchSchools function with extracted criteria
       const searchParams = {
