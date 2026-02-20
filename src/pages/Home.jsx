@@ -61,8 +61,10 @@ export default function Home() {
           
           <div className="grid md:grid-cols-2 gap-8 mb-12">
             <div className="bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-200 p-8 rounded-2xl">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-2xl mb-4">👩‍🏫</div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Jackie</h3>
+              <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-2xl mb-6 overflow-hidden mx-auto">
+                <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/150ea2350_Jackie.jpg" alt="Jackie" className="w-full h-full object-cover" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2 text-center">Jackie</h3>
               <p className="text-sm text-rose-700 font-semibold mb-4">Warm & Supportive</p>
               <p className="text-slate-700 mb-6">Jackie brings empathy and emotional intelligence to your school search. She validates your concerns, celebrates your child's strengths, and makes sure your family truly feels heard.</p>
               <ul className="space-y-2 text-sm text-slate-700">
@@ -73,8 +75,10 @@ export default function Home() {
             </div>
             
             <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 p-8 rounded-2xl">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-2xl mb-4">👨‍💼</div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Liam</h3>
+              <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-2xl mb-6 overflow-hidden mx-auto">
+                <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/b1163e434_Liam.png" alt="Liam" className="w-full h-full object-cover" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2 text-center">Liam</h3>
               <p className="text-sm text-blue-700 font-semibold mb-4">Direct & Strategic</p>
               <p className="text-slate-700 mb-6">Liam cuts straight to the analysis. He matches your priorities with school data, gets you fast results, and focuses on the strategic metrics that matter to your family's goals.</p>
               <ul className="space-y-2 text-sm text-slate-700">
