@@ -98,7 +98,7 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
 
           <div className="flex flex-wrap gap-2 mb-3 text-xs">
             <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md">
-              {formatGradeRange(school.gradesServed, school.lowestGrade, school.highestGrade)}
+              {formatGradeRange(school.lowestGrade, school.highestGrade)}
             </span>
             <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md">
               {school.curriculumType}
