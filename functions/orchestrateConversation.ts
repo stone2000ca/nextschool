@@ -147,6 +147,8 @@ Deno.serve(async (req) => {
       if (intentResponse.filterCriteria?.minTuition) searchParams.minTuition = intentResponse.filterCriteria.minTuition;
       if (intentResponse.filterCriteria?.maxTuition) searchParams.maxTuition = intentResponse.filterCriteria.maxTuition;
       if (intentResponse.filterCriteria?.curriculumType) searchParams.curriculumType = intentResponse.filterCriteria.curriculumType;
+       if (intentResponse.filterCriteria?.schoolType) searchParams.schoolType = intentResponse.filterCriteria.schoolType;
+
 
       if (intentResponse.filterCriteria?.specializations?.length > 0) {
         searchParams.specializations = intentResponse.filterCriteria.specializations;
