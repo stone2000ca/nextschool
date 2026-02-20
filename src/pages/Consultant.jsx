@@ -860,13 +860,16 @@ Return empty array if user didn't provide any of these facts.`;
                 <h2 className="text-lg font-semibold text-slate-900">
                   Results ({schools.length})
                 </h2>
-                {showDistances && (
-                  <span className="text-xs text-slate-600">Sorted by distance</span>
-                )}
+                <SortControl
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  onSortFieldChange={setSortField}
+                  onSortDirectionChange={setSortDirection}
+                />
               </div>
               <div className="flex-1 overflow-auto p-4">
                 <SchoolGrid
-                  schools={schools}
+                  schools={getSortedSchools()}
                   onViewDetails={handleViewSchoolDetail}
                   onToggleShortlist={handleToggleShortlist}
                   shortlistedIds={user?.shortlist || []}
