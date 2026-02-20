@@ -241,6 +241,22 @@ export default function Consultant() {
   };
 
   const createNewConversation = async () => {
+    // Check conversation limit for non-authenticated users
+    if (!isAuthenticated) {
+      setLimitReachedOpen(true);
+      return;
+    }
+
+    // Check conversation limit
+    const activeCount = conversations.filter(c => c.isActive).length;
+    const plan = user?.subscriptionPlan || 'free';
+    const limit = getConversationLimits(plan);
+
+    if (activeCount >= limit) {
+      setLimitReachedOpen(true);
+      return;
+    }
+
     try {
       const newConvo = {
         userId: user?.id,
