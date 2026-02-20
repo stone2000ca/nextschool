@@ -6,6 +6,7 @@ import MessageBubble from '@/components/chat/MessageBubble';
 import ChatInput from '@/components/chat/ChatInput';
 import TypingIndicator from '@/components/chat/TypingIndicator';
 import WelcomeState from '@/components/schools/WelcomeState';
+import ConsultantSelection from '@/components/chat/ConsultantSelection';
 import SchoolGrid from '@/components/schools/SchoolGrid';
 import SchoolDetail from '@/components/schools/SchoolDetail';
 import ShortlistPanel from '@/components/chat/ShortlistPanel';
