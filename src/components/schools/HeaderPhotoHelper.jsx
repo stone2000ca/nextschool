@@ -52,7 +52,7 @@ export function HeaderPhotoDisplay({ headerPhotoUrl, heroImage, schoolName = '',
   );
 }
 
-export function LogoDisplay({ logoUrl, schoolName, schoolWebsite, size = 'h-12 w-12' }) {
+export function LogoDisplay({ logoUrl, schoolName = '', schoolWebsite, size = 'h-12 w-12' }) {
   const [imageError, setImageError] = useState(false);
   
   // Try logoUrl first
