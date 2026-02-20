@@ -25,7 +25,15 @@ Deno.serve(async (req) => {
             conversationHistory: conversationHistory || [],
             familyProfileData: familyProfile
           });
-          return Response.json(onboardResult.data);
+          // Map aiMessage to message for frontend consistency
+          return Response.json({
+            message: onboardResult.data.aiMessage,
+            shouldShowSchools: onboardResult.data.shouldShowSchools,
+            schools: onboardResult.data.schools,
+            onboardingPhase: onboardResult.data.onboardingPhase,
+            familyProfile: onboardResult.data.familyProfile,
+            onboardingComplete: onboardResult.data.onboardingComplete
+          });
         }
         
         // If onboarding is complete, enhance searchSchools with FamilyProfile defaults
