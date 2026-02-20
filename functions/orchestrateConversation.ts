@@ -11,8 +11,21 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { message, conversationHistory, conversationContext, region, userId, currentSchools, userNotes, shortlistedSchools, userLocation } = await req.json();
 
-    // STEP 1: Check for onboarding - fetch FamilyProfile
-    if (userId) {
+    const context = conversationContext || {};
+    const msgLower = message.toLowerCase();
+
+    // STEP 1: Detect intent (fast string parsing)
+    const intentResult = await base44.functions.invoke('detectIntent', {
+      message,
+      conversationHistory: conversationHistory || []
+    });
+    const intentResponse = intentResult.data;
+
+    // FIX #1: Check if intent is SCHOOL_SEARCH - if yes, skip onboarding entirely
+    const isSchoolSearchIntent = intentResponse.intent === 'SEARCH_SCHOOLS';
+    
+    // STEP 2: Check for onboarding - only run if NOT doing school search
+    if (!isSchoolSearchIntent && userId) {
       try {
         const familyProfiles = await base44.entities.FamilyProfile.filter({ userId });
         const familyProfile = familyProfiles.length > 0 ? familyProfiles[0] : null;
@@ -43,16 +56,6 @@ Deno.serve(async (req) => {
         // Continue with normal flow if error
       }
     }
-
-    const context = conversationContext || {};
-    const msgLower = message.toLowerCase();
-
-    // STEP 1: Detect intent (fast string parsing)
-    const intentResult = await base44.functions.invoke('detectIntent', {
-      message,
-      conversationHistory: conversationHistory || []
-    });
-    const intentResponse = intentResult.data;
 
     const isCompareIntent = intentResponse.intent === 'COMPARE_SCHOOLS';
 
