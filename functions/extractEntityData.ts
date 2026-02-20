@@ -23,6 +23,15 @@ Deno.serve(async (req) => {
       .map(m => `${m.role === 'user' ? 'Parent' : 'AI'}: ${m.content}`)
       .join('\n') || '';
 
+    // First pass: Extract grade using regex (for speed & reliability)
+    const gradeMatch = userMessage.match(/\b(?:grade|gr\.?)\s*([0-9]+|\b(?:pk|jk|k|junior|senior)\b)/i);
+    let extractedGrade = null;
+    if (gradeMatch) {
+      const gradeStr = gradeMatch[1].toLowerCase();
+      const gradeMap = { 'pk': -2, 'jk': -1, 'k': 0, 'junior': 11, 'senior': 12 };
+      extractedGrade = gradeMap[gradeStr] !== undefined ? gradeMap[gradeStr] : parseInt(gradeStr);
+    }
+
     const extractionPrompt = `Extract ONLY factual data that the parent explicitly stated. Do NOT infer.
 Return a JSON object with NULL for anything not mentioned.
 
@@ -37,7 +46,7 @@ PARENT'S MESSAGE:
 
 Extract and return ONLY these fields (null if not mentioned):
 - childName: string (parent used child's name)
-- childGrade: number (grade level, e.g., 3 for Grade 3)
+- childGrade: number (grade level, e.g., 3 for Grade 3. If you see "grade 1" or "Grade 3" or similar, extract the number. CRITICAL: Return as a number, not a string.)
 - locationArea: string (city or area name)
 - maxTuition: number (annual tuition budget mentioned)
 - interests: array of strings (child's interests: sports, arts, STEM, etc.)
