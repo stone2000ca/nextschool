@@ -205,19 +205,21 @@ async function performSearch(req) {
       schools.sort((a, b) => (a.distanceKm || 999999) - (b.distanceKm || 999999));
     }
 
-    // Limit to max 20 results and return only essential fields for LLM
+    // Limit to max 20 results and return minimal fields
     const maxResults = Math.min(schools.length, 20);
     const condensedSchools = schools.slice(0, maxResults).map(s => ({
       id: s.id,
       name: s.name,
       slug: s.slug,
       city: s.city,
-      region: s.region,
+      provinceState: s.provinceState,
+      gradesServed: `${s.lowestGrade}-${s.highestGrade}`,
       lowestGrade: s.lowestGrade,
       highestGrade: s.highestGrade,
       tuition: s.tuition,
       currency: s.currency,
       curriculumType: s.curriculumType,
+      region: s.region,
       specializations: s.specializations,
       distanceKm: s.distanceKm
     }));

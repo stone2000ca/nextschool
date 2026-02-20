@@ -1,7 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
-  try {
+  const TIMEOUT_MS = 25000;
+  
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_MS)
+  );
+
+  const processRequest = async () => {
     const base44 = createClientFromRequest(req);
     const { message, conversationHistory, conversationContext, region, userId, currentSchools, userNotes, shortlistedSchools, userLocation } = await req.json();
 
@@ -253,59 +259,35 @@ Return JSON with intent, shouldShowSchools (boolean), and filterCriteria (if app
       matchingSchools = schools.slice(0, 20); // Show up to 20 results
     }
 
-    // Build school context for AI - CONDENSED format to avoid token limits
+    // Build school context for AI - ULTRA CONDENSED
     const schoolsToDescribe = isCompareIntent ? matchingSchools :
                               (intentResponse.intent === 'NARROW_DOWN' && currentSchools?.length > 0) 
                                 ? currentSchools 
                                 : matchingSchools;
     
     const schoolContext = schoolsToDescribe.length > 0 
-      ? `\n\nSCHOOLS AVAILABLE (${schoolsToDescribe.length} total):\n` + 
-        schoolsToDescribe.map(s => {
-          const tuitionStr = s.tuition ? `${s.currency || 'CAD'} ${s.tuition.toLocaleString()}` : 'N/A';
-          const specStr = s.specializations?.length ? s.specializations.join(', ') : 'General';
-          return `- ${s.name} | ${s.city} | Gr${s.lowestGrade}-${s.highestGrade} | ${tuitionStr} | ${s.curriculumType || 'Trad'} | ${specStr}`;
-        }).join('\n')
-      : '\n\n[NO SCHOOLS AVAILABLE TO SHOW]';
+      ? `\n\nSCHOOLS (${schoolsToDescribe.length}):\n` + 
+        schoolsToDescribe.map(s => 
+          `${s.name}|${s.city}|Gr${s.lowestGrade}-${s.highestGrade}|${s.curriculumType||'Trad'}|${s.tuition||'N/A'}`
+        ).join('\n')
+      : '\n\n[NONE]';
 
-    // Add user context
+    // Add user context - MINIMAL
     let userContextText = '';
-    if (userNotes && userNotes.length > 0) {
-      userContextText += `\n\nUSER'S PERSONAL NOTES:\n${userNotes.map(note => `- ${note}`).join('\n')}`;
-    }
-    if (shortlistedSchools && shortlistedSchools.length > 0) {
-      userContextText += `\n\nUSER'S SHORTLISTED SCHOOLS:\n${shortlistedSchools.map(school => `- ${school}`).join('\n')}`;
-    }
-    if (userLocation?.address) {
-      userContextText += `\n\nUSER'S LOCATION: ${userLocation.address}`;
+    if (shortlistedSchools?.length > 0) {
+      userContextText += `\nShortlist: ${shortlistedSchools.join(', ')}`;
     }
 
-    // Second pass: Generate response with school context
-    const responsePrompt = `You are an experienced education consultant helping parents find the right private school.
+    // Second pass: Generate response - SHORTENED PROMPT
+    const responsePrompt = `Education consultant helping parents find private schools.
 
-CONTEXT:
-- You are responding to the parent's message
-- This is message in a longer conversation with the user
-- Your goal is to be helpful, conversational, and guide them toward finding the right school(s)
-
-CURRENT CONVERSATION SUMMARY:
+Recent chat:
 ${conversationSummary}
+${schoolContext}${userContextText}
 
-${schoolContext}
-${userContextText}
+Parent: "${message}"
 
-RESPONSE GUIDELINES:
-- If showing schools: Briefly describe each school, highlight relevant matches to their criteria
-- If no schools found: Suggest alternative searches or ask clarifying questions
-- If asked about specific school: Provide relevant details
-- If comparing: Highlight key differences between schools
-- Keep responses concise but informative (2-4 sentences if showing schools, up to 1 paragraph for other responses)
-- Be conversational and friendly
-- If they asked a question about shown schools, answer it directly
-
-Parent's message: "${message}"
-
-Generate a natural, helpful response.`;
+Reply naturally (2-3 sentences if showing schools). Describe schools, answer questions, or suggest next steps.`;
 
     const aiResponse = await base44.integrations.Core.InvokeLLM({
       prompt: responsePrompt
@@ -329,7 +311,17 @@ Generate a natural, helpful response.`;
       schools: matchingSchools,
       filterCriteria: intentResponse.filterCriteria || {}
     });
+  };
+
+  try {
+    return await Promise.race([processRequest(), timeoutPromise]);
   } catch (error) {
+    if (error.message === 'TIMEOUT') {
+      return Response.json({ 
+        error: 'Request took too long. Try being more specific or search fewer schools.',
+        message: "I apologize - that search is taking too long. Could you narrow down your criteria? Try specifying a city or curriculum type."
+      }, { status: 200 });
+    }
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
