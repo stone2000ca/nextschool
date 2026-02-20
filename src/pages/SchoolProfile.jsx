@@ -1,40 +1,48 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Phone, Mail, Globe, Users, BookOpen, DollarSign, Heart, Share2, ChevronRight, AlertCircle, Loader2, MapPinIcon, Home, Zap, Award } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { MapPin, Users, DollarSign, Calendar, Award, Globe2, Heart, Mail, Phone, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "../utils";
+import ContactSchoolModal from '@/components/schools/ContactSchoolModal';
 import Navbar from '@/components/navigation/Navbar';
-import Footer from '@/components/navigation/Footer';
-import { toast } from 'sonner';
+import { HeaderPhotoDisplay, LogoDisplay, isClearbitUrl } from '@/components/schools/HeaderPhotoHelper';
 
 export default function SchoolProfile() {
+  const location = useLocation();
+  const schoolId = new URLSearchParams(location.search).get('id');
   const [school, setSchool] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [similarSchools, setSimilarSchools] = useState([]);
+  const [user, setUser] = useState(null);
   const [isShortlisted, setIsShortlisted] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   useEffect(() => {
     loadSchool();
-  }, []);
+    checkAuth();
+  }, [schoolId]);
+
+  const checkAuth = async () => {
+    try {
+      const authenticated = await base44.auth.isAuthenticated();
+      if (authenticated) {
+        const userData = await base44.auth.me();
+        setUser(userData);
+        setIsShortlisted(userData.shortlist?.includes(schoolId) || false);
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+    }
+  };
 
   const loadSchool = async () => {
     try {
-      const params = new URLSearchParams(window.location.search);
-      const schoolId = params.get('id');
-      
-      if (!schoolId) {
-        setLoading(false);
-        return;
-      }
-
-      const schoolData = await base44.entities.School.get(schoolId);
-      if (schoolData) {
-        setSchool(schoolData);
-        await loadSimilarSchools(schoolData);
+      const schools = await base44.entities.School.filter({ id: schoolId });
+      if (schools && schools.length > 0) {
+        setSchool(schools[0]);
       }
     } catch (error) {
       console.error('Failed to load school:', error);
@@ -43,562 +51,479 @@ export default function SchoolProfile() {
     }
   };
 
-  const loadSimilarSchools = async (currentSchool) => {
+  const handleToggleShortlist = async () => {
+    if (!user) {
+      base44.auth.redirectToLogin(window.location.pathname + window.location.search);
+      return;
+    }
+
     try {
-      const all = await base44.entities.School.list('-updated_date', 100);
-      const active = all.filter(s => s.status === 'active' && s.verified && s.id !== currentSchool.id);
-      
-      const similar = active
-        .filter(s => (s.city === currentSchool.city || s.provinceState === currentSchool.provinceState) && s.id !== currentSchool.id)
-        .slice(0, 4);
-      
-      setSimilarSchools(similar);
+      const currentShortlist = user.shortlist || [];
+      const newShortlist = isShortlisted
+        ? currentShortlist.filter(id => id !== schoolId)
+        : [...currentShortlist, schoolId];
+
+      await base44.auth.updateMe({ shortlist: newShortlist });
+      setIsShortlisted(!isShortlisted);
+      setUser({ ...user, shortlist: newShortlist });
     } catch (error) {
-      console.error('Failed to load similar schools:', error);
+      console.error('Failed to update shortlist:', error);
     }
   };
 
-  const handleAddToShortlist = () => {
-    toast.success('Added to shortlist! Sign in to save permanently.');
-    setIsShortlisted(!isShortlisted);
+  const getCurrencySymbol = (currency) => {
+    const symbols = { CAD: 'CA$', USD: '$', EUR: '€', GBP: '£' };
+    return symbols[currency] || '$';
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: school.name,
-          url: window.location.href
-        });
-      } catch (error) {
-        console.error('Share failed:', error);
-      }
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard!');
-    }
+  const getRegionBadge = (region) => {
+    const badges = {
+      Canada: { emoji: '🍁', color: 'bg-red-50 text-red-700' },
+      US: { emoji: '🇺🇸', color: 'bg-blue-50 text-blue-700' },
+      Europe: { emoji: '🇪🇺', color: 'bg-indigo-50 text-indigo-700' }
+    };
+    return badges[region] || { emoji: '🌍', color: 'bg-slate-50 text-slate-700' };
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
-        <Navbar />
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-        </div>
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-teal-600 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!school) {
     return (
-      <div className="min-h-screen bg-white">
-        <Navbar />
-        <div className="flex items-center justify-center py-20">
-          <div className="text-center">
-            <AlertCircle className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-            <p className="text-xl text-slate-600">School not found</p>
-            <Link to={createPageUrl('SchoolDirectory')}>
-              <Button className="mt-6 bg-teal-600 hover:bg-teal-700">Back to Directory</Button>
-            </Link>
-          </div>
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">School Not Found</h2>
+          <Link to={createPageUrl('Consultant')}>
+            <Button>Back to Search</Button>
+          </Link>
         </div>
       </div>
     );
   }
 
+  const badge = getRegionBadge(school.region);
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50">
       <Navbar />
 
       {/* Hero Section */}
-      <div className="relative h-96 bg-gradient-to-br from-slate-900 to-slate-800 overflow-hidden">
-        {school.heroImage || school.headerPhotoUrl ? (
-          <img
-            src={school.heroImage || school.headerPhotoUrl}
-            alt={school.name}
-            className="w-full h-full object-cover opacity-40"
-          />
-        ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
-        
-        <div className="absolute inset-0 flex flex-col justify-end p-6">
-          <div className="max-w-7xl mx-auto w-full">
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                {school.logoUrl && (
-                  <img src={school.logoUrl} alt={school.name} className="h-20 w-20 rounded-lg bg-white p-2 mb-4 object-contain" />
-                )}
-                <h1 className="text-5xl font-bold text-white mb-2">{school.name}</h1>
-                <div className="flex items-center gap-4 text-white/90">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-5 w-5" />
-                    <span>{school.city}, {school.provinceState}</span>
-                  </div>
-                  {school.country && <span className="text-white/60">•</span>}
-                  {school.country && <span>{school.country}</span>}
-                </div>
-              </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="bg-white/20 border-white/40 hover:bg-white/30 text-white"
-                  onClick={handleAddToShortlist}
-                >
-                  <Heart className={`h-5 w-5 ${isShortlisted ? 'fill-white' : ''}`} />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="bg-white/20 border-white/40 hover:bg-white/30 text-white"
-                  onClick={handleShare}
-                >
-                  <Share2 className="h-5 w-5" />
-                </Button>
-              </div>
+      <div className="relative h-96 bg-slate-200">
+        <HeaderPhotoDisplay 
+          headerPhotoUrl={school.headerPhotoUrl}
+          heroImage={school.heroImage}
+          schoolName={school.name}
+          height="h-96"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        {/* School Logo - Overlapping Bottom Left */}
+        {school.logoUrl && !isClearbitUrl(school.headerPhotoUrl) && (
+          <div className="absolute bottom-0 left-0 p-8 pb-0">
+            <div className="transform translate-y-1/2">
+              <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-24 w-24" />
+            </div>
+          </div>
+        )}
+        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+          <div className="max-w-7xl mx-auto">
+            <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-3 ${badge.color}`}>
+              {badge.emoji} {school.region}
+            </div>
+            <div className="flex items-center gap-3 mb-2">
+              {school.logoUrl && isClearbitUrl(school.headerPhotoUrl) && (
+                <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-12 w-12" />
+              )}
+              <h1 className="text-4xl font-bold">{school.name}</h1>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                {school.city}, {school.provinceState}
+              </span>
+              {school.verified && (
+                <span className="flex items-center gap-1 bg-teal-600 px-2 py-1 rounded">
+                  <Award className="h-4 w-4" />
+                  Verified
+                </span>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Key Info Bar */}
-      <div className="bg-gradient-to-r from-teal-50 to-blue-50 border-b">
-        <div className="max-w-7xl mx-auto px-6 py-6">
+      {/* Quick Stats */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {school.gradesServed && (
-              <div>
-                <p className="text-sm text-slate-600 font-semibold">GRADES</p>
-                <p className="text-lg text-slate-900 font-bold mt-1">{school.gradesServed}</p>
+            <div>
+              <div className="text-sm text-slate-600 mb-1">Grades</div>
+              <div className="text-xl font-bold">{school.gradesServed}</div>
+            </div>
+            <div>
+              <div className="text-sm text-slate-600 mb-1">Enrollment</div>
+              <div className="text-xl font-bold">{school.enrollment || 'N/A'}</div>
+            </div>
+            <div>
+              <div className="text-sm text-slate-600 mb-1">Annual Tuition</div>
+              <div className="text-xl font-bold">
+                {school.tuition ? `${getCurrencySymbol(school.currency)}${school.tuition.toLocaleString()}` : 'N/A'}
               </div>
-            )}
-            {school.genderPolicy && (
-              <div>
-                <p className="text-sm text-slate-600 font-semibold">GENDER POLICY</p>
-                <p className="text-lg text-slate-900 font-bold mt-1">{school.genderPolicy}</p>
-              </div>
-            )}
-            {school.curriculumType && (
-              <div>
-                <p className="text-sm text-slate-600 font-semibold">CURRICULUM</p>
-                <p className="text-lg text-slate-900 font-bold mt-1">{school.curriculumType}</p>
-              </div>
-            )}
-            {school.tuition && (
-              <div>
-                <p className="text-sm text-slate-600 font-semibold">TUITION</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <p className="text-lg text-teal-600 font-bold">${school.tuition.toLocaleString()}</p>
-                  {school.financialAidAvailable && (
-                    <Badge className="bg-green-100 text-green-700">Financial Aid</Badge>
-                  )}
-                </div>
-              </div>
-            )}
+            </div>
+            <div>
+              <div className="text-sm text-slate-600 mb-1">Class Size</div>
+              <div className="text-xl font-bold">{school.avgClassSize || 'N/A'}</div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Campus Feel Tags */}
-            {school.campusFeel && (
-              <div className="bg-slate-50 rounded-lg p-6">
-                <p className="text-sm font-semibold text-slate-600 mb-3">CAMPUS FEEL</p>
-                <Badge className="bg-blue-100 text-blue-700">{school.campusFeel}</Badge>
-              </div>
-            )}
-
-            <Tabs defaultValue="about" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="about">About</TabsTrigger>
-                <TabsTrigger value="academics">Academics</TabsTrigger>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Content */}
+          <div className="lg:col-span-2">
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="programs">Programs</TabsTrigger>
                 <TabsTrigger value="admissions">Admissions</TabsTrigger>
-                <TabsTrigger value="facilities">Facilities</TabsTrigger>
+                <TabsTrigger value="photos">Photos</TabsTrigger>
               </TabsList>
 
-              {/* About Tab */}
-              <TabsContent value="about" className="space-y-6">
+              <TabsContent value="overview" className="space-y-6">
+                {school.highlights && school.highlights.length > 0 && (
+                  <Card className="p-6 bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                      <Award className="h-5 w-5 text-teal-600" />
+                      What Makes This School Special
+                    </h3>
+                    <ul className="space-y-2">
+                      {school.highlights.slice(0, 3).map((highlight, idx) => (
+                        <li key={idx} className="flex gap-3">
+                          <span className="text-teal-600 font-bold">✦</span>
+                          <span className="text-teal-900">{highlight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+
                 {school.missionStatement && (
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-3">Mission Statement</h3>
+                  <Card className="p-6">
+                    <h3 className="text-xl font-bold mb-3">Mission Statement</h3>
                     <p className="text-slate-700 leading-relaxed">{school.missionStatement}</p>
-                  </div>
+                  </Card>
                 )}
 
-                {school.teachingPhilosophy && (
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-3">Teaching Philosophy</h3>
-                    <p className="text-slate-700 leading-relaxed">{school.teachingPhilosophy}</p>
-                  </div>
+                {(school.teachingPhilosophy || school.curriculumType) && (
+                  <Card className="p-6">
+                    <h3 className="text-xl font-bold mb-3">Teaching Philosophy</h3>
+                    {school.teachingPhilosophy && (
+                      <p className="text-slate-700 mb-4">{school.teachingPhilosophy}</p>
+                    )}
+                    {school.curriculumType && (
+                      <div>
+                        <span className="text-sm text-slate-600 font-medium">Curriculum Type:</span>
+                        <span className="ml-2 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-medium">
+                          {school.curriculumType}
+                        </span>
+                      </div>
+                    )}
+                  </Card>
                 )}
-
-                <div className="grid grid-cols-2 gap-6">
-                  {school.founded && (
-                    <div>
-                      <p className="text-sm text-slate-600 font-semibold mb-1">FOUNDED</p>
-                      <p className="text-2xl font-bold text-slate-900">{school.founded}</p>
-                    </div>
-                  )}
-                  {school.enrollment && (
-                    <div>
-                      <p className="text-sm text-slate-600 font-semibold mb-1">ENROLLMENT</p>
-                      <p className="text-2xl font-bold text-slate-900">{school.enrollment.toLocaleString()}</p>
-                    </div>
-                  )}
-                </div>
 
                 {school.values && school.values.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-3">School Values</h3>
+                  <Card className="p-6">
+                    <h3 className="text-xl font-bold mb-3">Core Values</h3>
                     <div className="flex flex-wrap gap-2">
-                      {school.values.map((value, idx) => (
-                        <Badge key={idx} variant="outline">{value}</Badge>
+                      {school.values.map((value, index) => (
+                        <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
+                          {value}
+                        </span>
                       ))}
                     </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Academics Tab */}
-              <TabsContent value="academics" className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  {school.avgClassSize && (
-                    <div className="bg-slate-50 p-4 rounded-lg">
-                      <p className="text-sm text-slate-600 font-semibold mb-1">AVERAGE CLASS SIZE</p>
-                      <p className="text-2xl font-bold text-slate-900">{school.avgClassSize}</p>
-                    </div>
-                  )}
-                  {school.studentTeacherRatio && (
-                    <div className="bg-slate-50 p-4 rounded-lg">
-                      <p className="text-sm text-slate-600 font-semibold mb-1">STUDENT-TEACHER RATIO</p>
-                      <p className="text-2xl font-bold text-slate-900">{school.studentTeacherRatio}</p>
-                    </div>
-                  )}
-                </div>
-
-                {school.languages && school.languages.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-3">Languages Offered</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {school.languages.map((lang, idx) => (
-                        <Badge key={idx} className="bg-purple-100 text-purple-700">{lang}</Badge>
-                      ))}
-                    </div>
-                  </div>
+                  </Card>
                 )}
 
-                {school.specialEdPrograms && school.specialEdPrograms.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-3">Special Education Programs</h3>
-                    <div className="space-y-2">
-                      {school.specialEdPrograms.map((prog, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-slate-700">
-                          <ChevronRight className="h-4 w-4 text-teal-600 flex-shrink-0" />
-                          <span>{prog}</span>
+                {(school.founded || school.studentTeacherRatio || school.financialAidAvailable !== null || school.religiousAffiliation) && (
+                  <Card className="p-6">
+                    <h3 className="text-xl font-bold mb-4">Key Facts</h3>
+                    <div className="space-y-3">
+                      {school.founded && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Founded</span>
+                          <span className="font-medium">{school.founded}</span>
                         </div>
-                      ))}
+                      )}
+                      {school.studentTeacherRatio && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Student:Teacher Ratio</span>
+                          <span className="font-medium">{school.studentTeacherRatio}</span>
+                        </div>
+                      )}
+                      {school.financialAidAvailable !== null && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Financial Aid</span>
+                          <span className="font-medium">{school.financialAidAvailable ? 'Available' : 'Not Available'}</span>
+                        </div>
+                      )}
+                      {school.religiousAffiliation && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Religious Affiliation</span>
+                          <span className="font-medium">{school.religiousAffiliation}</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  </Card>
                 )}
               </TabsContent>
 
-              {/* Programs Tab */}
               <TabsContent value="programs" className="space-y-6">
-                {school.artsPrograms && school.artsPrograms.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-3">Arts Programs</h3>
+                {/* Curriculum & Core Programs */}
+                <Card className="p-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
+                  <h3 className="text-lg font-bold mb-4">Academic Programs</h3>
+                  <div className="space-y-3">
+                    {school.curriculumType && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">Curriculum</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.curriculumType}</span>
+                      </div>
+                    )}
+                    {school.lowestGrade !== null && school.highestGrade !== null && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">Grade Levels</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.gradesServed}</span>
+                      </div>
+                    )}
+                    {school.avgClassSize && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">Average Class Size</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.avgClassSize} students</span>
+                      </div>
+                    )}
+                    {school.studentTeacherRatio && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">Student-Teacher Ratio</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.studentTeacherRatio}</span>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+
+                {/* Specializations */}
+                {school.specializations && school.specializations.length > 0 && (
+                  <Card className="p-6">
+                    <h3 className="text-lg font-bold mb-4">Areas of Specialization</h3>
                     <div className="flex flex-wrap gap-2">
-                      {school.artsPrograms.map((prog, idx) => (
-                        <Badge key={idx} className="bg-pink-100 text-pink-700">{prog}</Badge>
+                      {school.specializations.map((spec, index) => {
+                        const colors = {
+                          'STEM': 'bg-purple-100 text-purple-700',
+                          'Arts': 'bg-amber-100 text-amber-700',
+                          'Languages': 'bg-indigo-100 text-indigo-700',
+                          'Sports': 'bg-teal-100 text-teal-700',
+                          'Leadership': 'bg-orange-100 text-orange-700',
+                          'Environmental': 'bg-green-100 text-green-700'
+                        };
+                        return (
+                          <span key={index} className={`px-3 py-1 rounded-full text-sm font-medium ${colors[spec] || 'bg-slate-100 text-slate-700'}`}>
+                            {spec}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                )}
+
+                {school.artsPrograms && school.artsPrograms.length > 0 && (
+                  <Card className="p-6">
+                    <h3 className="text-lg font-bold mb-3">Arts Programs</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {school.artsPrograms.map((program, index) => (
+                        <span key={index} className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
+                          {program}
+                        </span>
                       ))}
                     </div>
-                  </div>
+                  </Card>
                 )}
 
                 {school.sportsPrograms && school.sportsPrograms.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-3">Sports Programs</h3>
+                  <Card className="p-6">
+                    <h3 className="text-lg font-bold mb-3">Sports Programs</h3>
                     <div className="flex flex-wrap gap-2">
-                      {school.sportsPrograms.map((sport, idx) => (
-                        <Badge key={idx} className="bg-orange-100 text-orange-700">{sport}</Badge>
+                      {school.sportsPrograms.map((program, index) => (
+                        <span key={index} className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm">
+                          {program}
+                        </span>
                       ))}
                     </div>
-                  </div>
+                  </Card>
+                )}
+
+                {school.languages && school.languages.length > 0 && (
+                  <Card className="p-6">
+                    <h3 className="text-lg font-bold mb-3">Language Programs</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {school.languages.map((language, index) => (
+                        <span key={index} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
+                          {language}
+                        </span>
+                      ))}
+                    </div>
+                  </Card>
                 )}
 
                 {school.clubs && school.clubs.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-3">Clubs & Organizations</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {school.clubs.map((club, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-slate-700">
-                          <ChevronRight className="h-4 w-4 text-teal-600 flex-shrink-0" />
-                          <span>{club}</span>
-                        </div>
+                  <Card className="p-6">
+                    <h3 className="text-lg font-bold mb-3">Clubs & Extracurricular Activities</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {school.clubs.map((club, index) => (
+                        <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
+                          {club}
+                        </span>
                       ))}
                     </div>
-                  </div>
+                  </Card>
                 )}
               </TabsContent>
 
-              {/* Admissions Tab */}
               <TabsContent value="admissions" className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  {school.acceptanceRate && (
-                    <div className="bg-slate-50 p-4 rounded-lg">
-                      <p className="text-sm text-slate-600 font-semibold mb-1">ACCEPTANCE RATE</p>
-                      <p className="text-2xl font-bold text-slate-900">{school.acceptanceRate}%</p>
-                    </div>
-                  )}
+                <Card className="p-6">
+                  <h3 className="text-xl font-bold mb-4">Admissions Information</h3>
                   {school.applicationDeadline && (
-                    <div className="bg-slate-50 p-4 rounded-lg">
-                      <p className="text-sm text-slate-600 font-semibold mb-1">APPLICATION DEADLINE</p>
-                      <p className="text-lg font-bold text-slate-900">{school.applicationDeadline}</p>
+                    <div className="mb-4">
+                      <span className="text-slate-600 font-medium">Application Deadline:</span>
+                      <span className="ml-2">{school.applicationDeadline}</span>
                     </div>
                   )}
-                </div>
-
-                {school.entranceRequirements && (
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-3">Entrance Requirements</h3>
-                    <p className="text-slate-700 leading-relaxed">{school.entranceRequirements}</p>
-                  </div>
-                )}
-
-                {school.openHouseDates && school.openHouseDates.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-3">Open House Dates</h3>
-                    <div className="space-y-2">
-                      {school.openHouseDates.map((date, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-slate-700">
-                          <ChevronRight className="h-4 w-4 text-teal-600 flex-shrink-0" />
-                          <span>{date}</span>
-                        </div>
-                      ))}
+                  {school.acceptanceRate && (
+                    <div className="mb-4">
+                      <span className="text-slate-600 font-medium">Acceptance Rate:</span>
+                      <span className="ml-2">{school.acceptanceRate}%</span>
                     </div>
-                  </div>
-                )}
+                  )}
+                  {school.admissionRequirements && school.admissionRequirements.length > 0 && (
+                    <div className="mb-4">
+                      <span className="text-slate-600 font-medium mb-2 block">Requirements:</span>
+                      <ul className="list-disc ml-6 text-slate-700 space-y-1">
+                        {school.admissionRequirements.map((req, index) => (
+                          <li key={index}>{req}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {school.openHouseDates && school.openHouseDates.length > 0 && (
+                    <div>
+                      <span className="text-slate-600 font-medium mb-2 block">Open House Dates:</span>
+                      <div className="space-y-1 text-slate-700">
+                        {school.openHouseDates.map((date, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-teal-600" />
+                            {date}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </Card>
               </TabsContent>
 
-              {/* Facilities Tab */}
-              <TabsContent value="facilities" className="space-y-6">
-                <div className="space-y-4">
-                  {school.boardingAvailable && (
-                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                      <Home className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                      <div>
-                        <p className="font-semibold text-slate-900">Boarding Available</p>
-                        {school.boardingType && <p className="text-sm text-slate-600">{school.boardingType.charAt(0).toUpperCase() + school.boardingType.slice(1)} boarding</p>}
-                      </div>
-                    </div>
-                  )}
-
-                  {school.beforeAfterCare && (
-                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                      <Zap className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                      <div>
-                        <p className="font-semibold text-slate-900">Before/After Care</p>
-                        <p className="text-sm text-slate-600">{school.beforeAfterCare}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {school.transportationOptions && (
-                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                      <MapPinIcon className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                      <div>
-                        <p className="font-semibold text-slate-900">Transportation</p>
-                        <p className="text-sm text-slate-600">{school.transportationOptions}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {school.uniformRequired !== undefined && (
-                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                      <Award className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                      <p className="font-semibold text-slate-900">
-                        {school.uniformRequired ? '✓ Uniform Required' : 'No uniform required'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {school.facilities && school.facilities.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-3">Facilities</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {school.facilities.map((facility, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-slate-700">
-                          <ChevronRight className="h-4 w-4 text-teal-600 flex-shrink-0" />
-                          <span>{facility}</span>
-                        </div>
+              <TabsContent value="photos" className="space-y-6">
+                <Card className="p-6">
+                  <h3 className="text-xl font-bold mb-4">Gallery</h3>
+                  {school.photoGallery && school.photoGallery.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      {school.photoGallery.map((photo, index) => (
+                        <img key={index} src={photo} alt={`${school.name} ${index + 1}`} className="rounded-lg w-full h-48 object-cover" />
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-slate-500">No photos available yet.</p>
+                  )}
+                </Card>
               </TabsContent>
             </Tabs>
-
-            {/* Photos Gallery */}
-            {school.photoGallery && school.photoGallery.length > 0 && (
-              <div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-6">Photo Gallery</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {school.photoGallery.slice(0, 6).map((photo, idx) => (
-                    <img
-                      key={idx}
-                      src={photo}
-                      alt={`${school.name} photo ${idx + 1}`}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Videos */}
-            {school.videos && school.videos.length > 0 && (
-              <div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-6">Videos</h3>
-                <div className="space-y-4">
-                  {school.videos.map((video, idx) => (
-                    <a
-                      key={idx}
-                      href={video}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition"
-                    >
-                      <p className="text-teal-600 font-semibold flex items-center gap-2">
-                        Video {idx + 1}
-                        <ChevronRight className="h-4 w-4" />
-                      </p>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Contact Card */}
-            <Card className="p-6 sticky top-20">
-              <h3 className="text-xl font-bold text-slate-900 mb-4">Contact Information</h3>
-              <div className="space-y-4 text-sm">
-                {school.address && (
-                  <div className="flex gap-3">
-                    <MapPin className="h-5 w-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-slate-600 text-xs font-semibold mb-1">ADDRESS</p>
-                      <p className="text-slate-900">{school.address}</p>
-                    </div>
-                  </div>
-                )}
+          <div className="space-y-6">
+            <Card className="p-6 sticky top-24">
+              <Button 
+                className="w-full mb-3 bg-teal-600 hover:bg-teal-700"
+                onClick={() => setShowContactModal(true)}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Contact This School
+              </Button>
+              <Button 
+                className={`w-full mb-4 ${isShortlisted ? 'bg-amber-600 hover:bg-amber-700' : ''}`}
+                variant={isShortlisted ? "default" : "outline"}
+                onClick={handleToggleShortlist}
+              >
+                <Heart className={`h-4 w-4 mr-2 ${isShortlisted ? 'fill-current' : ''}`} />
+                {isShortlisted ? 'Shortlisted' : 'Add to Shortlist'}
+              </Button>
+
+              <div className="space-y-4">
+                <h3 className="font-bold">Contact Information</h3>
                 {school.phone && (
-                  <div className="flex gap-3">
-                    <Phone className="h-5 w-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-slate-600 text-xs font-semibold mb-1">PHONE</p>
-                      <a href={`tel:${school.phone}`} className="text-teal-600 hover:underline">{school.phone}</a>
-                    </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-slate-400" />
+                    <span>{school.phone}</span>
                   </div>
                 )}
                 {school.email && (
-                  <div className="flex gap-3">
-                    <Mail className="h-5 w-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-slate-600 text-xs font-semibold mb-1">EMAIL</p>
-                      <a href={`mailto:${school.email}`} className="text-teal-600 hover:underline break-all">{school.email}</a>
-                    </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-slate-400" />
+                    <a href={`mailto:${school.email}`} className="text-teal-600 hover:underline">
+                      {school.email}
+                    </a>
                   </div>
                 )}
                 {school.website && (
-                  <div className="flex gap-3">
-                    <Globe className="h-5 w-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-slate-600 text-xs font-semibold mb-1">WEBSITE</p>
-                      <a href={school.website} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline break-all text-xs">{school.website}</a>
-                    </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Globe2 className="h-4 w-4 text-slate-400" />
+                    <a 
+                      href={school.website.startsWith('http') ? school.website : `https://${school.website}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-teal-600 hover:underline flex items-center gap-1"
+                    >
+                      Visit Website
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
                   </div>
                 )}
               </div>
-            </Card>
 
-            {/* CTA Button */}
-            <Link to={createPageUrl('Consultant')}>
-              <Button className="w-full bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white font-bold py-6 h-auto text-center">
-                <Zap className="h-5 w-5 mr-2" />
-                Find Out If This School Is Right For Your Child
-              </Button>
-            </Link>
-
-            {/* Claim School Link */}
-            <Button
-              variant="outline"
-              className="w-full border-2"
-              onClick={() => {
-                toast.info('Contact us to claim this school profile');
-              }}
-            >
-              Claim This School
-            </Button>
-
-            {/* Accreditations */}
-            {school.accreditations && school.accreditations.length > 0 && (
-              <Card className="p-6">
-                <h3 className="font-bold text-slate-900 mb-3">Accreditations</h3>
-                <div className="space-y-2">
-                  {school.accreditations.map((acc, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm text-slate-700">
-                      <ChevronRight className="h-4 w-4 text-teal-600 flex-shrink-0" />
-                      <span>{acc}</span>
-                    </div>
-                  ))}
+              {school.accreditations && school.accreditations.length > 0 && (
+                <div className="mt-6 pt-6 border-t">
+                  <h3 className="font-bold mb-2">Accreditations</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {school.accreditations.map((acc, index) => (
+                      <span key={index} className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded">
+                        {acc}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </Card>
-            )}
+              )}
+            </Card>
           </div>
         </div>
-
-        {/* Similar Schools */}
-        {similarSchools.length > 0 && (
-          <div className="mt-16 pt-12 border-t">
-            <h2 className="text-3xl font-bold text-slate-900 mb-8">Similar Schools</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {similarSchools.map(sim => (
-                <Link key={sim.id} to={`${createPageUrl('SchoolProfile')}?id=${sim.id}`}>
-                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden flex flex-col">
-                    {sim.heroImage || sim.headerPhotoUrl ? (
-                      <img
-                        src={sim.heroImage || sim.headerPhotoUrl}
-                        alt={sim.name}
-                        className="h-40 w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-40 w-full bg-gradient-to-br from-slate-200 to-slate-300" />
-                    )}
-                    <div className="p-4 flex-1 flex flex-col">
-                      <h3 className="font-bold text-slate-900 mb-2">{sim.name}</h3>
-                      <p className="text-sm text-slate-600 mb-4 flex-1">{sim.city}, {sim.provinceState}</p>
-                      <Button variant="outline" size="sm" className="w-full">
-                        View Profile
-                      </Button>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      <Footer />
+      {showContactModal && (
+        <ContactSchoolModal
+          school={school}
+          onClose={() => setShowContactModal(false)}
+        />
+      )}
     </div>
   );
 }
