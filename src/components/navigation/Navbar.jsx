@@ -59,7 +59,8 @@ export default function Navbar({ variant = "default" }) {
             >
               Login
             </Button>
-          )}
+            )}
+          </nav>
         </div>
       </header>
     );
