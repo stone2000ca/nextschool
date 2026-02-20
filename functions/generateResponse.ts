@@ -132,11 +132,25 @@ Keep to 2-3 paragraphs. Sound warm and empathetic. NO school names.`;
       // ===== CRITICAL: ENTITY EXTRACTION FROM CONVERSATION =====
       // Extract what parent has already said from chat history + current message
       const allText = history.map(m => m.content).join(' ') + ' ' + message;
+      let hasLocation = false;
+      let hasBudget = false;
+      let hasChildGrade = false;
+      let hasSchoolNames = false;
+
+      try {
+        hasLocation = /mississauga|toronto|vancouver|calgary|ottawa|montreal|brampton|oakville|markham|vaughan|richmond hill|burnaby|surrey|london|hamilton|winnipeg|quebec|edmonton/i.test(allText);
+        hasBudget = /(\$|budget|tuition|cost)\s*\d+/.test(allText) || /\d{2,3}\s*[k](?:\s*per|\/)?(?:\s*year|annually)?/i.test(allText);
+        hasChildGrade = /grade|kindergarten|preschool|elementary|middle|high school|grade \d/i.test(allText);
+        hasSchoolNames = /ucc|crescent|branksome|lakefield|appleby|bishop|jarvis/i.test(allText);
+      } catch (regexError) {
+        console.warn('Regex extraction error:', regexError);
+      }
+
       const extractedInfo = {
-        hasLocation: /mississauga|toronto|vancouver|calgary|ottawa|montreal|brampton|oakville|markham|vaughan|richmond hill|burnaby|surrey|london|hamilton|winnipeg|quebec|vancouver|calgary|edmonton/i.test(allText),
-        hasBudget: /(\$|budget|tuition|cost)\s*(\d{1,3}[,.]?\d{0,3}|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)/i.test(allText) || /\d{2,3}[k-]?(?:k|k per|per year|annually|year)/i.test(allText),
-        hasChildGrade: /grade|kindergarten|preschool|elementary|middle|high school|\bg\s*[0-9]|\bk\b|\bpk\b|\bjk\b/i.test(allText),
-        hasSchoolNames: /\b(ucc|crescent|st\.\s*andrew|branksome|upper canada|lakefield|appleby|bishop|jarvis|maxwell|sed|prep|collegiate)\b/i.test(allText)
+        hasLocation,
+        hasBudget,
+        hasChildGrade,
+        hasSchoolNames
       };
 
       // Build persona-specific instructions with EMPHASIS on entity extraction + one question + no filler
