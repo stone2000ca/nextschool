@@ -166,17 +166,17 @@ export default function SchoolProfile() {
             </div>
             <div>
               <div className="text-sm text-slate-600 mb-1">Enrollment</div>
-              <div className="text-xl font-bold">{school.enrollment}</div>
+              <div className="text-xl font-bold">{school.enrollment || 'N/A'}</div>
             </div>
             <div>
               <div className="text-sm text-slate-600 mb-1">Annual Tuition</div>
               <div className="text-xl font-bold">
-                {getCurrencySymbol(school.currency)}{school.tuition?.toLocaleString()}
+                {school.tuition ? `${getCurrencySymbol(school.currency)}${school.tuition.toLocaleString()}` : 'N/A'}
               </div>
             </div>
             <div>
               <div className="text-sm text-slate-600 mb-1">Class Size</div>
-              <div className="text-xl font-bold">{school.avgClassSize}</div>
+              <div className="text-xl font-bold">{school.avgClassSize || 'N/A'}</div>
             </div>
           </div>
         </div>
