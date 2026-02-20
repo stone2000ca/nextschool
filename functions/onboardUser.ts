@@ -49,9 +49,10 @@ Deno.serve(async (req) => {
     let onboardingComplete = false;
 
     if (currentPhase === 'confirm_brief' && requiredFieldsMet) {
-      // All intake complete - transition to BRIEF_DELIVERY phase
-      onboardingComplete = true;
-      nextPhase = 'BRIEF_DELIVERY';
+      // All intake complete - generate The Brief and move to confirm_brief phase
+      // (orchestrateConversation will detect confirm_brief and handle confirmation)
+      onboardingComplete = false; // NOT complete until they confirm The Brief
+      nextPhase = 'confirm_brief'; // Stay in confirm_brief so orchestrateConversation can detect it
       
       // Generate The Brief using generateResponse
       try {
@@ -62,6 +63,7 @@ Deno.serve(async (req) => {
           conversationHistory: conversationHistory || []
         });
         aiMessage = briefResult.data.message;
+        console.log('✅ Brief generated successfully');
       } catch (briefError) {
         console.error('Failed to generate brief:', briefError);
         aiMessage = `Based on everything you've shared, here's what I'm understanding about ${profile.childName} and your family's needs. Does this capture it?`;
@@ -75,7 +77,8 @@ Deno.serve(async (req) => {
     const updatedProfile = await base44.entities.FamilyProfile.update(profile.id, {
       ...profile,
       onboardingPhase: nextPhase,
-      onboardingComplete: onboardingComplete
+      onboardingComplete: onboardingComplete,
+      familyBrief: currentPhase === 'confirm_brief' && requiredFieldsMet ? aiMessage : profile.familyBrief // Store The Brief
     });
 
     return Response.json({
