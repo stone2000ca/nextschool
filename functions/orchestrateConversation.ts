@@ -31,15 +31,23 @@ Deno.serve(async (req) => {
         const familyProfiles = await base44.entities.FamilyProfile.filter({ userId });
         familyProfile = familyProfiles.length > 0 ? familyProfiles[0] : null;
 
-        // If in BRIEF_DELIVERY phase, handle confirmation/adjustment
-        if (familyProfile && familyProfile.onboardingPhase === 'BRIEF_DELIVERY') {
+        // If in confirm_brief phase (user is confirming The Brief), handle confirmation/adjustment
+        if (familyProfile && familyProfile.onboardingPhase === 'confirm_brief') {
+          console.log('🔍 BRIEF CONFIRMATION DETECTED');
+          console.log('📊 Current phase:', familyProfile.onboardingPhase);
+          console.log('💬 User message:', message);
+          
           const msgLower = message.toLowerCase().trim();
           
           // Robust confirmation detection - check word boundaries
           const isConfirming = /\b(exactly right|sounds good|yes|proceed|start search|that's right|thats right|correct|perfect|great|looks good|go ahead|let's go|let's search|sounds perfect)\b/i.test(msgLower);
           const isAdjusting = /\b(adjust|change|edit|not right|add context|add more|wait|hold on|actually|let me|different)\b/i.test(msgLower);
 
+          console.log('✅ Is confirming:', isConfirming);
+          console.log('❌ Is adjusting:', isAdjusting);
+
           if (isConfirming) {
+            console.log('🎯 BRIEF CONFIRMED - Triggering school search');
             // Brief confirmed - proceed to school search
             const updatedProfile = await base44.entities.FamilyProfile.update(familyProfile.id, { onboardingPhase: 'BRIEF_CONFIRMED' });
 
@@ -57,8 +65,10 @@ Deno.serve(async (req) => {
               limit: 20
             };
 
+            console.log('🔎 Search params:', JSON.stringify(searchParams));
             const searchResult = await base44.functions.invoke('searchSchools', searchParams);
             const schools = searchResult.data?.schools || [];
+            console.log('📚 Schools found:', schools.length);
 
             // Generate response acknowledging the brief confirmation
             const responseResult = await base44.functions.invoke('generateResponse', {
@@ -80,16 +90,18 @@ Deno.serve(async (req) => {
               onboardingComplete: true
             });
           } else if (isAdjusting) {
+            console.log('🔄 User wants to adjust The Brief');
             // User wants to adjust - ask what needs adjusting
             return Response.json({
               message: 'No problem! What would you like to adjust or add?',
               shouldShowSchools: false,
               schools: [],
-              onboardingPhase: 'BRIEF_DELIVERY_ADJUSTING',
+              onboardingPhase: 'confirm_brief',
               familyProfile: familyProfile,
-              onboardingComplete: true
+              onboardingComplete: false
             });
           } else {
+            console.log('❓ Unclear response to The Brief - re-presenting');
             // Unclear response - re-present the brief with actual data
             const briefResult = await base44.functions.invoke('generateResponse', {
               message: 're-present brief',
@@ -102,9 +114,9 @@ Deno.serve(async (req) => {
               message: briefResult.data.message,
               shouldShowSchools: false,
               schools: [],
-              onboardingPhase: 'BRIEF_DELIVERY',
+              onboardingPhase: 'confirm_brief',
               familyProfile: familyProfile,
-              onboardingComplete: true
+              onboardingComplete: false
             });
           }
         }
