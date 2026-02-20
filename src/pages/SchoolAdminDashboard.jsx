@@ -174,28 +174,35 @@ export default function SchoolAdminDashboard() {
 
             {/* Photos & Media Tab */}
             <TabsContent value="media" className="p-8">
-              <div className="text-center py-12">
-                <Image className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-                <h3 className="font-semibold text-slate-900 mb-2">Coming Soon</h3>
-                <p className="text-slate-600">Photos & Media management will be available in Part 2.</p>
+              <div className="max-w-3xl">
+                <h2 className="text-xl font-bold mb-6">Photos & Media</h2>
+                <PhotosMediaSection
+                  school={school}
+                  onUpdate={(field, value) => {
+                    setSchool({ ...school, [field]: value });
+                  }}
+                />
               </div>
             </TabsContent>
 
             {/* Admissions Tab */}
             <TabsContent value="admissions" className="p-8">
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-                <h3 className="font-semibold text-slate-900 mb-2">Coming Soon</h3>
-                <p className="text-slate-600">Admissions settings will be available in Part 2.</p>
+              <div>
+                <h2 className="text-xl font-bold mb-6">Admissions</h2>
+                <AdmissionsSection
+                  school={school}
+                  onUpdate={(field, value) => {
+                    setSchool({ ...school, [field]: value });
+                  }}
+                />
               </div>
             </TabsContent>
 
             {/* Account Tab */}
             <TabsContent value="account" className="p-8">
-              <div className="text-center py-12">
-                <User className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-                <h3 className="font-semibold text-slate-900 mb-2">Coming Soon</h3>
-                <p className="text-slate-600">Account settings will be available in Part 2.</p>
+              <div>
+                <h2 className="text-xl font-bold mb-6">Account</h2>
+                <AccountSection school={school} />
               </div>
             </TabsContent>
           </Tabs>
