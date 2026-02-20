@@ -88,17 +88,23 @@ Reply naturally and empathetically. Describe schools, answer questions, or sugge
       
       let messageWithLinks = aiResponse;
       
-      // Replace school names with school:slug links (but avoid double-wrapping existing markdown links)
+      // Replace school names with school:slug links
       if (schools.length > 0) {
+        // First: Convert any existing markdown links [SchoolName](url) to school:slug format
+        // This handles cases where AI might generate [SchoolName](https://...) despite instructions
         schools.forEach(school => {
-          // Escape special regex characters in school name
           const escapedName = school.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          
-          // Match school name ONLY if it's not already inside markdown link syntax
-          // Negative lookbehind: not preceded by [
-          // Negative lookahead: not followed by ](
+          const markdownLinkRegex = new RegExp(`\\[${escapedName}\\]\\([^)]+\\)`, 'gi');
+          messageWithLinks = messageWithLinks.replace(
+            markdownLinkRegex,
+            `[${school.name}](school:${school.slug})`
+          );
+        });
+        
+        // Second: Convert plain school names to school:slug links (if not already a link)
+        schools.forEach(school => {
+          const escapedName = school.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const schoolNameRegex = new RegExp(`(?<!\\[)\\b${escapedName}\\b(?!\\]\\()`, 'gi');
-          
           messageWithLinks = messageWithLinks.replace(
             schoolNameRegex,
             `[${school.name}](school:${school.slug})`
