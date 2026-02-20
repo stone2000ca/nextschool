@@ -759,6 +759,18 @@ Return empty array if user didn't provide any of these facts.`;
     );
   }
 
+  // Show consultant selection if not yet selected
+  if (!selectedConsultant) {
+    return (
+      <div className="h-screen flex flex-col bg-slate-50">
+        <Navbar variant="minimal" />
+        <div className="flex-1 overflow-auto">
+          <ConsultantSelection onSelectConsultant={handleSelectConsultant} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col bg-slate-50">
       {/* Header */}
