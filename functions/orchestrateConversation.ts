@@ -475,14 +475,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // STEP 3: Generate AI response (can timeout)
+    // STEP 5: For SEARCHING/RESULTS states, generate school response
     let aiMessage = '';
     let responseTimedOut = false;
     
-    // Handle greetings with friendly response (skip search logic)
-    if (intentResponse.intent === 'GREETING') {
-      aiMessage = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
-    } else {
+    if (currentState === STATES.SEARCHING || currentState === STATES.RESULTS) {
       try {
         const generateResult = await base44.functions.invoke('generateResponse', {
           message,
