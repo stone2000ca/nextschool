@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 // Helper component to display header photo with Clearbit fallback
 export function isClearbitUrl(url) {
   if (!url) return false;
@@ -5,28 +7,32 @@ export function isClearbitUrl(url) {
 }
 
 export function HeaderPhotoDisplay({ headerPhotoUrl, heroImage, schoolName, height = 'h-96' }) {
+  const [showFallback, setShowFallback] = useState(false);
+  
   const isHeaderPhotoClearbit = isClearbitUrl(headerPhotoUrl);
   const isHeroImageClearbit = isClearbitUrl(heroImage);
   const hasValidHeaderPhoto = headerPhotoUrl && !isHeaderPhotoClearbit;
   const hasValidHeroImage = heroImage && !isHeroImageClearbit;
 
   // BUG FIX #7: Check both headerPhotoUrl and heroImage for Clearbit
-  if (hasValidHeaderPhoto) {
+  if (hasValidHeaderPhoto && !showFallback) {
     return (
       <img 
         src={headerPhotoUrl} 
         alt={schoolName}
         className={`w-full ${height} object-cover`}
+        onError={() => setShowFallback(true)}
       />
     );
   }
 
-  if (hasValidHeroImage) {
+  if (hasValidHeroImage && !showFallback) {
     return (
       <img 
         src={heroImage} 
         alt={schoolName}
         className={`w-full ${height} object-cover`}
+        onError={() => setShowFallback(true)}
       />
     );
   }
