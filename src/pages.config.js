@@ -60,6 +60,7 @@ import SchoolAdminDashboard from './pages/SchoolAdminDashboard';
 import HowItWorks from './pages/HowItWorks';
 import About from './pages/About';
 import ForSchools from './pages/ForSchools';
+import Contact from './pages/Contact';
 
 
 export const PAGES = {
@@ -76,6 +77,7 @@ export const PAGES = {
     "HowItWorks": HowItWorks,
     "About": About,
     "ForSchools": ForSchools,
+    "Contact": Contact,
 }
 
 export const pagesConfig = {
