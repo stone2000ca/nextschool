@@ -384,24 +384,8 @@ export default function Consultant() {
         } : null
       });
 
-      // Handle onboarding response
-      if (response.data.onboardingPhase && response.data.onboardingComplete === false) {
-        // Still in onboarding - stay in welcome/chat view, don't show schools
-        setCurrentView('welcome');
-      }
-      // Handle onboarding complete - transition to school search
-      else if (response.data.onboardingComplete === true && response.data.shouldShowSchools) {
-        setCurrentView('schools');
-      }
-      // BUG FIX #1 & #6: Improved view switching logic
-      // Handle comparison intent first
-      else if (response.data.intent === 'COMPARE_SCHOOLS' && response.data.schools?.length >= 2) {
-        setPreviousSearchResults(schools);
-        setComparisonData(response.data.schools);
-        setCurrentView('comparison-table');
-      }
-      // Handle school search results - SHOW SCHOOL CARDS if schools are returned
-      else if (response.data.schools && response.data.schools.length > 0) {
+      // FIX #3: First priority - if schools are returned, display them
+      if (response.data.schools && response.data.schools.length > 0) {
         // Reorder schools to match the order mentioned in AI response
         const aiResponse = response.data.message;
         const orderedSchools = [...response.data.schools];
@@ -431,7 +415,23 @@ export default function Consultant() {
         setSortDirection('asc');
         // CRITICAL: Always switch to schools view when schools are returned
         setCurrentView('schools');
-      } else {
+      }
+      // Handle comparison intent
+      else if (response.data.intent === 'COMPARE_SCHOOLS' && response.data.schools?.length >= 2) {
+        setPreviousSearchResults(schools);
+        setComparisonData(response.data.schools);
+        setCurrentView('comparison-table');
+      }
+      // Handle onboarding response
+      else if (response.data.onboardingPhase && response.data.onboardingComplete === false) {
+        // Still in onboarding - stay in welcome/chat view, don't show schools
+        setCurrentView('welcome');
+      }
+      // Handle onboarding complete
+      else if (response.data.onboardingComplete === true) {
+        setCurrentView('schools');
+      }
+      else {
         // No schools found - keep welcome or previous view
         if (schools.length === 0) {
           setCurrentView('welcome');
