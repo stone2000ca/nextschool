@@ -230,6 +230,27 @@ export default function ClaimSchool() {
     );
   }
 
+  if (!schoolId) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Navbar />
+        <div className="max-w-2xl mx-auto px-4 py-12">
+          <Card className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2 text-slate-900">No School Selected</h1>
+            <p className="text-slate-600 mb-8">Please select a school from the directory to claim.</p>
+            <Link to={createPageUrl('SchoolDirectory')}>
+              <Button className="bg-teal-600 hover:bg-teal-700">
+                Go to School Directory
+              </Button>
+            </Link>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   if (!school) {
     return (
       <div className="min-h-screen bg-slate-50">
