@@ -80,6 +80,13 @@ export default function Consultant() {
       return;
     }
 
+    // Default to Toronto if geolocation unavailable or fails
+    const defaultLocation = {
+      lat: 43.6532,
+      lng: -79.3832,
+      address: 'Toronto, Ontario'
+    };
+
     // Try browser geolocation
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -88,7 +95,7 @@ export default function Consultant() {
           
           // Reverse geocode to get address
           try {
-            const apiKey = 'AIzaSyCJNHWSvBWXVfYXYxlz4Kg4NzQ9gCfMzIw'; // From secrets
+            const apiKey = Deno?.env?.get('GOOGLE_MAPS_API_KEY') || 'AIzaSyCJNHWSvBWXVfYXYxlz4Kg4NzQ9gCfMzIw';
             const response = await fetch(
               `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
             );
@@ -111,8 +118,15 @@ export default function Consultant() {
         },
         (error) => {
           console.log('Geolocation denied or failed:', error);
+          // Fall back to Toronto
+          setUserLocation(defaultLocation);
+          localStorage.setItem('userLocation', JSON.stringify(defaultLocation));
         }
       );
+    } else {
+      // Fall back to Toronto if geolocation not available
+      setUserLocation(defaultLocation);
+      localStorage.setItem('userLocation', JSON.stringify(defaultLocation));
     }
   };
 
