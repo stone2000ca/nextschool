@@ -43,7 +43,9 @@ async function performSearch(req) {
       userLat,
       userLng,
       maxDistanceKm,
-      limit = 20
+      commuteToleranceMinutes,
+      limit = 20,
+      familyProfile = null
     } = await req.json();
 
     // Province/State abbreviation mappings
