@@ -348,7 +348,34 @@ export default function Consultant() {
       // Regular school search results
       else if (response.data.schools && response.data.schools.length > 0) {
         console.log('Setting schools and changing view to schools/comparison');
-        setSchools(response.data.schools);
+        
+        // FIX #4: Reorder schools to match the order mentioned in AI response
+        const aiResponse = response.data.message;
+        const orderedSchools = [...response.data.schools];
+        
+        // Find schools mentioned in the AI response in order
+        const mentionedSchools = [];
+        const remainingSchools = [];
+        
+        for (const school of orderedSchools) {
+          const schoolNameIndex = aiResponse.indexOf(school.name);
+          if (schoolNameIndex !== -1) {
+            mentionedSchools.push({ school, index: schoolNameIndex });
+          } else {
+            remainingSchools.push(school);
+          }
+        }
+        
+        // Sort mentioned schools by order of appearance in AI message
+        mentionedSchools.sort((a, b) => a.index - b.index);
+        
+        // Combine: mentioned schools first (in order), then remaining
+        const finalOrderedSchools = [
+          ...mentionedSchools.map(ms => ms.school),
+          ...remainingSchools
+        ];
+        
+        setSchools(finalOrderedSchools);
         console.log('Setting currentView to schools');
         setCurrentView('schools');
       } else if (response.data.shouldShowSchools === false && schools.length === 0) {
