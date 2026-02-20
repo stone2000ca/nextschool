@@ -9,7 +9,8 @@ export default function ConsultantSelection({ onSelectConsultant }) {
       tagline: 'Empathetic, encouraging, and emotionally attuned',
       description: 'Jackie excels at understanding family dynamics and emotional needs. She validates concerns, celebrates strengths, and makes families feel truly heard throughout the school search journey.',
       color: 'from-rose-500 to-pink-500',
-      avatar: '👩‍🏫'
+      avatar: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/150ea2350_Jackie.jpg',
+      isImage: true
     },
     {
       name: 'Liam',
