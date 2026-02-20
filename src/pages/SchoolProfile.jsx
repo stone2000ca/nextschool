@@ -114,36 +114,29 @@ export default function SchoolProfile() {
 
       {/* Hero Section */}
       <div className="relative h-96 bg-slate-200">
-        {school.headerPhotoUrl ? (
-          <img 
-            src={school.headerPhotoUrl} 
-            alt={school.name}
-            className="w-full h-full object-cover"
-          />
-        ) : school.heroImage ? (
-          <img 
-            src={school.heroImage} 
-            alt={school.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-teal-100 to-teal-200">
-            <Users className="h-32 w-32 text-teal-300" />
+        <HeaderPhotoDisplay 
+          headerPhotoUrl={school.headerPhotoUrl}
+          heroImage={school.heroImage}
+          schoolName={school.name}
+          height="h-96"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        {/* School Logo - Overlapping Bottom Left */}
+        {school.logoUrl && !isClearbitUrl(school.headerPhotoUrl) && (
+          <div className="absolute bottom-0 left-0 p-8 pb-0">
+            <div className="transform translate-y-1/2">
+              <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} size="h-24 w-24" />
+            </div>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
           <div className="max-w-7xl mx-auto">
             <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-3 ${badge.color}`}>
               {badge.emoji} {school.region}
             </div>
             <div className="flex items-center gap-3 mb-2">
-              {school.logoUrl && (
-                <img 
-                  src={school.logoUrl} 
-                  alt={school.name}
-                  className="h-12 w-12 rounded object-cover bg-white/20"
-                />
+              {school.logoUrl && isClearbitUrl(school.headerPhotoUrl) && (
+                <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} size="h-12 w-12" />
               )}
               <h1 className="text-4xl font-bold">{school.name}</h1>
             </div>
