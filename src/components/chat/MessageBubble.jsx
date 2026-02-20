@@ -29,17 +29,24 @@ export default function MessageBubble({ message, isUser, onViewSchoolProfile, sc
                    const childText = typeof children === 'string' ? children : 
                      Array.isArray(children) ? children.map(c => typeof c === 'string' ? c : '').join('') : '';
                    
+                   // Check if href is a school link (format: school:slug)
+                   const isSchoolLink = href && href.startsWith('school:');
+                   const slugFromHref = isSchoolLink ? href.replace('school:', '') : null;
+                   
+                   // Try to find matching school by name
                    const matchingSchool = schools?.find(s => 
                      s.name && childText && s.name.toLowerCase().trim() === childText.toLowerCase().trim()
                    );
                    
-                   if (matchingSchool) {
+                   // Use school link if available, otherwise use matched school
+                   if (isSchoolLink || matchingSchool) {
+                     const slug = slugFromHref || matchingSchool?.slug;
                      return (
                        <button
                          onClick={(e) => {
                            e.preventDefault();
                            e.stopPropagation();
-                           onViewSchoolProfile && onViewSchoolProfile(matchingSchool.slug);
+                           onViewSchoolProfile && onViewSchoolProfile(slug);
                          }}
                          className="text-teal-600 hover:underline cursor-pointer font-semibold inline"
                        >
