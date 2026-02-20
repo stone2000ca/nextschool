@@ -989,6 +989,44 @@ Return empty array if user didn't provide any of these facts.`;
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Conversation Limit Reached Dialog */}
+      <AlertDialog open={limitReachedOpen} onOpenChange={setLimitReachedOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conversation Limit Reached</AlertDialogTitle>
+            <AlertDialogDescription>
+              {isAuthenticated ? (
+                <>
+                  You've reached the conversation limit for your <strong>{user?.subscriptionPlan || 'free'}</strong> plan ({getConversationLimits(user?.subscriptionPlan || 'free')} active conversations). 
+                  Upgrade your plan or delete old conversations to start a new one.
+                </>
+              ) : (
+                <>
+                  Sign in to create and manage multiple conversations.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            {isAuthenticated ? (
+              <Link to={createPageUrl('Pricing')}>
+                <AlertDialogAction className="bg-teal-600 hover:bg-teal-700">
+                  Upgrade Plan
+                </AlertDialogAction>
+              </Link>
+            ) : (
+              <AlertDialogAction 
+                className="bg-teal-600 hover:bg-teal-700"
+                onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
+              >
+                Sign In
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Upgrade Modal */}
       {showUpgradeModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
