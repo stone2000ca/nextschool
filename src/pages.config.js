@@ -61,6 +61,7 @@ import HowItWorks from './pages/HowItWorks';
 import About from './pages/About';
 import ForSchools from './pages/ForSchools';
 import Contact from './pages/Contact';
+import Privacy from './pages/Privacy';
 
 
 export const PAGES = {
@@ -78,6 +79,7 @@ export const PAGES = {
     "About": About,
     "ForSchools": ForSchools,
     "Contact": Contact,
+    "Privacy": Privacy,
 }
 
 export const pagesConfig = {
