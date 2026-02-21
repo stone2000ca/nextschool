@@ -1881,15 +1881,14 @@ Return empty array if user didn't provide any of these facts.`;
         />
       )}
 
-      {/* Family Brief Panel - Only show after intake starts and user is authenticated */}
-      {isAuthenticated && selectedConsultant && messages.length > 1 && (
+      {/* Family Brief Panel - Show during BRIEF state */}
+      {isAuthenticated && selectedConsultant && currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus) && (
         <FamilyBriefPanel
           familyProfile={familyProfile}
           shortlist={shortlistData}
           isExpanded={briefExpanded}
           onToggleExpand={setBriefExpanded}
           onSectionClick={(sectionId) => {
-            // TODO: Scroll to relevant message in chat
             console.log('Section clicked:', sectionId);
           }}
         />
