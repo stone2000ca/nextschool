@@ -890,17 +890,25 @@ Return empty array if user didn't provide any of these facts.`;
 
       {isIntakePhase ? (
         /* INTAKE PHASE - Centered Layout */
-        <div className="flex-1 overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl h-full max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col transition-all duration-400">
+        <div className="flex-1 overflow-hidden bg-[#1E1E2E] flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl h-full max-h-[90vh] bg-[#2A2A3D] rounded-2xl shadow-2xl flex flex-col transition-all duration-400">
             {/* Consultant Header */}
-            <div className="p-6 border-b flex items-center justify-between bg-gradient-to-r from-teal-50 to-blue-50">
+            <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#2A2A3D]">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-lg">
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                  selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]' : 'bg-[#6B9DAD]'
+                }`}>
                   {selectedConsultant === 'Jackie' ? 'J' : 'L'}
                 </div>
                 <div>
-                  <h2 className="font-bold text-lg text-slate-900">{selectedConsultant}</h2>
-                  <p className="text-xs text-slate-600">AI Education Consultant</p>
+                  <h2 className={`font-bold text-lg ${
+                    selectedConsultant === 'Jackie' ? 'text-[#C27B8A]' : 'text-[#6B9DAD]'
+                  }`}>{selectedConsultant}</h2>
+                  {isTyping ? (
+                    <p className="text-xs text-[#E8E8ED]/60">{selectedConsultant} is typing...</p>
+                  ) : (
+                    <p className="text-xs text-[#E8E8ED]/60">Education Consultant</p>
+                  )}
                 </div>
               </div>
               <TooltipProvider>
@@ -908,12 +916,12 @@ Return empty array if user didn't provide any of these facts.`;
                   <TooltipTrigger asChild>
                     <div className={`text-xs px-3 py-1 rounded-full font-medium cursor-help ${
                       isPremium 
-                        ? 'bg-purple-100 text-purple-700' 
+                        ? 'bg-purple-500/20 text-purple-300' 
                         : tokenBalance > 50 
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-green-500/20 text-green-300'
                           : tokenBalance > 10
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-red-100 text-red-700'
+                            ? 'bg-yellow-500/20 text-yellow-300'
+                            : 'bg-red-500/20 text-red-300'
                     }`}>
                       {isPremium ? '∞ tokens' : `${tokenBalance} tokens`}
                     </div>
@@ -930,33 +938,39 @@ Return empty array if user didn't provide any of these facts.`;
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#1E1E2E]">
               {currentView === 'welcome' && messages.length <= 1 && (
                 <div className="text-center space-y-6 py-8">
                   <div className="space-y-2">
-                    <h1 className="text-3xl font-bold text-slate-900">Welcome to NextSchool</h1>
-                    <p className="text-slate-600">Your personalized school search, simplified</p>
+                    <h1 className="text-3xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
+                    <p className="text-[#E8E8ED]/70">Your personalized school search, simplified</p>
                   </div>
                   <div className="grid gap-4 max-w-md mx-auto text-left">
                     <div className="flex items-start gap-3">
-                      <div className="h-8 w-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold flex-shrink-0">1</div>
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                        selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
+                      }`}>1</div>
                       <div>
-                        <h3 className="font-semibold text-slate-900">Tell us about your child</h3>
-                        <p className="text-sm text-slate-600">Grade, location, priorities</p>
+                        <h3 className="font-semibold text-[#E8E8ED]">Tell us about your child</h3>
+                        <p className="text-sm text-[#E8E8ED]/60">Grade, location, priorities</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="h-8 w-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold flex-shrink-0">2</div>
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                        selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
+                      }`}>2</div>
                       <div>
-                        <h3 className="font-semibold text-slate-900">Review your brief</h3>
-                        <p className="text-sm text-slate-600">Confirm what matters most</p>
+                        <h3 className="font-semibold text-[#E8E8ED]">Review your brief</h3>
+                        <p className="text-sm text-[#E8E8ED]/60">Confirm what matters most</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="h-8 w-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold flex-shrink-0">3</div>
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                        selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
+                      }`}>3</div>
                       <div>
-                        <h3 className="font-semibold text-slate-900">See your matches</h3>
-                        <p className="text-sm text-slate-600">Personalized school recommendations</p>
+                        <h3 className="font-semibold text-[#E8E8ED]">See your matches</h3>
+                        <p className="text-sm text-[#E8E8ED]/60">Personalized school recommendations</p>
                       </div>
                     </div>
                   </div>
@@ -968,6 +982,7 @@ Return empty array if user didn't provide any of these facts.`;
                   message={msg}
                   isUser={msg.role === 'user'}
                   schools={schools}
+                  consultantName={selectedConsultant}
                   onViewSchoolProfile={async (slug) => {
                     let school = schools?.find(s => 
                       s.slug === slug || 
@@ -996,7 +1011,7 @@ Return empty array if user didn't provide any of these facts.`;
                   }}
                 />
               ))}
-              {isTyping && <TypingIndicator message={loadingStages[loadingStage]} />}
+              {isTyping && <TypingIndicator message={loadingStages[loadingStage]} consultantName={selectedConsultant} />}
               <div ref={messagesEndRef} />
             </div>
 
@@ -1017,7 +1032,7 @@ Return empty array if user didn't provide any of these facts.`;
               
               return shouldShowChips;
             })() && (
-              <div className="p-4 border-t bg-slate-50 flex flex-wrap gap-2 justify-center">
+              <div className="p-4 border-t border-white/10 bg-[#2A2A3D] flex flex-wrap gap-2 justify-center">
                 {(() => {
                   const lastAIMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
                   const isBriefMessage = lastAIMessage?.content && (
@@ -1034,7 +1049,7 @@ Return empty array if user didn't provide any of these facts.`;
                       variant="outline" 
                       onClick={() => handleSendMessage("My child needs a new school")}
                       disabled={isTyping}
-                      className="text-xs"
+                      className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
                     >
                       My child needs a new school
                     </Button>
@@ -1042,7 +1057,7 @@ Return empty array if user didn't provide any of these facts.`;
                       variant="outline" 
                       onClick={() => handleSendMessage("I'm comparing a few schools already")}
                       disabled={isTyping}
-                      className="text-xs"
+                      className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
                     >
                       I'm comparing a few schools already
                     </Button>
@@ -1050,7 +1065,7 @@ Return empty array if user didn't provide any of these facts.`;
                       variant="outline" 
                       onClick={() => handleSendMessage("I'm not sure where to start")}
                       disabled={isTyping}
-                      className="text-xs"
+                      className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
                     >
                       I'm not sure where to start
                     </Button>
@@ -1074,7 +1089,11 @@ Return empty array if user didn't provide any of these facts.`;
                       variant="outline" 
                       onClick={() => handleSendMessage("That's right, let's see the schools")}
                       disabled={isTyping}
-                      className="text-sm px-4 py-2 rounded-full bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100"
+                      className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
+                        selectedConsultant === 'Jackie' 
+                          ? 'bg-[#C27B8A]/20 border-[#C27B8A] text-[#C27B8A] hover:bg-[#C27B8A]/30' 
+                          : 'bg-[#6B9DAD]/20 border-[#6B9DAD] text-[#6B9DAD] hover:bg-[#6B9DAD]/30'
+                      }`}
                     >
                       That's right, let's see the schools
                     </Button>
@@ -1082,7 +1101,7 @@ Return empty array if user didn't provide any of these facts.`;
                       variant="outline" 
                       onClick={() => handleSendMessage("I'd like to adjust something")}
                       disabled={isTyping}
-                      className="text-sm px-4 py-2 rounded-full bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                      className="text-sm px-4 py-2 rounded-full bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
                     >
                       I'd like to adjust something
                     </Button>
@@ -1290,14 +1309,23 @@ Return empty array if user didn't provide any of these facts.`;
         </main>
 
         {/* RIGHT CHAT PANEL */}
-        <aside className="w-[450px] bg-white border-l flex flex-col">
+        <aside className="w-[450px] bg-[#2A2A3D] border-l border-white/10 flex flex-col">
           {/* Chat Header */}
-          <div className="p-4 border-b flex items-center justify-between">
+          <div className="p-4 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-teal-100 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-teal-600" />
+              <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold ${
+                selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]' : 'bg-[#6B9DAD]'
+              }`}>
+                {selectedConsultant === 'Jackie' ? 'J' : 'L'}
               </div>
-              <span className="font-semibold">AI Consultant</span>
+              <div>
+                <span className={`font-semibold block ${
+                  selectedConsultant === 'Jackie' ? 'text-[#C27B8A]' : 'text-[#6B9DAD]'
+                }`}>{selectedConsultant}</span>
+                {isTyping && (
+                  <span className="text-xs text-[#E8E8ED]/60">{selectedConsultant} is typing...</span>
+                )}
+              </div>
             </div>
             <TooltipProvider>
               <Tooltip>
@@ -1326,13 +1354,14 @@ Return empty array if user didn't provide any of these facts.`;
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#1E1E2E]">
             {messages.map((msg, index) => (
               <MessageBubble
                 key={index}
                 message={msg}
                 isUser={msg.role === 'user'}
                 schools={schools}
+                consultantName={selectedConsultant}
                 onViewSchoolProfile={async (slug) => {
                   console.log('🔗 onViewSchoolProfile called with slug:', slug);
                   console.log('📚 Available schools:', schools?.map(s => ({ name: s.name, slug: s.slug })));
@@ -1377,7 +1406,7 @@ Return empty array if user didn't provide any of these facts.`;
                 }}
               />
             ))}
-            {isTyping && <TypingIndicator message={loadingStages[loadingStage]} />}
+            {isTyping && <TypingIndicator message={loadingStages[loadingStage]} consultantName={selectedConsultant} />}
             <div ref={messagesEndRef} />
           </div>
 
@@ -1399,7 +1428,7 @@ Return empty array if user didn't provide any of these facts.`;
             
             return shouldShowChips;
           })() && (
-            <div className="p-4 border-t bg-slate-50 flex flex-wrap gap-2 justify-center">
+            <div className="p-4 border-t border-white/10 bg-[#2A2A3D] flex flex-wrap gap-2 justify-center">
               {(() => {
                 const lastAIMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
                 const isBriefMessage = lastAIMessage?.content && (
@@ -1417,7 +1446,7 @@ Return empty array if user didn't provide any of these facts.`;
                     variant="outline" 
                     onClick={() => handleSendMessage("My child needs a new school")}
                     disabled={isTyping}
-                    className="text-xs"
+                    className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
                   >
                     My child needs a new school
                   </Button>
@@ -1425,7 +1454,7 @@ Return empty array if user didn't provide any of these facts.`;
                     variant="outline" 
                     onClick={() => handleSendMessage("I'm comparing a few schools already")}
                     disabled={isTyping}
-                    className="text-xs"
+                    className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
                   >
                     I'm comparing a few schools already
                   </Button>
@@ -1433,7 +1462,7 @@ Return empty array if user didn't provide any of these facts.`;
                     variant="outline" 
                     onClick={() => handleSendMessage("I'm not sure where to start")}
                     disabled={isTyping}
-                    className="text-xs"
+                    className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
                   >
                     I'm not sure where to start
                   </Button>
@@ -1457,7 +1486,11 @@ Return empty array if user didn't provide any of these facts.`;
                     variant="outline" 
                     onClick={() => handleSendMessage("That's right, let's see the schools")}
                     disabled={isTyping}
-                    className="text-sm px-4 py-2 rounded-full bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100"
+                    className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
+                      selectedConsultant === 'Jackie' 
+                        ? 'bg-[#C27B8A]/20 border-[#C27B8A] text-[#C27B8A] hover:bg-[#C27B8A]/30' 
+                        : 'bg-[#6B9DAD]/20 border-[#6B9DAD] text-[#6B9DAD] hover:bg-[#6B9DAD]/30'
+                    }`}
                   >
                     That's right, let's see the schools
                   </Button>
@@ -1465,7 +1498,7 @@ Return empty array if user didn't provide any of these facts.`;
                     variant="outline" 
                     onClick={() => handleSendMessage("I'd like to adjust something")}
                     disabled={isTyping}
-                    className="text-sm px-4 py-2 rounded-full bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                    className="text-sm px-4 py-2 rounded-full bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
                   >
                     I'd like to adjust something
                   </Button>

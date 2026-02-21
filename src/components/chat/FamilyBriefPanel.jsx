@@ -181,23 +181,23 @@ export default function FamilyBriefPanel({
   };
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 bg-white border-t shadow-2xl z-30 transition-all duration-300 ${
+    <div className={`fixed bottom-0 left-0 right-0 bg-[#2A2A3D] border-t border-white/10 shadow-2xl z-30 transition-all duration-300 ${
       isExpanded ? 'h-[30vh]' : 'h-14'
     }`}>
       {/* Collapsed Header Bar */}
       <button
         onClick={() => onToggleExpand(!isExpanded)}
-        className="w-full h-14 px-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+        className="w-full h-14 px-6 flex items-center justify-between hover:bg-[#1E1E2E] transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center">
-            <Users className="h-4 w-4 text-teal-700" />
+          <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+            <Users className="h-4 w-4 text-[#E8E8ED]" />
           </div>
           <div className="text-left">
-            <h3 className="font-semibold text-slate-900">
+            <h3 className="font-semibold text-[#E8E8ED]">
               {familyProfile?.childName ? `${familyProfile.childName}'s Brief` : 'Family Brief'}
             </h3>
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-[#E8E8ED]/60">
               {completeness}% complete
             </p>
           </div>
@@ -210,23 +210,23 @@ export default function FamilyBriefPanel({
               <div
                 key={stage.id}
                 className={`h-2 w-2 rounded-full transition-colors ${
-                  stage.populated ? 'bg-teal-600' : 'bg-slate-200'
+                  stage.populated ? 'bg-teal-500' : 'bg-white/20'
                 } ${newlyPopulated === stage.id ? 'animate-pulse' : ''}`}
               />
             ))}
           </div>
           
           {isExpanded ? (
-            <ChevronDown className="h-5 w-5 text-slate-600" />
+            <ChevronDown className="h-5 w-5 text-[#E8E8ED]" />
           ) : (
-            <ChevronUp className="h-5 w-5 text-slate-600" />
+            <ChevronUp className="h-5 w-5 text-[#E8E8ED]" />
           )}
         </div>
       </button>
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="h-[calc(100%-3.5rem)] overflow-y-auto px-6 py-4">
+        <div className="h-[calc(100%-3.5rem)] overflow-y-auto px-6 py-4 bg-[#1E1E2E]">
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {stages.map((stage) => {
               const Icon = stage.icon;
@@ -236,28 +236,28 @@ export default function FamilyBriefPanel({
                   onClick={() => onSectionClick && onSectionClick(stage.id)}
                   className={`p-4 rounded-xl border-2 text-left transition-all ${
                     stage.populated
-                      ? 'bg-white border-teal-200 hover:border-teal-400 hover:shadow-md'
-                      : 'bg-slate-50 border-slate-200 opacity-50'
-                  } ${newlyPopulated === stage.id ? 'ring-2 ring-teal-400 animate-pulse' : ''}`}
+                      ? 'bg-[#2A2A3D] border-teal-500/30 hover:border-teal-500/50 hover:shadow-md'
+                      : 'bg-[#2A2A3D]/50 border-white/10 opacity-50'
+                  } ${newlyPopulated === stage.id ? 'ring-2 ring-teal-500 animate-pulse' : ''}`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`h-6 w-6 rounded-full flex items-center justify-center ${
-                      stage.populated ? 'bg-teal-100' : 'bg-slate-200'
+                      stage.populated ? 'bg-teal-500/20' : 'bg-white/10'
                     }`}>
                       {stage.populated ? (
-                        <Check className="h-4 w-4 text-teal-700" />
+                        <Check className="h-4 w-4 text-teal-500" />
                       ) : (
-                        <Circle className="h-4 w-4 text-slate-400" />
+                        <Circle className="h-4 w-4 text-[#E8E8ED]/40" />
                       )}
                     </div>
-                    <h4 className="font-semibold text-sm text-slate-900">{stage.title}</h4>
+                    <h4 className="font-semibold text-sm text-[#E8E8ED]">{stage.title}</h4>
                   </div>
                   {stage.populated && stage.content ? (
-                    <div className="text-slate-700">
+                    <div className="text-[#E8E8ED]/80">
                       {stage.content()}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400 italic">Not yet discussed</p>
+                    <p className="text-xs text-[#E8E8ED]/40 italic">Not yet discussed</p>
                   )}
                 </button>
               );
