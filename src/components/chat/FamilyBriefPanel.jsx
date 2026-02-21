@@ -24,15 +24,15 @@ export default function FamilyBriefPanel({
       setNewlyPopulated(newStage);
       onToggleExpand(true);
       
-      // Auto-collapse after 3 seconds
+      // Auto-collapse after 2 seconds
       setTimeout(() => {
         onToggleExpand(false);
         setNewlyPopulated(null);
-      }, 3000);
+      }, 2000);
     }
     
     localStorage.setItem('briefStages', JSON.stringify(populatedStages));
-  }, [familyProfile]);
+  }, [familyProfile, onToggleExpand]);
 
   const getPopulatedStages = () => {
     if (!familyProfile) return [];
@@ -182,12 +182,13 @@ export default function FamilyBriefPanel({
 
   return (
     <div className={`fixed bottom-0 left-0 right-0 bg-[#2A2A3D] border-t border-white/10 shadow-2xl z-30 transition-all duration-400 ${
-      isExpanded ? 'h-[40vh] sm:h-[30vh]' : 'h-12 sm:h-14'
-    }`}>
-      {/* Collapsed Header Bar */}
+      isExpanded ? 'h-1/3' : 'h-0 overflow-hidden'
+    }`} style={{ pointerEvents: isExpanded ? 'auto' : 'none' }}>
+      {/* Collapsed Header Bar - Only show when not expanded */}
+      {!isExpanded && (
       <button
         onClick={() => onToggleExpand(!isExpanded)}
-        className="w-full h-12 sm:h-14 px-4 sm:px-6 flex items-center justify-between hover:bg-[#1E1E2E] transition-colors focus:ring-2 focus:ring-inset focus:ring-white/30 focus:outline-none"
+        className="w-full h-12 sm:h-14 px-4 sm:px-6 flex items-center justify-between hover:bg-[#1E1E2E] transition-colors focus:ring-2 focus:ring-inset focus:ring-white/30 focus:outline-none bg-[#2A2A3D]"
         aria-label={isExpanded ? "Collapse family brief" : "Expand family brief"}
       >
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -222,12 +223,27 @@ export default function FamilyBriefPanel({
           ) : (
             <ChevronUp className="h-5 w-5 text-[#E8E8ED]" />
           )}
-        </div>
-      </button>
+          </div>
+          </button>
+          )}
+
+          {/* Expanded Content Header */}
+          {isExpanded && (
+          <button
+          onClick={() => onToggleExpand(false)}
+          className="w-full h-12 sm:h-14 px-4 sm:px-6 flex items-center justify-between hover:bg-[#1E1E2E] transition-colors focus:ring-2 focus:ring-inset focus:ring-white/30 focus:outline-none bg-[#2A2A3D] border-b border-white/10"
+          aria-label="Collapse family brief"
+          >
+          <h3 className="font-semibold text-sm sm:text-base text-[#E8E8ED]">
+          {familyProfile?.childName ? `${familyProfile.childName}'s Brief` : 'Family Brief'}
+          </h3>
+          <ChevronDown className="h-5 w-5 text-[#E8E8ED]" />
+          </button>
+          )}
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="h-[calc(100%-3rem)] sm:h-[calc(100%-3.5rem)] overflow-y-auto px-3 sm:px-6 py-3 sm:py-4 bg-[#1E1E2E]">
+        <div className="h-[calc(100%-3rem)] sm:h-[calc(100%-3.5rem)] overflow-y-auto px-3 sm:px-6 py-3 sm:py-4 bg-[#1E1E2E] z-40">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {stages.map((stage) => {
               const Icon = stage.icon;

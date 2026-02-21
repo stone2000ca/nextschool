@@ -422,6 +422,9 @@ YOU ARE LIAM - Direct, strategic style.`;
       if (conversationFamilyProfile?.locationArea) {
         searchParams.city = conversationFamilyProfile.locationArea;
       }
+      if (conversationFamilyProfile?.provinceState) {
+        searchParams.provinceState = conversationFamilyProfile.provinceState;
+      }
       if (conversationFamilyProfile?.childGrade) {
         searchParams.minGrade = conversationFamilyProfile.childGrade;
         searchParams.maxGrade = conversationFamilyProfile.childGrade;

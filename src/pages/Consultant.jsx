@@ -626,10 +626,10 @@ export default function Consultant() {
         // Reorder schools to match the order mentioned in AI response
         const aiResponse = response.data.message;
         const orderedSchools = [...response.data.schools];
-        
+
         const mentionedSchools = [];
         const remainingSchools = [];
-        
+
         for (const school of orderedSchools) {
           const schoolNameIndex = aiResponse.indexOf(school.name);
           if (schoolNameIndex !== -1) {
@@ -638,20 +638,25 @@ export default function Consultant() {
             remainingSchools.push(school);
           }
         }
-        
+
         mentionedSchools.sort((a, b) => a.index - b.index);
-        
+
         const finalOrderedSchools = [
           ...mentionedSchools.map(ms => ms.school),
           ...remainingSchools
         ];
-        
+
         setSchools(finalOrderedSchools);
         // Reset sort to relevance when new schools arrive
         setSortField('relevance');
         setSortDirection('asc');
         // CRITICAL: Always switch to schools view when schools are returned
         setCurrentView('schools');
+      } else if (response.data.state === STATES.SEARCHING || response.data.state === STATES.RESULTS) {
+        // No schools found, but we're in search state - keep showing results view in case backend returns schools later
+        if (schools.length === 0) {
+          setCurrentView('welcome');
+        }
       }
 
       const aiMessage = {
