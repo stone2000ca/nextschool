@@ -67,12 +67,15 @@ export default function Layout({ children, currentPageName }) {
     }
   }, [location]);
 
+  // Hide footer on Consultant page (full viewport chat)
+  const hideFooter = location.pathname === '/Consultant';
+
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-1">
         {children}
       </main>
-      <Footer />
+      {!hideFooter && <Footer />}
     </div>
   );
 }

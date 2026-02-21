@@ -74,6 +74,10 @@ export default function Consultant() {
   const chatScrollRef = useRef(null);
   const [savedScrollPosition, setSavedScrollPosition] = useState(0);
   
+  // New message indicator
+  const [showNewMessageIndicator, setShowNewMessageIndicator] = useState(false);
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
+  
   // Limit reached dialog
   const [limitReachedOpen, setLimitReachedOpen] = useState(false);
   
@@ -970,9 +974,33 @@ Return empty array if user didn't provide any of these facts.`;
     return sorted;
   };
 
+  // Detect if user is scrolled up, show new message indicator on new messages
   useEffect(() => {
+    if (chatScrollRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatScrollRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50; // 50px threshold
+      
+      if (!isAtBottom) {
+        setIsScrolledUp(true);
+        setShowNewMessageIndicator(true);
+      } else {
+        setIsScrolledUp(false);
+        setShowNewMessageIndicator(false);
+      }
+    }
+  }, [messages]);
+
+  // Auto-scroll only when at bottom
+  useEffect(() => {
+    if (!isScrolledUp) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isScrolledUp]);
+
+  const handleScrollDownClick = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+    setShowNewMessageIndicator(false);
+  };
 
   if (loading) {
     return (
@@ -1270,8 +1298,8 @@ Return empty array if user didn't provide any of these facts.`;
           </div>
         </div>
       ) : (
-        /* RESULTS PHASE - Sidebar Layout (no footer here) */
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative transition-all duration-400">
+        /* RESULTS PHASE - Sidebar Layout */
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative transition-all duration-400 pb-0">
         {/* Mobile tab toggle */}
         <div className="lg:hidden flex border-b bg-white">
           <button
@@ -1554,7 +1582,7 @@ Return empty array if user didn't provide any of these facts.`;
                 </Link>
               </div>
             )}
-            
+
             {messages.map((msg, index) => (
               <MessageBubble
                 key={index}
@@ -1565,16 +1593,16 @@ Return empty array if user didn't provide any of these facts.`;
                 onViewSchoolProfile={async (slug) => {
                   console.log('🔗 onViewSchoolProfile called with slug:', slug);
                   console.log('📚 Available schools:', schools?.map(s => ({ name: s.name, slug: s.slug })));
-                  
+
                   // Robust slug matching: try direct slug, then name matching
                   let school = schools?.find(s => 
                     s.slug === slug || 
                     s.name.toLowerCase() === slug.toLowerCase() ||
                     s.name.toLowerCase().replace(/[^a-z0-9]/g, '-') === slug
                   );
-                  
+
                   console.log('✅ School found in state:', school);
-                  
+
                   if (school) {
                     setSelectedSchool(school);
                     setCurrentView('detail');
@@ -1583,7 +1611,7 @@ Return empty array if user didn't provide any of these facts.`;
                       // Try database lookup by slug first
                       console.log('🔍 Searching database for slug:', slug);
                       let results = await base44.entities.School.filter({ slug });
-                      
+
                       // If not found by slug, try by name (slug might be derived differently)
                       if (!results || results.length === 0) {
                         console.log('❌ Not found by slug, trying by name...');
@@ -1591,7 +1619,7 @@ Return empty array if user didn't provide any of these facts.`;
                         const possibleName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                         results = await base44.entities.School.filter({ name: { $regex: slug.replace(/-/g, ' '), $options: 'i' } });
                       }
-                      
+
                       if (results && results.length > 0) {
                         console.log('✅ School found in database:', results[0]);
                         setSelectedSchool(results[0]);
@@ -1608,6 +1636,18 @@ Return empty array if user didn't provide any of these facts.`;
             ))}
             {isTyping && <TypingIndicator message={loadingStages[loadingStage]} consultantName={selectedConsultant} />}
             <div ref={messagesEndRef} />
+
+            {/* New Message Indicator */}
+            {showNewMessageIndicator && !isTyping && (
+              <div className="flex justify-center sticky bottom-0 z-30 pt-2">
+                <Button
+                  onClick={handleScrollDownClick}
+                  className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-full shadow-lg"
+                >
+                  New message ↓
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Suggested Response Chips - After greeting, for confirm_brief, BRIEF state, or Brief message detected */}
@@ -1707,15 +1747,17 @@ Return empty array if user didn't provide any of these facts.`;
             </div>
           )}
 
-          {/* Chat Input */}
-          <ChatInput
-            ref={inputRef}
-            onSend={handleSendMessage}
-            disabled={isTyping}
-            tokenBalance={tokenBalance}
-            isPremium={isPremium}
-          />
-        </aside>
+          {/* Chat Input - Sticky at bottom */}
+          <div className="sticky bottom-0 z-40 bg-[#2A2A3D] border-t border-white/10">
+            <ChatInput
+              ref={inputRef}
+              onSend={handleSendMessage}
+              disabled={isTyping}
+              tokenBalance={tokenBalance}
+              isPremium={isPremium}
+            />
+          </div>
+          </aside>
         </div>
       )}
 
