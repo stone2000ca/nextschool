@@ -72,22 +72,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    // Fetch all schools with pagination
-    const schools = [];
-    let page = 0;
-    const pageSize = 100;
-    let hasMore = true;
-
-    while (hasMore) {
-      const batch = await base44.asServiceRole.entities.School.filter({}, null, pageSize, page * pageSize);
-      if (!batch || batch.length === 0) {
-        hasMore = false;
-      } else {
-        schools.push(...batch);
-        page++;
-        if (batch.length < pageSize) hasMore = false;
-      }
-    }
+    // Fetch all schools - use list with sort descending to get all
+    const schools = await base44.asServiceRole.entities.School.filter({});
     
     if (schools.length === 0) {
       return Response.json({ error: 'No schools found' }, { status: 400 });
