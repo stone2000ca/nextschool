@@ -8,8 +8,9 @@ Deno.serve(async (req) => {
   );
 
   const processRequest = async () => {
-    const base44 = createClientFromRequest(req);
-    const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userNotes, shortlistedSchools, userLocation } = await req.json();
+    try {
+      const base44 = createClientFromRequest(req);
+      const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userNotes, shortlistedSchools, userLocation } = await req.json();
 
     const context = conversationContext || {};
     const msgLower = message.toLowerCase();
@@ -542,6 +543,10 @@ Deno.serve(async (req) => {
       filterCriteria: intentResponse.filterCriteria || {},
       conversationContext: context
     });
+    } catch (error) {
+      console.error('orchestrateConversation FATAL:', error);
+      return Response.json({ error: error.message || String(error), stack: error.stack }, { status: 500 });
+    }
   };
 
   try {
