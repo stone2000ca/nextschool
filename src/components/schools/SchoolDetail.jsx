@@ -39,48 +39,57 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
     <>
       <div className="h-full flex flex-col bg-white">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-bold truncate">{school.name}</h2>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b">
+          <h2 className="text-base sm:text-xl font-bold truncate flex-1 min-w-0">{school.name}</h2>
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               onClick={() => setShowContactModal(true)}
               size="sm"
-              className="bg-teal-600 hover:bg-teal-700"
+              className="bg-teal-600 hover:bg-teal-700 hidden sm:flex"
             >
               <Mail className="h-4 w-4 mr-2" />
               Send Inquiry
             </Button>
             <Button
+              onClick={() => setShowContactModal(true)}
+              size="sm"
+              className="bg-teal-600 hover:bg-teal-700 sm:hidden"
+              aria-label="Send inquiry to school"
+            >
+              <Mail className="h-4 w-4" />
+            </Button>
+            <Button
               onClick={() => onToggleShortlist(school.id)}
               variant={isShortlisted ? "default" : "outline"}
               size="sm"
+              aria-label={isShortlisted ? "Remove from shortlist" : "Add to shortlist"}
             >
-              <Heart className={`h-4 w-4 mr-2 ${isShortlisted ? 'fill-current' : ''}`} />
+              <Heart className={`h-4 w-4 ${isShortlisted ? 'fill-current' : ''}`} />
             </Button>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close school details">
               <X className="h-5 w-5" />
             </Button>
           </div>
         </div>
 
       {/* Hero Image */}
-      <div className="relative h-48 bg-slate-200">
-        <HeaderPhotoDisplay 
-          headerPhotoUrl={school.headerPhotoUrl}
-          heroImage={school.heroImage}
-          schoolName={school.name}
-          height="h-48"
+      <div className="relative h-40 sm:h-48 bg-slate-200">
+        <img 
+          src={school.headerPhotoUrl || school.heroImage || `https://via.placeholder.com/1200x675/e2e8f0/64748b?text=${encodeURIComponent(school.name)}`}
+          alt={`${school.name} campus`}
+          className="w-full h-full object-cover"
+          loading="lazy"
         />
       </div>
 
       {/* Quick Stats */}
-      <div className="p-4 border-b bg-slate-50">
-        <div className="grid grid-cols-2 gap-4 text-sm">
+      <div className="p-3 sm:p-4 border-b bg-slate-50">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
           <div>
             <div className="text-slate-600 mb-1">Location</div>
             <div className="font-medium flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {school.city}, {school.provinceState}
+              <MapPin className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{school.city}, {school.provinceState}</span>
             </div>
           </div>
           <div>
@@ -89,26 +98,26 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
           </div>
           <div>
             <div className="text-slate-600 mb-1">Tuition</div>
-            <div className="font-medium">
+            <div className="font-medium truncate">
               {getCurrencySymbol(school.currency)}{school.tuition?.toLocaleString()}/yr
             </div>
           </div>
           <div>
             <div className="text-slate-600 mb-1">Class Size</div>
             <div className="font-medium">
-              {school.avgClassSize && school.avgClassSize > 0 ? `${school.avgClassSize} students` : 'Not available'}
+              {school.avgClassSize && school.avgClassSize > 0 ? `${school.avgClassSize} students` : 'N/A'}
             </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4">
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="programs">Programs</TabsTrigger>
-            <TabsTrigger value="admissions">Admissions</TabsTrigger>
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+            <TabsTrigger value="programs" className="text-xs sm:text-sm">Programs</TabsTrigger>
+            <TabsTrigger value="admissions" className="text-xs sm:text-sm">Admissions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
@@ -252,10 +261,10 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
       </div>
 
       {/* Actions */}
-      <div className="p-4 border-t space-y-2">
+      <div className="p-3 sm:p-4 border-t space-y-2">
         <Button 
           variant="outline" 
-          className="w-full"
+          className="w-full text-sm"
           onClick={() => window.open(createPageUrl('SchoolProfile') + '?id=' + school.id, '_blank')}
         >
           View Full Profile
