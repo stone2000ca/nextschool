@@ -953,7 +953,13 @@ Use bullet points. Be concise and direct. Maximum 150 words.`;
     let aiMessage = '';
     let responseTimedOut = false;
     
-    if (currentState === STATES.SEARCHING || currentState === STATES.RESULTS) {
+    // Auto-transition SEARCHING → RESULTS after search completes
+    if (currentState === STATES.SEARCHING && matchingSchools.length > 0) {
+      currentState = STATES.RESULTS;
+      context.state = currentState;
+    }
+    
+    if (currentState === STATES.SEARCHING || currentState === STATES.RESULTS || currentState === STATES.DEEP_DIVE) {
       try {
         const t5 = Date.now();
         
