@@ -65,6 +65,7 @@ import SchoolAdminDashboard from './pages/SchoolAdminDashboard';
 import SchoolDirectory from './pages/SchoolDirectory';
 import SchoolProfile from './pages/SchoolProfile';
 import Terms from './pages/Terms';
+import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
@@ -91,4 +92,5 @@ export const PAGES = {
 export const pagesConfig = {
     mainPage: "Home",
     Pages: PAGES,
+    Layout: __Layout,
 };
