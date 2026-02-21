@@ -267,7 +267,7 @@ export default function SchoolDirectory() {
             aria-label="Filter schools by province or state"
           >
             <option value="all">All Provinces</option>
-            {filterCountry !== 'all' && provincesByCountry[filterCountry]?.map(province => (
+            {getAvailableProvinces().map(province => (
               <option key={province} value={province}>{province}</option>
             ))}
           </select>
