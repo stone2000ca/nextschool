@@ -25,6 +25,74 @@ export default function SchoolProfile() {
     checkAuth();
   }, [schoolId]);
 
+  useEffect(() => {
+    if (!school) return;
+
+    // Set meta tags for SEO
+    const gradeRange = school.gradesServed || '';
+    document.title = `${school.name} - Grades ${gradeRange}, Tuition, Programs | NextSchool`;
+    
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.name = 'description';
+      document.head.appendChild(metaDesc);
+    }
+    const desc = (school.missionStatement || school.teachingPhilosophy || '').substring(0, 155);
+    metaDesc.content = desc || `${school.name} - Private school in ${school.city}`;
+
+    // OG Tags
+    const ogTags = {
+      'og:title': `${school.name} - Grades ${gradeRange} | NextSchool`,
+      'og:description': desc || `Discover ${school.name} in ${school.city}`,
+      'og:image': school.logoUrl || school.headerPhotoUrl || '/logo.png',
+      'og:url': `https://nextschool.ca/SchoolProfile?id=${schoolId}`,
+      'og:type': 'place',
+      'og:site_name': 'NextSchool'
+    };
+
+    for (const [property, content] of Object.entries(ogTags)) {
+      let tag = document.querySelector(`meta[property="${property}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('property', property);
+        document.head.appendChild(tag);
+      }
+      tag.content = content;
+    }
+
+    // Structured Data for School
+    const schemaData = {
+      '@context': 'https://schema.org',
+      '@type': 'EducationalOrganization',
+      name: school.name,
+      url: `https://nextschool.ca/SchoolProfile?id=${schoolId}`,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: school.address || '',
+        addressLocality: school.city || '',
+        addressRegion: school.provinceState || '',
+        addressCountry: school.country || 'CA'
+      },
+      telephone: school.phone || '',
+      email: school.email || '',
+      description: school.missionStatement || '',
+      ...(school.enrollment && { numberOfStudents: school.enrollment }),
+      priceRange: school.tuition ? `${school.currency || 'CAD'} ${school.tuition}` : '',
+      image: school.logoUrl || school.headerPhotoUrl || '',
+      ...(school.website && { sameAs: school.website.startsWith('http') ? school.website : `https://${school.website}` })
+    };
+
+    let schemaScript = document.querySelector('script[data-schema="school"]');
+    if (!schemaScript) {
+      schemaScript = document.createElement('script');
+      schemaScript.type = 'application/ld+json';
+      schemaScript.setAttribute('data-schema', 'school');
+      document.head.appendChild(schemaScript);
+    }
+    schemaScript.innerHTML = JSON.stringify(schemaData);
+  }, [school, schoolId]);
+
   const checkAuth = async () => {
     try {
       const authenticated = await base44.auth.isAuthenticated();
@@ -208,10 +276,10 @@ export default function SchoolProfile() {
               <TabsContent value="overview" className="space-y-6">
                 {school.highlights && school.highlights.length > 0 && (
                   <Card className="p-6 bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                       <Award className="h-5 w-5 text-teal-600" />
                       What Makes This School Special
-                    </h3>
+                    </h2>
                     <ul className="space-y-2">
                       {school.highlights.slice(0, 3).map((highlight, idx) => (
                         <li key={idx} className="flex gap-3">
@@ -225,14 +293,14 @@ export default function SchoolProfile() {
 
                 {school.missionStatement && (
                   <Card className="p-6">
-                    <h3 className="text-xl font-bold mb-3">Mission Statement</h3>
+                    <h2 className="text-xl font-bold mb-3">Mission Statement</h2>
                     <p className="text-slate-700 leading-relaxed">{school.missionStatement}</p>
                   </Card>
                 )}
 
                 {(school.teachingPhilosophy || school.curriculumType) && (
                   <Card className="p-6">
-                    <h3 className="text-xl font-bold mb-3">Teaching Philosophy</h3>
+                    <h2 className="text-xl font-bold mb-3">Teaching Philosophy</h2>
                     {school.teachingPhilosophy && (
                       <p className="text-slate-700 mb-4">{school.teachingPhilosophy}</p>
                     )}
@@ -249,7 +317,7 @@ export default function SchoolProfile() {
 
                 {school.values && school.values.length > 0 && (
                   <Card className="p-6">
-                    <h3 className="text-xl font-bold mb-3">Core Values</h3>
+                    <h2 className="text-xl font-bold mb-3">Core Values</h2>
                     <div className="flex flex-wrap gap-2">
                       {school.values.map((value, index) => (
                         <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
@@ -262,7 +330,7 @@ export default function SchoolProfile() {
 
                 {(school.founded || school.studentTeacherRatio || school.financialAidAvailable !== null || school.religiousAffiliation) && (
                   <Card className="p-6">
-                    <h3 className="text-xl font-bold mb-4">Key Facts</h3>
+                    <h2 className="text-xl font-bold mb-4">Key Facts</h2>
                     <div className="space-y-3">
                       {school.founded && (
                         <div className="flex justify-between">
@@ -296,7 +364,7 @@ export default function SchoolProfile() {
               <TabsContent value="programs" className="space-y-6">
                 {/* Curriculum & Core Programs */}
                 <Card className="p-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
-                  <h3 className="text-lg font-bold mb-4">Academic Programs</h3>
+                  <h2 className="text-lg font-bold mb-4">Academic Programs</h2>
                   <div className="space-y-3">
                     {school.curriculumType && (
                       <div className="flex items-center justify-between">
@@ -328,7 +396,7 @@ export default function SchoolProfile() {
                 {/* Specializations */}
                 {school.specializations && school.specializations.length > 0 && (
                   <Card className="p-6">
-                    <h3 className="text-lg font-bold mb-4">Areas of Specialization</h3>
+                    <h2 className="text-lg font-bold mb-4">Areas of Specialization</h2>
                     <div className="flex flex-wrap gap-2">
                       {school.specializations.map((spec, index) => {
                         const colors = {
@@ -351,7 +419,7 @@ export default function SchoolProfile() {
 
                 {school.artsPrograms && school.artsPrograms.length > 0 && (
                   <Card className="p-6">
-                    <h3 className="text-lg font-bold mb-3">Arts Programs</h3>
+                    <h2 className="text-lg font-bold mb-3">Arts Programs</h2>
                     <div className="flex flex-wrap gap-2">
                       {school.artsPrograms.map((program, index) => (
                         <span key={index} className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
@@ -364,7 +432,7 @@ export default function SchoolProfile() {
 
                 {school.sportsPrograms && school.sportsPrograms.length > 0 && (
                   <Card className="p-6">
-                    <h3 className="text-lg font-bold mb-3">Sports Programs</h3>
+                    <h2 className="text-lg font-bold mb-3">Sports Programs</h2>
                     <div className="flex flex-wrap gap-2">
                       {school.sportsPrograms.map((program, index) => (
                         <span key={index} className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm">
@@ -377,7 +445,7 @@ export default function SchoolProfile() {
 
                 {school.languages && school.languages.length > 0 && (
                   <Card className="p-6">
-                    <h3 className="text-lg font-bold mb-3">Language Programs</h3>
+                    <h2 className="text-lg font-bold mb-3">Language Programs</h2>
                     <div className="flex flex-wrap gap-2">
                       {school.languages.map((language, index) => (
                         <span key={index} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
@@ -390,7 +458,7 @@ export default function SchoolProfile() {
 
                 {school.clubs && school.clubs.length > 0 && (
                   <Card className="p-6">
-                    <h3 className="text-lg font-bold mb-3">Clubs & Extracurricular Activities</h3>
+                    <h2 className="text-lg font-bold mb-3">Clubs & Extracurricular Activities</h2>
                     <div className="flex flex-wrap gap-2">
                       {school.clubs.map((club, index) => (
                         <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
@@ -404,7 +472,7 @@ export default function SchoolProfile() {
 
               <TabsContent value="admissions" className="space-y-6">
                 <Card className="p-6">
-                  <h3 className="text-xl font-bold mb-4">Admissions Information</h3>
+                  <h2 className="text-xl font-bold mb-4">Admissions Information</h2>
                   {school.applicationDeadline && (
                     <div className="mb-4">
                       <span className="text-slate-600 font-medium">Application Deadline:</span>
@@ -445,7 +513,7 @@ export default function SchoolProfile() {
 
               <TabsContent value="photos" className="space-y-6">
                 <Card className="p-4 sm:p-6">
-                  <h3 className="text-lg sm:text-xl font-bold mb-4">Gallery</h3>
+                  <h2 className="text-lg sm:text-xl font-bold mb-4">Gallery</h2>
                   {school.photoGallery && school.photoGallery.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       {school.photoGallery.map((photo, index) => (
@@ -505,7 +573,7 @@ export default function SchoolProfile() {
               )}
 
               <div className="space-y-3 sm:space-y-4">
-                <h3 className="font-bold text-sm sm:text-base">Contact Information</h3>
+                <h2 className="font-bold text-sm sm:text-base">Contact Information</h2>
                 {school.phone && (
                   <div className="flex items-center gap-2 text-xs sm:text-sm">
                     <Phone className="h-3 sm:h-4 w-3 sm:w-4 text-slate-400 flex-shrink-0" />
@@ -538,7 +606,7 @@ export default function SchoolProfile() {
 
               {school.accreditations && school.accreditations.length > 0 && (
                 <div className="mt-6 pt-6 border-t">
-                  <h3 className="font-bold mb-2">Accreditations</h3>
+                  <h2 className="font-bold mb-2">Accreditations</h2>
                   <div className="flex flex-wrap gap-2">
                     {school.accreditations.map((acc, index) => (
                       <span key={index} className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded">

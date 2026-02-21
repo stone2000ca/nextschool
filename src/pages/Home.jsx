@@ -12,6 +12,62 @@ export default function Home() {
   const [loadingSchools, setLoadingSchools] = useState(true);
 
   useEffect(() => {
+    // Set meta tags for SEO
+    document.title = 'NextSchool - Find the Perfect Private School for Your Child';
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.name = 'description';
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.content = 'AI-powered education consultant helping Canadian parents find, compare, and choose the right private school. Chat with Jackie or Liam to start your search.';
+
+    // OG Tags
+    const ogTags = {
+      'og:title': 'NextSchool - Find the Perfect Private School for Your Child',
+      'og:description': 'AI-powered education consultant helping Canadian parents find, compare, and choose the right private school. Chat with Jackie or Liam to start your search.',
+      'og:image': '/logo.png',
+      'og:url': 'https://nextschool.ca/Home',
+      'og:type': 'website',
+      'og:site_name': 'NextSchool'
+    };
+
+    for (const [property, content] of Object.entries(ogTags)) {
+      let tag = document.querySelector(`meta[property="${property}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('property', property);
+        document.head.appendChild(tag);
+      }
+      tag.content = content;
+    }
+
+    // Structured Data for Website
+    const schemaData = {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'NextSchool',
+      url: 'https://nextschool.ca',
+      description: 'AI-powered education consultant helping families find the perfect private school',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: 'https://nextschool.ca/Consultant?q={search_term_string}'
+        },
+        'query-input': 'required name=search_term_string'
+      }
+    };
+
+    let schemaScript = document.querySelector('script[data-schema="home"]');
+    if (!schemaScript) {
+      schemaScript = document.createElement('script');
+      schemaScript.type = 'application/ld+json';
+      schemaScript.setAttribute('data-schema', 'home');
+      document.head.appendChild(schemaScript);
+    }
+    schemaScript.innerHTML = JSON.stringify(schemaData);
+
     loadFeaturedSchools();
   }, []);
 
@@ -28,6 +84,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Canonical URL */}
+      <link rel="canonical" href="https://nextschool.ca/Home" />
+      
       {/* TASK E: Skip navigation */}
       <a 
         href="#main-content" 
