@@ -88,9 +88,13 @@ Deno.serve(async (req) => {
     }
 
     const firstSchool = schools[0];
-    console.log(`First school keys:`, Object.keys(firstSchool));
-    console.log(`First school has data:`, 'data' in firstSchool);
-    console.log(`First school.data keys:`, firstSchool.data ? Object.keys(firstSchool.data).slice(0, 10) : 'no data field');
+    const schoolKeys = Object.keys(firstSchool || {});
+    console.log(`First school keys:`, schoolKeys);
+    
+    // Check if schools have .data property or are flat
+    const isFlatStructure = 'slug' in firstSchool;
+    const hasDataProperty = 'data' in firstSchool;
+    console.log(`isFlatStructure: ${isFlatStructure}, hasDataProperty: ${hasDataProperty}`);
 
     const report = {
       pass1: {
