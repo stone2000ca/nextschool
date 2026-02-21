@@ -17,6 +17,7 @@ import SortControl from '@/components/schools/SortControl';
 import LoginGateModal from '@/components/dialogs/LoginGateModal';
 import FamilyBriefPanel from '@/components/chat/FamilyBriefPanel';
 import ProgressBar from '@/components/ui/progress-bar';
+import BetaWelcomeOverlay from '@/components/onboarding/BetaWelcomeOverlay';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import Navbar from '@/components/navigation/Navbar';
@@ -30,6 +31,8 @@ export default function Consultant() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
   const [showResponseChips, setShowResponseChips] = useState(false);
+  const [sessionId] = useState(Math.random().toString(36).substring(2, 11));
+  const [feedbackPromptShown, setFeedbackPromptShown] = useState(false);
   
   // View states
   const [currentView, setCurrentView] = useState('welcome');
@@ -126,7 +129,13 @@ export default function Consultant() {
     checkAuth();
     loadUserLocation();
     restoreGuestSession();
-  }, []);
+
+    // Track session start
+    base44.functions.invoke('trackSessionEvent', {
+      eventType: 'session_start',
+      sessionId
+    }).catch(err => console.error('Failed to track session:', err));
+  }, [sessionId]);
 
   // Load family profile for Brief panel
   useEffect(() => {
@@ -412,6 +421,13 @@ export default function Consultant() {
 
   const handleSelectConsultant = (consultantName) => {
     setSelectedConsultant(consultantName);
+    // Track consultant selection
+    base44.functions.invoke('trackSessionEvent', {
+      eventType: 'consultant_selected',
+      consultantName,
+      sessionId
+    }).catch(err => console.error('Failed to track:', err));
+
     // Initialize first message with consultant's greeting
     const greeting = {
       role: 'assistant',
@@ -462,6 +478,12 @@ export default function Consultant() {
   };
 
   const handleSendMessage = async (messageText) => {
+    // Track message sent
+    base44.functions.invoke('trackSessionEvent', {
+      eventType: 'message_sent',
+      consultantName: selectedConsultant,
+      sessionId
+    }).catch(err => console.error('Failed to track:', err));
     // SOFT LOGIN GATE: Check if user is confirming the Brief without being logged in
     const isBriefConfirmation = messageText.toLowerCase().includes("that's right") || 
                                  messageText.toLowerCase().includes("let's see the schools") ||
@@ -550,6 +572,18 @@ export default function Consultant() {
       }
       // FIX #3: First priority - if schools are returned, display them
       else if (response.data.schools && response.data.schools.length > 0) {
+        // Track schools shown
+        base44.functions.invoke('trackSessionEvent', {
+          eventType: 'schools_shown',
+          consultantName: selectedConsultant,
+          sessionId,
+          metadata: { schoolCount: response.data.schools.length }
+        }).catch(err => console.error('Failed to track:', err));
+
+        // Show feedback prompt if not already shown
+        if (!feedbackPromptShown && messages.length > 5) {
+          setFeedbackPromptShown(true);
+        }
         // Reorder schools to match the order mentioned in AI response
         const aiResponse = response.data.message;
         const orderedSchools = [...response.data.schools];
@@ -731,6 +765,14 @@ Return empty array if user didn't provide any of these facts.`;
   const handleViewSchoolDetail = (schoolId) => {
     const school = schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId);
     if (school) {
+      // Track school clicked
+      base44.functions.invoke('trackSessionEvent', {
+        eventType: 'school_clicked',
+        consultantName: selectedConsultant,
+        sessionId,
+        metadata: { schoolName: school.name }
+      }).catch(err => console.error('Failed to track:', err));
+
       setSelectedSchool(school);
       setCurrentView('detail');
     }
@@ -747,6 +789,7 @@ Return empty array if user didn't provide any of these facts.`;
     try {
       const currentShortlist = user.shortlist || [];
       let updatedShortlist;
+      const school = schools.find(s => s.id === schoolId);
       
       if (currentShortlist.includes(schoolId)) {
         // Remove from shortlist
@@ -754,6 +797,13 @@ Return empty array if user didn't provide any of these facts.`;
       } else {
         // Add to shortlist
         updatedShortlist = [...currentShortlist, schoolId];
+        // Track shortlisted
+        base44.functions.invoke('trackSessionEvent', {
+          eventType: 'shortlisted',
+          consultantName: selectedConsultant,
+          sessionId,
+          metadata: { schoolName: school?.name }
+        }).catch(err => console.error('Failed to track:', err));
       }
       
       // Update user
@@ -1055,6 +1105,27 @@ Return empty array if user didn't provide any of these facts.`;
                 />
               ))}
               {isTyping && <TypingIndicator message={loadingStages[loadingStage]} consultantName={selectedConsultant} />}
+              
+              {/* Feedback Prompt */}
+              {feedbackPromptShown && schools.length > 0 && !isTyping && (
+                <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm text-teal-900">
+                      I hope that was helpful! If you have a minute, I'd love to hear how this went for you.
+                    </p>
+                  </div>
+                  <Link to={createPageUrl('Feedback')} className="flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-teal-600 text-teal-600 hover:bg-teal-50"
+                    >
+                      Share Feedback
+                    </Button>
+                  </Link>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
