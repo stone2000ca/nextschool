@@ -163,6 +163,16 @@ Keep to 2-3 paragraphs. Sound warm and empathetic. NO school names.`;
         hasSchoolNames
       };
 
+      // STATE-SPECIFIC PROMPT INJECTION
+      const statePromptPrefix = {
+        'GREETING': '[STATE: GREETING] You are greeting the parent. Ask ONE warm opening question. Do NOT mention schools or generate a Brief. Keep it warm and focused.',
+        'INTAKE': '[STATE: INTAKE] You are gathering family information. Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools, mention school names, or generate a Brief.',
+        'BRIEF': '[STATE: BRIEF] Generate a warm narrative summary reflecting exactly what they shared. Include child name, grade, location, interests/priorities, budget. No school names. End: "Does that capture it?"',
+        'BRIEF_EDIT': '[STATE: BRIEF_EDIT] They want to adjust the Brief. Listen and regenerate it with updated information. Be warm and collaborative. No school names.',
+        'RESULTS': '[STATE: RESULTS] Explain why these schools match. Focus on fit and data. Do NOT ask intake questions. If they want different results, offer to adjust the Brief.',
+        'DEEP_DIVE': '[STATE: DEEP_DIVE] Discuss specific schools in detail. Answer questions, compare, help with shortlisting. Use data. Do NOT ask intake questions.'
+      }[currentState] || '[STATE: UNKNOWN] Generate a helpful response.';
+
       // Build persona-specific instructions with EMPHASIS on entity extraction + one question + no filler
       const personaInstructions = consultantName === 'Jackie'
        ? `YOU ARE JACKIE - The Warm & Supportive Consultant:
