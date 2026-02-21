@@ -2,28 +2,29 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 const TIMEOUT_MS = 25000;
 
-Deno.serve(async (req) => {
-  const timeoutPromise = new Promise((_, reject) => 
-    setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_MS)
-  );
+  Deno.serve(async (req) => {
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_MS)
+    );
 
-  const processRequest = async () => {
-    try {
-      const base44 = createClientFromRequest(req);
-      const { 
-        message, 
-        intent, 
-        schools, 
-        conversationHistory, 
-        conversationContext,
-        userNotes,
-        shortlistedSchools,
-        familyProfile,
-        consultantName,
-        state = ''
-      } = await req.json();
+    const processRequest = async () => {
+      try {
+        const base44 = createClientFromRequest(req);
+        const { 
+          message, 
+          intent, 
+          schools, 
+          conversationHistory, 
+          conversationContext,
+          userNotes,
+          shortlistedSchools,
+          familyProfile,
+          consultantName,
+          state = ''
+        } = await req.json();
 
-      console.log(`[generateResponse] Intent: ${intent}, State: ${state}, Schools count: ${schools?.length || 0}`);
+        const currentState = conversationContext?.state || state || 'GREETING';
+        console.log(`[generateResponse] State: ${currentState}, Intent: ${intent}, Schools count: ${schools?.length || 0}`);
 
       // Handle GENERATE_BRIEF intent
       if (intent === 'GENERATE_BRIEF' && familyProfile) {
