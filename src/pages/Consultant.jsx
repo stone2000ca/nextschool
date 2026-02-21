@@ -126,6 +126,40 @@ export default function Consultant() {
   const isDevMode = new URLSearchParams(window.location.search).get('dev') === 'true';
 
   useEffect(() => {
+    // Set meta tags for SEO
+    document.title = 'Meet Your Education Consultant | NextSchool';
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.name = 'description';
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.content = 'Chat with Jackie or Liam, your AI education consultants. Get personalized private school recommendations in minutes.';
+
+    // Structured data for Service
+    const schemaData = {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      name: 'School Search Consulting',
+      description: 'AI-powered personalized private school recommendations',
+      provider: {
+        '@type': 'Organization',
+        name: 'NextSchool',
+        url: 'https://nextschool.ca'
+      },
+      areaServed: ['CA', 'US', 'EU'],
+      serviceType: 'Educational Consulting'
+    };
+
+    let schemaScript = document.querySelector('script[data-schema="consultant"]');
+    if (!schemaScript) {
+      schemaScript = document.createElement('script');
+      schemaScript.type = 'application/ld+json';
+      schemaScript.setAttribute('data-schema', 'consultant');
+      document.head.appendChild(schemaScript);
+    }
+    schemaScript.innerHTML = JSON.stringify(schemaData);
+
     checkAuth();
     loadUserLocation();
     restoreGuestSession();
@@ -1502,6 +1536,24 @@ Return empty array if user didn't provide any of these facts.`;
 
           {/* Messages */}
           <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#1E1E2E]">
+            {/* Feedback Prompt in Sidebar */}
+            {feedbackPromptShown && schools.length > 0 && !isTyping && (
+              <div className="bg-teal-900/30 border border-teal-500/30 rounded-lg p-3 mb-2">
+                <p className="text-sm text-[#E8E8ED] mb-2">
+                  I hope that was helpful! If you have a minute, I'd love to hear how this went for you.
+                </p>
+                <Link to={createPageUrl('Feedback')} className="block">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full border-teal-500 text-teal-400 hover:bg-teal-900/50"
+                  >
+                    Share Feedback
+                  </Button>
+                </Link>
+              </div>
+            )}
+            
             {messages.map((msg, index) => (
               <MessageBubble
                 key={index}
