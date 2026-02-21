@@ -1091,7 +1091,7 @@ Return empty array if user didn't provide any of these facts.`;
 
               {/* Messages */}
               <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#1E1E2E] pb-32">
-                {currentView === 'welcome' && messages.length <= 1 && (
+                {[STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(currentState) && messages.length <= 1 && (
                 <div className="text-center space-y-6 py-8">
                   <div className="space-y-2">
                     <h1 className="text-3xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
