@@ -4,7 +4,7 @@ import { MapPin, Heart, DollarSign, Users, Navigation, Check, AlertTriangle } fr
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HeaderPhotoDisplay, LogoDisplay, isClearbitUrl } from '@/components/schools/HeaderPhotoHelper';
 
-export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0 }) {
+export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0, accentColor = "#0D9488" }) {
   const getCurrencySymbol = (currency) => {
     const symbols = { CAD: 'CA$', USD: '$', EUR: '€', GBP: '£' };
     return symbols[currency] || '$';
@@ -41,11 +41,22 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
 
   return (
     <Card 
-      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group school-card h-full flex flex-col"
+      className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group school-card h-full flex flex-col focus-within:ring-2 focus-within:ring-offset-2"
       style={{
         animation: 'fadeSlideUp 0.4s ease-out',
         animationDelay: `${index * 0.1}s`,
-        animationFillMode: 'backwards'
+        animationFillMode: 'backwards',
+        '--accent-color': accentColor
+      }}
+      onClick={onViewDetails}
+      role="button"
+      tabIndex={0}
+      aria-label={`View ${school.name} school profile`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onViewDetails();
+        }
       }}
     >
       <style jsx>{`
@@ -59,16 +70,20 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
             transform: translateY(0);
           }
         }
+        .group:hover {
+          border-color: var(--accent-color);
+        }
       `}</style>
-      <div onClick={onViewDetails} className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col">
         {/* Image */}
-        <div className="relative h-48 bg-slate-200 overflow-hidden group-hover:scale-105 transition-transform duration-300">
-          <div className="absolute inset-0">
+        <div className="relative h-40 sm:h-48 bg-slate-200 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-400" />
+          <div className="absolute inset-0 group-hover:scale-105 transition-transform duration-300">
             <HeaderPhotoDisplay 
               headerPhotoUrl={school.headerPhotoUrl}
               heroImage={school.heroImage}
               schoolName={school.name}
-              height="h-48"
+              height="h-40 sm:h-48"
             />
           </div>
           {/* Region Badge */}
@@ -78,13 +93,13 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
         </div>
 
         {/* Content */}
-        <div className="p-4 flex-1 flex flex-col">
-          <div className="flex items-center gap-2 mb-2">
-            <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-5 w-5" />
-            <h3 className="font-bold text-lg line-clamp-1">{school.name}</h3>
+        <div className="p-3 sm:p-4 flex-1 flex flex-col">
+          <div className="flex items-start gap-2 mb-2">
+            <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-4 sm:h-5 w-4 sm:w-5" />
+            <h3 className="font-bold text-base sm:text-lg line-clamp-2 flex-1">{school.name}</h3>
           </div>
-          <div className="flex items-center gap-1 text-sm text-slate-600 mb-3">
-            <MapPin className="h-3 w-3" />
+          <div className="flex items-center gap-1 text-xs sm:text-sm text-slate-600 mb-3">
+            <MapPin className="h-3 w-3 flex-shrink-0" />
             <span className="line-clamp-1">{school.city}, {school.provinceState}</span>
           </div>
           
@@ -111,30 +126,30 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
             )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-slate-900 font-semibold text-sm">
-              <DollarSign className="h-4 w-4" />
+          <div className="flex items-center gap-1 text-slate-900 font-semibold text-xs sm:text-sm mb-3">
+            <DollarSign className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
+            <span className="line-clamp-1">
               {school.dayTuition && school.boardingTuition ? (
                 <span className="text-xs">
-                  from {getCurrencySymbol(school.currency)}{school.dayTuition.toLocaleString()} (day) / {getCurrencySymbol(school.currency)}{school.boardingTuition.toLocaleString()} (boarding)
+                  {getCurrencySymbol(school.currency)}{school.dayTuition.toLocaleString()} (day) / {getCurrencySymbol(school.currency)}{school.boardingTuition.toLocaleString()} (boarding)
                 </span>
               ) : school.dayTuition ? (
                 <>
                   {getCurrencySymbol(school.currency)}{school.dayTuition.toLocaleString()}
-                  <span className="text-xs text-slate-500 font-normal">/year (day)</span>
+                  <span className="text-xs text-slate-500 font-normal ml-1">(day)</span>
                 </>
               ) : school.boardingTuition ? (
                 <>
                   {getCurrencySymbol(school.currency)}{school.boardingTuition.toLocaleString()}
-                  <span className="text-xs text-slate-500 font-normal">/year (boarding)</span>
+                  <span className="text-xs text-slate-500 font-normal ml-1">(boarding)</span>
                 </>
               ) : (
                 <>
                   {getCurrencySymbol(school.currency)}{school.tuition?.toLocaleString() || 'N/A'}
-                  <span className="text-xs text-slate-500 font-normal">/year</span>
+                  <span className="text-xs text-slate-500 font-normal ml-1">/year</span>
                 </>
               )}
-            </div>
+            </span>
           </div>
 
           {/* Match Explanations */}
@@ -161,17 +176,19 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
       </div>
 
       {/* Actions */}
-      <div className="px-4 pb-4">
+      <div className="px-3 sm:px-4 pb-3 sm:pb-4">
         <Button
           variant={isShortlisted ? "default" : "outline"}
           size="sm"
-          className={`w-full ${isShortlisted ? 'bg-teal-600 hover:bg-teal-700' : ''}`}
+          className={`w-full text-xs sm:text-sm focus:ring-2 focus:ring-offset-2 ${isShortlisted ? 'bg-teal-600 hover:bg-teal-700' : ''}`}
+          style={isShortlisted ? {} : { '--tw-ring-color': accentColor }}
           onClick={(e) => {
             e.stopPropagation();
             onToggleShortlist(school.id);
           }}
+          aria-label={isShortlisted ? `Remove ${school.name} from shortlist` : `Add ${school.name} to shortlist`}
         >
-          <Heart className={`h-4 w-4 mr-2 ${isShortlisted ? 'fill-current' : ''}`} />
+          <Heart className={`h-3 sm:h-4 w-3 sm:w-4 mr-2 ${isShortlisted ? 'fill-current' : ''}`} />
           {isShortlisted ? 'Shortlisted' : 'Add to Shortlist'}
         </Button>
       </div>

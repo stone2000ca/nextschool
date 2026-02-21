@@ -16,6 +16,7 @@ import ComparisonTable from '@/components/schools/ComparisonTable';
 import SortControl from '@/components/schools/SortControl';
 import LoginGateModal from '@/components/dialogs/LoginGateModal';
 import FamilyBriefPanel from '@/components/chat/FamilyBriefPanel';
+import ProgressBar from '@/components/ui/progress-bar';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import Navbar from '@/components/navigation/Navbar';
@@ -64,6 +65,13 @@ export default function Consultant() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState(null);
   
+  // Mobile toggle
+  const [mobileView, setMobileView] = useState('chat');
+  
+  // Scroll position preservation
+  const chatScrollRef = useRef(null);
+  const [savedScrollPosition, setSavedScrollPosition] = useState(0);
+  
   // Limit reached dialog
   const [limitReachedOpen, setLimitReachedOpen] = useState(false);
   
@@ -92,6 +100,24 @@ export default function Consultant() {
                         currentView !== 'detail' && 
                         currentView !== 'comparison' && 
                         currentView !== 'comparison-table';
+
+  // TASK B: Save/restore scroll position during transition
+  useEffect(() => {
+    if (!isIntakePhase && chatScrollRef.current) {
+      // Entering results phase - restore scroll
+      setTimeout(() => {
+        if (chatScrollRef.current) {
+          chatScrollRef.current.scrollTop = savedScrollPosition;
+        }
+      }, 450); // After transition completes
+    }
+  }, [isIntakePhase]);
+
+  const saveScrollPosition = () => {
+    if (chatScrollRef.current) {
+      setSavedScrollPosition(chatScrollRef.current.scrollTop);
+    }
+  };
 
   // Dev mode bypass for login gate
   const isDevMode = new URLSearchParams(window.location.search).get('dev') === 'true';
@@ -875,8 +901,14 @@ Return empty array if user didn't provide any of these facts.`;
   if (!selectedConsultant) {
     return (
       <div className="h-screen flex flex-col bg-slate-50">
+        <a 
+          href="#consultant-selection" 
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded-lg"
+        >
+          Skip to consultant selection
+        </a>
         <Navbar variant="minimal" />
-        <div className="flex-1 overflow-auto">
+        <div id="consultant-selection" className="flex-1 overflow-auto">
           <ConsultantSelection onSelectConsultant={handleSelectConsultant} />
         </div>
       </div>
@@ -885,27 +917,38 @@ Return empty array if user didn't provide any of these facts.`;
 
   return (
     <div className="h-screen flex flex-col bg-slate-50">
+      {/* TASK E: Skip navigation */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded-lg"
+      >
+        Skip to main content
+      </a>
+      
+      {/* TASK D: Progress bar */}
+      <ProgressBar isLoading={isTyping} />
+      
       {/* Header */}
       <Navbar variant="minimal" />
 
       {isIntakePhase ? (
         /* INTAKE PHASE - Centered Layout */
-        <div className="flex-1 overflow-hidden bg-[#1E1E2E] flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl h-full max-h-[90vh] bg-[#2A2A3D] rounded-2xl shadow-2xl flex flex-col transition-all duration-400">
+        <div id="main-content" className="flex-1 overflow-hidden bg-[#1E1E2E] flex items-center justify-center p-2 sm:p-4">
+          <div className="w-full max-w-2xl h-full max-h-[95vh] sm:max-h-[90vh] bg-[#2A2A3D] rounded-xl sm:rounded-2xl shadow-2xl flex flex-col transition-all duration-400">
             {/* Consultant Header */}
-            <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#2A2A3D]">
-              <div className="flex items-center gap-3">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+            <div className="p-4 sm:p-6 border-b border-white/10 flex items-center justify-between bg-[#2A2A3D]">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <div className={`h-8 sm:h-10 w-8 sm:w-10 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0 ${
                   selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]' : 'bg-[#6B9DAD]'
-                }`}>
+                }`} aria-hidden="true">
                   {selectedConsultant === 'Jackie' ? 'J' : 'L'}
                 </div>
-                <div>
-                  <h2 className={`font-bold text-lg ${
+                <div className="min-w-0 flex-1">
+                  <h2 className={`font-bold text-base sm:text-lg truncate ${
                     selectedConsultant === 'Jackie' ? 'text-[#C27B8A]' : 'text-[#6B9DAD]'
                   }`}>{selectedConsultant}</h2>
                   {isTyping ? (
-                    <p className="text-xs text-[#E8E8ED]/60">{selectedConsultant} is typing...</p>
+                    <p className="text-xs text-[#E8E8ED]/60">{selectedConsultant} is thinking...</p>
                   ) : (
                     <p className="text-xs text-[#E8E8ED]/60">Education Consultant</p>
                   )}
@@ -938,7 +981,7 @@ Return empty array if user didn't provide any of these facts.`;
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#1E1E2E]">
+            <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#1E1E2E]">
               {currentView === 'welcome' && messages.length <= 1 && (
                 <div className="text-center space-y-6 py-8">
                   <div className="space-y-2">
@@ -1032,7 +1075,7 @@ Return empty array if user didn't provide any of these facts.`;
               
               return shouldShowChips;
             })() && (
-              <div className="p-4 border-t border-white/10 bg-[#2A2A3D] flex flex-wrap gap-2 justify-center">
+              <div className="p-3 sm:p-4 border-t border-white/10 bg-[#2A2A3D] flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
                 {(() => {
                   const lastAIMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
                   const isBriefMessage = lastAIMessage?.content && (
@@ -1122,11 +1165,38 @@ Return empty array if user didn't provide any of these facts.`;
         </div>
       ) : (
         /* RESULTS PHASE - Sidebar Layout */
-        <div className="flex-1 flex overflow-hidden relative transition-all duration-400">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative transition-all duration-400">
+        {/* Mobile tab toggle */}
+        <div className="lg:hidden flex border-b bg-white">
+          <button
+            onClick={() => setMobileView('chat')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${
+              mobileView === 'chat' 
+                ? 'text-teal-600 border-b-2 border-teal-600' 
+                : 'text-slate-600'
+            }`}
+            aria-label="View chat"
+          >
+            Chat
+          </button>
+          <button
+            onClick={() => setMobileView('schools')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${
+              mobileView === 'schools' 
+                ? 'text-teal-600 border-b-2 border-teal-600' 
+                : 'text-slate-600'
+            }`}
+            aria-label="View schools"
+          >
+            Schools ({schools.length})
+          </button>
+        </div>
+
         {/* LEFT SIDEBAR */}
         <aside className={`
           ${sidebarCollapsed ? 'w-0' : 'w-64'}
-          transition-all duration-300 bg-slate-100 border-r flex flex-col overflow-hidden
+          transition-all duration-300 bg-slate-100 border-r flex-col overflow-hidden
+          hidden lg:flex
         `}>
           {!sidebarCollapsed && (
             <>
@@ -1234,7 +1304,9 @@ Return empty array if user didn't provide any of these facts.`;
         )}
 
         {/* CENTER CONTENT AREA */}
-        <main className="flex-1 overflow-hidden bg-white">
+        <main className={`flex-1 overflow-hidden bg-white transition-opacity duration-200 ${
+          mobileView === 'schools' ? 'block' : 'hidden lg:block'
+        }`} style={{ animationDelay: '100ms' }}>
           {currentView === 'welcome' && (
             <WelcomeState onPromptClick={handleSendMessage} />
           )}
@@ -1250,9 +1322,9 @@ Return empty array if user didn't provide any of these facts.`;
           )}
 
           {currentView === 'schools' && schools.length > 0 && (
-            <div className="h-full flex flex-col">
-              <div className="p-4 border-b flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-slate-900">
+            <div className="h-full flex flex-col animate-fadeIn">
+              <div className="p-3 sm:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <h2 className="text-base sm:text-lg font-semibold text-slate-900">
                   Results ({schools.length})
                 </h2>
                 <SortControl
@@ -1262,13 +1334,15 @@ Return empty array if user didn't provide any of these facts.`;
                   onSortDirectionChange={setSortDirection}
                 />
               </div>
-              <div className="flex-1 overflow-auto p-4">
+              <div className="flex-1 overflow-auto p-3 sm:p-4">
                 <SchoolGrid
                   schools={getSortedSchools()}
                   onViewDetails={handleViewSchoolDetail}
                   onToggleShortlist={handleToggleShortlist}
                   shortlistedIds={user?.shortlist || []}
                   showDistances={showDistances}
+                  isLoading={isTyping && schools.length === 0}
+                  accentColor={selectedConsultant === 'Jackie' ? '#C27B8A' : '#6B9DAD'}
                 />
               </div>
             </div>
@@ -1309,21 +1383,23 @@ Return empty array if user didn't provide any of these facts.`;
         </main>
 
         {/* RIGHT CHAT PANEL */}
-        <aside className="w-[450px] bg-[#2A2A3D] border-l border-white/10 flex flex-col">
+        <aside className={`w-full lg:w-[450px] bg-[#2A2A3D] border-l border-white/10 flex flex-col transition-all duration-400 ${
+          mobileView === 'chat' ? 'block' : 'hidden lg:flex'
+        }`}>
           {/* Chat Header */}
-          <div className="p-4 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold ${
+          <div className="p-3 sm:p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className={`h-8 sm:h-10 w-8 sm:w-10 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0 ${
                 selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]' : 'bg-[#6B9DAD]'
-              }`}>
+              }`} aria-hidden="true">
                 {selectedConsultant === 'Jackie' ? 'J' : 'L'}
               </div>
-              <div>
-                <span className={`font-semibold block ${
+              <div className="min-w-0 flex-1">
+                <span className={`font-semibold block text-sm sm:text-base truncate ${
                   selectedConsultant === 'Jackie' ? 'text-[#C27B8A]' : 'text-[#6B9DAD]'
                 }`}>{selectedConsultant}</span>
                 {isTyping && (
-                  <span className="text-xs text-[#E8E8ED]/60">{selectedConsultant} is typing...</span>
+                  <span className="text-xs text-[#E8E8ED]/60">{selectedConsultant} is thinking...</span>
                 )}
               </div>
             </div>
@@ -1354,7 +1430,7 @@ Return empty array if user didn't provide any of these facts.`;
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#1E1E2E]">
+          <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#1E1E2E]">
             {messages.map((msg, index) => (
               <MessageBubble
                 key={index}
@@ -1428,7 +1504,7 @@ Return empty array if user didn't provide any of these facts.`;
             
             return shouldShowChips;
           })() && (
-            <div className="p-4 border-t border-white/10 bg-[#2A2A3D] flex flex-wrap gap-2 justify-center">
+            <div className="p-3 sm:p-4 border-t border-white/10 bg-[#2A2A3D] flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
               {(() => {
                 const lastAIMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
                 const isBriefMessage = lastAIMessage?.content && (

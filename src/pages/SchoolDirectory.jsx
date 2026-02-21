@@ -88,36 +88,46 @@ export default function SchoolDirectory() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* TASK E: Skip navigation */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded-lg"
+      >
+        Skip to main content
+      </a>
+      
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">School Directory</h1>
-          <p className="text-slate-600">Browse all {allSchools.length} private schools across Canada, the US, and Europe</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">School Directory</h1>
+          <p className="text-sm sm:text-base text-slate-600">Browse all {allSchools.length} private schools across Canada, the US, and Europe</p>
         </div>
 
         {/* Search and Filters */}
-        <div className="grid md:grid-cols-2 gap-4 mb-8">
+        <div className="grid sm:grid-cols-2 gap-4 mb-6 sm:mb-8">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setDisplayedCount(20); // Reset pagination on search
+                setDisplayedCount(20);
               }}
               placeholder="Search by school name or city..."
-              className="pl-10"
+              className="pl-10 focus:ring-2 focus:ring-teal-400"
+              aria-label="Search schools by name or city"
             />
           </div>
           <select
             value={filterRegion}
             onChange={(e) => {
               setFilterRegion(e.target.value);
-              setDisplayedCount(20); // Reset pagination on filter
+              setDisplayedCount(20);
             }}
-            className="px-4 py-2 border rounded-lg bg-white"
+            className="px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+            aria-label="Filter schools by region"
           >
             <option value="all">All Regions</option>
             <option value="Canada">Canada</option>
@@ -139,7 +149,7 @@ export default function SchoolDirectory() {
         ) : (
           <>
             {/* Schools Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
               {displayedSchools.map((school) => {
                 const isShortlisted = user?.shortlist?.includes(school.id) || false;
                 
@@ -147,45 +157,53 @@ export default function SchoolDirectory() {
                   <Link 
                     key={school.id} 
                     to={`${createPageUrl('SchoolProfile')}?id=${school.id}`}
-                    className="block"
+                    className="block focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 rounded-lg"
                   >
                     <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
                       {/* Header Photo */}
-                      <div className="h-32 bg-gradient-to-br from-slate-200 to-slate-300 relative overflow-hidden">
+                      <div className="h-32 sm:h-40 bg-gradient-to-br from-slate-200 to-slate-300 relative overflow-hidden">
                         {school.headerPhotoUrl && (
-                          <HeaderPhotoDisplay url={school.headerPhotoUrl} />
+                          <img 
+                            src={school.headerPhotoUrl} 
+                            alt={`${school.name} campus`}
+                            className="w-full h-full object-cover"
+                          />
                         )}
                       </div>
 
-                      <div className="p-4">
+                      <div className="p-3 sm:p-4">
                         {/* Logo and Name */}
-                        <div className="flex gap-3 mb-3">
+                        <div className="flex gap-2 sm:gap-3 mb-2 sm:mb-3">
                           {school.logoUrl && (
-                            <div className="h-10 w-10 flex-shrink-0">
-                              <LogoDisplay url={school.logoUrl} />
+                            <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
+                              <img 
+                                src={school.logoUrl} 
+                                alt={`${school.name} logo`}
+                                className="w-full h-full object-contain"
+                              />
                             </div>
                           )}
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-slate-900 line-clamp-2">{school.name}</h3>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm sm:text-base text-slate-900 line-clamp-2">{school.name}</h3>
                           </div>
                         </div>
 
                         {/* Location and Grades */}
-                        <div className="space-y-1 text-sm text-slate-600 mb-3">
+                        <div className="space-y-1 text-xs sm:text-sm text-slate-600 mb-3">
                           <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            {school.city}, {school.provinceState || school.country}
+                            <MapPin className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
+                            <span className="truncate">{school.city}, {school.provinceState || school.country}</span>
                           </div>
                           {school.gradesServed && (
                             <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4" />
-                              Grades {school.gradesServed}
+                              <Users className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
+                              <span>Grades {school.gradesServed}</span>
                             </div>
                           )}
                           {school.tuition && (
                             <div className="flex items-center gap-2">
-                              <DollarSign className="h-4 w-4" />
-                              {getCurrencySymbol(school.currency)}{school.tuition.toLocaleString()}/year
+                              <DollarSign className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
+                              <span className="truncate">{getCurrencySymbol(school.currency)}{school.tuition.toLocaleString()}/year</span>
                             </div>
                           )}
                         </div>
@@ -203,13 +221,14 @@ export default function SchoolDirectory() {
                             e.preventDefault();
                             handleToggleShortlist(school.id);
                           }}
-                          className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                          className={`w-full py-2 px-3 rounded-lg text-xs sm:text-sm font-medium transition-colors focus:ring-2 focus:ring-teal-400 focus:outline-none ${
                             isShortlisted
                               ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
                               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                           }`}
+                          aria-label={isShortlisted ? `Remove ${school.name} from shortlist` : `Add ${school.name} to shortlist`}
                         >
-                          <Heart className={`h-4 w-4 inline mr-2 ${isShortlisted ? 'fill-current' : ''}`} />
+                          <Heart className={`h-3 sm:h-4 w-3 sm:w-4 inline mr-2 ${isShortlisted ? 'fill-current' : ''}`} />
                           {isShortlisted ? 'Saved' : 'Save School'}
                         </button>
                       </div>

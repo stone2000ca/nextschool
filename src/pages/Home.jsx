@@ -28,26 +28,38 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* TASK E: Skip navigation */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded-lg"
+      >
+        Skip to main content
+      </a>
+      
       <Navbar />
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-teal-900 to-slate-900 py-20 sm:py-28">
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-teal-900 to-slate-900 py-12 sm:py-20 lg:py-28">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-teal-400 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-400 rounded-full blur-3xl" />
         </div>
         
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+        <div id="main-content" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
             Find the Private School Where Your Child Will Thrive
           </h1>
-          <p className="text-xl sm:text-2xl text-slate-200 mb-10 max-w-3xl mx-auto font-light">
+          <p className="text-lg sm:text-xl lg:text-2xl text-slate-200 mb-8 sm:mb-10 max-w-3xl mx-auto font-light">
             Our AI education consultant evaluates schools across Canada, the US, and the UK to find the ones that truly fit your family's needs.
           </p>
           <Link to={createPageUrl('Consultant')}>
-            <Button size="lg" className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-7 text-lg">
+            <Button 
+              size="lg" 
+              className="bg-teal-500 hover:bg-teal-600 text-white px-6 sm:px-8 py-5 sm:py-7 text-base sm:text-lg focus:ring-2 focus:ring-teal-400 focus:ring-offset-2"
+              aria-label="Start conversation with AI consultant"
+            >
               Meet Your Consultant
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <ArrowRight className="ml-2 h-4 sm:h-5 w-4 sm:w-5" />
             </Button>
           </Link>
         </div>
@@ -55,10 +67,10 @@ export default function Home() {
 
 
       {/* HOW IT WORKS */}
-      <section className="py-20 sm:py-28 bg-slate-50">
+      <section className="py-12 sm:py-20 lg:py-28 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl sm:text-5xl font-bold text-center mb-16 text-slate-900">How It Works</h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-center mb-12 sm:mb-16 text-slate-900">How It Works</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
               <div className="h-14 w-14 bg-teal-100 rounded-lg flex items-center justify-center mb-6">
                 <MessageSquare className="h-7 w-7 text-teal-600" />
@@ -124,19 +136,23 @@ export default function Home() {
       </section>
 
       {/* FEATURED SCHOOLS */}
-      <section className="py-20 sm:py-28 bg-slate-50">
+      <section className="py-12 sm:py-20 lg:py-28 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-12">
-            <h2 className="text-4xl sm:text-5xl font-bold text-slate-900">Featured Schools</h2>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 sm:mb-12 gap-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900">Featured Schools</h2>
             <Link to={createPageUrl('SchoolDirectory')}>
-              <Button variant="outline" className="text-teal-600 border-teal-600 hover:bg-teal-50">
+              <Button 
+                variant="outline" 
+                className="text-teal-600 border-teal-600 hover:bg-teal-50 w-full sm:w-auto focus:ring-2 focus:ring-teal-400"
+                aria-label="Browse all schools in directory"
+              >
                 Browse All Schools <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
 
           {loadingSchools ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-white rounded-xl p-6 h-64 animate-pulse">
                   <div className="h-4 bg-slate-200 rounded w-3/4 mb-4" />

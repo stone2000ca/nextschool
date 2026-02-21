@@ -181,20 +181,21 @@ export default function FamilyBriefPanel({
   };
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 bg-[#2A2A3D] border-t border-white/10 shadow-2xl z-30 transition-all duration-300 ${
-      isExpanded ? 'h-[30vh]' : 'h-14'
+    <div className={`fixed bottom-0 left-0 right-0 bg-[#2A2A3D] border-t border-white/10 shadow-2xl z-30 transition-all duration-400 ${
+      isExpanded ? 'h-[40vh] sm:h-[30vh]' : 'h-12 sm:h-14'
     }`}>
       {/* Collapsed Header Bar */}
       <button
         onClick={() => onToggleExpand(!isExpanded)}
-        className="w-full h-14 px-6 flex items-center justify-between hover:bg-[#1E1E2E] transition-colors"
+        className="w-full h-12 sm:h-14 px-4 sm:px-6 flex items-center justify-between hover:bg-[#1E1E2E] transition-colors focus:ring-2 focus:ring-inset focus:ring-white/30 focus:outline-none"
+        aria-label={isExpanded ? "Collapse family brief" : "Expand family brief"}
       >
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
-            <Users className="h-4 w-4 text-[#E8E8ED]" />
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <div className="h-6 sm:h-8 w-6 sm:w-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+            <Users className="h-3 sm:h-4 w-3 sm:w-4 text-[#E8E8ED]" />
           </div>
-          <div className="text-left">
-            <h3 className="font-semibold text-[#E8E8ED]">
+          <div className="text-left min-w-0 flex-1">
+            <h3 className="font-semibold text-sm sm:text-base text-[#E8E8ED] truncate">
               {familyProfile?.childName ? `${familyProfile.childName}'s Brief` : 'Family Brief'}
             </h3>
             <p className="text-xs text-[#E8E8ED]/60">
@@ -226,19 +227,20 @@ export default function FamilyBriefPanel({
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="h-[calc(100%-3.5rem)] overflow-y-auto px-6 py-4 bg-[#1E1E2E]">
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="h-[calc(100%-3rem)] sm:h-[calc(100%-3.5rem)] overflow-y-auto px-3 sm:px-6 py-3 sm:py-4 bg-[#1E1E2E]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {stages.map((stage) => {
               const Icon = stage.icon;
               return (
                 <button
                   key={stage.id}
                   onClick={() => onSectionClick && onSectionClick(stage.id)}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${
+                  className={`p-3 sm:p-4 rounded-xl border-2 text-left transition-all focus:ring-2 focus:ring-teal-400 focus:outline-none ${
                     stage.populated
                       ? 'bg-[#2A2A3D] border-teal-500/30 hover:border-teal-500/50 hover:shadow-md'
                       : 'bg-[#2A2A3D]/50 border-white/10 opacity-50'
                   } ${newlyPopulated === stage.id ? 'ring-2 ring-teal-500 animate-pulse' : ''}`}
+                  aria-label={`${stage.title} section - ${stage.populated ? 'completed' : 'not yet discussed'}`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`h-6 w-6 rounded-full flex items-center justify-center ${
