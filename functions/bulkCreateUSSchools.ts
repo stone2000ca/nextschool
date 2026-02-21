@@ -21,8 +21,8 @@ const parseGradeRange = (gradeStr) => {
     const first = range[0].trim().toLowerCase();
     const second = range[1].trim();
     
-    // Convert K to grade
-    if (first === 'k') lowest = 0;
+    // Convert K/JK/PK to grade 0
+    if (first === 'k' || first === 'jk' || first === 'pk') lowest = 0;
     else lowest = parseInt(first) || null;
     
     highest = parseInt(second) || null;
