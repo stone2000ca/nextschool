@@ -380,29 +380,33 @@ Respond as ${consultantName}. ONE question max. No filler.`;
         
         const briefPrompt = consultantName === 'Jackie'
           ? `[STATE: BRIEF] Generate a warm, narrative brief. Include child name, grade, location, interests, priorities, budget. Use these values EXACTLY. No school names. End: "Does that capture it? Anything to adjust?"
-Max 150 words.
+        Max 150 words.
 
-FAMILY DATA:
-- CHILD: ${childName || '(not shared)'}
-- GRADE: ${childGrade ? \`Grade \${childGrade}\` : '(not specified)'}
-- LOCATION: ${locationArea || '(not specified)'}
-- INTERESTS: ${interestsStr || '(not specified)'}
-- PRIORITIES: ${prioritiesStr || '(not specified)'}
-- BUDGET: ${budgetDisplay}
+        CRITICAL: Always use the child's actual name from the family profile data. Never use placeholder text like [Child] or [child's name].
 
-YOU ARE JACKIE - Warm, narrative style.`
+        FAMILY DATA:
+        - CHILD: ${childName || '(not shared)'}
+        - GRADE: ${childGrade ? \`Grade \${childGrade}\` : '(not specified)'}
+        - LOCATION: ${locationArea || '(not specified)'}
+        - INTERESTS: ${interestsStr || '(not specified)'}
+        - PRIORITIES: ${prioritiesStr || '(not specified)'}
+        - BUDGET: ${budgetDisplay}
+
+        YOU ARE JACKIE - Warm, narrative style.`
           : `[STATE: BRIEF] Generate a direct, executive-style brief with bullets. Include child name, grade, location, interests, priorities, budget. Use these values EXACTLY. No school names. End: "Sound right?"
-Max 150 words.
+        Max 150 words.
 
-FAMILY DATA:
-- CHILD: ${childName || '(not shared)'}
-- GRADE: ${childGrade ? \`Grade \${childGrade}\` : '(not specified)'}
-- LOCATION: ${locationArea || '(not specified)'}
-- INTERESTS: ${interestsStr || '(not specified)'}
-- PRIORITIES: ${prioritiesStr || '(not specified)'}
-- BUDGET: ${budgetDisplay}
+        CRITICAL: Always use the child's actual name from the family profile data. Never use placeholder text like [Child] or [child's name].
 
-YOU ARE LIAM - Direct, strategic style.`;
+        FAMILY DATA:
+        - CHILD: ${childName || '(not shared)'}
+        - GRADE: ${childGrade ? \`Grade \${childGrade}\` : '(not specified)'}
+        - LOCATION: ${locationArea || '(not specified)'}
+        - INTERESTS: ${interestsStr || '(not specified)'}
+        - PRIORITIES: ${prioritiesStr || '(not specified)'}
+        - BUDGET: ${budgetDisplay}
+
+        YOU ARE LIAM - Direct, strategic style.`;
         
         const briefResult = await base44.integrations.Core.InvokeLLM({
           prompt: briefPrompt,

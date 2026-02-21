@@ -13,6 +13,7 @@ export default function FamilyBriefPanel({
 
   // Track newly populated stages for visual highlighting (no auto-expand)
   useEffect(() => {
+    console.log('[FamilyBriefPanel] familyProfile prop:', familyProfile);
     if (!familyProfile) return;
     
     const populatedStages = getPopulatedStages();
