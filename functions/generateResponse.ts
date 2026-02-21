@@ -226,8 +226,10 @@ Keep to 2-3 paragraphs. Sound warm and empathetic. NO school names.`;
       Liam: "Got it. That gives us concrete filtering criteria. Which comes first: strong learning support, or flexible scheduling?"
       (Notice: ONE question, no filler, data-focused.)`;
 
-      // Generate response
-      const responsePrompt = `${personaInstructions}
+      // Generate response with state-specific rules injected
+      const responsePrompt = `${statePromptPrefix}
+
+${personaInstructions}
 
       ===== ENTITY EXTRACTION (DO THIS FIRST) =====
       From the parent's message AND conversation history, extract:
