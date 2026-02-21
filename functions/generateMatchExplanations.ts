@@ -51,13 +51,29 @@ ${familyContext}
 SCHOOLS TO MATCH:
 ${schoolsList}
 
+===== MATCH EXPLANATION QUALITY REQUIREMENTS =====
+Each explanation MUST include:
+- At least ONE specific detail from the family profile (child's name, interests, needs)
+- At least ONE specific detail from the school (actual program name, facility, policy)
+- NEVER use generic phrases like "aligns with your priorities" without specifics
+- Format: "[Child]'s interest in [specific interest] connects to [School]'s [specific program/feature]."
+
 For EACH school, provide exactly:
 1. Two positive match reasons (things the school offers that align with family needs/interests)
 2. One honest tradeoff/consideration (something that might not be perfect, but is realistic)
 
+EXAMPLES OF GOOD MATCHES:
+- "${familyProfile.childName || 'The student'}'s interest in [specific interest from profile] connects to [School]'s [specific program name]"
+- "[School]'s average class size of [specific number] matches your preference for smaller classes"
+- "[School]'s [specific curriculum type] curriculum aligns with ${familyProfile.childName || 'the student'}'s [learning style/strength]"
+
+EXAMPLES OF BAD MATCHES (DO NOT USE):
+- "Aligns with your priorities" (too generic)
+- "Good fit for your child" (no specifics)
+- "Meets your needs" (vague)
+
 Use the child's actual name ("${familyProfile.childName || 'the student'}") in explanations.
-Make reasons specific and personalized.
-Keep each explanation short (1 sentence, ~10 words).
+Keep each explanation short (1 sentence, ~10-15 words).
 For positive matches: emphasize alignment with interests, academic strengths, priorities
 For tradeoffs: mention realistic concerns (distance, tuition level, size, etc.) - NOT dealbreakers
 
@@ -66,9 +82,9 @@ Return ONLY a JSON array with NO additional text:
   {
     "schoolId": "school-id-1",
     "matches": [
-      { "type": "positive", "text": "Strong arts program for Emma" },
-      { "type": "positive", "text": "Small class sizes align with preference" },
-      { "type": "tradeoff", "text": "Tuition is at upper end of budget" }
+      { "type": "positive", "text": "Emma's love of theater connects to Branksome's professional-grade auditorium" },
+      { "type": "positive", "text": "IB curriculum matches your priority for academic rigor" },
+      { "type": "tradeoff", "text": "$42K tuition is $7K above your stated budget" }
     ]
   }
 ]`;
