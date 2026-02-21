@@ -49,6 +49,18 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error('Failed to fetch/create conversation-scoped FamilyProfile:', e);
       }
+    } else {
+      // For unauthenticated users, create a local empty object
+      conversationFamilyProfile = {
+        childName: null,
+        childGrade: null,
+        locationArea: null,
+        maxTuition: null,
+        interests: [],
+        priorities: [],
+        dealbreakers: [],
+        academicStrengths: []
+      };
     }
     
     // STEP 1: ENTITY EXTRACTION - Run BEFORE state machine
@@ -71,11 +83,13 @@ Deno.serve(async (req) => {
           conversationFamilyProfile[key] = value;
         }
       }
-      // Update profile in DB
-      try {
-        conversationFamilyProfile = await base44.entities.FamilyProfile.update(conversationFamilyProfile.id, extractedData);
-      } catch (e) {
-        console.error('Failed to update FamilyProfile with extracted data:', e);
+      // Update profile in DB (only if it has an ID, i.e., authenticated user)
+      if (conversationFamilyProfile?.id) {
+        try {
+          conversationFamilyProfile = await base44.entities.FamilyProfile.update(conversationFamilyProfile.id, extractedData);
+        } catch (e) {
+          console.error('Failed to update FamilyProfile with extracted data:', e);
+        }
       }
     }
     
