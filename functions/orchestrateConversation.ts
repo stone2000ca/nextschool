@@ -197,89 +197,73 @@ Return ONLY valid JSON. Do NOT explain.`;
       }
     }
     
-    // STEP 2: DETERMINISTIC STATE TRANSITIONS (Backend only)
-    let currentState = context.state || STATES.GREETING;
-    
-    // Rule 1: GREETING → INTAKE on first message
-    if (currentState === STATES.GREETING && message) {
-      currentState = STATES.INTAKE;
+    // STEP 2: DETERMINISTIC STATE TRANSITIONS
+    let currentState = context.state || STATES.WELCOME;
+    let briefStatus = context.briefStatus || null;
+
+    // Rule 1: WELCOME -> DISCOVERY on first message
+    if (currentState === STATES.WELCOME && message) {
+      currentState = STATES.DISCOVERY;
     }
-    
-    // Rule 2: INTAKE → BRIEF when minimum data present
-    if (currentState === STATES.INTAKE) {
-      const hasMinimumData = conversationFamilyProfile && 
-        conversationFamilyProfile?.childGrade !== null &&
-        conversationFamilyProfile?.locationArea &&
-        (conversationFamilyProfile?.interests?.length > 0 || 
-         conversationFamilyProfile?.priorities?.length > 0 || 
-         conversationFamilyProfile?.maxTuition);
+
+    // Rule 2: DISCOVERY -> BRIEF when Tier 1 data is met (entity-based, NOT message count)
+    if (currentState === STATES.DISCOVERY) {
+      const hasLocation = !!(conversationFamilyProfile?.locationArea);
+      const hasGradeOrCurriculum = !!(conversationFamilyProfile?.childGrade ||
+        conversationFamilyProfile?.curriculumPreference?.length > 0 ||
+        conversationFamilyProfile?.schoolType);
       
-      const parentMessageCount = conversationHistory?.filter(m => m.role === 'user').length || 0;
-      const forcedBriefAfterMessages = parentMessageCount >= 4;
-      
-      if (hasMinimumData || forcedBriefAfterMessages) {
+      if (hasLocation && hasGradeOrCurriculum) {
         currentState = STATES.BRIEF;
-        briefEditCount = 0;
+        briefStatus = BRIEF_STATUS.GENERATING;
       }
     }
-    
-    // Rule 3: BRIEF → SEARCHING or BRIEF_EDIT
+
+    // Rule 3: BRIEF state handling
     if (currentState === STATES.BRIEF) {
       const msgLowerTrim = msgLower.trim();
-      const isConfirming = /\b(yes|yeah|yep|confirmed?|correct|perfect|great|sounds good|looks good|go ahead|that's right|that's perfect|proceed|search)\b/i.test(msgLowerTrim);
+      const isConfirming = /\b(yes|yeah|yep|confirmed|correct|perfect|great|sounds good|looks good|go ahead|that's right|that's perfect|perfect)\b/i.test(msgLowerTrim);
       const isAdjusting = /\b(change|adjust|edit|actually|wait|hold on|no|not right|different|let me|redo)\b/i.test(msgLowerTrim);
       
-      if (isConfirming) {
-        currentState = STATES.SEARCHING;
-      } else if (isAdjusting) {
-        briefEditCount++;
-        if (briefEditCount >= MAX_BRIEF_EDITS) {
-          currentState = STATES.SEARCHING;
-          console.log('[STATE] Max brief edits reached, forcing search');
-        } else {
-          currentState = STATES.BRIEF_EDIT;
+      if (briefStatus === BRIEF_STATUS.PENDING_REVIEW || briefStatus === BRIEF_STATUS.EDITING) {
+        if (isConfirming) {
+          currentState = STATES.RESULTS;
+          briefStatus = BRIEF_STATUS.CONFIRMED;
+        } else if (isAdjusting) {
+          briefEditCount++;
+          if (briefEditCount >= MAX_BRIEF_EDITS) {
+            currentState = STATES.RESULTS;
+            briefStatus = BRIEF_STATUS.CONFIRMED;
+          } else {
+            briefStatus = BRIEF_STATUS.EDITING;
+          }
         }
-      } else {
-        currentState = STATES.BRIEF;
+      } else if (briefStatus === BRIEF_STATUS.GENERATING) {
+        briefStatus = BRIEF_STATUS.PENDING_REVIEW;
       }
     }
-    
-    // Rule 4: BRIEF_EDIT → BRIEF
-    if (currentState === STATES.BRIEF_EDIT) {
-      currentState = STATES.BRIEF;
-    }
-    
-    // Rule 6: RESULTS → DEEP_DIVE or BRIEF_EDIT
+
+    // Rule 4: RESULTS -> DEEP_DIVE when school selected or back to BRIEF to revise
     if (currentState === STATES.RESULTS) {
-      const isAskingAboutSchool = /\b(tell me|about|compare|vs|versus|difference|which|why)\b/i.test(msgLower);
-      const isEditingBrief = /\b(change|adjust|different|new search|try again)\b/i.test(msgLower);
-      
-      if (isAskingAboutSchool) {
-        currentState = STATES.DEEP_DIVE;
-      } else if (isEditingBrief) {
-        currentState = STATES.BRIEF_EDIT;
-      } else {
-        currentState = STATES.RESULTS;
+      const wantsRevise = /\b(change|revise|update|different criteria|start over|redo brief)\b/i.test(msgLower);
+      if (wantsRevise) {
+        currentState = STATES.BRIEF;
+        briefStatus = BRIEF_STATUS.EDITING;
       }
     }
-    
-    // Rule 7: DEEP_DIVE → RESULTS or BRIEF_EDIT
+
+    // Rule 5: DEEP_DIVE -> RESULTS when going back
     if (currentState === STATES.DEEP_DIVE) {
-      const isBackToResults = /\b(back|show me|see more|other schools|list|all)\b/i.test(msgLower);
-      const isEditingBrief = /\b(change|adjust|different|new search)\b/i.test(msgLower);
-      
-      if (isBackToResults) {
+      const wantsBack = /\b(back|other schools|show me others|more options|different school)\b/i.test(msgLower);
+      if (wantsBack) {
         currentState = STATES.RESULTS;
-      } else if (isEditingBrief) {
-        currentState = STATES.BRIEF_EDIT;
-      } else {
-        currentState = STATES.DEEP_DIVE;
       }
     }
-    
+
     context.state = currentState;
+    context.briefStatus = briefStatus;
     context.briefEditCount = briefEditCount;
-    console.log(`[STATE] ${context.state} (edits: ${briefEditCount})`);
+    console.log(`[STATE] ${context.state} | briefStatus: ${briefStatus} (edits: ${briefEditCount})`);
 
     // STEP 3: STATE-SPECIFIC RESPONSE GENERATION
     if (currentState === STATES.GREETING) {
