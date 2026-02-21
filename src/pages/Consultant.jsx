@@ -586,22 +586,32 @@ export default function Consultant() {
         } : null
       });
 
-      // Update onboarding phase and state from response
-      if (response.data.onboardingPhase) {
-        setOnboardingPhase(response.data.onboardingPhase);
+      // Update briefStatus from response
+      if (response.data.briefStatus) {
+        setBriefStatus(response.data.briefStatus);
       }
       
       // Update conversation context with state
       if (response.data.state && currentConversation) {
-        const updatedContext = { ...currentConversation.conversationContext, state: response.data.state };
+        const updatedContext = { 
+          ...currentConversation.conversationContext, 
+          state: response.data.state,
+          briefStatus: response.data.briefStatus
+        };
         setCurrentConversation({ ...currentConversation, conversationContext: updatedContext });
       }
 
-      // Handle confirm_brief state - showing The Brief for confirmation
-      if (response.data.onboardingPhase === 'confirm_brief') {
-        setCurrentView('welcome'); // Show in chat view with suggested response chips
-        setSchools([]);
+      // Map backend state to currentView
+      if (response.data.state) {
+        if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(response.data.state)) {
+          setCurrentView('chat');
+        } else if (response.data.state === STATES.RESULTS) {
+          setCurrentView('schools');
+        } else if (response.data.state === STATES.DEEP_DIVE) {
+          setCurrentView('detail');
+        }
       }
+      
       // FIX #3: First priority - if schools are returned, display them (ALWAYS, regardless of state)
       if (response.data.schools && response.data.schools.length > 0) {
         // Track schools shown
