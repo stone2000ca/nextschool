@@ -28,6 +28,8 @@ export default function ClaimSchool() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [codeError, setCodeError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     if (!schoolId) {
@@ -93,9 +95,10 @@ export default function ClaimSchool() {
     }
 
     setIsSubmitting(true);
+    setEmailError('');
     try {
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
 
       // Determine verification method and initial status
       let method = 'email_domain';
@@ -120,19 +123,70 @@ export default function ClaimSchool() {
 
       setClaimId(claim.id);
 
-      // If domain matches, go to code verification step
+      // If domain matches, send verification code email
       if (emailDomainMatch) {
-        setStep(3);
-        // TODO: Send verification code to email
+        setSendingEmail(true);
+        try {
+          await base44.functions.invoke('sendClaimEmail', {
+            emailType: 'VERIFICATION_CODE',
+            claimData: {
+              claimantName: formData.name,
+              claimantEmail: formData.email,
+              verificationCode,
+              codeExpiresAt: expiresAt
+            },
+            schoolData: {
+              name: school.name,
+              id: schoolId
+            }
+          });
+          setStep(3);
+        } catch (emailErr) {
+          console.error('Email send failed:', emailErr);
+          setEmailError('Failed to send verification email. Please try again.');
+        } finally {
+          setSendingEmail(false);
+        }
       } else {
         // If no match, go to document upload step
-        setStep(3.5); // Using 3.5 to indicate document upload variant
+        setStep(3.5);
       }
     } catch (error) {
       console.error('Failed to create claim:', error);
       alert('Failed to create claim. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    if (!claimId) return;
+    
+    setSendingEmail(true);
+    setEmailError('');
+    try {
+      const claim = await base44.entities.SchoolClaim.get(claimId);
+      
+      await base44.functions.invoke('sendClaimEmail', {
+        emailType: 'VERIFICATION_CODE',
+        claimData: {
+          claimantName: claim.claimantName,
+          claimantEmail: claim.claimantEmail,
+          verificationCode: claim.verificationCode,
+          codeExpiresAt: claim.codeExpiresAt
+        },
+        schoolData: {
+          name: school.name,
+          id: schoolId
+        }
+      });
+      
+      alert('Verification code resent!');
+    } catch (error) {
+      console.error('Resend failed:', error);
+      setEmailError('Failed to resend email. Please try again.');
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -179,6 +233,23 @@ export default function ClaimSchool() {
         membershipTier: 'basic'
       });
 
+      // Send approval email
+      try {
+        await base44.functions.invoke('sendClaimEmail', {
+          emailType: 'CLAIM_APPROVED',
+          claimData: {
+            claimantName: formData.name,
+            claimantEmail: formData.email
+          },
+          schoolData: {
+            name: school.name,
+            id: schoolId
+          }
+        });
+      } catch (emailErr) {
+        console.error('Approval email failed:', emailErr);
+      }
+
       // Go to success step
       setStep(4);
     } catch (error) {
@@ -211,6 +282,23 @@ export default function ClaimSchool() {
       await base44.entities.School.update(schoolId, {
         claimStatus: 'pending'
       });
+
+      // Send document received email
+      try {
+        await base44.functions.invoke('sendClaimEmail', {
+          emailType: 'DOCUMENT_RECEIVED',
+          claimData: {
+            claimantName: formData.name,
+            claimantEmail: formData.email
+          },
+          schoolData: {
+            name: school.name,
+            id: schoolId
+          }
+        });
+      } catch (emailErr) {
+        console.error('Document received email failed:', emailErr);
+      }
 
       // Go to success step
       setStep(4);
@@ -293,6 +381,15 @@ export default function ClaimSchool() {
           <Card className="p-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-6">Verify Your Identity</h2>
             
+            {emailError && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-red-800 text-sm">{emailError}</p>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
@@ -370,7 +467,25 @@ export default function ClaimSchool() {
         {step === 3 && (
           <Card className="p-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Enter Verification Code</h2>
-            <p className="text-slate-600 mb-6">We sent a 6-digit code to {formData.email}</p>
+            <p className="text-slate-600 mb-2">We sent a 6-digit code to {formData.email}</p>
+            
+            {emailError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-red-800 text-sm">{emailError}</p>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    onClick={handleResendEmail}
+                    disabled={sendingEmail}
+                    className="text-red-700 p-0 h-auto"
+                  >
+                    {sendingEmail ? 'Sending...' : 'Click to retry'}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 mb-2">Verification Code</label>
@@ -388,16 +503,33 @@ export default function ClaimSchool() {
               {codeError && (
                 <p className="text-red-600 text-sm mt-2">{codeError}</p>
               )}
+              {claimId && (
+                <p className="text-slate-500 text-xs mt-2">
+                  Code expires: {new Date(new Date().getTime() + 24 * 60 * 60 * 1000).toLocaleString()}
+                </p>
+              )}
             </div>
 
-            <Button
-              onClick={handleCodeSubmit}
-              disabled={isVerifying || verificationCode.length !== 6}
-              className="w-full bg-teal-600 hover:bg-teal-700"
-            >
-              {isVerifying ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Verify Code
-            </Button>
+            <div className="space-y-3">
+              <Button
+                onClick={handleCodeSubmit}
+                disabled={isVerifying || verificationCode.length !== 6}
+                className="w-full bg-teal-600 hover:bg-teal-700"
+              >
+                {isVerifying ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Verify Code
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResendEmail}
+                disabled={sendingEmail}
+                className="w-full text-sm"
+              >
+                {sendingEmail ? 'Sending...' : 'Resend code'}
+              </Button>
+            </div>
           </Card>
         )}
 
