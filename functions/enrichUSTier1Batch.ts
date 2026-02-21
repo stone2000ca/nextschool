@@ -57,6 +57,8 @@ Deno.serve(async (req) => {
 
 School website: ${school.website || 'Not available'}
 
+IMPORTANT: Do not include any source citations, URLs, references, markdown links, or source attributions in the description. Just provide clean descriptive text.
+
 Return as JSON with fields: description (string), dayTuition (number or null), boardingTuition (number or null), curriculum (array of strings), religiousAffiliation (string or null), financialAid (boolean), accreditation (array of strings).`;
 
         const enrichedData = await base44.integrations.Core.InvokeLLM({
