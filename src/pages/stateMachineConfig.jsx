@@ -130,3 +130,13 @@ export const getProgressLabel = (progress) => {
     return 'Ready to build your Family Brief';
   }
 };
+
+export default {
+  STATES,
+  BRIEF_STATUS,
+  TRANSITIONS,
+  PROGRESS_WEIGHTS,
+  checkTier1,
+  getProgress,
+  getProgressLabel
+};
