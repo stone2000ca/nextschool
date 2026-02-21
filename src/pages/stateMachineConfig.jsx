@@ -133,6 +133,100 @@ export const getProgressLabel = (progress) => {
   }
 };
 
+/**
+ * Handle state machine transitions
+ * @param {string} currentState
+ * @param {string} event
+ * @returns {Object} { state, changed }
+ */
+export const transitionState = (currentState, event) => {
+  const allowedTransitions = TRANSITIONS[currentState];
+  if (!allowedTransitions || !allowedTransitions[event]) {
+    console.warn(`Invalid transition: ${currentState} + ${event}. Ignoring.`);
+    return { state: currentState, changed: false };
+  }
+  return { state: allowedTransitions[event], changed: true };
+};
+
+/**
+ * Get system prompt based on conversation state
+ * @param {string} state
+ * @param {string} briefStatus
+ * @param {Object} entities
+ * @param {string} consultantName
+ * @returns {string}
+ */
+export const getSystemPrompt = (state, briefStatus, entities = {}, consultantName = 'Jackie') => {
+  switch (state) {
+    case STATES.WELCOME:
+      return `You are ${consultantName}, a warm and knowledgeable education consultant at NextSchool. Greet the family warmly and ask ONE open-ended question: "Tell me about your child and what kind of school you're looking for." Do NOT mention any specific school names. Do NOT ask multiple questions at once. Keep it conversational and reassuring.`;
+
+    case STATES.DISCOVERY:
+      return `You are ${consultantName}, continuing to learn about this family. Ask ONE question at a time to understand their needs. Extract: child name, grade, location/area, budget range, curriculum preferences, priorities, and dealbreakers. Do NOT mention specific school names. If the user asks about a specific school, say: "I'd love to tell you about that school — let me first understand what you're looking for so I can give you the best perspective." Current known data: ${JSON.stringify(entities)}`;
+
+    case STATES.BRIEF:
+      if (briefStatus === BRIEF_STATUS.GENERATING) {
+        return `Generate a Family Brief summarizing everything learned. Format it clearly with: Child name, Grade, Location, Budget range, Priorities (ranked), Dealbreakers, and any other relevant details. End with: "Does this capture what you're looking for, or would you like to adjust anything?" Do NOT mention specific schools yet.`;
+      } else if (briefStatus === BRIEF_STATUS.PENDING_REVIEW) {
+        return `The Family Brief is displayed above. Wait for the user to confirm or request changes. Do NOT ask new intake questions. Do NOT mention or recommend any schools. If they confirm, acknowledge and prepare to show school matches. If they want changes, ask what they would like to adjust.`;
+      } else if (briefStatus === BRIEF_STATUS.EDITING) {
+        return `The user wants to change their Family Brief. Ask ONE targeted question about what they want to adjust. Do NOT start over with the full intake. You are on edit cycle ${entities.editCount || 1}/3. If editCount reaches 3, say: "I want to make sure we get this right — let's go with this version and we can always adjust after you see some schools."`;
+      }
+      break;
+
+    case STATES.RESULTS:
+      return `Present the matched schools. For each school, explain WHY it matches based on the family's specific priorities and needs. Highlight strengths and note any trade-offs honestly. Do NOT ask intake questions — you already have this information. Focus on helping them compare and narrow down options.`;
+
+    case STATES.DEEP_DIVE:
+      return `Discuss ${entities.selectedSchool || 'the selected school'} in detail. Cover its strengths, potential concerns relative to this family's needs, admissions process, and how it compares to other options. Be honest about trade-offs. Offer to compare with other schools from the results.`;
+
+    default:
+      return `You are ${consultantName}, an education consultant at NextSchool.`;
+  }
+};
+
+/**
+ * Hook to manage conversation state machine
+ * @param {string} initialState
+ * @returns {Object}
+ */
+export const useStateMachine = (initialState = STATES.WELCOME) => {
+  const [currentState, setCurrentState] = useState(initialState);
+  const [briefStatus, setBriefStatus] = useState(null);
+  const [editCount, setEditCount] = useState(0);
+
+  const transition = useCallback((event) => {
+    const result = transitionState(currentState, event);
+    if (result.changed) setCurrentState(result.state);
+    return result;
+  }, [currentState]);
+
+  const canTransition = useCallback((event) => {
+    const allowed = TRANSITIONS[currentState];
+    return !!(allowed && allowed[event]);
+  }, [currentState]);
+
+  const getPrompt = useCallback((entities, consultantName = 'Jackie') => {
+    return getSystemPrompt(currentState, briefStatus, entities, consultantName);
+  }, [currentState, briefStatus]);
+
+  const incrementEditCount = useCallback(() => {
+    setEditCount(prev => prev + 1);
+  }, []);
+
+  return { 
+    currentState, 
+    briefStatus, 
+    editCount, 
+    transition, 
+    setBriefStatus, 
+    incrementEditCount, 
+    getPrompt, 
+    canTransition, 
+    setCurrentState 
+  };
+};
+
 export default {
   STATES,
   BRIEF_STATUS,
@@ -140,5 +234,8 @@ export default {
   PROGRESS_WEIGHTS,
   checkTier1,
   getProgress,
-  getProgressLabel
+  getProgressLabel,
+  transitionState,
+  getSystemPrompt,
+  useStateMachine
 };
