@@ -27,7 +27,7 @@ export default function Consultant() {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
   const [showResponseChips, setShowResponseChips] = useState(false);
   const [sessionId] = useState(Math.random().toString(36).substring(2, 11));
