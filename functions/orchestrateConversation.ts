@@ -74,25 +74,105 @@ Deno.serve(async (req) => {
       };
     }
     
-    // STEP 1: ENTITY EXTRACTION - Run BEFORE state machine
+    // STEP 1: ENTITY EXTRACTION - Run BEFORE state machine (INLINED)
     let extractedData = {};
     try {
-      const extractParams = {
-        userMessage: message,
-        conversationHistory: conversationHistory || [],
-        currentProfile: conversationFamilyProfile
-      };
-      console.log('[DIAGNOSTIC] [extractEntityData] Time:', new Date().toISOString());
-      console.log('[DIAGNOSTIC] [extractEntityData] Params:', JSON.stringify(extractParams).substring(0, 500));
-      
       const t1 = Date.now();
-      const extractionResult = await base44.asServiceRole.functions.invoke('extractEntityData', extractParams);
-      console.log('[DIAGNOSTIC] [extractEntityData] took', Date.now() - t1, 'ms');
       
-      extractedData = extractionResult.data?.extracted || {};
+      // Build context for extraction
+      const knownData = conversationFamilyProfile ? {
+        childName: conversationFamilyProfile.childName,
+        childGrade: conversationFamilyProfile.childGrade,
+        locationArea: conversationFamilyProfile.locationArea,
+        maxTuition: conversationFamilyProfile.maxTuition,
+        interests: conversationFamilyProfile.interests,
+        priorities: conversationFamilyProfile.priorities,
+        dealbreakers: conversationFamilyProfile.dealbreakers,
+        curriculumPreference: conversationFamilyProfile.curriculumPreference,
+        religiousPreference: conversationFamilyProfile.religiousPreference,
+        boardingPreference: conversationFamilyProfile.boardingPreference
+      } : {};
+
+      const conversationSummary = conversationHistory?.slice(-5)
+        .map(m => `${m.role === 'user' ? 'Parent' : 'AI'}: ${m.content}`)
+        .join('\n') || '';
+
+      // First pass: Extract grade using regex (for speed & reliability)
+      const gradeMatch = message.match(/\b(?:grade|gr\.?)\s*([0-9]+|\b(?:pk|jk|k|junior|senior)\b)/i);
+      let extractedGrade = null;
+      if (gradeMatch) {
+        const gradeStr = gradeMatch[1].toLowerCase();
+        const gradeMap = { 'pk': -2, 'jk': -1, 'k': 0, 'junior': 11, 'senior': 12 };
+        extractedGrade = gradeMap[gradeStr] !== undefined ? gradeMap[gradeStr] : parseInt(gradeStr);
+      }
+
+      const extractionPrompt = `Extract ONLY factual data that the parent explicitly stated. Do NOT infer.
+Return a JSON object with NULL for anything not mentioned.
+
+CURRENT KNOWN DATA:
+${JSON.stringify(knownData, null, 2)}
+
+CONVERSATION CONTEXT:
+${conversationSummary}
+
+PARENT'S MESSAGE:
+"${message}"
+
+Extract and return ONLY these fields (null if not mentioned):
+- childName: string (parent used child's name)
+- childGrade: number (grade level, e.g., 3 for Grade 3. If you see "grade 1" or "Grade 3" or similar, extract the number. CRITICAL: Return as a number, not a string.)
+- locationArea: string (city or area name)
+- maxTuition: number (annual tuition budget mentioned)
+- interests: array of strings (child's interests: sports, arts, STEM, etc.)
+- priorities: array of strings (what matters most, what they want, what's important - e.g. "academics and arts are most important" -> ["academics", "arts"])
+- concerns: array of strings (any mention of problems, worries, fears)
+- dealbreakers: array of strings (any "no", "not", "don't want" statements)
+- learning_needs: array of strings (any diagnoses, challenges, special needs mentioned)
+- curriculumPreference: array of strings (curriculum types mentioned: IB, Montessori, etc.)
+- religiousPreference: string (secular, or specific religion if mentioned)
+- boardingPreference: string (day only, open to boarding, boarding preferred)
+
+Return ONLY valid JSON. Do NOT explain.`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: extractionPrompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            childName: { type: ["string", "null"] },
+            childGrade: { type: ["number", "null"] },
+            locationArea: { type: ["string", "null"] },
+            maxTuition: { type: ["number", "null"] },
+            interests: { type: ["array", "null"], items: { type: "string" } },
+            priorities: { type: ["array", "null"], items: { type: "string" } },
+            concerns: { type: ["array", "null"], items: { type: "string" } },
+            dealbreakers: { type: ["array", "null"], items: { type: "string" } },
+            learning_needs: { type: ["array", "null"], items: { type: "string" } },
+            curriculumPreference: { type: ["array", "null"], items: { type: "string" } },
+            religiousPreference: { type: ["string", "null"] },
+            boardingPreference: { type: ["string", "null"] }
+          }
+        }
+      });
+
+      // Regex extraction overrides LLM result if grade was found
+      let finalResult = result;
+      if (extractedGrade !== null && !result.childGrade) {
+       finalResult = { ...result, childGrade: extractedGrade };
+      }
+
+      // Clean up nulls and empty arrays
+      const cleaned = {};
+      for (const [key, value] of Object.entries(finalResult)) {
+       if (value !== null && value !== undefined && !(Array.isArray(value) && value.length === 0)) {
+         cleaned[key] = value;
+       }
+      }
+      
+      extractedData = cleaned;
+      console.log('[DIAGNOSTIC] [extractEntityData-INLINED] took', Date.now() - t1, 'ms');
     } catch (e) {
-      console.error('[ERROR] extractEntityData failed:', e.message, 'Status:', e.response?.status);
-      console.error('ACTUAL ERROR:', e.message, e.response?.data, e.stack);
+      console.error('[ERROR] extractEntityData-INLINED failed:', e.message);
       // Continue without extraction - don't crash
     }
     
@@ -162,24 +242,111 @@ Deno.serve(async (req) => {
     // Update context with new state
     context.state = currentState;
 
-    // STEP 3: Detect intent
+    // STEP 3: Detect intent (INLINED)
     let intentResponse;
     try {
-      const intentParams = {
-        message,
-        conversationHistory: conversationHistory || []
-      };
-      console.log('[DIAGNOSTIC] [detectIntent] Time:', new Date().toISOString());
-      console.log('[DIAGNOSTIC] [detectIntent] Params:', JSON.stringify(intentParams).substring(0, 500));
-      
       const t2 = Date.now();
-      const intentResult = await base44.asServiceRole.functions.invoke('detectIntent', intentParams);
-      console.log('[DIAGNOSTIC] [detectIntent] took', Date.now() - t2, 'ms');
       
-      intentResponse = intentResult.data;
+      // Extract intent via keyword matching
+      let intent = 'SHOW_SCHOOLS'; // default
+      let shouldShowSchools = true;
+      let filterCriteria = {};
+      let comparisonSchoolNames = [];
+      
+      // Compare intent
+      if (msgLower.includes('compare') || msgLower.includes(' vs ') || msgLower.includes('versus') || 
+          msgLower.includes('side by side') || msgLower.includes('side-by-side')) {
+        intent = 'COMPARE_SCHOOLS';
+        shouldShowSchools = false;
+        
+        // Extract school names for comparison
+        let cleanedMessage = message
+          .replace(/^compare\s+/i, '')
+          .replace(/\s+(with|and|vs|versus|to|side\s*by\s*side)\s+/gi, '|')
+          .trim();
+        comparisonSchoolNames = cleanedMessage.split('|').map(n => n.trim()).filter(n => n.length > 3);
+      }
+      // Narrow down intent
+      else if (msgLower.includes('narrow') || msgLower.includes('filter') || msgLower.includes('only show')) {
+        intent = 'NARROW_DOWN';
+        shouldShowSchools = false;
+      }
+      // Pure greetings
+      else if (/^(hi|hello|hey|greetings|good morning|good afternoon|howdy|welcome)[\s!.]*$/i.test(msgLower.trim())) {
+        intent = 'GREETING';
+        shouldShowSchools = false;
+      }
+      // SEARCH_SCHOOLS intent - when user is actively looking for schools
+      else if (msgLower.includes('show') || msgLower.includes('find') || msgLower.includes('search') ||
+               msgLower.includes('schools in') || msgLower.includes('schools near') ||
+               msgLower.includes('private school') || msgLower.includes('looking for')) {
+        intent = 'SEARCH_SCHOOLS';
+        shouldShowSchools = true;
+      }
+      
+      // Extract filter criteria using regex/string matching
+      // City extraction
+      const cityMatch = message.match(/\b(?:in|near|at|around)\s+([A-Z][a-zA-Z\s]+?)(?:\s*,|\s+(?:ontario|bc|quebec|california|new york)|$)/i) ||
+                       message.match(/\b(Toronto|Vancouver|Montreal|Calgary|Edmonton|Ottawa|Victoria|Winnipeg|Hamilton|Quebec City|London|Kitchener|Halifax|Oakville|Burlington|Richmond Hill|Markham|Mississauga)\b/i);
+      if (cityMatch) filterCriteria.city = cityMatch[1].trim();
+      
+      // Province/State extraction
+      const provinceMatch = message.match(/\b(Ontario|British Columbia|BC|Quebec|Alberta|Manitoba|Saskatchewan|Nova Scotia|New Brunswick|Newfoundland|PEI|California|New York|Texas|Florida)\b/i);
+      if (provinceMatch) filterCriteria.provinceState = provinceMatch[1];
+      
+      // Region extraction
+      const regionMatch = message.match(/\b(Canada|US|USA|United States|Europe|GTA|Greater Toronto|Lower Mainland|Greater Vancouver)\b/i);
+      if (regionMatch) filterCriteria.region = regionMatch[1];
+      
+      // Curriculum extraction
+      const curriculumMatch = message.match(/\b(Montessori|IB|International Baccalaureate|Waldorf|AP|Advanced Placement|Traditional)\b/i);
+      if (curriculumMatch) {
+        let curr = curriculumMatch[1];
+        if (curr.toLowerCase().includes('international')) curr = 'IB';
+        if (curr.toLowerCase().includes('advanced')) curr = 'AP';
+        filterCriteria.curriculumType = curr;
+      }
+      
+      // Grade extraction
+      const gradeMatch = message.match(/\bgrade\s*(\d+)\b/i) || message.match(/\b(\d+)(?:th|st|nd|rd)\s*grade\b/i);
+      if (gradeMatch) filterCriteria.grade = parseInt(gradeMatch[1]);
+      
+      // Specializations
+      if (msgLower.includes('stem')) filterCriteria.specializations = ['STEM'];
+      else if (msgLower.includes('arts')) filterCriteria.specializations = ['Arts'];
+      else if (msgLower.includes('sports')) filterCriteria.specializations = ['Sports'];
+      
+      // ESL/Language support filter
+      if (msgLower.includes('esl') || msgLower.includes('english as a second language') || msgLower.includes('language support')) {
+        filterCriteria.specializations = filterCriteria.specializations || [];
+        if (!filterCriteria.specializations.includes('Languages')) {
+          filterCriteria.specializations.push('Languages');
+        }
+        intent = 'NARROW_DOWN';
+        shouldShowSchools = false;
+      }
+      
+      // Gender filtering
+      let genderPreference = null;
+      if (msgLower.includes(' son') || msgLower.includes('boy') || msgLower.includes('boys')) {
+        genderPreference = 'boy';
+      } else if (msgLower.includes(' daughter') || msgLower.includes('girl') || msgLower.includes('girls')) {
+        genderPreference = 'girl';
+      }
+      if (genderPreference) {
+        filterCriteria.genderPreference = genderPreference;
+      }
+      
+      intentResponse = {
+        intent,
+        shouldShowSchools,
+        filterCriteria,
+        comparisonSchoolNames
+      };
+      
+      console.log('[DIAGNOSTIC] [detectIntent-INLINED] took', Date.now() - t2, 'ms');
     } catch (e) {
-      console.error('[ERROR] detectIntent failed:', e.message, 'Status:', e.response?.status);
-      console.error('ACTUAL ERROR:', e.message, e.response?.data, e.stack);
+      console.error('[ERROR] detectIntent-INLINED failed:', e.message);
       intentResponse = { intent: 'INTAKE_QUESTION', shouldShowSchools: false };
     }
     
@@ -194,45 +361,94 @@ Deno.serve(async (req) => {
     }
     
     if (currentState === STATES.INTAKE) {
-      // INTAKE: Ask ONE question about missing field
-      console.log(`[orchestrateConversation] INTAKE state: Calling generateResponse with intent 'INTAKE_QUESTION'`);
+      // INTAKE: Generate response (INLINED)
+      console.log(`[orchestrateConversation] INTAKE state: Generating response inline`);
       let intakeMessage;
       try {
-        const generateParams = {
-          message,
-          intent: 'INTAKE_QUESTION',
-          state: STATES.INTAKE,
-          familyProfile: conversationFamilyProfile,
-          knownFields: conversationFamilyProfile ? {
-            childName: conversationFamilyProfile.childName,
-            childGrade: conversationFamilyProfile.childGrade,
-            locationArea: conversationFamilyProfile.locationArea,
-            maxTuition: conversationFamilyProfile.maxTuition,
-            interests: conversationFamilyProfile.interests,
-            priorities: conversationFamilyProfile.priorities,
-            dealbreakers: conversationFamilyProfile.dealbreakers
-          } : {},
-          conversationHistory: conversationHistory || [],
-          conversationContext: context,
-          consultantName: consultantName,
-          userNotes: userNotes || [],
-          shortlistedSchools: shortlistedSchools || []
-        };
-        console.log('[DIAGNOSTIC] [generateResponse-INTAKE] Time:', new Date().toISOString());
-        console.log('[DIAGNOSTIC] [generateResponse-INTAKE] Params:', JSON.stringify(generateParams).substring(0, 500));
-        
         const t3 = Date.now();
-        const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
-        console.log('[DIAGNOSTIC] [generateResponse-INTAKE] took', Date.now() - t3, 'ms');
         
-        intakeMessage = generateResult.data.message;
+        // Build conversation context
+        const history = conversationHistory || [];
+        const recentMessages = history.slice(-10);
+        const conversationSummary = recentMessages
+          .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
+          .join('\n');
+        
+        // Entity extraction from conversation
+        const allText = history.map(m => m.content).join(' ') + ' ' + message;
+        let hasLocation = false;
+        let hasBudget = false;
+        let hasChildGrade = false;
+
+        try {
+          hasLocation = /mississauga|toronto|vancouver|calgary|ottawa|montreal|brampton|oakville|markham|vaughan|richmond hill|burnaby|surrey|london|hamilton|winnipeg|quebec|edmonton/i.test(allText);
+          hasBudget = /(\$|budget|tuition|cost)\s*\d+/.test(allText) || /\d{2,3}\s*[k](?:\s*per|\/)?(?:\s*year|annually)?/i.test(allText);
+          hasChildGrade = /grade|kindergarten|preschool|elementary|middle|high school|grade \d/i.test(allText);
+        } catch (regexError) {
+          console.warn('Regex extraction error:', regexError);
+        }
+
+        const extractedInfo = { hasLocation, hasBudget, hasChildGrade };
+
+        // Build persona-specific instructions
+        const personaInstructions = consultantName === 'Jackie'
+         ? `YOU ARE JACKIE - The Warm & Supportive Consultant:
+
+===== RESPONSE FORMAT RULES (APPLY TO EVERY MESSAGE) =====
+Maximum 150 words per response. No exceptions. Maximum 3 paragraphs. One question maximum per response. Use contractions. Write like you're talking, not writing.
+
+===== ABSOLUTE RULES (NON-NEGOTIABLE) =====
+🚫 IF PARENT SAID LOCATION (e.g., "Mississauga", "Toronto") → NEVER ask "where are you located?"
+🚫 IF PARENT SAID BUDGET (e.g., "$15-20K", "around 20") → NEVER ask "what's your budget?"
+🚫 IF PARENT SAID GRADE (e.g., "Grade 3", "high school") → NEVER ask "what grade?"
+🚫 ONE QUESTION ONLY per message. Not two. Not multiple. Count: 1.
+🚫 NO filler: "It's great that", "It's wonderful that", "That's amazing", "I'm glad", "I understand"—AVOID.
+
+Your core identity: empathetic, emotionally attuned, validating. You make families feel heard.`
+         : `YOU ARE LIAM - The Direct & Strategic Consultant:
+
+===== RESPONSE FORMAT RULES (APPLY TO EVERY MESSAGE) =====
+Maximum 150 words per response. No exceptions. Maximum 3 paragraphs. One question maximum per response. Use contractions. Write like you're talking, not writing.
+
+===== ABSOLUTE RULES (NON-NEGOTIABLE) =====
+🚫 IF PARENT SAID LOCATION (e.g., "Mississauga", "Toronto") → NEVER ask "where are you located?"
+🚫 IF PARENT SAID BUDGET (e.g., "$15-20K", "around 20") → NEVER ask "what's your budget?"
+🚫 IF PARENT SAID GRADE (e.g., "Grade 3", "high school") → NEVER ask "what grade?"
+🚫 ONE QUESTION ONLY per message. Not two. Not multiple. Count: 1.
+🚫 NO filler: "It's great that", "It's wonderful that", "That's amazing", "I'm glad"—AVOID.
+
+Your core identity: data-driven, efficient, action-focused. Cut through complexity fast.`;
+
+        // Generate response
+        const responsePrompt = `${personaInstructions}
+
+===== ENTITY EXTRACTION (DO THIS FIRST) =====
+From the parent's message AND conversation history, extract:
+- LOCATION ALREADY MENTIONED: ${extractedInfo.hasLocation ? 'YES - do NOT ask where they live' : 'NO - ask if needed'}
+- BUDGET ALREADY MENTIONED: ${extractedInfo.hasBudget ? 'YES - do NOT ask budget' : 'NO - ask if needed'}
+- GRADE ALREADY MENTIONED: ${extractedInfo.hasChildGrade ? 'YES - do NOT ask grade' : 'NO - ask if needed'}
+
+===== ONE QUESTION ONLY RULE =====
+Count your questions before sending. If you have more than one "?", DELETE extra questions.
+
+Recent chat:
+${conversationSummary}
+
+Parent: "${message}"
+
+Respond as ${consultantName}. ONE question max. No filler. Never re-ask extracted info.`;
+
+        const aiResponse = await base44.integrations.Core.InvokeLLM({
+          prompt: responsePrompt
+        });
+        
+        intakeMessage = aiResponse;
+        console.log('[DIAGNOSTIC] [generateResponse-INTAKE-INLINED] took', Date.now() - t3, 'ms');
       } catch (e) {
-        console.error('[ERROR] generateResponse-INTAKE failed:', e.message, 'Status:', e.response?.status);
-        console.error('ACTUAL ERROR:', e.message, e.response?.data, e.stack);
+        console.error('[ERROR] generateResponse-INTAKE-INLINED failed:', e.message);
         intakeMessage = 'Tell me about your child - what grade are they in and what matters most to you in a school?';
       }
       
-      console.log(`[orchestrateConversation] INTAKE state: Returning response with message: ${intakeMessage?.substring(0, 50)}...`);
       return Response.json({
         message: intakeMessage,
         state: STATES.INTAKE,
@@ -243,29 +459,54 @@ Deno.serve(async (req) => {
     }
     
     if (currentState === STATES.BRIEF) {
-      // BRIEF: Generate The Brief from profile
+      // BRIEF: Generate The Brief from profile (INLINED)
       let briefMessage;
       try {
-        const generateParams = {
-          message: 'generate_brief',
-          intent: 'GENERATE_BRIEF',
-          state: STATES.BRIEF,
-          familyProfile: conversationFamilyProfile,
-          conversationHistory: conversationHistory || [],
-          conversationContext: context,
-          consultantName: consultantName
-        };
-        console.log('[DIAGNOSTIC] [generateResponse-BRIEF] Time:', new Date().toISOString());
-        console.log('[DIAGNOSTIC] [generateResponse-BRIEF] Params:', JSON.stringify(generateParams).substring(0, 500));
-        
         const t4 = Date.now();
-        const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
-        console.log('[DIAGNOSTIC] [generateResponse-BRIEF] took', Date.now() - t4, 'ms');
+        const { childName, childGrade, locationArea, budgetRange, maxTuition, interests, priorities, dealbreakers, currentSituation, academicStrengths } = conversationFamilyProfile;
         
-        briefMessage = generateResult.data.message;
+        // Format arrays for the prompt
+        const interestsStr = interests?.length > 0 ? interests.join(', ') : '';
+        const prioritiesStr = priorities?.length > 0 ? priorities.join(', ') : '';
+        const strengthsStr = academicStrengths?.length > 0 ? academicStrengths.join(', ') : '';
+        const dealbreakersStr = dealbreakers?.length > 0 ? dealbreakers.join(', ') : '';
+        
+        const briefPrompt = `You are a warm, empathetic education consultant. Generate "The Brief" - a reflection message that mirrors back EXACTLY what was shared.
+
+====== CRITICAL BRIEF GENERATION RULE ======
+Never say "you haven't specified" or "you didn't mention" about any field that appears in the extracted profile below. If a field is present in the extracted data, reflect it back. Only note gaps for fields that are genuinely empty.
+
+====== FAMILY DATA (USE THESE VALUES EXACTLY AS PROVIDED) ======
+CHILD'S NAME: ${childName || '(not shared)'}
+GRADE: ${childGrade ? `Grade ${childGrade}` : '(not specified)'}
+LOCATION: ${locationArea || '(not specified)'}
+CURRENT SITUATION: ${currentSituation || '(not shared)'}
+ACADEMIC STRENGTHS: ${strengthsStr || '(not specified)'}
+INTERESTS: ${interestsStr || '(not specified)'}
+FAMILY PRIORITIES: ${prioritiesStr || '(not specified)'}
+BUDGET: ${budgetRange || '(not specified)'}${maxTuition ? ` / $${maxTuition}/year` : ''}
+DEALBREAKERS: ${dealbreakersStr || '(none mentioned)'}
+
+====== CRITICAL INSTRUCTIONS ======
+You MUST use ONLY these exact values in your reflection. Do NOT substitute, expand, interpret, or hallucinate.
+
+====== GENERATE THE BRIEF ======
+1. Open: "Here's what I'm taking away from what you've shared..."
+2. Mirror their exact details using their own words. Use the family data field values exactly as shown above.
+3. Acknowledge constraints realistically.
+4. Close: "Does that capture what you're looking for? Anything I'm missing or needs adjustment?"
+
+Keep to 2-3 paragraphs. Sound warm and empathetic. NO school names.`;
+
+        const briefResult = await base44.integrations.Core.InvokeLLM({
+          prompt: briefPrompt,
+          add_context_from_internet: false
+        });
+        
+        briefMessage = briefResult;
+        console.log('[DIAGNOSTIC] [generateResponse-BRIEF-INLINED] took', Date.now() - t4, 'ms');
       } catch (e) {
-        console.error('[ERROR] generateResponse-BRIEF failed:', e.message, 'Status:', e.response?.status);
-        console.error('ACTUAL ERROR:', e.message, e.response?.data, e.stack);
+        console.error('[ERROR] generateResponse-BRIEF-INLINED failed:', e.message);
         briefMessage = 'Let me summarize what you\'ve shared so far. Does that sound right?';
       }
       
@@ -550,40 +791,121 @@ Deno.serve(async (req) => {
       }
     }
 
-    // STEP 5: For SEARCHING/RESULTS states, generate school response
+    // STEP 5: For SEARCHING/RESULTS states, generate school response (INLINED)
     let aiMessage = '';
     let responseTimedOut = false;
     
     if (currentState === STATES.SEARCHING || currentState === STATES.RESULTS) {
       try {
-        const generateParams = {
-          message,
-          intent: intentResponse.intent,
-          state: currentState,
-          schools: matchingSchools,
-          familyProfile: conversationFamilyProfile,
-          conversationHistory: conversationHistory || [],
-          conversationContext: context,
-          consultantName: consultantName,
-          userNotes: userNotes || [],
-          shortlistedSchools: shortlistedSchools || []
-        };
-        console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] Time:', new Date().toISOString());
-        console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] Params:', JSON.stringify(generateParams).substring(0, 500));
-        
         const t5 = Date.now();
-        const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
-        console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] took', Date.now() - t5, 'ms');
         
-        if (generateResult.data.timeout) {
-          responseTimedOut = true;
-          aiMessage = generateResult.data.message || 'Here are the schools I found:';
+        // Check if no schools - return early
+        if (!matchingSchools || matchingSchools.length === 0) {
+          aiMessage = "I don't have any schools in our database that match your criteria yet. Our database is growing - please try a nearby city or broader search criteria.";
         } else {
-          aiMessage = generateResult.data.message;
+          // Build conversation context
+          const history = conversationHistory || [];
+          const recentMessages = history.slice(-10);
+          const conversationSummary = recentMessages
+            .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
+            .join('\n');
+          
+          // Format grade helper
+          function formatGrade(grade) {
+            if (grade === null || grade === undefined) return '';
+            const num = Number(grade);
+            if (num <= -2) return 'PK';
+            if (num === -1) return 'JK';
+            if (num === 0) return 'K';
+            return String(num);
+          }
+
+          function formatGradeRange(gradeFrom, gradeTo) {
+            const from = formatGrade(gradeFrom);
+            const to = formatGrade(gradeTo);
+            if (!from && !to) return '';
+            if (!from) return to;
+            if (!to) return from;
+            return `${from}-${to}`;
+          }
+          
+          // Build school context
+          const schoolContext = `\n\nSCHOOLS (${matchingSchools.length}):\n` + 
+            matchingSchools.map(s => {
+              const tuitionStr = s.tuition ? `$${s.tuition} ${s.currency || 'CAD'}` : 'N/A';
+              return `${s.name}|${s.city}|Gr${formatGradeRange(s.lowestGrade, s.highestGrade)}|${s.curriculumType||'Trad'}|Tuition: ${tuitionStr}|Type: ${s.schoolType||'General'}`;
+            }).join('\n');
+          
+          // Entity extraction from conversation
+          const allText = history.map(m => m.content).join(' ') + ' ' + message;
+          let hasLocation = false;
+          let hasBudget = false;
+          let hasChildGrade = false;
+
+          try {
+            hasLocation = /mississauga|toronto|vancouver|calgary|ottawa|montreal|brampton|oakville|markham|vaughan|richmond hill|burnaby|surrey|london|hamilton|winnipeg|quebec|edmonton/i.test(allText);
+            hasBudget = /(\$|budget|tuition|cost)\s*\d+/.test(allText) || /\d{2,3}\s*[k](?:\s*per|\/)?(?:\s*year|annually)?/i.test(allText);
+            hasChildGrade = /grade|kindergarten|preschool|elementary|middle|high school|grade \d/i.test(allText);
+          } catch (regexError) {
+            console.warn('Regex extraction error:', regexError);
+          }
+
+          const extractedInfo = { hasLocation, hasBudget, hasChildGrade };
+
+          // Build persona-specific instructions
+          const personaInstructions = consultantName === 'Jackie'
+           ? `YOU ARE JACKIE - The Warm & Supportive Consultant:
+
+===== RESPONSE FORMAT RULES =====
+Maximum 150 words per response. No exceptions. Maximum 3 paragraphs. One question maximum per response.
+
+Your core identity: empathetic, emotionally attuned, validating.`
+           : `YOU ARE LIAM - The Direct & Strategic Consultant:
+
+===== RESPONSE FORMAT RULES =====
+Maximum 150 words per response. No exceptions. Maximum 3 paragraphs. One question maximum per response.
+
+Your core identity: data-driven, efficient, action-focused.`;
+
+          // Generate response
+          const responsePrompt = `${personaInstructions}
+
+Recent chat:
+${conversationSummary}
+${schoolContext}
+
+Parent: "${message}"
+
+Respond as ${consultantName}. ONE question max. No filler.`;
+
+          const aiResponse = await base44.integrations.Core.InvokeLLM({
+            prompt: responsePrompt
+          });
+          
+          let messageWithLinks = aiResponse;
+          
+          // Replace school names with school:slug links
+          matchingSchools.forEach(school => {
+            const escapedName = school.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const markdownLinkRegex = new RegExp(`\\[${escapedName}\\]\\([^)]+\\)`, 'gi');
+            messageWithLinks = messageWithLinks.replace(
+              markdownLinkRegex,
+              `[${school.name}](school:${school.slug})`
+            );
+            
+            const schoolNameRegex = new RegExp(`(?<!\\[)\\b${escapedName}\\b(?!\\]\\()`, 'gi');
+            messageWithLinks = messageWithLinks.replace(
+              schoolNameRegex,
+              `[${school.name}](school:${school.slug})`
+            );
+          });
+          
+          aiMessage = messageWithLinks;
         }
+        
+        console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS-INLINED] took', Date.now() - t5, 'ms');
       } catch (error) {
-        console.error('[ERROR] generateResponse-SEARCHING/RESULTS failed:', error.message, 'Status:', error.response?.status);
-        console.error('ACTUAL ERROR:', error.message, error.response?.data, error.stack);
+        console.error('[ERROR] generateResponse-SEARCHING/RESULTS-INLINED failed:', error.message);
         responseTimedOut = true;
         aiMessage = matchingSchools.length > 0 ? 'Here are the schools I found:' : 'I don\'t have any schools matching that criteria.';
       }
