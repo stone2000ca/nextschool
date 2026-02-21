@@ -653,40 +653,6 @@ export default function Consultant() {
         // CRITICAL: Always switch to schools view when schools are returned
         setCurrentView('schools');
       }
-      // Handle comparison intent
-      else if (response.data.intent === 'COMPARE_SCHOOLS' && response.data.schools?.length >= 2) {
-        setPreviousSearchResults(schools);
-        setComparisonData(response.data.schools);
-        setCurrentView('comparison-table');
-      }
-      // Handle onboarding response (still in intake)
-      else if (response.data.onboardingPhase && response.data.onboardingComplete === false) {
-        // Still in onboarding - stay in welcome/chat view, don't show schools
-        setCurrentView('welcome');
-      }
-      else {
-        // No schools found - keep welcome or previous view
-        if (schools.length === 0) {
-          setCurrentView('welcome');
-        }
-      }
-      // Handle comparison intent
-      else if (response.data.intent === 'COMPARE_SCHOOLS' && response.data.schools?.length >= 2) {
-        setPreviousSearchResults(schools);
-        setComparisonData(response.data.schools);
-        setCurrentView('comparison-table');
-      }
-      // Handle onboarding response (still in intake)
-      else if (response.data.onboardingPhase && response.data.onboardingComplete === false) {
-        // Still in onboarding - stay in welcome/chat view, don't show schools
-        setCurrentView('welcome');
-      }
-      else {
-        // No schools found - keep welcome or previous view
-        if (schools.length === 0) {
-          setCurrentView('welcome');
-        }
-      }
 
       const aiMessage = {
         role: 'assistant',
