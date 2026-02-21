@@ -6,16 +6,16 @@ export default function MessageBubble({ message, isUser, onViewSchoolProfile, sc
   return (
     <div className={`flex gap-2 sm:gap-3 ${isUser ? 'justify-end' : 'justify-start'} ${!isUser ? 'animate-fadeIn' : ''}`}>
       {!isUser && (
-        <div className="h-7 sm:h-8 w-7 sm:w-8 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-xs sm:text-sm" style={{ backgroundColor: accentColor }} aria-hidden="true">
+        <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm" style={{ backgroundColor: accentColor }} aria-hidden="true">
           {consultantName === 'Jackie' ? 'J' : 'L'}
         </div>
       )}
       <div className={`max-w-[85%] ${isUser && 'flex flex-col items-end'}`}>
         <div className={`rounded-2xl px-3 sm:px-4 py-2 sm:py-3 ${
           isUser 
-            ? 'text-white' 
-            : 'bg-[#2A2A3D] text-[#E8E8ED]'
-        }`} style={isUser ? { backgroundColor: accentColor } : {}}>
+            ? 'bg-[#f1f5f9] text-slate-900' 
+            : 'bg-[#334155] text-white'
+        }`}>
           {isUser ? (
             <p className="text-sm leading-relaxed">{message.content}</p>
           ) : (
