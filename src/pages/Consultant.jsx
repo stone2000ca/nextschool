@@ -1489,14 +1489,14 @@ Return empty array if user didn't provide any of these facts.`;
             </div>
           )}
 
-          {currentView === 'comparison' && comparisonData && (
+          {currentState === STATES.RESULTS && comparisonData && (
             <ComparisonView 
               schools={comparisonData} 
-              onBack={() => setCurrentView(schools.length > 0 ? 'schools' : 'welcome')}
+              onBack={() => setComparisonData(null)}
             />
           )}
 
-           {currentView === 'comparison-table' && comparisonData && (
+           {currentState === STATES.RESULTS && comparisonData && (
              <ComparisonView 
                schools={comparisonData} 
                onBack={handleComparisonBack}
