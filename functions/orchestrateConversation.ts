@@ -163,18 +163,23 @@ Deno.serve(async (req) => {
 
     // STEP 3: Detect intent
     let intentResponse;
-    const intentParams = {
-      message,
-      conversationHistory: conversationHistory || []
-    };
-    console.log('[DIAGNOSTIC] [detectIntent] Time:', new Date().toISOString());
-    console.log('[DIAGNOSTIC] [detectIntent] Params:', JSON.stringify(intentParams).substring(0, 500));
-    
-    const t2 = Date.now();
-    const intentResult = await base44.asServiceRole.functions.invoke('detectIntent', intentParams);
-    console.log('[DIAGNOSTIC] [detectIntent] took', Date.now() - t2, 'ms');
-    
-    intentResponse = intentResult.data;
+    try {
+      const intentParams = {
+        message,
+        conversationHistory: conversationHistory || []
+      };
+      console.log('[DIAGNOSTIC] [detectIntent] Time:', new Date().toISOString());
+      console.log('[DIAGNOSTIC] [detectIntent] Params:', JSON.stringify(intentParams).substring(0, 500));
+      
+      const t2 = Date.now();
+      const intentResult = await base44.asServiceRole.functions.invoke('detectIntent', intentParams);
+      console.log('[DIAGNOSTIC] [detectIntent] took', Date.now() - t2, 'ms');
+      
+      intentResponse = intentResult.data;
+    } catch (e) {
+      console.error('[ERROR] detectIntent failed:', e.message, 'Status:', e.response?.status);
+      intentResponse = { intent: 'INTAKE_QUESTION', shouldShowSchools: false };
+    }
     
     // STEP 4: Handle state-specific response generation BEFORE school search
     if (currentState === STATES.GREETING) {
@@ -190,34 +195,39 @@ Deno.serve(async (req) => {
       // INTAKE: Ask ONE question about missing field
       console.log(`[orchestrateConversation] INTAKE state: Calling generateResponse with intent 'INTAKE_QUESTION'`);
       let intakeMessage;
-      const generateParams = {
-        message,
-        intent: 'INTAKE_QUESTION',
-        state: STATES.INTAKE,
-        familyProfile: conversationFamilyProfile,
-        knownFields: conversationFamilyProfile ? {
-          childName: conversationFamilyProfile.childName,
-          childGrade: conversationFamilyProfile.childGrade,
-          locationArea: conversationFamilyProfile.locationArea,
-          maxTuition: conversationFamilyProfile.maxTuition,
-          interests: conversationFamilyProfile.interests,
-          priorities: conversationFamilyProfile.priorities,
-          dealbreakers: conversationFamilyProfile.dealbreakers
-        } : {},
-        conversationHistory: conversationHistory || [],
-        conversationContext: context,
-        consultantName: consultantName,
-        userNotes: userNotes || [],
-        shortlistedSchools: shortlistedSchools || []
-      };
-      console.log('[DIAGNOSTIC] [generateResponse-INTAKE] Time:', new Date().toISOString());
-      console.log('[DIAGNOSTIC] [generateResponse-INTAKE] Params:', JSON.stringify(generateParams).substring(0, 500));
-      
-      const t3 = Date.now();
-      const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
-      console.log('[DIAGNOSTIC] [generateResponse-INTAKE] took', Date.now() - t3, 'ms');
-      
-      intakeMessage = generateResult.data.message;
+      try {
+        const generateParams = {
+          message,
+          intent: 'INTAKE_QUESTION',
+          state: STATES.INTAKE,
+          familyProfile: conversationFamilyProfile,
+          knownFields: conversationFamilyProfile ? {
+            childName: conversationFamilyProfile.childName,
+            childGrade: conversationFamilyProfile.childGrade,
+            locationArea: conversationFamilyProfile.locationArea,
+            maxTuition: conversationFamilyProfile.maxTuition,
+            interests: conversationFamilyProfile.interests,
+            priorities: conversationFamilyProfile.priorities,
+            dealbreakers: conversationFamilyProfile.dealbreakers
+          } : {},
+          conversationHistory: conversationHistory || [],
+          conversationContext: context,
+          consultantName: consultantName,
+          userNotes: userNotes || [],
+          shortlistedSchools: shortlistedSchools || []
+        };
+        console.log('[DIAGNOSTIC] [generateResponse-INTAKE] Time:', new Date().toISOString());
+        console.log('[DIAGNOSTIC] [generateResponse-INTAKE] Params:', JSON.stringify(generateParams).substring(0, 500));
+        
+        const t3 = Date.now();
+        const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
+        console.log('[DIAGNOSTIC] [generateResponse-INTAKE] took', Date.now() - t3, 'ms');
+        
+        intakeMessage = generateResult.data.message;
+      } catch (e) {
+        console.error('[ERROR] generateResponse-INTAKE failed:', e.message, 'Status:', e.response?.status);
+        intakeMessage = 'Tell me about your child - what grade are they in and what matters most to you in a school?';
+      }
       
       console.log(`[orchestrateConversation] INTAKE state: Returning response with message: ${intakeMessage?.substring(0, 50)}...`);
       return Response.json({
@@ -232,23 +242,28 @@ Deno.serve(async (req) => {
     if (currentState === STATES.BRIEF) {
       // BRIEF: Generate The Brief from profile
       let briefMessage;
-      const generateParams = {
-        message: 'generate_brief',
-        intent: 'GENERATE_BRIEF',
-        state: STATES.BRIEF,
-        familyProfile: conversationFamilyProfile,
-        conversationHistory: conversationHistory || [],
-        conversationContext: context,
-        consultantName: consultantName
-      };
-      console.log('[DIAGNOSTIC] [generateResponse-BRIEF] Time:', new Date().toISOString());
-      console.log('[DIAGNOSTIC] [generateResponse-BRIEF] Params:', JSON.stringify(generateParams).substring(0, 500));
-      
-      const t4 = Date.now();
-      const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
-      console.log('[DIAGNOSTIC] [generateResponse-BRIEF] took', Date.now() - t4, 'ms');
-      
-      briefMessage = generateResult.data.message;
+      try {
+        const generateParams = {
+          message: 'generate_brief',
+          intent: 'GENERATE_BRIEF',
+          state: STATES.BRIEF,
+          familyProfile: conversationFamilyProfile,
+          conversationHistory: conversationHistory || [],
+          conversationContext: context,
+          consultantName: consultantName
+        };
+        console.log('[DIAGNOSTIC] [generateResponse-BRIEF] Time:', new Date().toISOString());
+        console.log('[DIAGNOSTIC] [generateResponse-BRIEF] Params:', JSON.stringify(generateParams).substring(0, 500));
+        
+        const t4 = Date.now();
+        const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
+        console.log('[DIAGNOSTIC] [generateResponse-BRIEF] took', Date.now() - t4, 'ms');
+        
+        briefMessage = generateResult.data.message;
+      } catch (e) {
+        console.error('[ERROR] generateResponse-BRIEF failed:', e.message, 'Status:', e.response?.status);
+        briefMessage = 'Let me summarize what you\'ve shared so far. Does that sound right?';
+      }
       
       return Response.json({
         message: briefMessage,
@@ -473,8 +488,14 @@ Deno.serve(async (req) => {
       console.log('[DIAGNOSTIC] [searchSchools] Time:', new Date().toISOString());
       console.log('[DIAGNOSTIC] [searchSchools] Params:', JSON.stringify(searchParams));
       
-      const searchResult = await base44.asServiceRole.functions.invoke('searchSchools', searchParams);
-      let schools = searchResult.data.schools || [];
+      let schools = [];
+      try {
+        const searchResult = await base44.asServiceRole.functions.invoke('searchSchools', searchParams);
+        schools = searchResult.data.schools || [];
+      } catch (e) {
+        console.error('[ERROR] searchSchools failed:', e.message, 'Status:', e.response?.status);
+        // Continue with empty schools array
+      }
       
       // RULE: Exclude special needs schools unless explicitly mentioned
       if (!msgLower.includes('special needs') && !msgLower.includes('learning disabilities') && 
@@ -529,30 +550,36 @@ Deno.serve(async (req) => {
     let responseTimedOut = false;
     
     if (currentState === STATES.SEARCHING || currentState === STATES.RESULTS) {
-      const generateParams = {
-        message,
-        intent: intentResponse.intent,
-        state: currentState,
-        schools: matchingSchools,
-        familyProfile: conversationFamilyProfile,
-        conversationHistory: conversationHistory || [],
-        conversationContext: context,
-        consultantName: consultantName,
-        userNotes: userNotes || [],
-        shortlistedSchools: shortlistedSchools || []
-      };
-      console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] Time:', new Date().toISOString());
-      console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] Params:', JSON.stringify(generateParams).substring(0, 500));
-      
-      const t5 = Date.now();
-      const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
-      console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] took', Date.now() - t5, 'ms');
-      
-      if (generateResult.data.timeout) {
+      try {
+        const generateParams = {
+          message,
+          intent: intentResponse.intent,
+          state: currentState,
+          schools: matchingSchools,
+          familyProfile: conversationFamilyProfile,
+          conversationHistory: conversationHistory || [],
+          conversationContext: context,
+          consultantName: consultantName,
+          userNotes: userNotes || [],
+          shortlistedSchools: shortlistedSchools || []
+        };
+        console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] Time:', new Date().toISOString());
+        console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] Params:', JSON.stringify(generateParams).substring(0, 500));
+        
+        const t5 = Date.now();
+        const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
+        console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] took', Date.now() - t5, 'ms');
+        
+        if (generateResult.data.timeout) {
+          responseTimedOut = true;
+          aiMessage = generateResult.data.message || 'Here are the schools I found:';
+        } else {
+          aiMessage = generateResult.data.message;
+        }
+      } catch (error) {
+        console.error('[ERROR] generateResponse-SEARCHING/RESULTS failed:', error.message, 'Status:', error.response?.status);
         responseTimedOut = true;
-        aiMessage = generateResult.data.message || 'Here are the schools I found:';
-      } else {
-        aiMessage = generateResult.data.message;
+        aiMessage = matchingSchools.length > 0 ? 'Here are the schools I found:' : 'I don\'t have any schools matching that criteria.';
       }
 
       if (matchingSchools.length === 0 && !aiMessage.includes('don\'t have') && !aiMessage.includes('no ')) {
@@ -575,13 +602,13 @@ Deno.serve(async (req) => {
     // Update user memory with insights from this message (non-blocking)
     // Pass deduplicate:true to ensure new memories replace old conflicting ones
     try {
-      await base44.functions.invoke('updateUserMemory', { 
+      await base44.asServiceRole.functions.invoke('updateUserMemory', { 
         userId, 
         userMessage: message,
         deduplicate: true
       });
     } catch (e) {
-      console.error('updateUserMemory failed:', e);
+      console.error('[ERROR] updateUserMemory failed:', e.message);
     }
 
     return Response.json({
