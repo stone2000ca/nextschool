@@ -50,8 +50,10 @@ Extract and return ONLY these fields (null if not mentioned):
 - locationArea: string (city or area name)
 - maxTuition: number (annual tuition budget mentioned)
 - interests: array of strings (child's interests: sports, arts, STEM, etc.)
-- priorities: array of strings (family priorities)
-- dealbreakers: array of strings (things parent explicitly said they DON'T want)
+- priorities: array of strings (what matters most, what they want, what's important - e.g. "academics and arts are most important" -> ["academics", "arts"])
+- concerns: array of strings (any mention of problems, worries, fears)
+- dealbreakers: array of strings (any "no", "not", "don't want" statements)
+- learning_needs: array of strings (any diagnoses, challenges, special needs mentioned)
 - curriculumPreference: array of strings (curriculum types mentioned: IB, Montessori, etc.)
 - religiousPreference: string (secular, or specific religion if mentioned)
 - boardingPreference: string (day only, open to boarding, boarding preferred)
@@ -69,7 +71,9 @@ Return ONLY valid JSON. Do NOT explain.`;
           maxTuition: { type: ["number", "null"] },
           interests: { type: ["array", "null"], items: { type: "string" } },
           priorities: { type: ["array", "null"], items: { type: "string" } },
+          concerns: { type: ["array", "null"], items: { type: "string" } },
           dealbreakers: { type: ["array", "null"], items: { type: "string" } },
+          learning_needs: { type: ["array", "null"], items: { type: "string" } },
           curriculumPreference: { type: ["array", "null"], items: { type: "string" } },
           religiousPreference: { type: ["string", "null"] },
           boardingPreference: { type: ["string", "null"] }

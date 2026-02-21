@@ -405,9 +405,15 @@ export default function Consultant() {
         } : null
       });
 
-      // Update onboarding phase from response
+      // Update onboarding phase and state from response
       if (response.data.onboardingPhase) {
         setOnboardingPhase(response.data.onboardingPhase);
+      }
+      
+      // Update conversation context with state
+      if (response.data.state && currentConversation) {
+        const updatedContext = { ...currentConversation.conversationContext, state: response.data.state };
+        setCurrentConversation({ ...currentConversation, conversationContext: updatedContext });
       }
 
       // Handle confirm_brief state - showing The Brief for confirmation
@@ -1054,10 +1060,10 @@ Return empty array if user didn't provide any of these facts.`;
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Suggested Response Chips - After greeting or for confirm_brief phase */}
-          {(showResponseChips || onboardingPhase === 'confirm_brief') && (
+          {/* Suggested Response Chips - After greeting, for confirm_brief, or BRIEF state */}
+          {(showResponseChips || onboardingPhase === 'confirm_brief' || currentConversation?.conversationContext?.state === 'BRIEF') && (
             <div className="p-4 border-t bg-slate-50 flex flex-wrap gap-2 justify-center">
-              {showResponseChips && !onboardingPhase && (
+              {showResponseChips && !onboardingPhase && currentConversation?.conversationContext?.state !== 'BRIEF' && (
                 <>
                   <Button 
                     variant="outline" 
@@ -1085,7 +1091,7 @@ Return empty array if user didn't provide any of these facts.`;
                   </Button>
                 </>
               )}
-              {onboardingPhase === 'confirm_brief' && (
+              {(onboardingPhase === 'confirm_brief' || currentConversation?.conversationContext?.state === 'BRIEF') && (
                 <>
                   <Button 
                     variant="outline" 
@@ -1097,19 +1103,19 @@ Return empty array if user didn't provide any of these facts.`;
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => handleSendMessage("Let me adjust something")}
+                    onClick={() => handleSendMessage("I'd like to adjust something")}
                     disabled={isTyping}
                     className="text-xs"
                   >
-                    Let me adjust
+                    I'd like to adjust
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => handleSendMessage("I'd like to add more context")}
+                    onClick={() => handleSendMessage("Start over")}
                     disabled={isTyping}
                     className="text-xs"
                   >
-                    Add context
+                    Start over
                   </Button>
                 </>
               )}
