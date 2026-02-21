@@ -266,16 +266,17 @@ Return ONLY valid JSON. Do NOT explain.`;
     console.log(`[STATE] ${context.state} | briefStatus: ${briefStatus} (edits: ${briefEditCount})`);
 
     // STEP 3: STATE-SPECIFIC RESPONSE GENERATION
-    if (currentState === STATES.GREETING) {
+    if (currentState === STATES.WELCOME) {
       return Response.json({
         message: "I'm your NextSchool education consultant. I help families find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you?",
-        state: STATES.GREETING,
+        state: STATES.WELCOME,
+        briefStatus: null,
         conversationContext: context,
         schools: []
       });
     }
     
-    if (currentState === STATES.INTAKE) {
+    if (currentState === STATES.DISCOVERY) {
       let intakeMessage;
       try {
         const history = conversationHistory || [];
