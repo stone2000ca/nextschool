@@ -49,10 +49,12 @@
  */
 import About from './pages/About';
 import Admin from './pages/Admin';
+import AdminFeedback from './pages/AdminFeedback';
 import BlogPost from './pages/BlogPost';
 import ClaimSchool from './pages/ClaimSchool';
 import Consultant from './pages/Consultant';
 import Contact from './pages/Contact';
+import Feedback from './pages/Feedback';
 import ForSchools from './pages/ForSchools';
 import Guides from './pages/Guides';
 import Home from './pages/Home';
@@ -65,18 +67,18 @@ import SchoolAdminDashboard from './pages/SchoolAdminDashboard';
 import SchoolDirectory from './pages/SchoolDirectory';
 import SchoolProfile from './pages/SchoolProfile';
 import Terms from './pages/Terms';
-import Feedback from './pages/Feedback';
-import AdminFeedback from './pages/AdminFeedback';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "About": About,
     "Admin": Admin,
+    "AdminFeedback": AdminFeedback,
     "BlogPost": BlogPost,
     "ClaimSchool": ClaimSchool,
     "Consultant": Consultant,
     "Contact": Contact,
+    "Feedback": Feedback,
     "ForSchools": ForSchools,
     "Guides": Guides,
     "Home": Home,
@@ -89,8 +91,6 @@ export const PAGES = {
     "SchoolDirectory": SchoolDirectory,
     "SchoolProfile": SchoolProfile,
     "Terms": Terms,
-    "Feedback": Feedback,
-    "AdminFeedback": AdminFeedback,
 }
 
 export const pagesConfig = {

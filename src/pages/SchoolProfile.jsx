@@ -257,7 +257,7 @@ export default function SchoolProfile() {
             <div>
               <div className="text-xs sm:text-sm text-slate-600 mb-1">Annual Tuition</div>
               <div className="text-base sm:text-xl font-bold truncate">
-                {school.tuition ? `${getCurrencySymbol(school.currency)}${school.tuition.toLocaleString()}` : 'N/A'}
+                {school.dayTuition ? `${getCurrencySymbol(school.currency)}${school.dayTuition.toLocaleString()}` : 'N/A'}
               </div>
             </div>
             <div>
@@ -282,6 +282,13 @@ export default function SchoolProfile() {
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
+                {school.description && (
+                  <Card className="p-6 bg-slate-50 border-slate-200">
+                    <h2 className="text-lg font-bold mb-3">About</h2>
+                    <p className="text-slate-700 leading-relaxed">{school.description}</p>
+                  </Card>
+                )}
+
                 {school.highlights && school.highlights.length > 0 && (
                   <Card className="p-6 bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200">
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
