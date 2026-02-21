@@ -18,16 +18,16 @@ Deno.serve(async (req) => {
         conversationContext,
         userNotes,
         shortlistedSchools,
-        familyProfileData,
+        familyProfile,
         consultantName,
-        state
+        state = ''
       } = await req.json();
 
       console.log(`[generateResponse] Intent: ${intent}, State: ${state}, Schools count: ${schools?.length || 0}`);
 
       // Handle GENERATE_BRIEF intent
-      if (intent === 'GENERATE_BRIEF' && familyProfileData) {
-        const { childName, childGrade, locationArea, budgetRange, maxTuition, interests, priorities, dealbreakers, currentSituation, academicStrengths } = familyProfileData;
+      if (intent === 'GENERATE_BRIEF' && familyProfile) {
+        const { childName, childGrade, locationArea, budgetRange, maxTuition, interests, priorities, dealbreakers, currentSituation, academicStrengths } = familyProfile;
         
         // Format arrays for the prompt - use them as-is without modification
         const interestsStr = interests?.length > 0 ? interests.join(', ') : '';

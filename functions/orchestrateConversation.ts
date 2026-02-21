@@ -89,9 +89,9 @@ Deno.serve(async (req) => {
     
     // Check if we have minimum intake data (grade + location + at least one of: priority/interest/budget)
     const hasMinimumData = conversationFamilyProfile && 
-      conversationFamilyProfile.childGrade !== null &&
-      conversationFamilyProfile.locationArea &&
-      (conversationFamilyProfile.interests?.length > 0 || conversationFamilyProfile.priorities?.length > 0 || conversationFamilyProfile.maxTuition);
+      conversationFamilyProfile?.childGrade !== null &&
+      conversationFamilyProfile?.locationArea &&
+      (conversationFamilyProfile?.interests?.length > 0 || conversationFamilyProfile?.priorities?.length > 0 || conversationFamilyProfile?.maxTuition);
     
     // Safety valve: 4+ parent messages in intake without enough data → force BRIEF
     const parentMessageCount = conversationHistory?.filter(m => m.role === 'user').length || 0;
