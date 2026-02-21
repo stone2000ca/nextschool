@@ -1478,7 +1478,7 @@ Return empty array if user didn't provide any of these facts.`;
             </div>
           )}
 
-          {currentView === 'detail' && selectedSchool && (
+          {currentState === STATES.DEEP_DIVE && selectedSchool && (
             <div>
               <SchoolDetail
                 school={selectedSchool}
