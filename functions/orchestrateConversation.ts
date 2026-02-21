@@ -486,6 +486,14 @@ Respond as ${consultantName}. ONE question max. No filler. Never re-ask extracte
         const strengthsStr = academicStrengths?.length > 0 ? academicStrengths.join(', ') : '';
         const dealbreakersStr = dealbreakers?.length > 0 ? dealbreakers.join(', ') : '';
         
+        // FIX 2: Format budget display for unlimited
+        let budgetDisplay = budgetRange || '(not specified)';
+        if (maxTuition === 'unlimited') {
+          budgetDisplay = 'Budget is flexible / Cost is not a constraint';
+        } else if (maxTuition) {
+          budgetDisplay = `$${maxTuition}/year`;
+        }
+        
         const briefPrompt = `You are a warm, empathetic education consultant. Generate "The Brief" - a reflection message that mirrors back EXACTLY what was shared.
 
 ====== CRITICAL BRIEF GENERATION RULE ======
@@ -499,7 +507,7 @@ CURRENT SITUATION: ${currentSituation || '(not shared)'}
 ACADEMIC STRENGTHS: ${strengthsStr || '(not specified)'}
 INTERESTS: ${interestsStr || '(not specified)'}
 FAMILY PRIORITIES: ${prioritiesStr || '(not specified)'}
-BUDGET: ${budgetRange || '(not specified)'}${maxTuition ? ` / $${maxTuition}/year` : ''}
+BUDGET: ${budgetDisplay}
 DEALBREAKERS: ${dealbreakersStr || '(none mentioned)'}
 
 ====== CRITICAL INSTRUCTIONS ======

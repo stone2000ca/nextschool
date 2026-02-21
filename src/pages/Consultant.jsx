@@ -1095,27 +1095,19 @@ Return empty array if user didn't provide any of these facts.`;
                 <>
                   <Button 
                     variant="outline" 
-                    onClick={() => handleSendMessage("That's exactly right")}
+                    onClick={() => handleSendMessage("That's right, let's see the schools")}
                     disabled={isTyping}
-                    className="text-xs"
+                    className="text-sm px-4 py-2 rounded-full bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100"
                   >
-                    That's exactly right
+                    That's right, let's see the schools
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => handleSendMessage("I'd like to adjust something")}
                     disabled={isTyping}
-                    className="text-xs"
+                    className="text-sm px-4 py-2 rounded-full bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
                   >
-                    I'd like to adjust
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleSendMessage("Start over")}
-                    disabled={isTyping}
-                    className="text-xs"
-                  >
-                    Start over
+                    I'd like to adjust something
                   </Button>
                 </>
               )}
