@@ -438,8 +438,14 @@ Return ONLY valid JSON. Do NOT explain.`;
          });
     }
     
-    // STEP 4: School search only in SEARCHING/RESULTS/DEEP_DIVE states
-    if (currentState === STATES.SEARCHING) {
+    // STEP 4: School search only in RESULTS/DEEP_DIVE states (auto-transition from BRIEF)
+    if (currentState === STATES.BRIEF && briefStatus === BRIEF_STATUS.CONFIRMED) {
+      // Auto-transition to RESULTS when brief is confirmed
+      currentState = STATES.RESULTS;
+      context.state = currentState;
+    }
+
+    if (currentState === STATES.RESULTS && currentSchools?.length === 0) {
       const searchParams = {
         limit: 50,
         familyProfile: conversationFamilyProfile
