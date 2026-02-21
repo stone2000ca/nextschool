@@ -41,6 +41,7 @@ export default function Consultant() {
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [comparisonData, setComparisonData] = useState(null);
   const [onboardingPhase, setOnboardingPhase] = useState(null);
+  const [briefStatus, setBriefStatus] = useState(null);
   
   // Chat states
   const [messages, setMessages] = useState([]);
