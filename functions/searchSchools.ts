@@ -116,11 +116,25 @@ async function performSearch(req) {
       }
     };
 
+    // FIX 5: If requestedSchools is provided, fetch them first
+    let requestedSchoolsList = [];
+    if (familyProfile?.requestedSchools && familyProfile.requestedSchools.length > 0) {
+      console.log('[FIX 5] Fetching requested schools:', familyProfile.requestedSchools);
+      requestedSchoolsList = await base44.entities.School.filter({
+        name: { $in: familyProfile.requestedSchools }
+      });
+      console.log('[FIX 5] Found requested schools:', requestedSchoolsList.map(s => s.name));
+    }
+    
     // Build filter - fetch all active schools with high limit
     let schools = await base44.entities.School.filter({}, '-created_date', 1000);
     
     // Filter to only active schools
     schools = schools.filter(s => s.status === 'active');
+    
+    // FIX 2: Log genderPolicy values for debugging
+    const genderPolicies = new Set(schools.map(s => s.genderPolicy).filter(Boolean));
+    console.log('[DEBUG] Unique genderPolicy values in database:', Array.from(genderPolicies));
 
     // FIX #1: LOCATION-FIRST WITH RELEVANCE SCORING
     // Step 1: Apply strict location filters to reduce dataset
@@ -194,8 +208,8 @@ async function performSearch(req) {
         return false; // Child's grade not served
       }
       
-      // Hard filter 2: BUDGET - tuition must be within hard limits
-      if (maxTuition && school.tuition) {
+      // Hard filter 2: BUDGET - tuition must be within hard limits (skip if 'unlimited')
+      if (maxTuition && maxTuition !== 'unlimited' && school.tuition) {
         const hardLimit = school.financialAidAvailable ? maxTuition * 1.3 : maxTuition;
         if (school.tuition > hardLimit) {
           console.log(`Hard-filtered ${school.name}: tuition $${school.tuition} exceeds hard limit $${hardLimit}`);
@@ -211,12 +225,27 @@ async function performSearch(req) {
         }
       }
       
-      // Hard filter 4: GENDER PREFERENCE - school type must match if specified
-      if (familyProfile?.preferences?.genderPreference) {
-        const genderPref = familyProfile.preferences.genderPreference;
-        if (genderPref === 'boy' && school.schoolType !== 'All-Boys') return false;
-        if (genderPref === 'girl' && school.schoolType !== 'All-Girls') return false;
-        if (genderPref === 'coed' && (school.schoolType === 'All-Boys' || school.schoolType === 'All-Girls')) return false;
+      // Hard filter 4: GENDER PREFERENCE - school type must match if specified (case-insensitive, multiple variations)
+      if (familyProfile?.genderPreference) {
+        const genderPref = familyProfile.genderPreference.toLowerCase();
+        const schoolGender = (school.genderPolicy || school.schoolType || '').toLowerCase();
+        
+        // Match variations: 'all boys', 'boys', 'boys only', 'all-boys', 'male'
+        if (genderPref === 'all boys' || genderPref === 'boys') {
+          const isBoys = /\b(all[\s-]?boys?|boys?[\s-]?only|male)\b/i.test(schoolGender);
+          if (!isBoys) return false;
+        }
+        // Match variations: 'all girls', 'girls', 'girls only', 'all-girls', 'female'
+        else if (genderPref === 'all girls' || genderPref === 'girls') {
+          const isGirls = /\b(all[\s-]?girls?|girls?[\s-]?only|female)\b/i.test(schoolGender);
+          if (!isGirls) return false;
+        }
+        // Match variations: 'co-ed', 'coed', 'coeducational', 'mixed'
+        else if (genderPref === 'co-ed' || genderPref === 'coed') {
+          const isCoed = /\b(co[\s-]?ed|coeducational|mixed)\b/i.test(schoolGender);
+          const isSingleGender = /\b(all[\s-]?boys?|all[\s-]?girls?|boys?[\s-]?only|girls?[\s-]?only|male|female)\b/i.test(schoolGender);
+          if (!isCoed && isSingleGender) return false;
+        }
       }
       
       // Hard filter 5: COMMUTE TOLERANCE - distance must not exceed tolerance
@@ -319,9 +348,14 @@ async function performSearch(req) {
       });
     }
 
+    // FIX 5: Always include requested schools at the top, even if they fail filters
+    const requestedSchoolIds = new Set(requestedSchoolsList.map(s => s.id));
+    const otherSchools = schools.filter(s => !requestedSchoolIds.has(s.id));
+    const finalSchools = [...requestedSchoolsList, ...otherSchools];
+    
     // Limit to max 20 results and return minimal fields
-    const maxResults = Math.min(schools.length, 20);
-    const condensedSchools = schools.slice(0, maxResults).map(s => ({
+    const maxResults = Math.min(finalSchools.length, 20);
+    const condensedSchools = finalSchools.slice(0, maxResults).map(s => ({
       id: s.id,
       name: s.name,
       slug: s.slug,
@@ -340,7 +374,7 @@ async function performSearch(req) {
 
     return Response.json({ 
       schools: condensedSchools, 
-      total: schools.length,
+      total: finalSchools.length,
       returned: condensedSchools.length
     });
 }

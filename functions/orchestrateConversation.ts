@@ -122,7 +122,10 @@ Extract and return ONLY these fields (null if not mentioned):
 - childName: string (parent used child's name)
 - childGrade: number (grade level, e.g., 3 for Grade 3. If you see "grade 1" or "Grade 3" or similar, extract the number. CRITICAL: Return as a number, not a string.)
 - locationArea: string (city or area name)
-- maxTuition: number (annual tuition budget mentioned)
+- maxTuition: CRITICAL BUDGET RULES:
+  * If "money isn't an issue" / "budget is not a concern" / "cost doesn't matter" / "price isn't a factor" / "money is no object" → "unlimited"
+  * If dollar amount mentioned (e.g. "$35K", "40000") → extract as number
+  * If not mentioned → null
 - interests: array of strings (child's interests: sports, arts, STEM, etc.)
 - priorities: array of strings (what matters most, what they want, what's important - e.g. "academics and arts are most important" -> ["academics", "arts"])
 - concerns: array of strings (any mention of problems, worries, fears)
@@ -131,6 +134,16 @@ Extract and return ONLY these fields (null if not mentioned):
 - curriculumPreference: array of strings (curriculum types mentioned: IB, Montessori, etc.)
 - religiousPreference: string (secular, or specific religion if mentioned)
 - boardingPreference: string (day only, open to boarding, boarding preferred)
+- genderPreference: CRITICAL GENDER RULES:
+  * 'all-boys' / 'boys school' / 'boys only' / 'boy' → "All Boys"
+  * 'all-girls' / 'girls school' / 'girls only' / 'girl' → "All Girls"
+  * 'co-ed' / 'coeducational' / 'mixed' → "Co-Ed"
+  * Not mentioned → null
+- requestedSchools: array of strings (CRITICAL: School names or abbreviations mentioned):
+  * Full names: "Upper Canada College", "Crescent School", "St. Andrew's College"
+  * Abbreviations: "UCC" → "Upper Canada College", "SAC" → "St. Andrew's College"
+  * Partial: "Crescent" → "Crescent School"
+  * If none mentioned → null
 
 Return ONLY valid JSON. Do NOT explain.`;
 
@@ -142,7 +155,7 @@ Return ONLY valid JSON. Do NOT explain.`;
             childName: { type: ["string", "null"] },
             childGrade: { type: ["number", "null"] },
             locationArea: { type: ["string", "null"] },
-            maxTuition: { type: ["number", "null"] },
+            maxTuition: { type: ["number", "string", "null"] },
             interests: { type: ["array", "null"], items: { type: "string" } },
             priorities: { type: ["array", "null"], items: { type: "string" } },
             concerns: { type: ["array", "null"], items: { type: "string" } },
@@ -150,7 +163,9 @@ Return ONLY valid JSON. Do NOT explain.`;
             learning_needs: { type: ["array", "null"], items: { type: "string" } },
             curriculumPreference: { type: ["array", "null"], items: { type: "string" } },
             religiousPreference: { type: ["string", "null"] },
-            boardingPreference: { type: ["string", "null"] }
+            boardingPreference: { type: ["string", "null"] },
+            genderPreference: { type: ["string", "null"] },
+            requestedSchools: { type: ["array", "null"], items: { type: "string" } }
           }
         }
       });
