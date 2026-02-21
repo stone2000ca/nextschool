@@ -3,6 +3,8 @@
  * Pure data and functions for managing conversation state and discovery progress
  */
 
+import { useState, useCallback } from 'react';
+
 export const STATES = {
   WELCOME: 'WELCOME',
   DISCOVERY: 'DISCOVERY',
