@@ -1504,12 +1504,7 @@ Return empty array if user didn't provide any of these facts.`;
            )}
 
           
-          {currentView === 'shortlist' && (
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">My Shortlist</h2>
-              <p className="text-slate-600 mb-6">Schools you've saved for further consideration</p>
-            </div>
-          )}
+
         </main>
 
         {/* RIGHT CHAT PANEL */}
