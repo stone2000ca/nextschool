@@ -217,49 +217,101 @@ Return ONLY valid JSON. Do NOT explain.`;
       }
     }
     
-    // STEP 2: DETERMINE CURRENT STATE
+    // STEP 2: DETERMINISTIC STATE MACHINE (Backend decides transitions)
     let currentState = context.state || STATES.GREETING;
     
-    // First user message → move to INTAKE (conversationHistory can be empty on first message)
+    // Rule 1: GREETING → INTAKE (on first user message)
     if (currentState === STATES.GREETING && message) {
       currentState = STATES.INTAKE;
     }
     
-    // Check if we have minimum intake data (grade + location + at least one of: priority/interest/budget)
-    const hasMinimumData = conversationFamilyProfile && 
-      conversationFamilyProfile?.childGrade !== null &&
-      conversationFamilyProfile?.locationArea &&
-      (conversationFamilyProfile?.interests?.length > 0 || conversationFamilyProfile?.priorities?.length > 0 || conversationFamilyProfile?.maxTuition);
-    
-    // Safety valve: 4+ parent messages in intake without enough data → force BRIEF
-    const parentMessageCount = conversationHistory?.filter(m => m.role === 'user').length || 0;
-    const shouldForceBrief = currentState === STATES.INTAKE && parentMessageCount >= 4 && conversationFamilyProfile;
-    
-    // INTAKE → BRIEF transition
-    if ((currentState === STATES.INTAKE && hasMinimumData) || shouldForceBrief) {
-      currentState = STATES.BRIEF;
+    // Rule 2: INTAKE → BRIEF (check minimum data: grade + location + at least one of budget/priorities/interests)
+    if (currentState === STATES.INTAKE) {
+      const hasMinimumData = conversationFamilyProfile && 
+        conversationFamilyProfile?.childGrade !== null &&
+        conversationFamilyProfile?.locationArea &&
+        (conversationFamilyProfile?.interests?.length > 0 || 
+         conversationFamilyProfile?.priorities?.length > 0 || 
+         conversationFamilyProfile?.maxTuition);
+      
+      const parentMessageCount = conversationHistory?.filter(m => m.role === 'user').length || 0;
+      const forcedBriefAfterMessages = parentMessageCount >= 4;
+      
+      if (hasMinimumData || forcedBriefAfterMessages) {
+        currentState = STATES.BRIEF;
+        briefEditCount = 0; // Reset edit count when entering BRIEF
+      }
     }
     
-    // BRIEF → SEARCHING/EDIT transition (parent MUST confirm or adjust - never skip Brief)
+    // Rule 3: BRIEF → SEARCHING or BRIEF_EDIT (deterministic based on keywords)
     if (currentState === STATES.BRIEF) {
       const msgLowerTrim = msgLower.trim();
-      const isConfirming = /\b(exactly right|sounds good|yes|proceed|start search|that's right|thats right|correct|perfect|great|looks good|go ahead|let's go|let's search|sounds perfect)\b/i.test(msgLowerTrim);
-      const isAdjusting = /\b(adjust|change|edit|not right|add context|add more|wait|hold on|actually|let me|different)\b/i.test(msgLowerTrim);
+      const isConfirming = /\b(yes|yeah|yep|confirmed?|correct|perfect|great|sounds good|looks good|go ahead|that's right|that's perfect|proceed|search|search away|let's search|let's go)\b/i.test(msgLowerTrim);
+      const isAdjusting = /\b(change|adjust|edit|actually|wait|hold on|no|not right|different|no wait|hmm|let me|redo)\b/i.test(msgLowerTrim);
       
       if (isConfirming) {
         currentState = STATES.SEARCHING;
       } else if (isAdjusting) {
-        currentState = STATES.BRIEF_EDIT;
+        briefEditCount++;
+        if (briefEditCount >= MAX_BRIEF_EDITS) {
+          // After 3 edits, force search anyway
+          currentState = STATES.SEARCHING;
+          console.log('[STATE MACHINE] Max brief edits reached, forcing SEARCHING');
+        } else {
+          currentState = STATES.BRIEF_EDIT;
+        }
       } else {
-        // Parent hasn't confirmed or adjusted - stay in BRIEF and re-show it
+        // Ambiguous input - stay in BRIEF and re-display it
         currentState = STATES.BRIEF;
       }
     }
     
-    console.log(`[orchestrateConversation] STATE MACHINE: ${context.state || 'INIT'} → ${currentState}, extracted: ${Object.keys(extractedData).join(',')}`);
+    // Rule 4: BRIEF_EDIT → BRIEF (AI regenerates after edit)
+    if (currentState === STATES.BRIEF_EDIT) {
+      // Brief edit is temporary - next AI response regenerates BRIEF
+      // Will transition back to BRIEF in the response generation
+      currentState = STATES.BRIEF;
+    }
     
-    // Update context with new state
+    // Rule 5: SEARCHING → RESULTS (automatic after search completes)
+    // This transition happens in the school search section below
+    
+    // Rule 6: RESULTS → DEEP_DIVE or BRIEF_EDIT (based on user intent)
+    if (currentState === STATES.RESULTS) {
+      const isAskingAboutSchool = intentResponse.intent === 'DEEP_DIVE' || 
+                                   intentResponse.intent === 'COMPARE_SCHOOLS';
+      const isEditingBrief = /\b(change|adjust|different|again|new search|try again)\b/i.test(msgLower);
+      
+      if (isAskingAboutSchool) {
+        currentState = STATES.DEEP_DIVE;
+      } else if (isEditingBrief) {
+        currentState = STATES.BRIEF_EDIT;
+      } else {
+        // Answering questions about current results, stay in RESULTS
+        currentState = STATES.RESULTS;
+      }
+    }
+    
+    // Rule 7: DEEP_DIVE → RESULTS or BRIEF_EDIT (user can go back)
+    if (currentState === STATES.DEEP_DIVE) {
+      const isBackToResults = /\b(back|show me|see more|other schools|compare|list)\b/i.test(msgLower);
+      const isEditingBrief = /\b(change|adjust|different|new search)\b/i.test(msgLower);
+      
+      if (isBackToResults) {
+        currentState = STATES.RESULTS;
+      } else if (isEditingBrief) {
+        currentState = STATES.BRIEF_EDIT;
+      } else {
+        // Asking more questions about schools, stay in DEEP_DIVE
+        currentState = STATES.DEEP_DIVE;
+      }
+    }
+    
+    // Update context with new state and edit count
     context.state = currentState;
+    context.briefEditCount = briefEditCount;
+    
+    console.log(`[orchestrateConversation] STATE MACHINE: ${context.state || 'INIT'} → ${currentState}, extracted: ${Object.keys(extractedData).join(',')}`);
 
     // STEP 3: Detect intent (INLINED)
     let intentResponse;
