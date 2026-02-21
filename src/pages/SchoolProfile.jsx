@@ -113,41 +113,51 @@ export default function SchoolProfile() {
       <Navbar />
 
       {/* Hero Section */}
-      <div className="relative h-96 bg-slate-200">
-        <HeaderPhotoDisplay 
-          headerPhotoUrl={school.headerPhotoUrl}
-          heroImage={school.heroImage}
-          schoolName={school.name}
-          height="h-96"
+      <div className="relative h-56 sm:h-80 lg:h-96 bg-slate-200">
+        <img 
+          src={school.headerPhotoUrl || school.heroImage || `https://via.placeholder.com/1200x675/e2e8f0/64748b?text=${encodeURIComponent(school.name)}`}
+          alt={`${school.name} campus`}
+          className="w-full h-full object-cover"
+          loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         {/* School Logo - Overlapping Bottom Left */}
         {school.logoUrl && !isClearbitUrl(school.headerPhotoUrl) && (
-          <div className="absolute bottom-0 left-0 p-8 pb-0">
+          <div className="absolute bottom-0 left-0 p-4 sm:p-8 pb-0">
             <div className="transform translate-y-1/2">
-              <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-24 w-24" />
+              <img 
+                src={school.logoUrl} 
+                alt={`${school.name} logo`}
+                className="h-16 sm:h-24 w-16 sm:w-24 rounded-lg bg-white p-2 shadow-lg object-contain"
+                loading="eager"
+              />
             </div>
           </div>
         )}
-        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8 text-white">
           <div className="max-w-7xl mx-auto">
-            <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-3 ${badge.color}`}>
+            <div className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium mb-2 sm:mb-3 ${badge.color}`}>
               {badge.emoji} {school.region}
             </div>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2">
               {school.logoUrl && isClearbitUrl(school.headerPhotoUrl) && (
-                <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-12 w-12" />
+                <img 
+                  src={school.logoUrl} 
+                  alt={`${school.name} logo`}
+                  className="h-8 sm:h-12 w-8 sm:w-12 rounded-lg bg-white p-1 sm:p-2 shadow-lg object-contain"
+                  loading="eager"
+                />
               )}
-              <h1 className="text-4xl font-bold">{school.name}</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">{school.name}</h1>
             </div>
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
               <span className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                {school.city}, {school.provinceState}
+                <MapPin className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
+                <span className="truncate">{school.city}, {school.provinceState}</span>
               </span>
               {school.verified && (
                 <span className="flex items-center gap-1 bg-teal-600 px-2 py-1 rounded">
-                  <Award className="h-4 w-4" />
+                  <Award className="h-3 sm:h-4 w-3 sm:w-4" />
                   Verified
                 </span>
               )}
@@ -158,41 +168,41 @@ export default function SchoolProfile() {
 
       {/* Quick Stats */}
       <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
             <div>
-              <div className="text-sm text-slate-600 mb-1">Grades</div>
-              <div className="text-xl font-bold">{school.gradesServed}</div>
+              <div className="text-xs sm:text-sm text-slate-600 mb-1">Grades</div>
+              <div className="text-base sm:text-xl font-bold truncate">{school.gradesServed}</div>
             </div>
             <div>
-              <div className="text-sm text-slate-600 mb-1">Enrollment</div>
-              <div className="text-xl font-bold">{school.enrollment || 'N/A'}</div>
+              <div className="text-xs sm:text-sm text-slate-600 mb-1">Enrollment</div>
+              <div className="text-base sm:text-xl font-bold">{school.enrollment || 'N/A'}</div>
             </div>
             <div>
-              <div className="text-sm text-slate-600 mb-1">Annual Tuition</div>
-              <div className="text-xl font-bold">
+              <div className="text-xs sm:text-sm text-slate-600 mb-1">Annual Tuition</div>
+              <div className="text-base sm:text-xl font-bold truncate">
                 {school.tuition ? `${getCurrencySymbol(school.currency)}${school.tuition.toLocaleString()}` : 'N/A'}
               </div>
             </div>
             <div>
-              <div className="text-sm text-slate-600 mb-1">Class Size</div>
-              <div className="text-xl font-bold">{school.avgClassSize || 'N/A'}</div>
+              <div className="text-xs sm:text-sm text-slate-600 mb-1">Class Size</div>
+              <div className="text-base sm:text-xl font-bold">{school.avgClassSize || 'N/A'}</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Content */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="programs">Programs</TabsTrigger>
-                <TabsTrigger value="admissions">Admissions</TabsTrigger>
-                <TabsTrigger value="photos">Photos</TabsTrigger>
+                <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+                <TabsTrigger value="programs" className="text-xs sm:text-sm">Programs</TabsTrigger>
+                <TabsTrigger value="admissions" className="text-xs sm:text-sm">Admissions</TabsTrigger>
+                <TabsTrigger value="photos" className="text-xs sm:text-sm">Photos</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
@@ -434,12 +444,18 @@ export default function SchoolProfile() {
               </TabsContent>
 
               <TabsContent value="photos" className="space-y-6">
-                <Card className="p-6">
-                  <h3 className="text-xl font-bold mb-4">Gallery</h3>
+                <Card className="p-4 sm:p-6">
+                  <h3 className="text-lg sm:text-xl font-bold mb-4">Gallery</h3>
                   {school.photoGallery && school.photoGallery.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       {school.photoGallery.map((photo, index) => (
-                        <img key={index} src={photo} alt={`${school.name} ${index + 1}`} className="rounded-lg w-full h-48 object-cover" />
+                        <img 
+                          key={index} 
+                          src={photo} 
+                          alt={`${school.name} campus photo ${index + 1}`}
+                          className="rounded-lg w-full h-40 sm:h-48 object-cover"
+                          loading="lazy"
+                        />
                       ))}
                     </div>
                   ) : (
@@ -451,17 +467,17 @@ export default function SchoolProfile() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            <Card className="p-6 sticky top-24">
+          <div className="space-y-4 sm:space-y-6">
+            <Card className="p-4 sm:p-6 lg:sticky lg:top-24">
               <Button 
-                className="w-full mb-3 bg-teal-600 hover:bg-teal-700"
+                className="w-full mb-3 bg-teal-600 hover:bg-teal-700 text-sm sm:text-base"
                 onClick={() => setShowContactModal(true)}
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Contact This School
               </Button>
               <Button 
-                className={`w-full mb-4 ${isShortlisted ? 'bg-amber-600 hover:bg-amber-700' : ''}`}
+                className={`w-full mb-4 text-sm sm:text-base ${isShortlisted ? 'bg-amber-600 hover:bg-amber-700' : ''}`}
                 variant={isShortlisted ? "default" : "outline"}
                 onClick={handleToggleShortlist}
               >
@@ -488,33 +504,33 @@ export default function SchoolProfile() {
                 </div>
               )}
 
-              <div className="space-y-4">
-                <h3 className="font-bold">Contact Information</h3>
+              <div className="space-y-3 sm:space-y-4">
+                <h3 className="font-bold text-sm sm:text-base">Contact Information</h3>
                 {school.phone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-slate-400" />
-                    <span>{school.phone}</span>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <Phone className="h-3 sm:h-4 w-3 sm:w-4 text-slate-400 flex-shrink-0" />
+                    <span className="truncate">{school.phone}</span>
                   </div>
                 )}
                 {school.email && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                    <a href={`mailto:${school.email}`} className="text-teal-600 hover:underline">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <Mail className="h-3 sm:h-4 w-3 sm:w-4 text-slate-400 flex-shrink-0" />
+                    <a href={`mailto:${school.email}`} className="text-teal-600 hover:underline truncate">
                       {school.email}
                     </a>
                   </div>
                 )}
                 {school.website && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Globe2 className="h-4 w-4 text-slate-400" />
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <Globe2 className="h-3 sm:h-4 w-3 sm:w-4 text-slate-400 flex-shrink-0" />
                     <a 
                       href={school.website.startsWith('http') ? school.website : `https://${school.website}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-teal-600 hover:underline flex items-center gap-1"
+                      className="text-teal-600 hover:underline flex items-center gap-1 truncate"
                     >
                       Visit Website
-                      <ExternalLink className="h-3 w-3" />
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
                     </a>
                   </div>
                 )}
