@@ -277,79 +277,80 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
     
     if (currentState === STATES.DISCOVERY) {
-      let intakeMessage;
-      try {
-        const history = conversationHistory || [];
-        const recentMessages = history.slice(-10);
-        const conversationSummary = recentMessages
-          .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
-          .join('\n');
-        
-        const allText = history.map(m => m.content).join(' ') + ' ' + message;
-        let hasLocation = false, hasBudget = false, hasChildGrade = false;
-        try {
-          hasLocation = /mississauga|toronto|vancouver|calgary|ottawa|montreal|brampton|oakville|markham|vaughan|richmond hill|burnaby|surrey|london|hamilton|winnipeg|quebec|edmonton/i.test(allText);
-          hasBudget = /(\$|budget|tuition|cost)\s*\d+/.test(allText) || /\d{2,3}\s*k\b/i.test(allText);
-          hasChildGrade = /grade|kindergarten|preschool|elementary|middle|high school/i.test(allText);
-        } catch (e) {}
-        
-        const personaInstructions = consultantName === 'Jackie'
-          ? `[STATE: INTAKE] You are gathering family info. Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
-YOU ARE JACKIE - Warm, empathetic, validating.
-🚫 IF THEY SAID LOCATION → NEVER ask where they live
-🚫 IF THEY SAID BUDGET → NEVER ask budget
-🚫 IF THEY SAID GRADE → NEVER ask grade
-🚫 ONE QUESTION ONLY. NO filler.
+       let discoveryMessage;
+       try {
+         const history = conversationHistory || [];
+         const recentMessages = history.slice(-10);
+         const conversationSummary = recentMessages
+           .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
+           .join('\n');
 
-CRITICAL INTAKE INSTRUCTIONS:
-- Do NOT mention any specific school names
-- Do NOT suggest or recommend schools
-- Your only job in this phase is to understand the family's needs
-- If the user asks about a specific school, respond: "I'd love to tell you about that school - let me first understand what you're looking for so I can give you the best perspective."`
-          : `[STATE: INTAKE] You are gathering family info. Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
-YOU ARE LIAM - Direct, strategic, efficient.
-🚫 IF THEY SAID LOCATION → NEVER ask where they live
-🚫 IF THEY SAID BUDGET → NEVER ask budget
-🚫 IF THEY SAID GRADE → NEVER ask grade
-🚫 ONE QUESTION ONLY. NO filler.
+         const allText = history.map(m => m.content).join(' ') + ' ' + message;
+         let hasLocation = false, hasBudget = false, hasChildGrade = false;
+         try {
+           hasLocation = /mississauga|toronto|vancouver|calgary|ottawa|montreal|brampton|oakville|markham|vaughan|richmond hill|burnaby|surrey|london|hamilton|winnipeg|quebec|edmonton/i.test(allText);
+           hasBudget = /(\$|budget|tuition|cost)\s*\d+/.test(allText) || /\d{2,3}\s*k\b/i.test(allText);
+           hasChildGrade = /grade|kindergarten|preschool|elementary|middle|high school/i.test(allText);
+         } catch (e) {}
 
-CRITICAL INTAKE INSTRUCTIONS:
-- Do NOT mention any specific school names
-- Do NOT suggest or recommend schools
-- Your only job in this phase is to understand the family's needs
-- If the user asks about a specific school, respond: "I'd love to tell you about that school - let me first understand what you're looking for so I can give you the best perspective."`;
-        
-        const responsePrompt = `${personaInstructions}
+         const personaInstructions = consultantName === 'Jackie'
+           ? `[STATE: DISCOVERY] You are gathering family info. Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
+    YOU ARE JACKIE - Warm, empathetic, validating.
+    🚫 IF THEY SAID LOCATION → NEVER ask where they live
+    🚫 IF THEY SAID BUDGET → NEVER ask budget
+    🚫 IF THEY SAID GRADE → NEVER ask grade
+    🚫 ONE QUESTION ONLY. NO filler.
 
-ENTITY EXTRACTION:
-- LOCATION: ${hasLocation ? 'YES' : 'NO'}
-- BUDGET: ${hasBudget ? 'YES' : 'NO'}
-- GRADE: ${hasChildGrade ? 'YES' : 'NO'}
+    CRITICAL INSTRUCTIONS:
+    - Do NOT mention any specific school names
+    - Do NOT suggest or recommend schools
+    - Your only job in this phase is to understand the family's needs
+    - If the user asks about a specific school, respond: "I'd love to tell you about that school - let me first understand what you're looking for so I can give you the best perspective."`
+           : `[STATE: DISCOVERY] You are gathering family info. Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
+    YOU ARE LIAM - Direct, strategic, efficient.
+    🚫 IF THEY SAID LOCATION → NEVER ask where they live
+    🚫 IF THEY SAID BUDGET → NEVER ask budget
+    🚫 IF THEY SAID GRADE → NEVER ask grade
+    🚫 ONE QUESTION ONLY. NO filler.
 
-Recent chat:
-${conversationSummary}
+    CRITICAL INSTRUCTIONS:
+    - Do NOT mention any specific school names
+    - Do NOT suggest or recommend schools
+    - Your only job in this phase is to understand the family's needs
+    - If the user asks about a specific school, respond: "I'd love to tell you about that school - let me first understand what you're looking for so I can give you the best perspective."`;
 
-Parent: "${message}"
+         const responsePrompt = `${personaInstructions}
 
-Respond as ${consultantName}. ONE question max. No filler.`;
-        
-        const aiResponse = await base44.integrations.Core.InvokeLLM({
-          prompt: responsePrompt
-        });
-        
-        intakeMessage = aiResponse?.response || aiResponse || 'Tell me more about your child.';
-      } catch (e) {
-        console.error('[ERROR] INTAKE response failed:', e.message);
-        intakeMessage = 'Tell me about your child — what grade are they in and what matters most to you?';
-      }
-      
-      return Response.json({
-        message: intakeMessage,
-        state: STATES.INTAKE,
-        familyProfile: conversationFamilyProfile,
-        conversationContext: context,
-        schools: []
-      });
+    ENTITY EXTRACTION:
+    - LOCATION: ${hasLocation ? 'YES' : 'NO'}
+    - BUDGET: ${hasBudget ? 'YES' : 'NO'}
+    - GRADE: ${hasChildGrade ? 'YES' : 'NO'}
+
+    Recent chat:
+    ${conversationSummary}
+
+    Parent: "${message}"
+
+    Respond as ${consultantName}. ONE question max. No filler.`;
+
+         const aiResponse = await base44.integrations.Core.InvokeLLM({
+           prompt: responsePrompt
+         });
+
+         discoveryMessage = aiResponse?.response || aiResponse || 'Tell me more about your child.';
+       } catch (e) {
+         console.error('[ERROR] DISCOVERY response failed:', e.message);
+         discoveryMessage = 'Tell me about your child — what grade are they in and what matters most to you?';
+       }
+
+       return Response.json({
+         message: discoveryMessage,
+         state: STATES.DISCOVERY,
+         briefStatus: null,
+         familyProfile: conversationFamilyProfile,
+         conversationContext: context,
+         schools: []
+       });
     }
     
     if (currentState === STATES.BRIEF || currentState === STATES.BRIEF_EDIT) {
