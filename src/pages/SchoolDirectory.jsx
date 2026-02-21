@@ -182,14 +182,29 @@ export default function SchoolDirectory() {
       <Navbar />
 
       <div id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        {/* CTA Banner */}
+        <div className="mb-8 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg p-6 sm:p-8 text-white">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold mb-2">Not sure which school is right for you?</h2>
+              <p className="text-teal-100">Talk to our AI consultant and get personalized recommendations in minutes.</p>
+            </div>
+            <Link to={createPageUrl('Consultant')} className="flex-shrink-0">
+              <Button className="bg-white text-teal-600 hover:bg-teal-50 font-semibold">
+                Meet Your Consultant
+              </Button>
+            </Link>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">School Directory</h1>
           <p className="text-sm sm:text-base text-slate-600">Browse all {allSchools.length} private schools across Canada, the US, and Europe</p>
         </div>
 
-        {/* Search and Filters */}
-        <div className="grid sm:grid-cols-2 gap-4 mb-6 sm:mb-8">
+        {/* Search */}
+        <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
@@ -203,19 +218,88 @@ export default function SchoolDirectory() {
               aria-label="Search schools by name or city"
             />
           </div>
+        </div>
+
+        {/* Filters */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
           <select
-            value={filterRegion}
+            value={filterCountry}
             onChange={(e) => {
-              setFilterRegion(e.target.value);
+              setFilterCountry(e.target.value);
+              setFilterProvince('all');
               setDisplayedCount(20);
             }}
-            className="px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
-            aria-label="Filter schools by region"
+            className="px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm"
+            aria-label="Filter schools by country"
           >
-            <option value="all">All Regions</option>
+            <option value="all">All Countries</option>
             <option value="Canada">Canada</option>
-            <option value="US">United States</option>
-            <option value="Europe">Europe</option>
+            <option value="United States">United States</option>
+            <option value="United Kingdom">United Kingdom</option>
+          </select>
+
+          <select
+            value={filterProvince}
+            onChange={(e) => {
+              setFilterProvince(e.target.value);
+              setDisplayedCount(20);
+            }}
+            disabled={filterCountry === 'all'}
+            className="px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm disabled:bg-slate-100"
+            aria-label="Filter schools by province or state"
+          >
+            <option value="all">All Provinces</option>
+            {filterCountry !== 'all' && provincesByCountry[filterCountry]?.map(province => (
+              <option key={province} value={province}>{province}</option>
+            ))}
+          </select>
+
+          <select
+            value={filterGrade}
+            onChange={(e) => {
+              setFilterGrade(e.target.value);
+              setDisplayedCount(20);
+            }}
+            className="px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm"
+            aria-label="Filter schools by grade level"
+          >
+            <option value="all">All Grades</option>
+            <option value="Elementary">Elementary</option>
+            <option value="Middle">Middle School</option>
+            <option value="High">High School</option>
+          </select>
+
+          <select
+            value={filterTuition}
+            onChange={(e) => {
+              setFilterTuition(e.target.value);
+              setDisplayedCount(20);
+            }}
+            className="px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm"
+            aria-label="Filter schools by tuition range"
+          >
+            <option value="all">All Tuitions</option>
+            <option value="under-10k">Under $10K</option>
+            <option value="10-20k">$10-20K</option>
+            <option value="20-30k">$20-30K</option>
+            <option value="over-30k">$30K+</option>
+          </select>
+
+          <select
+            value={filterCurriculum}
+            onChange={(e) => {
+              setFilterCurriculum(e.target.value);
+              setDisplayedCount(20);
+            }}
+            className="px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm"
+            aria-label="Filter schools by curriculum"
+          >
+            <option value="all">All Curricula</option>
+            <option value="IB">IB</option>
+            <option value="AP">AP</option>
+            <option value="Montessori">Montessori</option>
+            <option value="Traditional">Traditional</option>
+            <option value="Waldorf">Waldorf</option>
           </select>
         </div>
 
