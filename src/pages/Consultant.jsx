@@ -1384,7 +1384,8 @@ Return empty array if user didn't provide any of these facts.`;
             isPremium={isPremium}
           />
         </aside>
-      </div>
+        </div>
+      )}
 
       {/* Delete Conversation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
