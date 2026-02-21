@@ -67,13 +67,21 @@ Deno.serve(async (req) => {
     // STEP 1: ENTITY EXTRACTION - Run BEFORE state machine
     let extractedData = {};
     try {
-      const extractionResult = await base44.functions.invoke('extractEntityData', {
+      const extractParams = {
         userMessage: message,
         conversationHistory: conversationHistory || [],
         currentProfile: conversationFamilyProfile
-      });
+      };
+      console.log('[DIAGNOSTIC] [extractEntityData] Time:', new Date().toISOString());
+      console.log('[DIAGNOSTIC] [extractEntityData] Params:', JSON.stringify(extractParams).substring(0, 500));
+      
+      const t1 = Date.now();
+      const extractionResult = await base44.functions.invoke('extractEntityData', extractParams);
+      console.log('[DIAGNOSTIC] [extractEntityData] took', Date.now() - t1, 'ms');
+      
       extractedData = extractionResult.data?.extracted || {};
     } catch (e) {
+      console.error('[DIAGNOSTIC] extractEntityData failed:', e.message, 'response:', e.response?.data, 'config:', JSON.stringify(e.config?.data)?.substring(0, 500));
       console.warn('Entity extraction failed, continuing:', e);
     }
     
@@ -141,13 +149,20 @@ Deno.serve(async (req) => {
     // STEP 3: Detect intent
     let intentResponse;
     try {
-      const intentResult = await base44.functions.invoke('detectIntent', {
+      const intentParams = {
         message,
         conversationHistory: conversationHistory || []
-      });
+      };
+      console.log('[DIAGNOSTIC] [detectIntent] Time:', new Date().toISOString());
+      console.log('[DIAGNOSTIC] [detectIntent] Params:', JSON.stringify(intentParams).substring(0, 500));
+      
+      const t2 = Date.now();
+      const intentResult = await base44.functions.invoke('detectIntent', intentParams);
+      console.log('[DIAGNOSTIC] [detectIntent] took', Date.now() - t2, 'ms');
+      
       intentResponse = intentResult.data;
     } catch (e) {
-      console.error('detectIntent failed:', e.message);
+      console.error('[DIAGNOSTIC] detectIntent failed:', e.message, 'response:', e.response?.data, 'config:', JSON.stringify(e.config?.data)?.substring(0, 500));
       intentResponse = { intent: 'INTAKE_QUESTION', shouldShowSchools: false };
     }
     
@@ -166,7 +181,7 @@ Deno.serve(async (req) => {
       console.log(`[orchestrateConversation] INTAKE state: Calling generateResponse with intent 'INTAKE_QUESTION'`);
       let intakeMessage;
       try {
-        const generateResult = await base44.functions.invoke('generateResponse', {
+        const generateParams = {
           message,
           intent: 'INTAKE_QUESTION',
           state: STATES.INTAKE,
@@ -185,10 +200,17 @@ Deno.serve(async (req) => {
           consultantName: consultantName,
           userNotes: userNotes || [],
           shortlistedSchools: shortlistedSchools || []
-        });
+        };
+        console.log('[DIAGNOSTIC] [generateResponse-INTAKE] Time:', new Date().toISOString());
+        console.log('[DIAGNOSTIC] [generateResponse-INTAKE] Params:', JSON.stringify(generateParams).substring(0, 500));
+        
+        const t3 = Date.now();
+        const generateResult = await base44.functions.invoke('generateResponse', generateParams);
+        console.log('[DIAGNOSTIC] [generateResponse-INTAKE] took', Date.now() - t3, 'ms');
+        
         intakeMessage = generateResult.data.message;
       } catch (e) {
-        console.error('generateResponse failed (INTAKE):', e.message);
+        console.error('[DIAGNOSTIC] generateResponse-INTAKE failed:', e.message, 'response:', e.response?.data, 'config:', JSON.stringify(e.config?.data)?.substring(0, 500));
         intakeMessage = 'Tell me about your child - what grade are they in and what matters most to you in a school?';
       }
       
@@ -206,7 +228,7 @@ Deno.serve(async (req) => {
       // BRIEF: Generate The Brief from profile
       let briefMessage;
       try {
-        const generateResult = await base44.functions.invoke('generateResponse', {
+        const generateParams = {
           message: 'generate_brief',
           intent: 'GENERATE_BRIEF',
           state: STATES.BRIEF,
@@ -214,10 +236,17 @@ Deno.serve(async (req) => {
           conversationHistory: conversationHistory || [],
           conversationContext: context,
           consultantName: consultantName
-        });
+        };
+        console.log('[DIAGNOSTIC] [generateResponse-BRIEF] Time:', new Date().toISOString());
+        console.log('[DIAGNOSTIC] [generateResponse-BRIEF] Params:', JSON.stringify(generateParams).substring(0, 500));
+        
+        const t4 = Date.now();
+        const generateResult = await base44.functions.invoke('generateResponse', generateParams);
+        console.log('[DIAGNOSTIC] [generateResponse-BRIEF] took', Date.now() - t4, 'ms');
+        
         briefMessage = generateResult.data.message;
       } catch (e) {
-        console.error('generateResponse failed (BRIEF):', e.message);
+        console.error('[DIAGNOSTIC] generateResponse-BRIEF failed:', e.message, 'response:', e.response?.data, 'config:', JSON.stringify(e.config?.data)?.substring(0, 500));
         briefMessage = 'Let me summarize what you\'ve shared so far. Does that sound right?';
       }
       
@@ -500,7 +529,7 @@ Deno.serve(async (req) => {
     
     if (currentState === STATES.SEARCHING || currentState === STATES.RESULTS) {
       try {
-        const generateResult = await base44.functions.invoke('generateResponse', {
+        const generateParams = {
           message,
           intent: intentResponse.intent,
           state: currentState,
@@ -511,7 +540,13 @@ Deno.serve(async (req) => {
           consultantName: consultantName,
           userNotes: userNotes || [],
           shortlistedSchools: shortlistedSchools || []
-        });
+        };
+        console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] Time:', new Date().toISOString());
+        console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] Params:', JSON.stringify(generateParams).substring(0, 500));
+        
+        const t5 = Date.now();
+        const generateResult = await base44.functions.invoke('generateResponse', generateParams);
+        console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] took', Date.now() - t5, 'ms');
         
         if (generateResult.data.timeout) {
           responseTimedOut = true;
@@ -520,7 +555,7 @@ Deno.serve(async (req) => {
           aiMessage = generateResult.data.message;
         }
       } catch (error) {
-        console.error('generateResponse failed (SEARCHING/RESULTS):', error.message);
+        console.error('[DIAGNOSTIC] generateResponse-SEARCHING/RESULTS failed:', error.message, 'response:', error.response?.data, 'config:', JSON.stringify(error.config?.data)?.substring(0, 500));
         responseTimedOut = true;
         aiMessage = matchingSchools.length > 0 ? 'Here are the schools I found:' : 'I don\'t have any schools matching that criteria.';
       }
