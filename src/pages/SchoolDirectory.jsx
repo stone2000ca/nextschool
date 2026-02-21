@@ -40,7 +40,11 @@ export default function SchoolDirectory() {
     
     allSchools.forEach(school => {
       if (school.country === selectedCountryValue && school.provinceState) {
-        provincesSet.add(school.provinceState);
+        // Normalize US state abbreviations to full names
+        const normalizedName = selectedCountryValue === 'United States' 
+          ? normalizeStateName(school.provinceState) 
+          : school.provinceState;
+        provincesSet.add(normalizedName);
       }
     });
     
@@ -135,6 +139,28 @@ export default function SchoolDirectory() {
     return symbols[currency] || '$';
   };
 
+  // US state abbreviation to full name mapping
+  const usStateAbbreviationMap = {
+    'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
+    'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia',
+    'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
+    'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+    'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri',
+    'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey',
+    'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+    'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+    'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont',
+    'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming',
+    'DC': 'District of Columbia'
+  };
+
+  // Normalize state abbreviations to full names
+  const normalizeStateName = (provinceName) => {
+    if (!provinceName) return '';
+    const abbreviated = provinceName.toUpperCase();
+    return usStateAbbreviationMap[abbreviated] || provinceName;
+  };
+
   const filteredSchools = allSchools.filter(school => {
     const matchesSearch = school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          school.city.toLowerCase().includes(searchTerm.toLowerCase());
@@ -143,7 +169,11 @@ export default function SchoolDirectory() {
       (filterCountry === 'US' && school.country === 'United States') ||
       (filterCountry === 'UK' && school.country === 'United Kingdom')
     );
-    const matchesProvince = filterProvince === 'all' || school.provinceState === filterProvince;
+    // For province matching: normalize the school's state and compare, allowing for both abbreviations and full names
+    const matchesProvince = filterProvince === 'all' || (
+      school.provinceState === filterProvince ||
+      (school.country === 'United States' && normalizeStateName(school.provinceState) === filterProvince)
+    );
     const matchesGrade = filterGrade === 'all' || (school.gradesServed && school.gradesServed.includes(filterGrade.charAt(0)));
     const matchesTuition = filterTuition === 'all' || matchesTuitionRange(school.tuition, filterTuition);
     const matchesCurriculum = filterCurriculum === 'all' || (school.curriculum && school.curriculum.some(c => c === filterCurriculum)) || school.curriculumType === filterCurriculum;
