@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       console.log('[DIAGNOSTIC] [extractEntityData] Params:', JSON.stringify(extractParams).substring(0, 500));
       
       const t1 = Date.now();
-      const extractionResult = await base44.functions.invoke('extractEntityData', extractParams);
+      const extractionResult = await base44.asServiceRole.functions.invoke('extractEntityData', extractParams);
       console.log('[DIAGNOSTIC] [extractEntityData] took', Date.now() - t1, 'ms');
       
       extractedData = extractionResult.data?.extracted || {};
@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
     console.log('[DIAGNOSTIC] [detectIntent] Params:', JSON.stringify(intentParams).substring(0, 500));
     
     const t2 = Date.now();
-    const intentResult = await base44.functions.invoke('detectIntent', intentParams);
+    const intentResult = await base44.asServiceRole.functions.invoke('detectIntent', intentParams);
     console.log('[DIAGNOSTIC] [detectIntent] took', Date.now() - t2, 'ms');
     
     intentResponse = intentResult.data;
@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
       console.log('[DIAGNOSTIC] [generateResponse-INTAKE] Params:', JSON.stringify(generateParams).substring(0, 500));
       
       const t3 = Date.now();
-      const generateResult = await base44.functions.invoke('generateResponse', generateParams);
+      const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
       console.log('[DIAGNOSTIC] [generateResponse-INTAKE] took', Date.now() - t3, 'ms');
       
       intakeMessage = generateResult.data.message;
@@ -245,7 +245,7 @@ Deno.serve(async (req) => {
       console.log('[DIAGNOSTIC] [generateResponse-BRIEF] Params:', JSON.stringify(generateParams).substring(0, 500));
       
       const t4 = Date.now();
-      const generateResult = await base44.functions.invoke('generateResponse', generateParams);
+      const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
       console.log('[DIAGNOSTIC] [generateResponse-BRIEF] took', Date.now() - t4, 'ms');
       
       briefMessage = generateResult.data.message;
@@ -473,7 +473,7 @@ Deno.serve(async (req) => {
       console.log('[DIAGNOSTIC] [searchSchools] Time:', new Date().toISOString());
       console.log('[DIAGNOSTIC] [searchSchools] Params:', JSON.stringify(searchParams));
       
-      const searchResult = await base44.functions.invoke('searchSchools', searchParams);
+      const searchResult = await base44.asServiceRole.functions.invoke('searchSchools', searchParams);
       let schools = searchResult.data.schools || [];
       
       // RULE: Exclude special needs schools unless explicitly mentioned
@@ -545,7 +545,7 @@ Deno.serve(async (req) => {
       console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] Params:', JSON.stringify(generateParams).substring(0, 500));
       
       const t5 = Date.now();
-      const generateResult = await base44.functions.invoke('generateResponse', generateParams);
+      const generateResult = await base44.asServiceRole.functions.invoke('generateResponse', generateParams);
       console.log('[DIAGNOSTIC] [generateResponse-SEARCHING/RESULTS] took', Date.now() - t5, 'ms');
       
       if (generateResult.data.timeout) {
