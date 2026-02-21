@@ -106,6 +106,10 @@ Deno.serve(async (req) => {
       }
     }
 
+    console.log(`Total slugs: ${Object.keys(slugMap).length}, schools: ${schools.length}`);
+    const duplicateSlugs = Object.entries(slugMap).filter(([_, list]) => list.length > 1);
+    console.log(`Duplicate slugs found: ${duplicateSlugs.length}`);
+
     const deletedIds = new Set();
 
     for (const [slug, schoolList] of Object.entries(slugMap)) {
