@@ -139,11 +139,17 @@ Deno.serve(async (req) => {
     context.state = currentState;
 
     // STEP 3: Detect intent
-    const intentResult = await base44.functions.invoke('detectIntent', {
-      message,
-      conversationHistory: conversationHistory || []
-    });
-    const intentResponse = intentResult.data;
+    let intentResponse;
+    try {
+      const intentResult = await base44.functions.invoke('detectIntent', {
+        message,
+        conversationHistory: conversationHistory || []
+      });
+      intentResponse = intentResult.data;
+    } catch (e) {
+      console.error('detectIntent failed:', e.message);
+      intentResponse = { intent: 'INTAKE_QUESTION', shouldShowSchools: false };
+    }
     
     // STEP 4: Handle state-specific response generation BEFORE school search
     if (currentState === STATES.GREETING) {
@@ -158,30 +164,37 @@ Deno.serve(async (req) => {
     if (currentState === STATES.INTAKE) {
       // INTAKE: Ask ONE question about missing field
       console.log(`[orchestrateConversation] INTAKE state: Calling generateResponse with intent 'INTAKE_QUESTION'`);
-      const generateResult = await base44.functions.invoke('generateResponse', {
-        message,
-        intent: 'INTAKE_QUESTION',
-        state: STATES.INTAKE,
-        familyProfile: conversationFamilyProfile,
-        knownFields: conversationFamilyProfile ? {
-          childName: conversationFamilyProfile.childName,
-          childGrade: conversationFamilyProfile.childGrade,
-          locationArea: conversationFamilyProfile.locationArea,
-          maxTuition: conversationFamilyProfile.maxTuition,
-          interests: conversationFamilyProfile.interests,
-          priorities: conversationFamilyProfile.priorities,
-          dealbreakers: conversationFamilyProfile.dealbreakers
-        } : {},
-        conversationHistory: conversationHistory || [],
-        conversationContext: context,
-        consultantName: consultantName,
-        userNotes: userNotes || [],
-        shortlistedSchools: shortlistedSchools || []
-      });
+      let intakeMessage;
+      try {
+        const generateResult = await base44.functions.invoke('generateResponse', {
+          message,
+          intent: 'INTAKE_QUESTION',
+          state: STATES.INTAKE,
+          familyProfile: conversationFamilyProfile,
+          knownFields: conversationFamilyProfile ? {
+            childName: conversationFamilyProfile.childName,
+            childGrade: conversationFamilyProfile.childGrade,
+            locationArea: conversationFamilyProfile.locationArea,
+            maxTuition: conversationFamilyProfile.maxTuition,
+            interests: conversationFamilyProfile.interests,
+            priorities: conversationFamilyProfile.priorities,
+            dealbreakers: conversationFamilyProfile.dealbreakers
+          } : {},
+          conversationHistory: conversationHistory || [],
+          conversationContext: context,
+          consultantName: consultantName,
+          userNotes: userNotes || [],
+          shortlistedSchools: shortlistedSchools || []
+        });
+        intakeMessage = generateResult.data.message;
+      } catch (e) {
+        console.error('generateResponse failed (INTAKE):', e.message);
+        intakeMessage = 'Tell me about your child - what grade are they in and what matters most to you in a school?';
+      }
       
-      console.log(`[orchestrateConversation] INTAKE state: Returning response with message: ${generateResult.data.message?.substring(0, 50)}...`);
+      console.log(`[orchestrateConversation] INTAKE state: Returning response with message: ${intakeMessage?.substring(0, 50)}...`);
       return Response.json({
-        message: generateResult.data.message,
+        message: intakeMessage,
         state: STATES.INTAKE,
         familyProfile: conversationFamilyProfile,
         conversationContext: context,
@@ -191,18 +204,25 @@ Deno.serve(async (req) => {
     
     if (currentState === STATES.BRIEF) {
       // BRIEF: Generate The Brief from profile
-      const generateResult = await base44.functions.invoke('generateResponse', {
-        message: 'generate_brief',
-        intent: 'GENERATE_BRIEF',
-        state: STATES.BRIEF,
-        familyProfile: conversationFamilyProfile,
-        conversationHistory: conversationHistory || [],
-        conversationContext: context,
-        consultantName: consultantName
-      });
+      let briefMessage;
+      try {
+        const generateResult = await base44.functions.invoke('generateResponse', {
+          message: 'generate_brief',
+          intent: 'GENERATE_BRIEF',
+          state: STATES.BRIEF,
+          familyProfile: conversationFamilyProfile,
+          conversationHistory: conversationHistory || [],
+          conversationContext: context,
+          consultantName: consultantName
+        });
+        briefMessage = generateResult.data.message;
+      } catch (e) {
+        console.error('generateResponse failed (BRIEF):', e.message);
+        briefMessage = 'Let me summarize what you\'ve shared so far. Does that sound right?';
+      }
       
       return Response.json({
-        message: generateResult.data.message,
+        message: briefMessage,
         state: STATES.BRIEF,
         familyProfile: conversationFamilyProfile,
         conversationContext: context,
@@ -500,7 +520,7 @@ Deno.serve(async (req) => {
           aiMessage = generateResult.data.message;
         }
       } catch (error) {
-        console.error('generateResponse error:', error);
+        console.error('generateResponse failed (SEARCHING/RESULTS):', error.message);
         responseTimedOut = true;
         aiMessage = matchingSchools.length > 0 ? 'Here are the schools I found:' : 'I don\'t have any schools matching that criteria.';
       }
