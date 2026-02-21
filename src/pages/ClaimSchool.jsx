@@ -53,7 +53,7 @@ export default function ClaimSchool() {
       setSearchingSchools(true);
       try {
         const schools = await base44.entities.School.filter({
-          name: { "$ilike": `%${term}%` }
+          name: { "$regex": term, "$options": "i" }
         }, null, 50);
         setSearchResults(schools);
       } catch (error) {
