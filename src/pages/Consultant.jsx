@@ -1438,11 +1438,19 @@ Return empty array if user didn't provide any of these facts.`;
         <main className={`flex-1 overflow-hidden bg-white transition-opacity duration-200 ${
           mobileView === 'schools' ? 'block' : 'hidden lg:block'
         }`} style={{ animationDelay: '100ms' }}>
-          {currentView === 'welcome' && (
+          {[STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(currentState) && (
+            <div className="h-full flex items-center justify-center p-6 text-center">
+              <div className="text-slate-600">
+                <p className="text-lg font-medium">Loading conversation...</p>
+              </div>
+            </div>
+          )}
+
+          {currentState === STATES.RESULTS && schools.length === 0 && (
             <WelcomeState onPromptClick={handleSendMessage} />
           )}
 
-          {currentView === 'brief-review' && (
+          {currentState === STATES.RESULTS && schools.length > 0 && (
             <div className="h-full flex items-center justify-center p-6 text-center">
               <div className="text-slate-600">
                 <div className="animate-spin h-8 w-8 border-4 border-teal-200 border-t-teal-600 rounded-full mx-auto mb-4" />
