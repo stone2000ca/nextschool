@@ -33,16 +33,22 @@ function countCompleteFields(school) {
 
 // Determine primary school (best candidate to keep)
 function selectPrimary(schools) {
+  // Normalize: ensure all schools have .data property
+  const normalized = schools.map(s => ({
+    id: s.id,
+    data: s.data || s
+  }));
+
   // Priority 1: claimed status
-  const claimed = schools.find(s => s.data.claimStatus === 'claimed');
+  const claimed = normalized.find(s => s.data.claimStatus === 'claimed');
   if (claimed) return claimed;
 
   // Priority 2: manual source (user-created)
-  const manual = schools.find(s => s.data.dataSource === 'manual' || !s.data.importBatchId);
+  const manual = normalized.find(s => s.data.dataSource === 'manual' || !s.data.importBatchId);
   if (manual) return manual;
 
   // Priority 3: most complete record
-  return schools.reduce((best, current) => 
+  return normalized.reduce((best, current) => 
     countCompleteFields(current) > countCompleteFields(best) ? current : best
   );
 }
