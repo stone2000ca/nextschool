@@ -490,8 +490,17 @@ export default function Consultant() {
       setMessages(msgs);
     }
     
-    // Reset view to welcome for this conversation
-    setCurrentView('welcome');
+    // Map state to view
+    const conversationState = convo.conversationContext?.state || STATES.WELCOME;
+    if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(conversationState)) {
+      setCurrentView('chat');
+    } else if (conversationState === STATES.RESULTS) {
+      setCurrentView('schools');
+    } else if (conversationState === STATES.DEEP_DIVE) {
+      setCurrentView('detail');
+    } else {
+      setCurrentView('chat');
+    }
     setSchools(convo.conversationContext?.schools || []);
     setSelectedSchool(null);
   };
