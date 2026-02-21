@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Building2, BarChart3, Mail, CreditCard, Upload, Settings, Crown, Sparkles } from 'lucide-react';
+import { Building2, BarChart3, Mail, CreditCard, Upload, Settings, Crown, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileEditor from '@/components/school-admin/ProfileEditor';
+import ProfileCompletenessRing from '@/components/school-admin/ProfileCompletenessRing';
 import Analytics from '@/components/school-admin/Analytics';
 import Inquiries from '@/components/school-admin/Inquiries';
 import Subscription from '@/components/school-admin/Subscription';
@@ -87,6 +88,7 @@ export default function SchoolAdmin() {
 
   const navItems = [
     { id: 'profile', label: 'Profile Editor', icon: Building2 },
+    { id: 'completeness', label: 'Profile Checklist', icon: CheckCircle2 },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, locked: school.subscriptionTier === 'free' },
     { id: 'inquiries', label: 'Inquiries', icon: Mail },
     { id: 'subscription', label: 'Subscription', icon: CreditCard },
@@ -163,6 +165,22 @@ export default function SchoolAdmin() {
               onSave={handleSaveSchool}
               isSaving={isSaving}
             />
+          )}
+          
+          {currentView === 'completeness' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Profile Checklist</h2>
+              <p className="text-slate-600 mb-8">Complete your profile to improve visibility to families</p>
+              <ProfileCompletenessRing 
+                school={school}
+                onSectionClick={(sectionId) => {
+                  setCurrentView('profile');
+                  setTimeout(() => {
+                    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
+                }}
+              />
+            </div>
           )}
           
           {currentView === 'analytics' && (
