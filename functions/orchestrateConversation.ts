@@ -25,15 +25,20 @@ Deno.serve(async (req) => {
     const context = conversationContext || {};
     const msgLower = message.toLowerCase();
     
-    // STATE MACHINE: 7 states (strictly deterministic)
+    // STATE MACHINE: 5 states (strictly deterministic)
     const STATES = {
-      GREETING: 'GREETING',
-      INTAKE: 'INTAKE',
+      WELCOME: 'WELCOME',
+      DISCOVERY: 'DISCOVERY',
       BRIEF: 'BRIEF',
-      BRIEF_EDIT: 'BRIEF_EDIT',
-      SEARCHING: 'SEARCHING',
       RESULTS: 'RESULTS',
       DEEP_DIVE: 'DEEP_DIVE'
+    };
+
+    const BRIEF_STATUS = {
+      GENERATING: 'generating',
+      PENDING_REVIEW: 'pending_review',
+      EDITING: 'editing',
+      CONFIRMED: 'confirmed'
     };
     
     let briefEditCount = context.briefEditCount || 0;
