@@ -643,7 +643,7 @@ export default function Consultant() {
         setSortDirection('asc');
         // CRITICAL: Always switch to schools view when schools are returned
         setCurrentView('schools');
-      } else if (response.data.state === STATES.SEARCHING || response.data.state === STATES.RESULTS) {
+      } else if (response.data.state === 'SEARCHING' || response.data.state === 'RESULTS') {
         // No schools found, but we're in search state - keep showing results view in case backend returns schools later
         if (schools.length === 0) {
           setCurrentView('welcome');
