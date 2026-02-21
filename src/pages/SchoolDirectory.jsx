@@ -124,8 +124,24 @@ export default function SchoolDirectory() {
     const matchesSearch = school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          school.city.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRegion = filterRegion === 'all' || school.region === filterRegion;
-    return matchesSearch && matchesRegion;
+    const matchesCountry = filterCountry === 'all' || school.country === filterCountry;
+    const matchesProvince = filterProvince === 'all' || school.provinceState === filterProvince;
+    const matchesGrade = filterGrade === 'all' || (school.gradesServed && school.gradesServed.includes(filterGrade.charAt(0)));
+    const matchesTuition = filterTuition === 'all' || matchesTuitionRange(school.tuition, filterTuition);
+    const matchesCurriculum = filterCurriculum === 'all' || (school.curriculum && school.curriculum.some(c => c === filterCurriculum)) || school.curriculumType === filterCurriculum;
+    return matchesSearch && matchesRegion && matchesCountry && matchesProvince && matchesGrade && matchesTuition && matchesCurriculum;
   });
+
+  const matchesTuitionRange = (tuition, range) => {
+    if (!tuition) return false;
+    switch (range) {
+      case 'under-10k': return tuition < 10000;
+      case '10-20k': return tuition >= 10000 && tuition < 20000;
+      case '20-30k': return tuition >= 20000 && tuition < 30000;
+      case 'over-30k': return tuition >= 30000;
+      default: return false;
+    }
+  };
 
   const displayedSchools = filteredSchools.slice(0, displayedCount);
   const hasMore = displayedCount < filteredSchools.length;
