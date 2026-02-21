@@ -14,6 +14,7 @@ import NotesPanel from '@/components/chat/NotesPanel';
 import ComparisonView from '@/components/schools/ComparisonView';
 import ComparisonTable from '@/components/schools/ComparisonTable';
 import SortControl from '@/components/schools/SortControl';
+import LoginGateModal from '@/components/dialogs/LoginGateModal';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import Navbar from '@/components/navigation/Navbar';
@@ -65,6 +66,9 @@ export default function Consultant() {
   // Limit reached dialog
   const [limitReachedOpen, setLimitReachedOpen] = useState(false);
   
+  // Login gate
+  const [showLoginGate, setShowLoginGate] = useState(false);
+  
   // Progressive loading states
   const [loadingStage, setLoadingStage] = useState(0);
   const loadingStages = [
@@ -83,10 +87,41 @@ export default function Consultant() {
                         currentView !== 'comparison' && 
                         currentView !== 'comparison-table';
 
+  // Dev mode bypass for login gate
+  const isDevMode = new URLSearchParams(window.location.search).get('dev') === 'true';
+
   useEffect(() => {
     checkAuth();
     loadUserLocation();
+    restoreGuestSession();
   }, []);
+
+  // Restore guest session data after login
+  const restoreGuestSession = () => {
+    if (isAuthenticated && user) {
+      const guestData = localStorage.getItem('guestConversationData');
+      if (guestData) {
+        try {
+          const { messages: guestMessages, consultant, conversationContext } = JSON.parse(guestData);
+          // Restore the conversation
+          if (guestMessages && guestMessages.length > 0) {
+            setMessages(guestMessages);
+            setSelectedConsultant(consultant);
+            if (conversationContext) {
+              setCurrentConversation({ 
+                ...currentConversation, 
+                conversationContext 
+              });
+            }
+          }
+          // Clear guest data
+          localStorage.removeItem('guestConversationData');
+        } catch (e) {
+          console.error('Failed to restore guest session:', e);
+        }
+      }
+    }
+  };
 
   const loadUserLocation = async () => {
     // Check localStorage first
@@ -360,6 +395,23 @@ export default function Consultant() {
   };
 
   const handleSendMessage = async (messageText) => {
+    // SOFT LOGIN GATE: Check if user is confirming the Brief without being logged in
+    const isBriefConfirmation = messageText.toLowerCase().includes("that's right") || 
+                                 messageText.toLowerCase().includes("let's see the schools") ||
+                                 messageText.toLowerCase().includes("see the schools");
+    
+    if (isBriefConfirmation && !isAuthenticated && !isDevMode) {
+      // Save current conversation data to localStorage before showing gate
+      localStorage.setItem('guestConversationData', JSON.stringify({
+        messages,
+        consultant: selectedConsultant,
+        conversationContext: currentConversation?.conversationContext || {}
+      }));
+      
+      setShowLoginGate(true);
+      return;
+    }
+
     // Check if user has tokens (skip for premium)
     if (!isPremium && tokenBalance <= 0) {
       setShowUpgradeModal(true);
@@ -617,7 +669,12 @@ Return empty array if user didn't provide any of these facts.`;
   };
 
   const handleToggleShortlist = async (schoolId) => {
-    if (!isAuthenticated || !user) return;
+    // Login gate for shortlist
+    if (!isAuthenticated) {
+      setShowLoginGate(true);
+      return;
+    }
+    if (!user) return;
     
     try {
       const currentShortlist = user.shortlist || [];
@@ -1555,6 +1612,14 @@ Return empty array if user didn't provide any of these facts.`;
             onClose={() => setShowNotesPanel(false)}
           />
         </>
+      )}
+
+      {/* Login Gate Modal */}
+      {showLoginGate && (
+        <LoginGateModal
+          consultantName={selectedConsultant}
+          onClose={() => setShowLoginGate(false)}
+        />
       )}
     </div>
   );
