@@ -1023,12 +1023,10 @@ Return empty array if user didn't provide any of these facts.`;
     }
   }, [messages]);
 
-  // Auto-scroll only when at bottom
+  // FIX 1: Auto-scroll to bottom on new messages
   useEffect(() => {
-    if (!isScrolledUp) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, isScrolledUp]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
 
   const handleScrollDownClick = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1101,30 +1099,6 @@ Return empty array if user didn't provide any of these facts.`;
                   )}
                 </div>
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className={`text-xs px-3 py-1 rounded-full font-medium cursor-help ${
-                      isPremium 
-                        ? 'bg-purple-500/20 text-purple-300' 
-                        : tokenBalance > 50 
-                          ? 'bg-green-500/20 text-green-300'
-                          : tokenBalance > 10
-                            ? 'bg-yellow-500/20 text-yellow-300'
-                            : 'bg-red-500/20 text-red-300'
-                    }`}>
-                      {isPremium ? '∞ tokens' : `${tokenBalance} tokens`}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {isPremium ? (
-                      <p>Chat as much as you like</p>
-                    ) : (
-                      <p>+{getPlanLimits(user?.subscriptionPlan || 'free').dailyReplenishment} tomorrow</p>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
 
               {/* Messages */}
@@ -1534,30 +1508,6 @@ Return empty array if user didn't provide any of these facts.`;
                 )}
               </div>
             </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className={`text-xs px-3 py-1 rounded-full font-medium cursor-help ${
-                    isPremium 
-                      ? 'bg-purple-100 text-purple-700' 
-                      : tokenBalance > 50 
-                        ? 'bg-green-100 text-green-700'
-                        : tokenBalance > 10
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-red-100 text-red-700'
-                  }`}>
-                    {isPremium ? '∞ tokens' : `${tokenBalance} tokens`}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {isPremium ? (
-                    <p>Chat as much as you like</p>
-                  ) : (
-                    <p>+{getPlanLimits(user?.subscriptionPlan || 'free').dailyReplenishment} tomorrow</p>
-                  )}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
           </div>
 
           {/* Messages - Dynamic height with scroll */}
