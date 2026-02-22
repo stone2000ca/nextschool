@@ -131,29 +131,35 @@ Extract ONLY:
 - childName: string or null
 - childGrade: number or null (e.g., 3 for Grade 3)
 - locationArea: string (city name)
-- maxTuition: "unlimited" OR number OR null
+- budgetMin: number or null (minimum budget)
+- budgetMax: number or null (maximum budget)
+- maxTuition: "unlimited" OR number OR null (for backward compatibility)
 - interests: array of strings or null
 - priorities: array of strings or null (FIX 4: When user says "arts", "music", "theater", "drama" → priorities: ["Arts"]. When "STEM", "science", "math" → priorities: ["STEM"]. When "sports" → priorities: ["Sports"]. When "languages", "French", "Spanish" → priorities: ["Languages"])
 - concerns: array or null
 - dealbreakers: array or null
 - learning_needs: array or null (e.g., "ADHD", "ASD", "dyslexia", "ESL", "gifted", "learning disability")
 - curriculumPreference: array or null (e.g., "French immersion", "IB", "AP", "Montessori", "progressive", "traditional")
+- programPreferences: array or null (e.g., "outdoor education", "French immersion", "arts focus", "STEM", "athletics", "music program")
 - religiousPreference: string or null
 - boardingPreference: string or null
-- genderPreference: "All Boys" OR "All Girls" OR "Co-Ed" OR null
+- genderPreference: "Co-Ed" OR "All Boys" OR "All Girls" OR null
+- classSize: string or null (e.g., "small", "standard", "15 students", "intimate")
 - requestedSchools: array of school names or null
 - financialAidInterest: boolean or null (triggered by "financial aid", "scholarship", "afford", "budget tight")
-- schoolSize: string or null (e.g., "small classes", "individual attention", "intimate environment")
 - specialNeeds: array or null (e.g., "ADHD", "ASD", "dyslexia", "ESL support")
 
 EXAMPLES:
 - "She has ADHD" → learning_needs: ["ADHD"], specialNeeds: ["ADHD"]
-- "Looking for French immersion" → curriculumPreference: ["French immersion"]
+- "Looking for French immersion" → curriculumPreference: ["French immersion"], programPreferences: ["French immersion"]
 - "Need financial aid" → financialAidInterest: true
-- "Small class sizes important" → schoolSize: "small classes"
-- "We want arts and small classes" → priorities: ["Arts", "Small classes"]
+- "Small class sizes important" → classSize: "small"
+- "We want arts and small classes" → priorities: ["Arts"], classSize: "small"
 - "Music and theater are important" → priorities: ["Arts"]
-- "Strong in STEM" → priorities: ["STEM"]
+- "Strong in STEM" → priorities: ["STEM"], programPreferences: ["STEM"]
+- "Co-ed school preferred" → genderPreference: "Co-Ed"
+- "Budget $20k-$35k" → budgetMin: 20000, budgetMax: 35000
+- "Outdoor education important" → programPreferences: ["outdoor education"]
 
 Return ONLY valid JSON. Do NOT explain.`;
 
@@ -165,6 +171,8 @@ Return ONLY valid JSON. Do NOT explain.`;
             childName: { type: ["string", "null"] },
             childGrade: { type: ["number", "null"] },
             locationArea: { type: ["string", "null"] },
+            budgetMin: { type: ["number", "null"] },
+            budgetMax: { type: ["number", "null"] },
             maxTuition: { type: ["number", "string", "null"] },
             interests: { type: ["array", "null"], items: { type: "string" } },
             priorities: { type: ["array", "null"], items: { type: "string" } },
@@ -172,12 +180,13 @@ Return ONLY valid JSON. Do NOT explain.`;
             dealbreakers: { type: ["array", "null"], items: { type: "string" } },
             learning_needs: { type: ["array", "null"], items: { type: "string" } },
             curriculumPreference: { type: ["array", "null"], items: { type: "string" } },
+            programPreferences: { type: ["array", "null"], items: { type: "string" } },
             religiousPreference: { type: ["string", "null"] },
             boardingPreference: { type: ["string", "null"] },
             genderPreference: { type: ["string", "null"] },
+            classSize: { type: ["string", "null"] },
             requestedSchools: { type: ["array", "null"], items: { type: "string" } },
             financialAidInterest: { type: ["boolean", "null"] },
-            schoolSize: { type: ["string", "null"] },
             specialNeeds: { type: ["array", "null"], items: { type: "string" } }
           }
         }
@@ -522,15 +531,20 @@ Return ONLY valid JSON. Do NOT explain.`;
        
        // Only generate brief if not in editing mode
        try {
-         const { childName, childGrade, locationArea, budgetRange, maxTuition, interests, priorities, dealbreakers, currentSituation, academicStrengths } = conversationFamilyProfile;
+         const { childName, childGrade, locationArea, budgetRange, budgetMin, budgetMax, maxTuition, interests, priorities, dealbreakers, currentSituation, academicStrengths, genderPreference, classSize, programPreferences } = conversationFamilyProfile;
          const interestsStr = interests?.length > 0 ? interests.join(', ') : '';
          const prioritiesStr = priorities?.length > 0 ? priorities.join(', ') : '';
          const strengthsStr = academicStrengths?.length > 0 ? academicStrengths.join(', ') : '';
          const dealbreakersStr = dealbreakers?.length > 0 ? dealbreakers.join(', ') : '';
+         const programPreferencesStr = programPreferences?.length > 0 ? programPreferences.join(', ') : '';
 
          let budgetDisplay = budgetRange || '(not specified)';
          if (maxTuition === 'unlimited') {
            budgetDisplay = 'Budget is flexible';
+         } else if (budgetMin && budgetMax) {
+           budgetDisplay = `$${budgetMin.toLocaleString()}-$${budgetMax.toLocaleString()}/year`;
+         } else if (budgetMax) {
+           budgetDisplay = `Up to $${budgetMax.toLocaleString()}/year`;
          } else if (maxTuition) {
            budgetDisplay = `$${maxTuition}/year`;
          }
@@ -560,7 +574,10 @@ Return ONLY valid JSON. Do NOT explain.`;
     - GRADE: ${childGrade ? 'Grade ' + childGrade : '(not specified)'}
     - LOCATION: ${locationArea || '(not specified)'}
     - BUDGET: ${budgetDisplay}
+    - GENDER PREFERENCE: ${genderPreference || '(not specified)'}
+    - CLASS SIZE: ${classSize || '(not specified)'}
     - CURRICULUM: ${curriculumStr || '(not specified)'}
+    - PROGRAM PREFERENCES: ${programPreferencesStr || '(not specified)'}
     - LEARNING NEEDS: ${learningNeedsStr || '(not specified)'}
     - INTERESTS: ${interestsStr || '(not specified)'}
     - PRIORITIES: ${prioritiesStr || '(not specified)'}
@@ -572,8 +589,8 @@ Return ONLY valid JSON. Do NOT explain.`;
     • Student: [name], Grade [X]
     • Location: [city/area]
     • Budget: $[amount]/year
-    • Top priorities: [list]
-    ${learningNeedsStr ? '• Learning needs: [list from data]\n' : ''}${dealbreakersStr ? '• Dealbreakers: [list]\n' : ''}${curriculumStr || interestsStr ? '• Key context: [additional info]\n' : ''}
+    ${genderPreference ? '• Gender preference: [value]\n' : ''}${classSize ? '• Class size: [value]\n' : ''}• Top priorities: [list]
+    ${learningNeedsStr ? '• Learning needs: [list from data]\n' : ''}${programPreferencesStr ? '• Program preferences: [list from data]\n' : ''}${dealbreakersStr ? '• Dealbreakers: [list]\n' : ''}${curriculumStr || interestsStr ? '• Key context: [additional info]\n' : ''}
     Does that capture it? Anything to adjust?
 
     YOU ARE JACKIE - Warm intro, structured data.`
@@ -593,7 +610,10 @@ Return ONLY valid JSON. Do NOT explain.`;
     - GRADE: ${childGrade ? 'Grade ' + childGrade : '(not specified)'}
     - LOCATION: ${locationArea || '(not specified)'}
     - BUDGET: ${budgetDisplay}
+    - GENDER PREFERENCE: ${genderPreference || '(not specified)'}
+    - CLASS SIZE: ${classSize || '(not specified)'}
     - CURRICULUM: ${curriculumStr || '(not specified)'}
+    - PROGRAM PREFERENCES: ${programPreferencesStr || '(not specified)'}
     - LEARNING NEEDS: ${learningNeedsStr || '(not specified)'}
     - INTERESTS: ${interestsStr || '(not specified)'}
     - PRIORITIES: ${prioritiesStr || '(not specified)'}
@@ -605,8 +625,8 @@ Return ONLY valid JSON. Do NOT explain.`;
     • Student: [name], Grade [X]
     • Location: [city/area]
     • Budget: $[amount]/year
-    • Top priorities: [list]
-    ${learningNeedsStr ? '• Learning needs: [list from data]\n' : ''}${dealbreakersStr ? '• Dealbreakers: [list]\n' : ''}${curriculumStr || interestsStr ? '• Key context: [additional info]\n' : ''}
+    ${genderPreference ? '• Gender preference: [value]\n' : ''}${classSize ? '• Class size: [value]\n' : ''}• Top priorities: [list]
+    ${learningNeedsStr ? '• Learning needs: [list from data]\n' : ''}${programPreferencesStr ? '• Program preferences: [list from data]\n' : ''}${dealbreakersStr ? '• Dealbreakers: [list]\n' : ''}${curriculumStr || interestsStr ? '• Key context: [additional info]\n' : ''}
     Sound right?
 
     YOU ARE LIAM - Direct intro, structured data.`;
