@@ -269,12 +269,14 @@ Return ONLY valid JSON. Do NOT explain.`;
 
     // Rule 3: BRIEF state handling
     if (currentState === STATES.BRIEF) {
-      const msgLowerTrim = msgLower.trim();
-      const isConfirming = /\b(yes|yeah|yep|confirmed|correct|perfect|great|sounds good|looks good|go ahead|that's right|that's perfect|perfect)\b/i.test(msgLowerTrim);
-      const isAdjusting = /\b(change|adjust|edit|actually|wait|hold on|no|not right|different|let me|redo)\b/i.test(msgLowerTrim);
+      console.log('[BRIEF STATE]', {briefStatus, msgLower});
+      
+      const isConfirming = /(looks right|show me schools|yes|yeah|yep|correct|perfect|great|sounds good|looks good|go ahead|that's right|that's perfect)/i.test(msgLower);
+      const isAdjusting = /\b(change|adjust|edit|actually|wait|hold on|no|not right|different|let me|redo)\b/i.test(msgLower);
       
       if (briefStatus === BRIEF_STATUS.PENDING_REVIEW || briefStatus === BRIEF_STATUS.EDITING) {
         if (isConfirming) {
+          console.log('[BRIEF->RESULTS] Confirmation detected, transitioning to RESULTS');
           currentState = STATES.RESULTS;
           briefStatus = BRIEF_STATUS.CONFIRMED;
         } else if (isAdjusting) {
@@ -288,6 +290,7 @@ Return ONLY valid JSON. Do NOT explain.`;
         }
       } else if (briefStatus === BRIEF_STATUS.GENERATING) {
         briefStatus = BRIEF_STATUS.PENDING_REVIEW;
+        console.log('[BRIEF] Set briefStatus to pending_review');
       }
     }
 
@@ -558,6 +561,13 @@ Return ONLY valid JSON. Do NOT explain.`;
          });
          }
 
+         // Set briefStatus to pending_review after generating
+         if (briefStatus === BRIEF_STATUS.GENERATING) {
+           briefStatus = BRIEF_STATUS.PENDING_REVIEW;
+           context.briefStatus = briefStatus;
+           console.log('[BRIEF GENERATED] Set briefStatus to pending_review');
+         }
+
          return Response.json({
          message: briefMessage,
          state: STATES.BRIEF,
@@ -566,7 +576,7 @@ Return ONLY valid JSON. Do NOT explain.`;
          conversationContext: context,
          schools: []
          });
-    }
+         }
     
     // STEP 4: School search only in RESULTS/DEEP_DIVE states (auto-transition from BRIEF)
     if (currentState === STATES.BRIEF && briefStatus === BRIEF_STATUS.CONFIRMED) {
