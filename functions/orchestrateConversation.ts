@@ -295,7 +295,7 @@ Return ONLY valid JSON. Do NOT explain.`;
           currentState = STATES.RESULTS;
           briefStatus = BRIEF_STATUS.CONFIRMED;
         } else if (isAdjusting) {
-          briefEditCount++;
+          // Don't increment here - only increment when actual changes are provided
           if (briefEditCount >= MAX_BRIEF_EDITS) {
             currentState = STATES.RESULTS;
             briefStatus = BRIEF_STATUS.CONFIRMED;
@@ -303,10 +303,15 @@ Return ONLY valid JSON. Do NOT explain.`;
             briefStatus = BRIEF_STATUS.EDITING;
           }
                 } else if (briefStatus === BRIEF_STATUS.EDITING) {
-          // User provided specific adjustments - regenerate brief with merged entities
+          // User provided specific adjustments - increment count and regenerate brief
           console.log('[BRIEF ADJUST] User provided specific changes, regenerating brief with merged entities');
-          briefStatus = BRIEF_STATUS.GENERATING;
           briefEditCount++;
+          if (briefEditCount >= MAX_BRIEF_EDITS) {
+            currentState = STATES.RESULTS;
+            briefStatus = BRIEF_STATUS.CONFIRMED;
+          } else {
+            briefStatus = BRIEF_STATUS.GENERATING;
+          }
         }
       } else if (briefStatus === BRIEF_STATUS.GENERATING) {
         briefStatus = BRIEF_STATUS.PENDING_REVIEW;
