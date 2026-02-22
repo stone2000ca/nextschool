@@ -586,11 +586,10 @@ Return ONLY valid JSON. Do NOT explain.`;
     UNIFIED FORMAT (FIX 14) - Use this exact structure:
     [Optional warm intro sentence - Jackie tone]
     
-    • Student: [name], Grade [X]
-    • Location: [city/area]
-    • Budget: $[amount]/year
-    ${genderPreference ? '• Gender preference: [value]\n' : ''}${classSize ? '• Class size: [value]\n' : ''}• Top priorities: [list]
-    ${learningNeedsStr ? '• Learning needs: [list from data]\n' : ''}${programPreferencesStr ? '• Program preferences: [list from data]\n' : ''}${dealbreakersStr ? '• Dealbreakers: [list]\n' : ''}${curriculumStr || interestsStr ? '• Key context: [additional info]\n' : ''}
+    • Student: ${childDisplayName}, Grade ${childGrade || '(not specified)'}
+    • Location: ${locationArea || '(not specified)'}
+    • Budget: ${budgetDisplay}
+    ${genderPreference ? '• Gender preference: ' + genderPreference + '\n' : ''}${classSize ? '• Class size: ' + classSize + '\n' : ''}${prioritiesStr ? '• Top priorities: ' + prioritiesStr + '\n' : ''}${learningNeedsStr ? '• Learning needs: ' + learningNeedsStr + '\n' : ''}${programPreferencesStr ? '• Program preferences: ' + programPreferencesStr + '\n' : ''}${dealbreakersStr ? '• Dealbreakers: ' + dealbreakersStr + '\n' : ''}${curriculumStr ? '• Curriculum: ' + curriculumStr + '\n' : ''}${interestsStr ? '• Interests: ' + interestsStr + '\n' : ''}
     Does that capture it? Anything to adjust?
 
     YOU ARE JACKIE - Warm intro, structured data.`
@@ -622,11 +621,10 @@ Return ONLY valid JSON. Do NOT explain.`;
     UNIFIED FORMAT (FIX 14) - Use this exact structure:
     [Optional direct intro sentence - Liam tone]
     
-    • Student: [name], Grade [X]
-    • Location: [city/area]
-    • Budget: $[amount]/year
-    ${genderPreference ? '• Gender preference: [value]\n' : ''}${classSize ? '• Class size: [value]\n' : ''}• Top priorities: [list]
-    ${learningNeedsStr ? '• Learning needs: [list from data]\n' : ''}${programPreferencesStr ? '• Program preferences: [list from data]\n' : ''}${dealbreakersStr ? '• Dealbreakers: [list]\n' : ''}${curriculumStr || interestsStr ? '• Key context: [additional info]\n' : ''}
+    • Student: ${childDisplayName}, Grade ${childGrade || '(not specified)'}
+    • Location: ${locationArea || '(not specified)'}
+    • Budget: ${budgetDisplay}
+    ${genderPreference ? '• Gender preference: ' + genderPreference + '\n' : ''}${classSize ? '• Class size: ' + classSize + '\n' : ''}${prioritiesStr ? '• Top priorities: ' + prioritiesStr + '\n' : ''}${learningNeedsStr ? '• Learning needs: ' + learningNeedsStr + '\n' : ''}${programPreferencesStr ? '• Program preferences: ' + programPreferencesStr + '\n' : ''}${dealbreakersStr ? '• Dealbreakers: ' + dealbreakersStr + '\n' : ''}${curriculumStr ? '• Curriculum: ' + curriculumStr + '\n' : ''}${interestsStr ? '• Interests: ' + interestsStr + '\n' : ''}
     Sound right?
 
     YOU ARE LIAM - Direct intro, structured data.`;
