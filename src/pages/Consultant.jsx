@@ -1274,7 +1274,7 @@ Return empty array if user didn't provide any of these facts.`;
                   <>
                     <Button 
                       variant="outline" 
-                      onClick={() => handleSendMessage("That's right, let's see the schools")}
+                      onClick={() => handleSendMessage("That looks right - show me schools")}
                       disabled={isTyping}
                       className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
                         selectedConsultant === 'Jackie' 
@@ -1282,15 +1282,15 @@ Return empty array if user didn't provide any of these facts.`;
                           : 'bg-[#6B9DAD]/20 border-[#6B9DAD] text-[#6B9DAD] hover:bg-[#6B9DAD]/30'
                       }`}
                     >
-                      That's right, let's see the schools
+                      That looks right - show me schools
                     </Button>
                     <Button 
                       variant="outline" 
-                      onClick={() => handleSendMessage("I'd like to adjust something")}
+                      onClick={() => handleSendMessage("I would like to adjust")}
                       disabled={isTyping}
                       className="text-sm px-4 py-2 rounded-full bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
                     >
-                      I'd like to adjust something
+                      I would like to adjust
                     </Button>
                   </>
                 )}

@@ -216,6 +216,17 @@ Return ONLY valid JSON. Do NOT explain.`;
     let currentState = context.state || STATES.WELCOME;
     let briefStatus = context.briefStatus || null;
 
+    // CRITICAL: Reset state for new conversations
+    // If this is the first user message (conversationHistoryLength <= 1), force WELCOME state
+    // This handles the case where context persists from a previous conversation
+    const conversationHistoryLength = conversationHistory?.length || 0;
+    if (conversationHistoryLength <= 1 && currentState !== STATES.WELCOME && currentState !== STATES.DISCOVERY) {
+      console.log('[STATE RESET] Resetting stale state from', currentState, 'to WELCOME for new conversation');
+      currentState = STATES.WELCOME;
+      briefStatus = null;
+      briefEditCount = 0;
+    }
+
     // Rule 1: WELCOME -> DISCOVERY on first message
     if (currentState === STATES.WELCOME && message) {
       currentState = STATES.DISCOVERY;
