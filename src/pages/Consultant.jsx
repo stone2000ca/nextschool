@@ -470,6 +470,12 @@ export default function Consultant() {
       sessionId
     }).catch(err => console.error('Failed to track:', err));
 
+    // CRITICAL: Reset all conversation state for a fresh start
+    setCurrentConversation(null);
+    setSchools([]);
+    setBriefStatus(null);
+    setOnboardingPhase(null);
+    
     // Initialize first message with consultant's greeting
     const greeting = {
       role: 'assistant',
@@ -613,11 +619,10 @@ export default function Consultant() {
         } : null
       });
 
-      // FIX 17: Update briefStatus from response and ensure it's synced
+      // CRITICAL: Update briefStatus from response immediately
       const newBriefStatus = response.data.briefStatus || null;
-      if (newBriefStatus !== briefStatus) {
-        setBriefStatus(newBriefStatus);
-      }
+      setBriefStatus(newBriefStatus);
+      console.log('[BRIEF STATUS] Updated to:', newBriefStatus);
       
       // CRITICAL FIX: Update conversation context with state AND schools
       const updatedContext = { 
