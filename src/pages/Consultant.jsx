@@ -1438,14 +1438,6 @@ Return empty array if user didn't provide any of these facts.`;
         <main className={`flex-1 overflow-hidden bg-white transition-opacity duration-200 ${
           mobileView === 'schools' ? 'block' : 'hidden lg:block'
         }`} style={{ animationDelay: '100ms' }}>
-          {[STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(currentState) && (
-            <div className="h-full flex items-center justify-center p-6 text-center">
-              <div className="text-slate-600">
-                <p className="text-lg font-medium">Loading conversation...</p>
-              </div>
-            </div>
-          )}
-
           {currentState === STATES.RESULTS && schools.length === 0 && (
             <WelcomeState onPromptClick={handleSendMessage} />
           )}
