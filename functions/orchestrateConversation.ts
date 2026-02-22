@@ -207,7 +207,12 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
     for (const [key, value] of Object.entries(extractedData)) {
       if (value !== null && value !== undefined) {
-        context.extractedEntities[key] = value;
+              // Merge arrays instead of replacing
+            if (Array.isArray(value) && Array.isArray(context.extractedEntities[key]) && context.extractedEntities[key].length > 0) {
+              context.extractedEntities[key] = [...new Set([...context.extractedEntities[key], ...value])];
+            } else {
+              context.extractedEntities[key] = value;
+            }
       }
     }
     
@@ -219,7 +224,12 @@ Return ONLY valid JSON. Do NOT explain.`;
           if (existing === null || existing === undefined || 
               (Array.isArray(existing) && existing.length === 0) ||
               (Array.isArray(value) && value.length > 0)) {
-            conversationFamilyProfile[key] = value;
+                          // Merge arrays instead of replacing in FamilyProfile
+                if (Array.isArray(value) && Array.isArray(existing) && existing.length > 0) {
+                  conversationFamilyProfile[key] = [...new Set([...existing, ...value])];
+                } else {
+                  conversationFamilyProfile[key] = value;
+                }
           }
         }
       }
@@ -287,6 +297,11 @@ Return ONLY valid JSON. Do NOT explain.`;
           } else {
             briefStatus = BRIEF_STATUS.EDITING;
           }
+                } else if (briefStatus === BRIEF_STATUS.EDITING) {
+          // User provided specific adjustments - regenerate brief with merged entities
+          console.log('[BRIEF ADJUST] User provided specific changes, regenerating brief with merged entities');
+          briefStatus = BRIEF_STATUS.GENERATING;
+          briefEditCount++;
         }
       } else if (briefStatus === BRIEF_STATUS.GENERATING) {
         briefStatus = BRIEF_STATUS.PENDING_REVIEW;
