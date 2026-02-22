@@ -617,14 +617,24 @@ export default function Consultant() {
         setBriefStatus(response.data.briefStatus);
       }
       
-      // Update conversation context with state
-      if (response.data.state && currentConversation) {
-        const updatedContext = { 
-          ...currentConversation.conversationContext, 
-          state: response.data.state,
-          briefStatus: response.data.briefStatus
-        };
+      // CRITICAL FIX: Update conversation context with state AND schools
+      const updatedContext = { 
+        ...(currentConversation?.conversationContext || {}), 
+        state: response.data.state,
+        briefStatus: response.data.briefStatus,
+        schools: response.data.schools || [],
+        conversationId: currentConversation?.id || null
+      };
+      
+      if (currentConversation) {
         setCurrentConversation({ ...currentConversation, conversationContext: updatedContext });
+      } else {
+        // For guests without a conversation object, create a temporary one
+        setCurrentConversation({ 
+          id: null, 
+          conversationContext: updatedContext,
+          messages: []
+        });
       }
 
       // Map backend state to currentView
@@ -760,9 +770,10 @@ Return empty array if user didn't provide any of these facts.`;
        }
 
        // Update conversation if authenticated
-       if (isAuthenticated && currentConversation) {
+       if (isAuthenticated && currentConversation && currentConversation.id) {
          await base44.entities.ChatHistory.update(currentConversation.id, {
-           messages: finalMessages
+           messages: finalMessages,
+           conversationContext: updatedContext
          });
 
          // Count user messages to determine when to generate title
