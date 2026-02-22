@@ -1228,9 +1228,10 @@ Return empty array if user didn't provide any of these facts.`;
                 lastAIMessage.content.includes("needs adjustment")
               );
               
+              // FIX 17: Show chips when in BRIEF state with pending_review/editing status OR initial greeting
               const shouldShowChips = showResponseChips || 
-                                      onboardingPhase === 'confirm_brief' || 
-                                      currentConversation?.conversationContext?.state === 'BRIEF' ||
+                                      (currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus)) ||
+                                      onboardingPhase === 'confirm_brief' ||
                                       isBriefMessage;
               
                 return shouldShowChips;

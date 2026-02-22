@@ -123,7 +123,7 @@ Extract ONLY:
 - locationArea: string (city name)
 - maxTuition: "unlimited" OR number OR null
 - interests: array of strings or null
-- priorities: array of strings or null
+- priorities: array of strings or null (FIX 4: Include "Arts", "STEM", "Sports", "Languages" when mentioned as important/priorities)
 - concerns: array or null
 - dealbreakers: array or null
 - learning_needs: array or null (e.g., "ADHD", "ASD", "dyslexia", "ESL", "gifted", "learning disability")
@@ -141,6 +141,9 @@ EXAMPLES:
 - "Looking for French immersion" → curriculumPreference: ["French immersion"]
 - "Need financial aid" → financialAidInterest: true
 - "Small class sizes important" → schoolSize: "small classes"
+- "We want arts and small classes" → priorities: ["Arts", "Small classes"]
+- "Music and theater are important" → priorities: ["Arts"]
+- "Strong in STEM" → priorities: ["STEM"]
 
 Return ONLY valid JSON. Do NOT explain.`;
 
@@ -219,20 +222,23 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
 
     // Rule 2: DISCOVERY -> BRIEF when Tier 1 data is met (entity-based, NOT message count)
-    // FIX 10: QUESTION-FIRST GUARD - Stay in DISCOVERY if user asks a question
+    // FIX 10: QUESTION-FIRST GUARD - Stay in DISCOVERY if user asks a question ANYWHERE in their message
     if (currentState === STATES.DISCOVERY) {
       const hasLocation = !!(conversationFamilyProfile?.locationArea);
       const hasGradeOrCurriculum = !!(conversationFamilyProfile?.childGrade ||
         conversationFamilyProfile?.curriculumPreference?.length > 0 ||
         conversationFamilyProfile?.schoolType);
       
-      // Enhanced question detection: Check if user's message is a question
-      const isQuestion = message.endsWith('?') || 
-                        /^(what is|what's|how does|how do|do schools|can i|can you|is it possible|are there|will|would|could|where|when|why|who|which)/i.test(message.trim());
+      // CRITICAL: Check if the message contains a question ANYWHERE (not just at start)
+      const hasQuestionMark = message.includes('?');
+      const hasQuestionPattern = /(what is|what's|what are|how does|how do|how can|do schools|can i|can you|is it possible|is there|are there|will|would|could|where|when|why|who|which|tell me about|explain)/i.test(message);
+      const isQuestion = hasQuestionMark || hasQuestionPattern;
       
       if (hasLocation && hasGradeOrCurriculum && !isQuestion) {
         currentState = STATES.BRIEF;
         briefStatus = BRIEF_STATUS.GENERATING;
+      } else if (isQuestion) {
+        console.log('[QUESTION-FIRST GUARD] Question detected, staying in DISCOVERY');
       }
     }
 
