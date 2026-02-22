@@ -126,12 +126,21 @@ Extract ONLY:
 - priorities: array of strings or null
 - concerns: array or null
 - dealbreakers: array or null
-- learning_needs: array or null
-- curriculumPreference: array or null
+- learning_needs: array or null (e.g., "ADHD", "ASD", "dyslexia", "ESL", "gifted", "learning disability")
+- curriculumPreference: array or null (e.g., "French immersion", "IB", "AP", "Montessori", "progressive", "traditional")
 - religiousPreference: string or null
 - boardingPreference: string or null
 - genderPreference: "All Boys" OR "All Girls" OR "Co-Ed" OR null
 - requestedSchools: array of school names or null
+- financialAidInterest: boolean or null (triggered by "financial aid", "scholarship", "afford", "budget tight")
+- schoolSize: string or null (e.g., "small classes", "individual attention", "intimate environment")
+- specialNeeds: array or null (e.g., "ADHD", "ASD", "dyslexia", "ESL support")
+
+EXAMPLES:
+- "She has ADHD" → learning_needs: ["ADHD"], specialNeeds: ["ADHD"]
+- "Looking for French immersion" → curriculumPreference: ["French immersion"]
+- "Need financial aid" → financialAidInterest: true
+- "Small class sizes important" → schoolSize: "small classes"
 
 Return ONLY valid JSON. Do NOT explain.`;
 
@@ -153,7 +162,10 @@ Return ONLY valid JSON. Do NOT explain.`;
             religiousPreference: { type: ["string", "null"] },
             boardingPreference: { type: ["string", "null"] },
             genderPreference: { type: ["string", "null"] },
-            requestedSchools: { type: ["array", "null"], items: { type: "string" } }
+            requestedSchools: { type: ["array", "null"], items: { type: "string" } },
+            financialAidInterest: { type: ["boolean", "null"] },
+            schoolSize: { type: ["string", "null"] },
+            specialNeeds: { type: ["array", "null"], items: { type: "string" } }
           }
         }
       });
@@ -207,13 +219,18 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
 
     // Rule 2: DISCOVERY -> BRIEF when Tier 1 data is met (entity-based, NOT message count)
+    // FIX #1: QUESTION-FIRST GUARD - Stay in DISCOVERY if user asks a question
     if (currentState === STATES.DISCOVERY) {
       const hasLocation = !!(conversationFamilyProfile?.locationArea);
       const hasGradeOrCurriculum = !!(conversationFamilyProfile?.childGrade ||
         conversationFamilyProfile?.curriculumPreference?.length > 0 ||
         conversationFamilyProfile?.schoolType);
       
-      if (hasLocation && hasGradeOrCurriculum) {
+      // Check if user's message is a question
+      const isQuestion = message.endsWith('?') || 
+                        /^(what is|how does|how do|do schools|can i|is it possible|are there|will|would|could)/i.test(message.trim());
+      
+      if (hasLocation && hasGradeOrCurriculum && !isQuestion) {
         currentState = STATES.BRIEF;
         briefStatus = BRIEF_STATUS.GENERATING;
       }
@@ -301,6 +318,12 @@ Return ONLY valid JSON. Do NOT explain.`;
     🚫 IF THEY SAID GRADE → NEVER ask grade
     🚫 ONE QUESTION ONLY. NO filler.
 
+    TONE & LANGUAGE RULES:
+    - Never call any budget "generous" or "modest". Use neutral factual language.
+    - If parent expresses budget worry, validate their concern first, then explain what is realistic.
+    - If parent mentions ADHD, ASD, ESL, or learning differences, name them explicitly. Do NOT euphemize as "unique learning style".
+    - If the parent appears to have limited English (simple grammar, mentions ESL/newcomer), use shorter sentences and simpler vocabulary.
+
     CRITICAL INSTRUCTIONS:
     - Do NOT mention any specific school names
     - Do NOT suggest or recommend schools
@@ -312,6 +335,12 @@ Return ONLY valid JSON. Do NOT explain.`;
     🚫 IF THEY SAID BUDGET → NEVER ask budget
     🚫 IF THEY SAID GRADE → NEVER ask grade
     🚫 ONE QUESTION ONLY. NO filler.
+
+    TONE & LANGUAGE RULES:
+    - Never call any budget "generous" or "modest". Use neutral factual language.
+    - If parent expresses budget worry, validate their concern first, then explain what is realistic.
+    - If parent mentions ADHD, ASD, ESL, or learning differences, name them explicitly. Do NOT euphemize as "unique learning style".
+    - If the parent appears to have limited English (simple grammar, mentions ESL/newcomer), use shorter sentences and simpler vocabulary.
 
     CRITICAL INSTRUCTIONS:
     - Do NOT mention any specific school names
@@ -337,7 +366,21 @@ Return ONLY valid JSON. Do NOT explain.`;
            prompt: responsePrompt
          });
 
-         discoveryMessage = aiResponse?.response || aiResponse || 'Tell me more about your child.';
+         let discoveryMessageRaw = aiResponse?.response || aiResponse || 'Tell me more about your child.';
+         
+         // FIX #5: RESPONSE VALIDATOR - Remove school names during DISCOVERY
+         if (currentSchools && currentSchools.length > 0) {
+           currentSchools.forEach(school => {
+             const escapedName = school.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+             const regex = new RegExp(`\\b${escapedName}\\b`, 'gi');
+             if (regex.test(discoveryMessageRaw)) {
+               console.warn('[VALIDATOR] Removed school name from DISCOVERY response:', school.name);
+               discoveryMessageRaw = discoveryMessageRaw.replace(regex, '');
+             }
+           });
+         }
+         
+         discoveryMessage = discoveryMessageRaw;
        } catch (e) {
          console.error('[ERROR] DISCOVERY response failed:', e.message);
          discoveryMessage = 'Tell me about your child — what grade are they in and what matters most to you?';
@@ -372,35 +415,78 @@ Return ONLY valid JSON. Do NOT explain.`;
          // Smart child name display: use actual name if available, otherwise "your child"
          const childDisplayName = childName ? childName : 'your child';
 
+         // FIX #6: UNIFIED BRIEF FORMAT + FIX #2: STOP FABRICATING PERSONALITY
+         const learningNeeds = conversationFamilyProfile.learning_needs || conversationFamilyProfile.specialNeeds || [];
+         const learningNeedsStr = learningNeeds.length > 0 ? learningNeeds.join(', ') : '';
+         const curriculumStr = conversationFamilyProfile.curriculumPreference?.length > 0 ? conversationFamilyProfile.curriculumPreference.join(', ') : '';
+         
          const briefPrompt = consultantName === 'Jackie'
-           ? `[STATE: BRIEF] Generate a warm, narrative brief. Include child name, grade, location, interests, priorities, budget. Use these values EXACTLY. No school names. End: "Does that capture it? Anything to adjust?"
-    Max 150 words.
+           ? `[STATE: BRIEF] Generate a factual brief summary using the structured format below. Use ONLY what was explicitly stated by the parent.
 
-    CRITICAL: Always use the child's actual name provided below in the CHILD field. If it says "your child", use "your child". NEVER output literal [Child], [child], [child's name], or any bracketed placeholder text in your response.
-
-    FAMILY DATA:
-    - CHILD: ${childDisplayName}
-    - GRADE: ${childGrade ? \`Grade \${childGrade}\` : '(not specified)'}
-    - LOCATION: ${locationArea || '(not specified)'}
-    - INTERESTS: ${interestsStr || '(not specified)'}
-    - PRIORITIES: ${prioritiesStr || '(not specified)'}
-    - BUDGET: ${budgetDisplay}
-
-    YOU ARE JACKIE - Warm, narrative style.`
-           : `[STATE: BRIEF] Generate a direct, executive-style brief with bullets. Include child name, grade, location, interests, priorities, budget. Use these values EXACTLY. No school names. End: "Sound right?"
-    Max 150 words.
-
-    CRITICAL: Always use the child's actual name provided below in the CHILD field. If it says "your child", use "your child". NEVER output literal [Child], [child], [child's name], or any bracketed placeholder text in your response.
+    CRITICAL RULES - DO NOT VIOLATE:
+    - Do NOT invent personality traits, motivations, or character descriptions that were not explicitly stated by the parent.
+    - If the parent said the child is struggling or has ADHD/learning differences, acknowledge that plainly and respectfully. Do NOT romanticize it.
+    - If no personality was described, skip that section entirely.
+    - Never use phrases like "bright and curious", "eager to explore the world", "joyful inquisitiveness" unless the parent used those exact words.
+    - If parent mentions multiple children with different grades, list each child separately by name/grade.
+    - Never call any budget "generous" or "modest". Use neutral factual language.
+    - If parent mentions ADHD, ASD, ESL, or learning differences, name them explicitly in the Brief. Do NOT euphemize as "unique learning style".
 
     FAMILY DATA:
     - CHILD: ${childDisplayName}
     - GRADE: ${childGrade ? \`Grade \${childGrade}\` : '(not specified)'}
     - LOCATION: ${locationArea || '(not specified)'}
+    - BUDGET: ${budgetDisplay}
+    - CURRICULUM: ${curriculumStr || '(not specified)'}
+    - LEARNING NEEDS: ${learningNeedsStr || '(not specified)'}
     - INTERESTS: ${interestsStr || '(not specified)'}
     - PRIORITIES: ${prioritiesStr || '(not specified)'}
-    - BUDGET: ${budgetDisplay}
+    - DEALBREAKERS: ${dealbreakersStr || '(not specified)'}
 
-    YOU ARE LIAM - Direct, strategic style.`;
+    FORMAT (use this structure):
+    [Optional warm intro sentence]
+    
+    Student: [name], Grade [X]
+    Location: [city/area]
+    Budget: $[amount]/year
+    Top priorities: [list]
+    ${learningNeedsStr ? 'Learning needs: [list from data]\n' : ''}${dealbreakersStr ? 'Dealbreakers: [list]\n' : ''}${curriculumStr || interestsStr ? 'Key context: [additional info]\n' : ''}
+    Does that capture it? Anything to adjust?
+
+    YOU ARE JACKIE - Warm intro, structured data.`
+           : `[STATE: BRIEF] Generate a factual brief summary using the structured format below. Use ONLY what was explicitly stated by the parent.
+
+    CRITICAL RULES - DO NOT VIOLATE:
+    - Do NOT invent personality traits, motivations, or character descriptions that were not explicitly stated by the parent.
+    - If the parent said the child is struggling or has ADHD/learning differences, acknowledge that plainly and respectfully. Do NOT romanticize it.
+    - If no personality was described, skip that section entirely.
+    - Never use phrases like "bright and curious", "eager to explore the world", "joyful inquisitiveness" unless the parent used those exact words.
+    - If parent mentions multiple children with different grades, list each child separately by name/grade.
+    - Never call any budget "generous" or "modest". Use neutral factual language.
+    - If parent mentions ADHD, ASD, ESL, or learning differences, name them explicitly in the Brief. Do NOT euphemize as "unique learning style".
+
+    FAMILY DATA:
+    - CHILD: ${childDisplayName}
+    - GRADE: ${childGrade ? \`Grade \${childGrade}\` : '(not specified)'}
+    - LOCATION: ${locationArea || '(not specified)'}
+    - BUDGET: ${budgetDisplay}
+    - CURRICULUM: ${curriculumStr || '(not specified)'}
+    - LEARNING NEEDS: ${learningNeedsStr || '(not specified)'}
+    - INTERESTS: ${interestsStr || '(not specified)'}
+    - PRIORITIES: ${prioritiesStr || '(not specified)'}
+    - DEALBREAKERS: ${dealbreakersStr || '(not specified)'}
+
+    FORMAT (use this structure):
+    [Optional direct intro sentence]
+    
+    Student: [name], Grade [X]
+    Location: [city/area]
+    Budget: $[amount]/year
+    Top priorities: [list]
+    ${learningNeedsStr ? 'Learning needs: [list from data]\n' : ''}${dealbreakersStr ? 'Dealbreakers: [list]\n' : ''}${curriculumStr || interestsStr ? 'Key context: [additional info]\n' : ''}
+    Sound right?
+
+    YOU ARE LIAM - Direct intro, structured data.`;
 
          const briefResult = await base44.integrations.Core.InvokeLLM({
            prompt: briefPrompt,
