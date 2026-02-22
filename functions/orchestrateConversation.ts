@@ -25,6 +25,15 @@ Deno.serve(async (req) => {
     const context = conversationContext || {};
     const msgLower = message.toLowerCase();
     
+    // AGGRESSIVE STATE RESET - must be FIRST thing after context is set
+    const histLen = conversationHistory?.length || 0;
+    if (histLen <= 1) {
+      console.log('[HARD RESET] histLen=' + histLen + ', clearing stale state');
+      context.state = 'WELCOME';
+      context.briefStatus = null;
+      context.briefEditCount = 0;
+    }
+    
     // STATE MACHINE: 5 states (strictly deterministic)
     const STATES = {
       WELCOME: 'WELCOME',
@@ -215,17 +224,6 @@ Return ONLY valid JSON. Do NOT explain.`;
     // STEP 2: DETERMINISTIC STATE TRANSITIONS
     let currentState = context.state || STATES.WELCOME;
     let briefStatus = context.briefStatus || null;
-
-    // CRITICAL: Reset state for new conversations
-    // If this is the first user message (conversationHistoryLength <= 1), force WELCOME state
-    // This handles the case where context persists from a previous conversation
-    const conversationHistoryLength = conversationHistory?.length || 0;
-    if (conversationHistoryLength <= 1 && currentState !== STATES.WELCOME && currentState !== STATES.DISCOVERY) {
-      console.log('[STATE RESET] Resetting stale state from', currentState, 'to WELCOME for new conversation');
-      currentState = STATES.WELCOME;
-      briefStatus = null;
-      briefEditCount = 0;
-    }
 
     // Rule 1: WELCOME -> DISCOVERY on first message
     if (currentState === STATES.WELCOME && message) {
