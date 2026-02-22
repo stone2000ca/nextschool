@@ -462,7 +462,7 @@ Return ONLY valid JSON. Do NOT explain.`;
 
     FAMILY DATA:
     - CHILD: ${childDisplayName}
-    - GRADE: ${childGrade ? \`Grade \${childGrade}\` : '(not specified)'}
+    - GRADE: ${childGrade ? 'Grade ' + childGrade : '(not specified)'}
     - LOCATION: ${locationArea || '(not specified)'}
     - BUDGET: ${budgetDisplay}
     - CURRICULUM: ${curriculumStr || '(not specified)'}
@@ -495,7 +495,7 @@ Return ONLY valid JSON. Do NOT explain.`;
 
     FAMILY DATA:
     - CHILD: ${childDisplayName}
-    - GRADE: ${childGrade ? \`Grade \${childGrade}\` : '(not specified)'}
+    - GRADE: ${childGrade ? 'Grade ' + childGrade : '(not specified)'}
     - LOCATION: ${locationArea || '(not specified)'}
     - BUDGET: ${budgetDisplay}
     - CURRICULUM: ${curriculumStr || '(not specified)'}
