@@ -318,11 +318,15 @@ Return ONLY valid JSON. Do NOT explain.`;
     🚫 IF THEY SAID GRADE → NEVER ask grade
     🚫 ONE QUESTION ONLY. NO filler.
 
-    TONE & LANGUAGE RULES:
-    - Never call any budget "generous" or "modest". Use neutral factual language.
-    - If parent expresses budget worry, validate their concern first, then explain what is realistic.
+    TONE & LANGUAGE RULES (FIX 15):
+    - Never call any budget "generous", "modest", "tight", or "comfortable". Use neutral factual language only.
+    - If parent expresses budget worry, respond with empathy first, then explain options without judgment.
     - If parent mentions ADHD, ASD, ESL, or learning differences, name them explicitly. Do NOT euphemize as "unique learning style".
     - If the parent appears to have limited English (simple grammar, mentions ESL/newcomer), use shorter sentences and simpler vocabulary.
+    
+    MULTI-CHILD ACKNOWLEDGMENT (FIX 16):
+    - If the parent mentions multiple children with different grades, explicitly acknowledge each child by name and grade.
+    - Do NOT collapse multiple children into a single anonymous "student".
 
     CRITICAL INSTRUCTIONS:
     - Do NOT mention any specific school names
