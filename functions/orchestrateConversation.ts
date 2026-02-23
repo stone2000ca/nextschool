@@ -280,16 +280,23 @@ Return ONLY valid JSON. Do NOT explain.`;
       const hasGradeOrType = !!(context.extractedEntities?.childGrade || context.extractedEntities?.curriculumPreference || context.extractedEntities?.schoolType);
       const userMessageCount = conversationHistory?.filter(m => m.role === 'user').length || 0;
       
-      console.log('[TIER1 CHECK]', {hasLocation, hasGradeOrType, userMessageCount, entities: context.extractedEntities});
+      // KI-11: Detect readiness signals - user explicitly wants to move forward
+      const readinessSignals = /\b(show me the summary|move forward|that covers everything|I think that's it|ready to see|let's see the schools|let's move on|that's all|that should be enough)\b/i.test(msgLower);
+      
+      console.log('[TIER1 CHECK]', {hasLocation, hasGradeOrType, userMessageCount, readinessSignals, entities: context.extractedEntities});
       
       const isQuestion = isDirectQuestion(message);
       
-      if (hasLocation && hasGradeOrType && userMessageCount >= 3 && !isQuestion) {
+      // Transition to BRIEF if: (Tier 1 data + 3 turns) OR (Tier 1 data + readiness signal)
+      if (hasLocation && hasGradeOrType && !isQuestion && (userMessageCount >= 3 || readinessSignals)) {
         currentState = STATES.BRIEF;
         briefStatus = BRIEF_STATUS.GENERATING;
+        if (readinessSignals) {
+          console.log('[READINESS SIGNAL] User explicitly ready, transitioning to BRIEF');
+        }
       } else if (isQuestion) {
         console.log('[QUESTION-FIRST GUARD] Question detected, staying in DISCOVERY');
-      } else if (hasLocation && hasGradeOrType && userMessageCount < 3) {
+      } else if (hasLocation && hasGradeOrType && userMessageCount < 3 && !readinessSignals) {
         console.log('[TURN COUNT GUARD] Tier 1 data met but only', userMessageCount, 'user messages, staying in DISCOVERY');
       }
     }
@@ -574,9 +581,14 @@ Return ONLY valid JSON. Do NOT explain.`;
          - If the parent said the child is struggling or has ADHD/learning differences, acknowledge that plainly and respectfully. Do NOT romanticize it.
          - If no personality was described, skip that section entirely.
          - Never use phrases like "bright and curious", "eager to explore the world", "joyful inquisitiveness" unless the parent used those exact words.
-         - If parent mentions multiple children with different grades, list each child separately by name/grade. Do NOT collapse into one anonymous student. (FIX 16)
          - Never call any budget "generous", "modest", "tight", or "comfortable". Use neutral factual language. (FIX 15)
          - If parent mentions ADHD, ASD, ESL, or learning differences, name them explicitly in the Brief. Do NOT euphemize as "unique learning style".
+
+         MULTI-CHILD SUPPORT (KI-10 P0):
+         - If parent mentioned MULTIPLE children with different grades/needs, you MUST present SEPARATE profiles for each child.
+         - Example: "Child 1: Emma, Grade 9 - STEM focus, robotics, AP courses" followed by "Child 2: Noah, Grade 3 - dyslexia support, small classes, Montessori"
+         - Do NOT merge multiple children into one profile. Each child gets their own bullet section with their specific grade, needs, and priorities.
+         - If only one child was mentioned, use the standard single-child format.
 
     FAMILY DATA:
     - CHILD: ${childDisplayName}
@@ -609,9 +621,14 @@ Return ONLY valid JSON. Do NOT explain.`;
     - If the parent said the child is struggling or has ADHD/learning differences, acknowledge that plainly and respectfully. Do NOT romanticize it.
     - If no personality was described, skip that section entirely.
     - Never use phrases like "bright and curious", "eager to explore the world", "joyful inquisitiveness" unless the parent used those exact words.
-    - If parent mentions multiple children with different grades, list each child separately by name/grade. Do NOT collapse into one anonymous student. (FIX 16)
     - Never call any budget "generous", "modest", "tight", or "comfortable". Use neutral factual language. (FIX 15)
     - If parent mentions ADHD, ASD, ESL, or learning differences, name them explicitly in the Brief. Do NOT euphemize as "unique learning style".
+    
+    MULTI-CHILD SUPPORT (KI-10 P0):
+    - If parent mentioned MULTIPLE children with different grades/needs, you MUST present SEPARATE profiles for each child.
+    - Example: "Child 1: Emma, Grade 9 - STEM focus, robotics, AP courses" followed by "Child 2: Noah, Grade 3 - dyslexia support, small classes, Montessori"
+    - Do NOT merge multiple children into one profile. Each child gets their own bullet section with their specific grade, needs, and priorities.
+    - If only one child was mentioned, use the standard single-child format.
 
     FAMILY DATA:
     - CHILD: ${childDisplayName}
