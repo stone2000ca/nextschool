@@ -1109,7 +1109,19 @@ Respond as ${consultantName}. ONE question max.`;
        });
       }
 
-    if (currentState === STATES.RESULTS || currentState === STATES.DEEP_DIVE) {
+    // Check for transition back to RESULTS from DEEP_DIVE
+    if (currentState === STATES.DEEP_DIVE) {
+      const backToResultsKeywords = ['show me others', 'back to results', 'see other schools', 'view other options', 'more schools'];
+      const wantsBackToResults = backToResultsKeywords.some(kw => message.toLowerCase().includes(kw));
+      
+      if (wantsBackToResults) {
+        currentState = STATES.RESULTS;
+        context.state = currentState;
+        console.log('[STATE TRANSITION] User requested back to results from DEEP_DIVE');
+      }
+    }
+
+    if (currentState === STATES.RESULTS) {
       let aiMessage = '';
       try {
         const history = conversationHistory || [];
@@ -1125,8 +1137,7 @@ Respond as ${consultantName}. ONE question max.`;
             }).join('\n')
           : '';
         
-        const stateLabel = currentState === STATES.RESULTS ? '[STATE: RESULTS]' : '[STATE: DEEP_DIVE]';
-        const responsePrompt = `${stateLabel} Discuss schools. Do NOT ask intake questions. Max 150 words.
+        const responsePrompt = `[STATE: RESULTS] Discuss schools. Do NOT ask intake questions. Max 150 words.
 
 ${consultantName === 'Jackie' ? 'YOU ARE JACKIE - Warm, empathetic.' : 'YOU ARE LIAM - Direct, strategic.'}
 
@@ -1157,7 +1168,7 @@ Respond as ${consultantName}. ONE question max.`;
         
         aiMessage = messageWithLinks;
       } catch (e) {
-        console.error('[ERROR] RESULTS/DEEP_DIVE response failed:', e.message);
+        console.error('[ERROR] RESULTS response failed:', e.message);
         aiMessage = 'Tell me more about what you\'re looking for.';
       }
       
@@ -1169,7 +1180,95 @@ Respond as ${consultantName}. ONE question max.`;
          familyProfile: conversationFamilyProfile,
          conversationContext: context
        });
+    }
+    
+    if (currentState === STATES.DEEP_DIVE) {
+      let aiMessage = '';
+      try {
+        // Load full school profile if selectedSchoolId provided
+        let selectedSchool = null;
+        if (selectedSchoolId) {
+          try {
+            const schoolResults = await base44.entities.School.filter({ id: selectedSchoolId });
+            if (schoolResults.length > 0) {
+              selectedSchool = schoolResults[0];
+            }
+          } catch (e) {
+            console.error('[ERROR] Failed to load selected school:', e);
+          }
+        }
+        
+        const history = conversationHistory || [];
+        const recentMessages = history.slice(-10);
+        const conversationSummary = recentMessages
+          .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
+          .join('\n');
+        
+        // Build detailed school data string
+        let schoolDataStr = '';
+        if (selectedSchool) {
+          schoolDataStr = `
+SCHOOL PROFILE:
+- Name: ${selectedSchool.name}
+- Location: ${selectedSchool.city}, ${selectedSchool.provinceState}
+- Grades: ${selectedSchool.lowestGrade}-${selectedSchool.highestGrade}
+- Tuition: ${selectedSchool.tuition ? '$' + selectedSchool.tuition : 'Not specified'}
+- Curriculum: ${selectedSchool.curriculumType || 'Traditional'}
+- Specializations: ${selectedSchool.specializations?.join(', ') || 'None listed'}
+- Student-Teacher Ratio: ${selectedSchool.studentTeacherRatio || 'Not specified'}
+- Description: ${selectedSchool.description || 'No description available'}
+- Arts Programs: ${selectedSchool.artsPrograms?.join(', ') || 'None listed'}
+- Sports Programs: ${selectedSchool.sportsPrograms?.join(', ') || 'None listed'}
+- Facilities: ${selectedSchool.facilities?.join(', ') || 'Not listed'}
+`;
+        }
+        
+        // Build family data string
+        const familyDataStr = `
+FAMILY NEEDS:
+- Child Grade: ${conversationFamilyProfile?.childGrade || 'Not specified'}
+- Location: ${conversationFamilyProfile?.locationArea || 'Not specified'}
+- Budget: ${conversationFamilyProfile?.maxTuition ? '$' + conversationFamilyProfile.maxTuition : 'Not specified'}
+- Priorities: ${conversationFamilyProfile?.priorities?.join(', ') || 'Not specified'}
+- Learning Needs: ${conversationFamilyProfile?.learningNeeds?.join(', ') || 'None mentioned'}
+- Curriculum Preference: ${conversationFamilyProfile?.curriculumPreference?.join(', ') || 'Not specified'}
+`;
+        
+        const responsePrompt = `[STATE: DEEP_DIVE] You are discussing ${selectedSchool?.name || 'a specific school'} with this family. 
+
+${schoolDataStr}
+${familyDataStr}
+
+Recent chat:
+${conversationSummary}
+
+Parent: "${message}"
+
+Analyze this school's strengths and potential concerns for THIS family. Discuss fit based on their specific priorities and needs. Offer to compare with other results if helpful. Do NOT ask intake questions. Max 200 words.
+
+${consultantName === 'Jackie' ? 'YOU ARE JACKIE - Warm, empathetic.' : 'YOU ARE LIAM - Direct, strategic.'}
+
+Respond as ${consultantName}.`;
+        
+        const aiResponse = await base44.integrations.Core.InvokeLLM({
+          prompt: responsePrompt
+        });
+
+        aiMessage = aiResponse?.response || aiResponse || `Let me tell you about ${selectedSchool?.name || 'this school'}.`;
+      } catch (e) {
+        console.error('[ERROR] DEEP_DIVE response failed:', e.message);
+        aiMessage = 'Tell me more about what aspects interest you.';
       }
+      
+      return Response.json({
+         message: aiMessage,
+         state: currentState,
+         briefStatus: briefStatus,
+         schools: currentSchools || [],
+         familyProfile: conversationFamilyProfile,
+         conversationContext: context
+       });
+    }
 
       // Fallback
       return Response.json({
