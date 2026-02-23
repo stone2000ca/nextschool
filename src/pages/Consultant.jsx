@@ -516,16 +516,18 @@ export default function Consultant() {
       setMessages(msgs);
     }
     
-    // Map state to view
+    // Map state to view (ONLY if not viewing a school detail)
     const conversationState = convo.conversationContext?.state || STATES.WELCOME;
-    if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(conversationState)) {
-      setCurrentView('chat');
-    } else if (conversationState === STATES.RESULTS) {
-      setCurrentView('schools');
-    } else if (conversationState === STATES.DEEP_DIVE) {
-      setCurrentView('detail');
-    } else {
-      setCurrentView('chat');
+    if (!selectedSchool) {
+      if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(conversationState)) {
+        setCurrentView('chat');
+      } else if (conversationState === STATES.RESULTS) {
+        setCurrentView('schools');
+      } else if (conversationState === STATES.DEEP_DIVE) {
+        setCurrentView('detail');
+      } else {
+        setCurrentView('chat');
+      }
     }
     setSchools(convo.conversationContext?.schools || []);
     setSelectedSchool(null);
@@ -541,7 +543,9 @@ export default function Consultant() {
       setSchools(previousSearchResults);
     }
     setComparisonData(null);
-    setCurrentView('schools');
+    if (!selectedSchool) {
+      setCurrentView('schools');
+    }
   };
 
   const handleSendMessage = async (messageText) => {
@@ -662,8 +666,8 @@ export default function Consultant() {
         }
       }
       
-      // FIX #3: First priority - if schools are returned, display them (ALWAYS, regardless of state)
-      if (response.data.schools && response.data.schools.length > 0) {
+      // FIX #3: First priority - if schools are returned, display them (ONLY if not viewing a school detail)
+      if (response.data.schools && response.data.schools.length > 0 && !selectedSchool) {
         // Track schools shown
         base44.functions.invoke('trackSessionEvent', {
           eventType: 'schools_shown',
@@ -703,8 +707,10 @@ export default function Consultant() {
         // Reset sort to relevance when new schools arrive
         setSortField('relevance');
         setSortDirection('asc');
-        // CRITICAL: Always switch to schools view when schools are returned
-        setCurrentView('schools');
+        // CRITICAL: Always switch to schools view when schools are returned (ONLY if not viewing a school detail)
+        if (!selectedSchool) {
+          setCurrentView('schools');
+        }
       }
 
       const aiMessage = {
@@ -918,7 +924,9 @@ Return empty array if user didn't provide any of these facts.`;
         } else {
           setCurrentConversation(null);
           setMessages([]);
-          setCurrentView('welcome');
+          if (!selectedSchool) {
+            setCurrentView('welcome');
+          }
         }
       }
     } catch (error) {
