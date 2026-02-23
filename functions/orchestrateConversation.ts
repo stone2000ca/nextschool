@@ -51,6 +51,36 @@ Deno.serve(async (req) => {
       CONFIRMED: 'confirmed'
     };
     
+    // KI-12 FIX PART B: City coordinates lookup table
+    const CITY_COORDS = {
+      'vancouver': { lat: 49.2827, lng: -123.1207 },
+      'toronto': { lat: 43.6532, lng: -79.3832 },
+      'montreal': { lat: 45.5017, lng: -73.5673 },
+      'ottawa': { lat: 45.4215, lng: -75.6972 },
+      'calgary': { lat: 51.0447, lng: -114.0719 },
+      'edmonton': { lat: 53.5461, lng: -113.4938 },
+      'victoria': { lat: 48.4284, lng: -123.3656 },
+      'winnipeg': { lat: 49.8951, lng: -97.1384 },
+      'halifax': { lat: 44.6488, lng: -63.5752 },
+      'new york': { lat: 40.7128, lng: -74.0060 },
+      'los angeles': { lat: 34.0522, lng: -118.2437 },
+      'chicago': { lat: 41.8781, lng: -87.6298 },
+      'boston': { lat: 42.3601, lng: -71.0589 },
+      'san francisco': { lat: 37.7749, lng: -122.4194 },
+      'london': { lat: 51.5074, lng: -0.1278 },
+      'mississauga': { lat: 43.5890, lng: -79.6441 },
+      'hamilton': { lat: 43.2557, lng: -79.8711 },
+      'kingston': { lat: 44.2312, lng: -76.4860 },
+      'kelowna': { lat: 49.8880, lng: -119.4960 },
+      'surrey': { lat: 49.1913, lng: -122.8490 },
+      'burnaby': { lat: 49.2488, lng: -122.9805 },
+      'oakville': { lat: 43.4675, lng: -79.6877 },
+      'richmond hill': { lat: 43.8828, lng: -79.4403 },
+      'markham': { lat: 43.8561, lng: -79.3370 },
+      'north vancouver': { lat: 49.3200, lng: -123.0724 },
+      'west vancouver': { lat: 49.3272, lng: -123.1601 }
+    };
+    
     let briefEditCount = context.briefEditCount || 0;
     const MAX_BRIEF_EDITS = 3;
     
@@ -808,6 +838,16 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
 
     if (currentState === STATES.RESULTS && currentSchools?.length === 0) {
+      // KI-12 FIX PART A: Recover locationArea from extractedEntities or conversation history
+      if (!conversationFamilyProfile?.locationArea && context.extractedEntities?.locationArea) {
+        conversationFamilyProfile.locationArea = context.extractedEntities.locationArea;
+        console.log('[KI-12 ENTITY RECOVERY] Recovered locationArea from extractedEntities:', context.extractedEntities.locationArea);
+      }
+      if (!conversationFamilyProfile?.locationArea && context.extractedEntities?.city) {
+        conversationFamilyProfile.locationArea = context.extractedEntities.city;
+        console.log('[KI-12 ENTITY RECOVERY] Recovered locationArea from city:', context.extractedEntities.city);
+      }
+      
       const searchParams = {
         limit: 50,
         familyProfile: conversationFamilyProfile
@@ -859,9 +899,16 @@ Return ONLY valid JSON. Do NOT explain.`;
         }
       }
       
-      if (userLocation?.lat && userLocation?.lng) {
+      // KI-12 FIX PART B: Override browser coords with stated location coords
+      const statedLocation = conversationFamilyProfile?.locationArea?.toLowerCase()?.trim();
+      if (statedLocation && CITY_COORDS[statedLocation]) {
+        searchParams.userLat = CITY_COORDS[statedLocation].lat;
+        searchParams.userLng = CITY_COORDS[statedLocation].lng;
+        console.log('[KI-12 GEOCODE] Overriding browser coords with stated location:', statedLocation, CITY_COORDS[statedLocation]);
+      } else if (userLocation?.lat && userLocation?.lng) {
         searchParams.userLat = userLocation.lat;
         searchParams.userLng = userLocation.lng;
+        console.log('[KI-12 GEOCODE] Using browser coords as fallback');
       }
       
       console.log('[KI-12 LOCATION FILTER]', {
