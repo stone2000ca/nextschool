@@ -651,7 +651,8 @@ export default function Consultant() {
       }
 
       // Map backend state to currentView
-      if (response.data.state) {
+      // CRITICAL FIX: Don't override currentView if already viewing a school detail
+      if (response.data.state && !selectedSchool) {
         if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(response.data.state)) {
           setCurrentView('chat');
         } else if (response.data.state === STATES.RESULTS) {
