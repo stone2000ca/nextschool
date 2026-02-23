@@ -287,8 +287,9 @@ Return ONLY valid JSON. Do NOT explain.`;
       
       const isQuestion = isDirectQuestion(message);
       
-      // Transition to BRIEF if: (Tier 1 data + 3 turns) OR (Tier 1 data + readiness signal)
-      if (hasLocation && hasGradeOrType && !isQuestion && (userMessageCount >= 3 || readinessSignals)) {
+      // Transition to BRIEF if: (Tier 1 data + 3 turns AND not question) OR (Tier 1 data + readiness signal)
+      // FIX: Readiness signals OVERRIDE the isQuestion check
+      if (hasLocation && hasGradeOrType && ((userMessageCount >= 3 && !isQuestion) || readinessSignals)) {
         currentState = STATES.BRIEF;
         briefStatus = BRIEF_STATUS.GENERATING;
         if (readinessSignals) {
@@ -590,7 +591,9 @@ Return ONLY valid JSON. Do NOT explain.`;
          - Do NOT merge multiple children into one profile. Each child gets their own bullet section with their specific grade, needs, and priorities.
          - If only one child was mentioned, use the standard single-child format.
 
-    FAMILY DATA:
+         IMPORTANT: Review the FULL conversation history above. If the parent mentioned MULTIPLE children, IGNORE the single-child data fields below and instead extract each child separately from the conversation. Present a SEPARATE bullet section for each child.
+
+         FAMILY DATA:
     - CHILD: ${childDisplayName}
     - GRADE: ${childGrade ? 'Grade ' + childGrade : '(not specified)'}
     - LOCATION: ${locationArea || '(not specified)'}
@@ -606,7 +609,9 @@ Return ONLY valid JSON. Do NOT explain.`;
 
     UNIFIED FORMAT (FIX 14) - Use this exact structure:
     [REQUIRED warm, conversational intro - Jackie tone. Sound like you're reflecting back what you heard, NOT generating a report. Examples: "If I'm understanding correctly...", "Let me make sure I've got this right...", "Based on everything you've shared...". Be genuine and empathetic.]
-    
+
+    **IF MULTIPLE CHILDREN DETECTED IN CONVERSATION: Repeat the bullet list below for EACH child with their own header (e.g., "Child 1:" and "Child 2:") and their specific details.**
+
     • Student: ${childDisplayName}, Grade ${childGrade || '(not specified)'}
     • Location: ${locationArea || '(not specified)'}
     • Budget: ${budgetDisplay}
@@ -629,6 +634,8 @@ Return ONLY valid JSON. Do NOT explain.`;
     - Example: "Child 1: Emma, Grade 9 - STEM focus, robotics, AP courses" followed by "Child 2: Noah, Grade 3 - dyslexia support, small classes, Montessori"
     - Do NOT merge multiple children into one profile. Each child gets their own bullet section with their specific grade, needs, and priorities.
     - If only one child was mentioned, use the standard single-child format.
+    
+    IMPORTANT: Review the FULL conversation history above. If the parent mentioned MULTIPLE children, IGNORE the single-child data fields below and instead extract each child separately from the conversation. Present a SEPARATE bullet section for each child.
 
     FAMILY DATA:
     - CHILD: ${childDisplayName}
@@ -646,6 +653,8 @@ Return ONLY valid JSON. Do NOT explain.`;
 
     UNIFIED FORMAT (FIX 14) - Use this exact structure:
     [REQUIRED direct, conversational intro - Liam tone. Sound like you're confirming what you heard, NOT generating a report. Examples: "Let me make sure I've got this right...", "Based on what you've told me...", "Here's what I'm hearing...". Be natural and straightforward.]
+    
+    **IF MULTIPLE CHILDREN DETECTED IN CONVERSATION: Repeat the bullet list below for EACH child with their own header (e.g., "Child 1:" and "Child 2:") and their specific details.**
     
     • Student: ${childDisplayName}, Grade ${childGrade || '(not specified)'}
     • Location: ${locationArea || '(not specified)'}
