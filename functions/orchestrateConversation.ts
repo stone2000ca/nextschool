@@ -838,14 +838,44 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
 
     if (currentState === STATES.RESULTS && currentSchools?.length === 0) {
-      // KI-12 FIX PART A: Recover locationArea from extractedEntities or conversation history
+      // KI-12 DIAGNOSTIC: Log initial locationArea
+      console.log('[KI-12 DIAG] LocationArea BEFORE fallbacks:', conversationFamilyProfile?.locationArea);
+      
+      // KI-12 FALLBACK 1: Recover from context.extractedEntities
       if (!conversationFamilyProfile?.locationArea && context.extractedEntities?.locationArea) {
         conversationFamilyProfile.locationArea = context.extractedEntities.locationArea;
-        console.log('[KI-12 ENTITY RECOVERY] Recovered locationArea from extractedEntities:', context.extractedEntities.locationArea);
+        console.log('[KI-12 FALLBACK 1] Recovered from extractedEntities:', context.extractedEntities.locationArea);
       }
       if (!conversationFamilyProfile?.locationArea && context.extractedEntities?.city) {
         conversationFamilyProfile.locationArea = context.extractedEntities.city;
-        console.log('[KI-12 ENTITY RECOVERY] Recovered locationArea from city:', context.extractedEntities.city);
+        console.log('[KI-12 FALLBACK 1] Recovered from city:', context.extractedEntities.city);
+      }
+      
+      // KI-12 FALLBACK 2: Fresh DB read
+      if (!conversationFamilyProfile?.locationArea && conversationFamilyProfile?.id) {
+        console.log('[KI-12 FALLBACK 2] Attempting fresh DB read...');
+        try {
+          const freshProfiles = await base44.entities.FamilyProfile.filter({userId, conversationId});
+          if (freshProfiles.length > 0 && freshProfiles[0].locationArea) {
+            conversationFamilyProfile.locationArea = freshProfiles[0].locationArea;
+            console.log('[KI-12 FALLBACK 2] Recovered from fresh DB:', conversationFamilyProfile.locationArea);
+          }
+        } catch (e) {
+          console.error('[KI-12 FALLBACK 2] DB read failed:', e);
+        }
+      }
+      
+      // KI-12 FALLBACK 3: Parse Brief text from conversation history
+      if (!conversationFamilyProfile?.locationArea && conversationHistory) {
+        console.log('[KI-12 FALLBACK 3] Parsing Brief text from history...');
+        const briefMsg = conversationHistory.slice().reverse().find(m => m.role === 'assistant' && /•\s*Location:/i.test(m.content));
+        if (briefMsg) {
+          const locMatch = briefMsg.content.match(/•\s*Location:\s*([^\n•]+)/i);
+          if (locMatch && locMatch[1]) {
+            conversationFamilyProfile.locationArea = locMatch[1].trim();
+            console.log('[KI-12 FALLBACK 3] Recovered from Brief text:', conversationFamilyProfile.locationArea);
+          }
+        }
       }
       
       const searchParams = {
@@ -899,8 +929,14 @@ Return ONLY valid JSON. Do NOT explain.`;
         }
       }
       
+      // KI-12 DIAGNOSTIC: Log final locationArea value
+      console.log('[KI-12 DIAG] LocationArea AFTER fallbacks:', conversationFamilyProfile?.locationArea);
+      
       // KI-12 FIX PART B: Override browser coords with stated location coords
       const statedLocation = conversationFamilyProfile?.locationArea?.toLowerCase()?.trim();
+      console.log('[KI-12 DIAG] StatedLocation for CITY_COORDS lookup:', statedLocation);
+      console.log('[KI-12 DIAG] CITY_COORDS lookup result:', statedLocation ? CITY_COORDS[statedLocation] : 'N/A');
+      
       if (statedLocation && CITY_COORDS[statedLocation]) {
         searchParams.userLat = CITY_COORDS[statedLocation].lat;
         searchParams.userLng = CITY_COORDS[statedLocation].lng;
@@ -911,6 +947,8 @@ Return ONLY valid JSON. Do NOT explain.`;
         console.log('[KI-12 GEOCODE] Using browser coords as fallback');
       }
       
+      console.log('[KI-12 DIAG] Final searchParams.userLat:', searchParams.userLat);
+      console.log('[KI-12 DIAG] Final searchParams.userLng:', searchParams.userLng);
       console.log('[KI-12 LOCATION FILTER]', {
         locationArea: conversationFamilyProfile?.locationArea,
         city: searchParams.city,
