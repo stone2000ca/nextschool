@@ -832,9 +832,13 @@ Return ONLY valid JSON. Do NOT explain.`;
         searchParams.provinceState = conversationFamilyProfile.provinceState;
       }
       
-      // Set region filter to ensure we don't show cross-region results
-      if (region) {
+      // KI-12 FIX: Only use auto-detected region as FALLBACK when no explicit location stated
+      // If user explicitly mentioned a city/location in conversation, DO NOT override with browser location
+      if (region && !conversationFamilyProfile?.locationArea) {
         searchParams.region = region;
+        console.log('[KI-12] Using auto-detected region as fallback:', region);
+      } else if (conversationFamilyProfile?.locationArea) {
+        console.log('[KI-12] Prioritizing explicit location:', conversationFamilyProfile.locationArea, 'over auto-detected region:', region);
       }
       
       if (conversationFamilyProfile?.childGrade) {
