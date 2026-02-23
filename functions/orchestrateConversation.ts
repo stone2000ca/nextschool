@@ -280,16 +280,58 @@ Return ONLY valid JSON. Do NOT explain.`;
       const hasGradeOrType = !!(context.extractedEntities?.childGrade || context.extractedEntities?.curriculumPreference || context.extractedEntities?.schoolType);
       const userMessageCount = conversationHistory?.filter(m => m.role === 'user').length || 0;
       
-      // KI-11: Detect readiness signals - user explicitly wants to move forward
+      // KI-11 LAYER 1: EXPLICIT DEMANDS - user directly asking for results/schools/brief
+      const explicitDemands = /\b(show me schools|show me the schools|just give me results|give me results|I'm done|that's everything|can you show me what you have|what do you recommend|let's see the brief|show me options|what schools|give me options|I want to see|show me what you've got)\b/i.test(msgLower);
+      
+      // KI-11 LAYER 2: FRUSTRATION SIGNALS
+      const recentUserMessages = conversationHistory?.filter(m => m.role === 'user').slice(-3) || [];
+      const shortMessageCount = recentUserMessages.filter(m => m.content.length < 50).length;
+      const hasCaps = /[A-Z]{4,}/.test(message); // 4+ consecutive caps
+      const frustrationPhrases = /\b(I already told you|I've asked|I said|you already asked|I mentioned|like I said|again|stop asking)\b/i.test(msgLower);
+      const frustrationSignal = (shortMessageCount >= 2 && recentUserMessages.length >= 2) || hasCaps || frustrationPhrases;
+      
+      // KI-11 LAYER 3: ENTITY COMPLETENESS THRESHOLD
+      const hasPriorityOrInterest = !!(context.extractedEntities?.priorities?.length > 0 || context.extractedEntities?.interests?.length > 0 || context.extractedEntities?.programPreferences?.length > 0);
+      const hasRichProfile = hasLocation && hasGradeOrType && hasPriorityOrInterest;
+      const hasMinimumData = hasLocation && hasGradeOrType;
+      
+      // Original readiness signals
       const readinessSignals = /\b(show me the summary|move forward|that covers everything|I think that's it|ready to see|let's see the schools|let's move on|that's all|that should be enough)\b/i.test(msgLower);
       
-      console.log('[TIER1 CHECK]', {hasLocation, hasGradeOrType, userMessageCount, readinessSignals, entities: context.extractedEntities});
+      console.log('[KI-11 TRANSITION CHECK]', {
+        hasLocation, 
+        hasGradeOrType, 
+        userMessageCount, 
+        explicitDemands,
+        frustrationSignal,
+        hasRichProfile,
+        hasMinimumData,
+        entities: context.extractedEntities
+      });
       
       const isQuestion = isDirectQuestion(message);
       
-      // Transition to BRIEF if: (Tier 1 data + 3 turns AND not question) OR (Tier 1 data + readiness signal)
-      // FIX: Readiness signals OVERRIDE the isQuestion check
-      if (hasLocation && hasGradeOrType && ((userMessageCount >= 3 && !isQuestion) || readinessSignals)) {
+      // KI-11: TRANSITION LOGIC with THREE DETECTION LAYERS
+      // LAYER 1: Explicit demands ALWAYS transition if minimum data exists
+      if (explicitDemands && hasMinimumData) {
+        currentState = STATES.BRIEF;
+        briefStatus = BRIEF_STATUS.GENERATING;
+        console.log('[KI-11 LAYER 1] Explicit demand detected, transitioning to BRIEF');
+      }
+      // LAYER 2: Frustration signals ALWAYS transition if minimum data exists
+      else if (frustrationSignal && hasMinimumData) {
+        currentState = STATES.BRIEF;
+        briefStatus = BRIEF_STATUS.GENERATING;
+        console.log('[KI-11 LAYER 2] Frustration signal detected, transitioning to BRIEF');
+      }
+      // LAYER 3: Auto-offer Brief after 4 exchanges if minimum data collected
+      else if (userMessageCount >= 4 && hasMinimumData) {
+        currentState = STATES.BRIEF;
+        briefStatus = BRIEF_STATUS.GENERATING;
+        console.log('[KI-11 LAYER 3] 4+ exchanges with minimum data, auto-transitioning to BRIEF');
+      }
+      // Original logic: (Tier 1 data + 3 turns AND not question) OR readiness signal
+      else if (hasLocation && hasGradeOrType && ((userMessageCount >= 3 && !isQuestion) || readinessSignals)) {
         currentState = STATES.BRIEF;
         briefStatus = BRIEF_STATUS.GENERATING;
         if (readinessSignals) {
