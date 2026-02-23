@@ -244,13 +244,21 @@ async function performSearch(req) {
       });
     }
 
-    // Apply city filter (if no aliases matched) - case-insensitive partial match for flexibility
+    // Apply city filter (if no aliases matched) - exact match first, then fallback to partial
     if (city && aliasedCities.length === 0) {
       const cityLower = city.trim().toLowerCase();
-      // Allow partial match to catch "Mississauga", "mississauga, ON", etc.
-      locationFiltered = locationFiltered.filter(s => 
-        s.city && s.city.toLowerCase().includes(cityLower)
+      // Try exact match first (handles "Vancouver", "Toronto", etc.)
+      let cityMatches = locationFiltered.filter(s => 
+        s.city && s.city.toLowerCase() === cityLower
       );
+      // If no exact matches, try partial match
+      if (cityMatches.length === 0) {
+        cityMatches = locationFiltered.filter(s => 
+          s.city && s.city.toLowerCase().includes(cityLower)
+        );
+      }
+      locationFiltered = cityMatches;
+      console.log(`[KI-12 CITY FILTER] city="${city}" → ${locationFiltered.length} schools`);
     }
 
     if (provinceState && aliasedProvinces.length === 0) {

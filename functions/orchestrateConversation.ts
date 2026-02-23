@@ -133,9 +133,9 @@ Extract ONLY:
 - childGrade: number or null (e.g., 3 for Grade 3, -1 for JK, 0 for SK)
 - childGender: "male" OR "female" OR null (KI-16: "son", "boy", "he/him" → "male"; "daughter", "girl", "she/her" → "female")
 - locationArea: string (city name)
-- budgetMin: number or null (minimum budget)
-- budgetMax: number or null (maximum budget)
-- budgetSingle: number or null (KI-15: ONLY set if user gives ONE number like "$20K" or "around 25000", NOT a range)
+- budgetMin: number or null (minimum budget in dollars)
+- budgetMax: number or null (maximum budget in dollars)
+- budgetSingle: number or null (KI-15: ONLY set if user gives ONE number. Convert shorthand to full: "$20K"→20000, "$25K"→25000, "35k"→35000)
 - maxTuition: "unlimited" OR number OR null (for backward compatibility)
 - interests: array of strings or null
 - priorities: array of strings or null (FIX 4: When user says "arts", "music", "theater", "drama" → priorities: ["Arts"]. When "STEM", "science", "math" → priorities: ["STEM"]. When "sports" → priorities: ["Sports"]. When "languages", "French", "Spanish" → priorities: ["Languages"])
@@ -159,6 +159,8 @@ EXAMPLES:
 - "My daughter is in Grade 5" → childGrade: 5, childGender: "female"
 - "He has anxiety and ADHD" → childGender: "male", learning_needs: ["ADHD"], wellbeing_needs: ["anxiety"]
 - "Budget around $20K" → budgetSingle: 20000
+- "$25K" → budgetSingle: 25000
+- "35k budget" → budgetSingle: 35000
 - "Between $15,000 and $25,000" → budgetMin: 15000, budgetMax: 25000
 - "She has ADHD" → learning_needs: ["ADHD"], specialNeeds: ["ADHD"], childGender: "female"
 - "Looking for French immersion" → curriculumPreference: ["French immersion"], programPreferences: ["French immersion"]
