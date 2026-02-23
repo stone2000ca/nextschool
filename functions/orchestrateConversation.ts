@@ -594,20 +594,34 @@ Return ONLY valid JSON. Do NOT explain.`;
          IMPORTANT: Review the FULL conversation history above. If the parent mentioned MULTIPLE children, IGNORE the single-child data fields below and instead extract each child separately from the conversation. Present a SEPARATE bullet section for each child.
 
          FAMILY DATA:
-    - CHILD: ${childDisplayName}
-    - GRADE: ${childGrade ? 'Grade ' + childGrade : '(not specified)'}
-    - LOCATION: ${locationArea || '(not specified)'}
-    - BUDGET: ${budgetDisplay}
-    - GENDER PREFERENCE: ${genderPreference || '(not specified)'}
-    - CLASS SIZE: ${classSize || '(not specified)'}
-    - CURRICULUM: ${curriculumStr || '(not specified)'}
-    - PROGRAM PREFERENCES: ${programPreferencesStr || '(not specified)'}
-    - LEARNING NEEDS: ${learningNeedsStr || '(not specified)'}
-    - INTERESTS: ${interestsStr || '(not specified)'}
-    - PRIORITIES: ${prioritiesStr || '(not specified)'}
-    - DEALBREAKERS: ${dealbreakersStr || '(not specified)'}
+         - CHILD: ${childDisplayName}
+         - GRADE: ${childGrade ? 'Grade ' + childGrade : '(not specified)'}
+         - LOCATION: ${locationArea || '(not specified)'}
+         - BUDGET: ${budgetDisplay}
+         - GENDER PREFERENCE: ${genderPreference || '(not specified)'}
+         - CLASS SIZE: ${classSize || '(not specified)'}
+         - CURRICULUM: ${curriculumStr || '(not specified)'}
+         - PROGRAM PREFERENCES: ${programPreferencesStr || '(not specified)'}
+         - LEARNING NEEDS: ${learningNeedsStr || '(not specified)'}
+         - INTERESTS: ${interestsStr || '(not specified)'}
+         - PRIORITIES: ${prioritiesStr || '(not specified)'}
+         - DEALBREAKERS: ${dealbreakersStr || '(not specified)'}
 
-    UNIFIED FORMAT (FIX 14) - Use this exact structure:
+         MULTI-CHILD CHECK: Review the conversation history. If the parent mentioned MORE THAN ONE child, you MUST create separate sections. Do NOT use the FAMILY DATA fields below (they only contain one child). Instead, extract each child's details directly from the conversation and present them as:
+
+         Child 1: [name or description], [grade]
+         - Location: [from conversation]
+         - Budget: [from conversation]
+         ... (all applicable fields)
+
+         Child 2: [name or description], [grade]
+         - Location: [from conversation]
+         - Budget: [from conversation]
+         ... (all applicable fields)
+
+         ONLY use the FAMILY DATA fields below if there is exactly ONE child mentioned in the conversation.
+
+         UNIFIED FORMAT (FIX 14) - Use this exact structure:
     [REQUIRED warm, conversational intro - Jackie tone. Sound like you're reflecting back what you heard, NOT generating a report. Examples: "If I'm understanding correctly...", "Let me make sure I've got this right...", "Based on everything you've shared...". Be genuine and empathetic.]
 
     **IF MULTIPLE CHILDREN DETECTED IN CONVERSATION: Repeat the bullet list below for EACH child with their own header (e.g., "Child 1:" and "Child 2:") and their specific details.**
@@ -650,6 +664,20 @@ Return ONLY valid JSON. Do NOT explain.`;
     - INTERESTS: ${interestsStr || '(not specified)'}
     - PRIORITIES: ${prioritiesStr || '(not specified)'}
     - DEALBREAKERS: ${dealbreakersStr || '(not specified)'}
+
+    MULTI-CHILD CHECK: Review the conversation history. If the parent mentioned MORE THAN ONE child, you MUST create separate sections. Do NOT use the FAMILY DATA fields below (they only contain one child). Instead, extract each child's details directly from the conversation and present them as:
+
+    Child 1: [name or description], [grade]
+    - Location: [from conversation]
+    - Budget: [from conversation]
+    ... (all applicable fields)
+
+    Child 2: [name or description], [grade]
+    - Location: [from conversation]
+    - Budget: [from conversation]
+    ... (all applicable fields)
+
+    ONLY use the FAMILY DATA fields below if there is exactly ONE child mentioned in the conversation.
 
     UNIFIED FORMAT (FIX 14) - Use this exact structure:
     [REQUIRED direct, conversational intro - Liam tone. Sound like you're confirming what you heard, NOT generating a report. Examples: "Let me make sure I've got this right...", "Based on what you've told me...", "Here's what I'm hearing...". Be natural and straightforward.]
