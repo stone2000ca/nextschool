@@ -1022,77 +1022,71 @@ Return empty array if user didn't provide any of these facts.`;
   };
 
   const getFilteredAndSortedSchools = () => {
-    if (schools.length === 0) return schools;
-    
-    // FRONTEND FILTERING: Apply grade and budget filters
-    const familyProfile = currentConversation?.conversationContext?.familyProfile || familyProfile;
-    let filtered = [...schools];
-    
-    // Grade Filter: Exclude schools where highestGrade < child's grade
-    if (familyProfile?.childGrade !== null && familyProfile?.childGrade !== undefined) {
-      const childGrade = typeof familyProfile.childGrade === 'number' 
-        ? familyProfile.childGrade 
-        : parseInt(familyProfile.childGrade);
+    try {
+      if (!schools || schools.length === 0) return schools || [];
       
-      if (!isNaN(childGrade)) {
-        filtered = filtered.filter(school => {
-          const highestGrade = school.highestGrade;
-          if (highestGrade === null || highestGrade === undefined) return true;
-          return highestGrade >= childGrade;
-        });
-        console.log('[FRONTEND FILTER] Grade filter applied:', childGrade, 'Schools after:', filtered.length);
-      }
-    }
-    
-    // Budget Filter: Exclude schools where tuition > budget (keep N/A tuition)
-    if (familyProfile?.maxTuition && familyProfile.maxTuition !== 'unlimited') {
-      const maxBudget = typeof familyProfile.maxTuition === 'number'
-        ? familyProfile.maxTuition
-        : parseInt(familyProfile.maxTuition);
+      let filtered = [...schools];
       
-      if (!isNaN(maxBudget)) {
-        filtered = filtered.filter(school => {
-          const tuition = school.tuition || school.dayTuition;
-          if (!tuition || tuition === null) return true; // Keep schools with N/A tuition
-          return tuition <= maxBudget;
-        });
-        console.log('[FRONTEND FILTER] Budget filter applied:', maxBudget, 'Schools after:', filtered.length);
+      // SAFE FRONTEND FILTERING with try/catch and optional chaining
+      try {
+        const profile = currentConversation?.conversationContext?.familyProfile;
+        
+        // Grade Filter: Exclude schools where highestGrade < child's grade
+        const childGrade = profile?.childGrade;
+        if (childGrade !== null && childGrade !== undefined) {
+          const gradeNum = typeof childGrade === 'number' ? childGrade : parseInt(String(childGrade));
+          
+          if (!isNaN(gradeNum)) {
+            filtered = filtered.filter(school => {
+              if (!school?.highestGrade && school?.highestGrade !== 0) return true;
+              return school.highestGrade >= gradeNum;
+            });
+            console.log('[FILTER] Grade:', gradeNum, 'Schools:', filtered.length);
+          }
+        }
+        
+        // Budget Filter: Exclude schools where tuition > budget (keep N/A)
+        const maxBudget = profile?.maxTuition;
+        if (maxBudget && maxBudget !== 'unlimited') {
+          const budgetNum = typeof maxBudget === 'number' ? maxBudget : parseInt(String(maxBudget));
+          
+          if (!isNaN(budgetNum)) {
+            filtered = filtered.filter(school => {
+              const tuition = school?.tuition || school?.dayTuition;
+              if (!tuition) return true;
+              return tuition <= budgetNum;
+            });
+            console.log('[FILTER] Budget:', budgetNum, 'Schools:', filtered.length);
+          }
+        }
+      } catch (filterError) {
+        console.error('[FILTER] Error applying filters, showing all schools:', filterError);
+        filtered = [...schools];
       }
-    }
-    
-    // Apply sorting
-    if (sortField === 'relevance') {
-      return filtered;
-    }
-    
-    const sorted = [...filtered];
-    switch (sortField) {
-      case 'name':
-        sorted.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'distance':
-        sorted.sort((a, b) => {
-          const distA = a.distanceKm ?? Infinity;
-          const distB = b.distanceKm ?? Infinity;
-          return distA - distB;
-        });
-        break;
-      case 'tuition':
-        sorted.sort((a, b) => {
-          const tuitionA = a.tuition ?? Infinity;
-          const tuitionB = b.tuition ?? Infinity;
-          return tuitionA - tuitionB;
-        });
-        break;
-      default:
-        return sorted;
-    }
+      
+      // Apply sorting
+      if (sortField === 'relevance') return filtered;
+      
+      const sorted = [...filtered];
+      switch (sortField) {
+        case 'name':
+          sorted.sort((a, b) => (a?.name || '').localeCompare(b?.name || ''));
+          break;
+        case 'distance':
+          sorted.sort((a, b) => (a?.distanceKm ?? Infinity) - (b?.distanceKm ?? Infinity));
+          break;
+        case 'tuition':
+          sorted.sort((a, b) => (a?.tuition ?? Infinity) - (b?.tuition ?? Infinity));
+          break;
+      }
 
-    if (sortDirection === 'desc') {
-      sorted.reverse();
+      if (sortDirection === 'desc') sorted.reverse();
+      return sorted;
+      
+    } catch (error) {
+      console.error('[FILTER] Critical error, returning all schools:', error);
+      return schools || [];
     }
-
-    return sorted;
   };
 
   // Detect if user is scrolled up, show new message indicator on new messages
