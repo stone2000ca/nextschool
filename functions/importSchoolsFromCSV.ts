@@ -78,13 +78,25 @@ Deno.serve(async (req) => {
 
         // Special handling for string fields that may contain arrays/objects
         const stringFields = ['scholarshipsJson', 'universityPlacements'];
+        const alwaysStringFields = ['email', 'phone', 'governmentId', 'website'];
         
         // Parse JSON arrays or objects
         if ((value.startsWith('[') && value.endsWith(']')) || (value.startsWith('{') && value.endsWith('}'))) {
           // If it's a string field, keep it as a string
           if (stringFields.includes(header)) {
             school[header] = value;
-          } else {
+          } 
+          // If somehow these fields have array notation, extract first element
+          else if (alwaysStringFields.includes(header)) {
+            try {
+              const parsed = JSON.parse(value.replace(/""/g, '"'));
+              school[header] = Array.isArray(parsed) ? parsed[0] : parsed;
+            } catch {
+              // Remove brackets and keep as string
+              school[header] = value.replace(/[\[\]]/g, '').trim();
+            }
+          }
+          else {
             try {
               // Handle CSV-escaped quotes (double quotes)
               let cleanValue = value.replace(/""/g, '"');
