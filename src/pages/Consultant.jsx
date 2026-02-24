@@ -687,24 +687,22 @@ export default function Consultant() {
         });
       }
 
-      // BUG-DD-001 FIX: CONSOLIDATED view logic - selectedSchool is SINGLE SOURCE OF TRUTH
-      // If a school is selected (detail view active), NEVER change the view regardless of state
-      const isViewingSchoolDetail = selectedSchool !== null || currentView === 'detail';
+      // BUG-DD-001 FIX: selectedSchool is SINGLE SOURCE OF TRUTH - NEVER clear it based on AI state
+      const isViewingSchoolDetail = selectedSchool !== null;
       
       if (!isViewingSchoolDetail && response.data.state) {
         // Only update view if NOT viewing a school detail
+        // CRITICAL: Do NOT call setSelectedSchool(null) here - it defeats the single source of truth
         if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(response.data.state)) {
           setCurrentView('chat');
-          setSelectedSchool(null);
         } else if (response.data.state === STATES.RESULTS) {
           setCurrentView('schools');
-          setSelectedSchool(null);
-        } else if (response.data.state === STATES.DEEP_DIVE && selectedSchool) {
-          // Only set detail view if we actually have a school selected
+        } else if (response.data.state === STATES.DEEP_DIVE) {
           setCurrentView('detail');
         }
       } else if (isViewingSchoolDetail) {
         console.log('[BUG-DD-001] Maintaining detail view - school selected:', selectedSchool?.name);
+        // Keep view locked to detail as long as selectedSchool is set
       }
       
       // Use the same guard for schools display logic
