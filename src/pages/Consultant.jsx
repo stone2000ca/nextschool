@@ -516,9 +516,11 @@ export default function Consultant() {
       setMessages(msgs);
     }
     
-    // Map state to view (ONLY if not viewing a school detail)
+    // BUG-DD-001: Map state to view with DEEP_DIVE guard
     const conversationState = convo.conversationContext?.state || STATES.WELCOME;
-    if (!selectedSchool) {
+    const isDeepDiveWithSchool = conversationState === STATES.DEEP_DIVE && selectedSchool !== null;
+    
+    if (!isDeepDiveWithSchool) {
       if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(conversationState)) {
         setCurrentView('chat');
       } else if (conversationState === STATES.RESULTS) {
@@ -657,14 +659,11 @@ export default function Consultant() {
         });
       }
 
-      // BUG-DD-001 FIX: Maintain detail view in DEEP_DIVE state with selected school
-      if (response.data.state) {
-        const isInDeepDive = response.data.state === STATES.DEEP_DIVE && selectedSchool;
-        
-        if (isInDeepDive) {
-          // Already in DEEP_DIVE with school selected - maintain detail view
-          setCurrentView('detail');
-        } else if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(response.data.state)) {
+      // BUG-DD-001 FIX: CRITICAL guard - NEVER change view if in DEEP_DIVE with school selected
+      const shouldMaintainDeepDive = response.data.state === STATES.DEEP_DIVE && selectedSchool !== null;
+      
+      if (!shouldMaintainDeepDive && response.data.state) {
+        if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(response.data.state)) {
           setCurrentView('chat');
           setSelectedSchool(null);
         } else if (response.data.state === STATES.RESULTS) {
@@ -673,10 +672,15 @@ export default function Consultant() {
         } else if (response.data.state === STATES.DEEP_DIVE) {
           setCurrentView('detail');
         }
+      } else if (shouldMaintainDeepDive) {
+        console.log('[BUG-DD-001] Maintaining detail view - DEEP_DIVE state with school:', selectedSchool.name);
       }
       
-      // FIX #3: First priority - if schools are returned, display them (ONLY if not viewing a school detail)
-      if (response.data.schools && response.data.schools.length > 0 && !selectedSchool) {
+      // BUG-DD-001: Guard against switching view if in DEEP_DIVE with selected school
+      const isDeepDivingSchool = response.data.state === STATES.DEEP_DIVE && selectedSchool !== null;
+      
+      // FIX #3: First priority - if schools are returned, display them (ONLY if not in DEEP_DIVE)
+      if (response.data.schools && response.data.schools.length > 0 && !isDeepDivingSchool) {
         // Track schools shown
         base44.functions.invoke('trackSessionEvent', {
           eventType: 'schools_shown',
