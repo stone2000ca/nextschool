@@ -934,6 +934,12 @@ Return ONLY valid JSON. Do NOT explain.`;
         }
       }
       
+      // CRITICAL DIAGNOSTIC: Log conversationFamilyProfile before building searchParams
+      console.log('[SEARCH DEBUG] conversationFamilyProfile FULL OBJECT:', JSON.stringify(conversationFamilyProfile, null, 2));
+      console.log('[SEARCH DEBUG] conversationFamilyProfile.childGrade:', conversationFamilyProfile?.childGrade);
+      console.log('[SEARCH DEBUG] conversationFamilyProfile.maxTuition:', conversationFamilyProfile?.maxTuition);
+      console.log('[SEARCH DEBUG] conversationFamilyProfile.locationArea:', conversationFamilyProfile?.locationArea);
+      
       const searchParams = {
         limit: 50,
         familyProfile: conversationFamilyProfile
@@ -1041,6 +1047,9 @@ Return ONLY valid JSON. Do NOT explain.`;
         region: searchParams.region
       });
 
+      // CRITICAL DIAGNOSTIC: Log final searchParams being sent to searchSchools
+      console.log('[SEARCH DEBUG] Final searchParams being sent to searchSchools:', JSON.stringify(searchParams, null, 2));
+      
       let schools = [];
       try {
         const searchResult = await base44.asServiceRole.functions.invoke('searchSchools', {
@@ -1050,6 +1059,7 @@ Return ONLY valid JSON. Do NOT explain.`;
           searchQuery: message
         });
         schools = searchResult.data.schools || [];
+        console.log('[SEARCH DEBUG] Schools returned from searchSchools:', schools.length, schools.map(s => `${s.name} (${s.lowestGrade}-${s.highestGrade})`).slice(0, 5));
       } catch (e) {
         console.error('[ERROR] searchSchools failed:', e.message);
       }
