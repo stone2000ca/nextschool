@@ -125,21 +125,38 @@ Deno.serve(async (req) => {
       console.log('Deletion complete');
     }
 
+    // Helper function to generate slug
+    const generateSlug = (name) => {
+      return name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    };
+
+    // Enrich schools with defaults and importBatchId
+    const enrichedSchools = schools.map(school => ({
+      ...school,
+      slug: school.slug || generateSlug(school.name),
+      status: school.status || 'active',
+      verified: school.verified ?? false,
+      claimStatus: school.claimStatus || 'unclaimed',
+      membershipTier: school.membershipTier || 'basic',
+      subscriptionTier: school.subscriptionTier || 'free',
+      importBatchId,
+      is_sample: false
+    }));
+
     // Import schools in batches of 50
     const batchSize = 50;
     let imported = 0;
     let errors = [];
 
-    for (let i = 0; i < schools.length; i += batchSize) {
-      const batch = schools.slice(i, i + batchSize);
+    for (let i = 0; i < enrichedSchools.length; i += batchSize) {
+      const batch = enrichedSchools.slice(i, i + batchSize);
       console.log(`Importing batch ${Math.floor(i / batchSize) + 1} (${batch.length} schools)...`);
 
       try {
-        const result = await base44.asServiceRole.functions.invoke('importSchoolsFromPayload', {
-          schools: batch,
-          importBatchId
-        });
-
+        await base44.asServiceRole.entities.School.bulkCreate(batch);
         imported += batch.length;
         console.log(`Batch ${Math.floor(i / batchSize) + 1} imported successfully`);
       } catch (error) {
