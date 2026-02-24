@@ -17,36 +17,42 @@ Deno.serve(async (req) => {
       errors: []
     };
 
-    // 1. ARCHIVE 5 invalid schools
+    // 1. ARCHIVE 5 invalid schools - try multiple name variations
     const schoolsToArchive = [
-      'Colonel Gray High School',
-      'Kingswood University',
-      'Oak Park High School',
-      'Kelvin High School',
-      'Lakecrest-St. John\'s'
+      { variations: ['Colonel Gray High School', 'Colonel Gray Senior High School'] },
+      { variations: ['Kingswood University', 'Kingswood College'] },
+      { variations: ['Oak Park High School', 'Oak Park School'] },
+      { variations: ['Kelvin High School', 'Kelvin Technical School'] },
+      { variations: ['Lakecrest-St. John\'s', 'Lakecrest School', 'Lakecrest Independent School'] }
     ];
 
-    for (const schoolName of schoolsToArchive) {
-      try {
-        const schools = await base44.asServiceRole.entities.School.filter({ name: schoolName });
-        if (schools.length > 0) {
-          await base44.asServiceRole.entities.School.update(schools[0].id, {
-            status: 'archived'
-          });
-          results.archived.push(schoolName);
-        } else {
-          results.skipped.push(`Archive: ${schoolName} not found`);
+    for (const schoolEntry of schoolsToArchive) {
+      let found = false;
+      for (const name of schoolEntry.variations) {
+        try {
+          const schools = await base44.asServiceRole.entities.School.filter({ name });
+          if (schools.length > 0) {
+            await base44.asServiceRole.entities.School.update(schools[0].id, {
+              status: 'archived'
+            });
+            results.archived.push(schools[0].name);
+            found = true;
+            break;
+          }
+        } catch (error) {
+          // Continue to next variation
         }
-      } catch (error) {
-        results.errors.push(`Archive ${schoolName}: ${error.message}`);
+      }
+      if (!found) {
+        results.skipped.push(`Archive: ${schoolEntry.variations[0]} not found`);
       }
     }
 
     // 2. UPDATE 23 valid schools with enrichment data
-    const enrichmentData = [
+    const schoolsToUpdate = [
       // Batch 1
       {
-        id: "69994fc92bafeec5d056488d",
+        name: "Lakecrest Independent School",
         address: "58 Patrick Street, St. John's, NL A1E 2S7",
         phone: "709-726-0024",
         email: "info@lakecrest.ca",
@@ -63,7 +69,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fc9d92c6b7d8e86d1df",
+        name: "St. Bonaventure's College",
         address: "2A Bonaventure Ave, St. John's, NL A1C 6B3",
         phone: "709-726-0024",
         email: "info@stbons.ca",
@@ -78,7 +84,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fca2bafeec5d0564893",
+        name: "Halifax Grammar School",
         address: "945 Tower Road, Halifax, NS B3H 2Y2",
         phone: "902-422-6497",
         email: "admissions@halifaxgrammar.ca",
@@ -94,7 +100,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fca4b76c8c9eb92f693",
+        name: "Sacred Heart School of Halifax",
         address: "5820 Spring Garden Rd, Halifax, NS",
         phone: "902-422-4459",
         email: "info@shsh.ca",
@@ -110,7 +116,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fca5fe5a92c0199e43b",
+        name: "Armbrae Academy",
         address: "1400 Oxford Street, Halifax, NS B3H 3Y8",
         phone: "902-423-9811",
         email: "info@armbrae.ns.ca",
@@ -126,7 +132,7 @@ Deno.serve(async (req) => {
       },
       // Batch 2
       {
-        id: "69994fca758416d863f69838",
+        name: "Halifax Independent School",
         address: "3331 Connaught Avenue, Halifax, NS B3L 3B4",
         phone: "902-423-9777",
         website: "https://halifaxindependentschool.ca",
@@ -139,7 +145,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fca8b2b73ee374a5843",
+        name: "King's-Edgehill School",
         address: "33 King's-Edgehill Lane, Windsor, NS B0N 2T0",
         phone: "902-798-2278",
         email: "kesinfo@kes.ns.ca",
@@ -154,7 +160,7 @@ Deno.serve(async (req) => {
         accreditations: ["CAIS", "IB World School", "NAIS"]
       },
       {
-        id: "69994fcaa572719a770339a0",
+        name: "Maritime Muslim Academy",
         address: "6225 Chebucto Road, Halifax, NS B3L 1K7",
         phone: "902-429-9067",
         email: "admin@maritimemuslimacademy.ca",
@@ -170,7 +176,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fcace63567831d1eb96",
+        name: "Rothesay Netherwood School",
         address: "40 College Hill Road, Rothesay, NB E2E 5H1",
         phone: "506-848-0859",
         email: "info@rns.cc",
@@ -185,7 +191,7 @@ Deno.serve(async (req) => {
         accreditations: ["CAIS", "NAIS"]
       },
       {
-        id: "69994fcae21f73602f305f42",
+        name: "Sussex Christian School",
         address: "45 Chapman Drive, Sussex, NB E4E 1M4",
         phone: "506-433-4005",
         email: "info@sussexchristianschool.ca",
@@ -200,7 +206,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fcb0789725f46337a71",
+        name: "Luther College High School",
         address: "1500 Royal Street, Regina, SK S4T 5A5",
         phone: "306-791-9150",
         website: "https://www.luthercollege.edu/highschool",
@@ -214,7 +220,7 @@ Deno.serve(async (req) => {
         religiousAffiliation: "Lutheran"
       },
       {
-        id: "69994fcb1c9f408ce819f796",
+        name: "Saskatoon Christian School",
         address: "102 Pinehouse Drive, Saskatoon, SK S7K 5H7",
         phone: "306-242-7141",
         curriculumType: "Traditional",
@@ -225,7 +231,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fcb2d88667c40e53a31",
+        name: "Legacy Christian Academy",
         address: "102 Pinehouse Drive, Saskatoon, SK S7K 5H7",
         phone: "306-242-5086",
         email: "info@legacyacademy.ca",
@@ -239,7 +245,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fcb42f65a4430e3bb4f",
+        name: "Regina Christian School",
         address: "2505 23rd Avenue, Regina, SK S4S 7K7",
         phone: "306-775-0919",
         email: "office@myrcs.org",
@@ -255,7 +261,7 @@ Deno.serve(async (req) => {
       },
       // Batch 3
       {
-        id: "69994fcb57c7931c81ef0319",
+        name: "Swift Current Christian School",
         curriculumType: "Traditional",
         gradesServed: "K-12",
         lowestGrade: 0,
@@ -266,7 +272,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fcb6dd6164966952864",
+        name: "Weyburn Comprehensive School",
         curriculumType: "Traditional",
         gradesServed: "9-12",
         lowestGrade: 9,
@@ -276,7 +282,7 @@ Deno.serve(async (req) => {
         provinceState: "Saskatchewan"
       },
       {
-        id: "69994fcb8334469a770339d2",
+        name: "St. John's-Ravenscourt School",
         address: "400 South Drive, Winnipeg, MB R3T 3K5",
         phone: "204-477-2400",
         email: "info@sjr.mb.ca",
@@ -291,7 +297,7 @@ Deno.serve(async (req) => {
         accreditations: ["CAIS", "NAIS"]
       },
       {
-        id: "69994fcb99946445582f6e72",
+        name: "Balmoral Hall School",
         address: "630 Westminster Ave, Winnipeg, MB R3C 3S1",
         phone: "204-784-1600",
         email: "info@balmoralhall.ca",
@@ -307,7 +313,7 @@ Deno.serve(async (req) => {
         schoolType: "Day School"
       },
       {
-        id: "69994fcbaed83e1c071725b8",
+        name: "Mennonite Brethren Collegiate Institute",
         address: "173 Talbot Avenue, Winnipeg, MB R2L 0P6",
         phone: "204-667-8210",
         email: "info@mbci.mb.ca",
@@ -321,7 +327,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fcbbd3a77864f1d6438",
+        name: "Westgate Mennonite Collegiate",
         address: "86 West Gate, Winnipeg, MB R3C 2E1",
         phone: "204-775-7111",
         email: "westgate@westgatemennonite.org",
@@ -335,7 +341,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fcbd25251ed7d337a78",
+        name: "St. Mary's Academy",
         address: "550 Wellington Crescent, Winnipeg, MB R3M 0C1",
         phone: "204-477-0244",
         email: "inquiries@smamb.ca",
@@ -351,7 +357,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fcc1044439c23d1ebdf",
+        name: "Montessori Borealis",
         address: "100 Keish Street, Suite 101, Whitehorse, YT Y1A 0N9",
         phone: "867-456-7100",
         email: "Admin@montessoriborealis.com",
@@ -363,7 +369,7 @@ Deno.serve(async (req) => {
         boardingAvailable: false
       },
       {
-        id: "69994fcc228816c70ed1ebf3",
+        name: "Holy Family Elementary School",
         address: "55 Wann Road, Whitehorse, YT Y1A 5X4",
         phone: "867-667-3500",
         email: "hfes@yukon.ca",
@@ -377,33 +383,37 @@ Deno.serve(async (req) => {
       }
     ];
 
-    // Update each school
-    for (const enrichment of enrichmentData) {
+    // Update each school by looking up by name
+    for (const school of schoolsToUpdate) {
       try {
-        const schoolId = enrichment.id;
+        const found = await base44.asServiceRole.entities.School.filter({ name: school.name });
         
-        // Prepare update data
-        const updateData = { ...enrichment };
-        delete updateData.id; // Remove id from update payload
-        
-        // Set importBatchId
-        updateData.importBatchId = 'CA-ENRICHMENT-2026';
-        
-        // Set schoolType based on boardingAvailable
-        if (enrichment.boardingAvailable === true) {
-          updateData.schoolType = 'Boarding School';
-        } else if (enrichment.boardingAvailable === false) {
-          // Only set to Day School if not already specified
-          if (!enrichment.schoolType) {
-            updateData.schoolType = 'Day School';
+        if (found.length > 0) {
+          // Prepare update data
+          const updateData = { ...school };
+          delete updateData.name; // Remove name from update payload
+          
+          // Set importBatchId
+          updateData.importBatchId = 'CA-ENRICHMENT-2026';
+          
+          // Set schoolType based on boardingAvailable
+          if (school.boardingAvailable === true) {
+            updateData.schoolType = 'Boarding School';
+          } else if (school.boardingAvailable === false) {
+            // Only set to Day School if not already specified
+            if (!school.schoolType) {
+              updateData.schoolType = 'Day School';
+            }
           }
+          
+          // Update the school
+          await base44.asServiceRole.entities.School.update(found[0].id, updateData);
+          results.updated.push(school.name);
+        } else {
+          results.skipped.push(`Update: ${school.name} not found`);
         }
-        
-        // Update the school
-        await base44.asServiceRole.entities.School.update(schoolId, updateData);
-        results.updated.push(schoolId);
       } catch (error) {
-        results.errors.push(`Update ${enrichment.id}: ${error.message}`);
+        results.errors.push(`Update ${school.name}: ${error.message}`);
       }
     }
 
