@@ -181,16 +181,22 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < enrichedSchools.length; i += batchSize) {
       const batch = enrichedSchools.slice(i, i + batchSize);
-      console.log(`Importing batch ${Math.floor(i / batchSize) + 1} (${batch.length} schools)...`);
+      const batchNumber = Math.floor(i / batchSize) + 1;
+      console.log(`Importing batch ${batchNumber} (${batch.length} schools)...`);
 
       try {
         await base44.asServiceRole.entities.School.bulkCreate(batch);
         imported += batch.length;
-        console.log(`Batch ${Math.floor(i / batchSize) + 1} imported successfully`);
+        console.log(`Batch ${batchNumber} imported successfully (${imported}/${enrichedSchools.length})`);
+        
+        // Add delay between batches to avoid rate limits
+        if (i + batchSize < enrichedSchools.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       } catch (error) {
-        console.error(`Error importing batch ${Math.floor(i / batchSize) + 1}:`, error.message);
+        console.error(`Error importing batch ${batchNumber}:`, error.message);
         errors.push({
-          batch: Math.floor(i / batchSize) + 1,
+          batch: batchNumber,
           error: error.message
         });
       }
