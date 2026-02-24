@@ -630,6 +630,12 @@ export default function Consultant() {
         }
       }
 
+      // CRITICAL FIX: When confirming brief, pass empty array to force fresh search
+      const isBriefConfirmingForResults = isBriefConfirmation || 
+                                          (briefStatus === BRIEF_STATUS.PENDING_REVIEW && 
+                                           (messageText.toLowerCase().includes('show') || 
+                                            messageText.toLowerCase().includes('right')));
+      
       // Call orchestrateConversation with current schools context and user location
       const response = await base44.functions.invoke('orchestrateConversation', {
         message: messageText,
@@ -639,7 +645,7 @@ export default function Consultant() {
         userId: user?.id,
         consultantName: selectedConsultant,
         currentOnboardingPhase: onboardingPhase,
-        currentSchools: schools,
+        currentSchools: isBriefConfirmingForResults ? [] : schools,
         userNotes,
         shortlistedSchools,
         userLocation: userLocation ? {
