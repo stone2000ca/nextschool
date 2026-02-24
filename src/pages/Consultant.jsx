@@ -115,22 +115,23 @@ export default function Consultant() {
     }
   }, [currentConversation?.conversationContext?.briefStatus]);
   
-  // DETAIL VIEW BUG FIX: Prevent currentView from being reset when selectedSchool exists
+  // BUG-DD-001 FIX: selectedSchool is the SINGLE SOURCE OF TRUTH for detail view
   useEffect(() => {
-    // Guard: If a school is selected and we're in detail view, don't allow view changes
-    if (selectedSchool && currentView === 'detail') {
-      console.log('[DETAIL VIEW GUARD] Maintaining detail view for:', selectedSchool.name);
+    // CRITICAL: If a school is selected, ALWAYS maintain detail view - no exceptions
+    if (selectedSchool) {
+      if (currentView !== 'detail') {
+        console.log('[DETAIL VIEW] Setting view to detail for:', selectedSchool.name);
+        setCurrentView('detail');
+      }
       return;
     }
     
-    // Only sync view from state if no school is selected
-    if (!selectedSchool) {
-      const conversationState = currentConversation?.conversationContext?.state || STATES.WELCOME;
-      if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(conversationState)) {
-        setCurrentView('chat');
-      } else if (conversationState === STATES.RESULTS) {
-        setCurrentView('schools');
-      }
+    // Only sync view from state if NO school is selected
+    const conversationState = currentConversation?.conversationContext?.state || STATES.WELCOME;
+    if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(conversationState)) {
+      setCurrentView('chat');
+    } else if (conversationState === STATES.RESULTS) {
+      setCurrentView('schools');
     }
   }, [currentConversation?.conversationContext?.state, selectedSchool, currentView]);
   
@@ -686,25 +687,28 @@ export default function Consultant() {
         });
       }
 
-      // BUG-DD-001 FIX: CRITICAL guard - NEVER change view if in DEEP_DIVE with school selected
-      const shouldMaintainDeepDive = response.data.state === STATES.DEEP_DIVE && selectedSchool !== null;
+      // BUG-DD-001 FIX: CONSOLIDATED view logic - selectedSchool is SINGLE SOURCE OF TRUTH
+      // If a school is selected (detail view active), NEVER change the view regardless of state
+      const isViewingSchoolDetail = selectedSchool !== null || currentView === 'detail';
       
-      if (!shouldMaintainDeepDive && response.data.state) {
+      if (!isViewingSchoolDetail && response.data.state) {
+        // Only update view if NOT viewing a school detail
         if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(response.data.state)) {
           setCurrentView('chat');
           setSelectedSchool(null);
         } else if (response.data.state === STATES.RESULTS) {
           setCurrentView('schools');
           setSelectedSchool(null);
-        } else if (response.data.state === STATES.DEEP_DIVE) {
+        } else if (response.data.state === STATES.DEEP_DIVE && selectedSchool) {
+          // Only set detail view if we actually have a school selected
           setCurrentView('detail');
         }
-      } else if (shouldMaintainDeepDive) {
-        console.log('[BUG-DD-001] Maintaining detail view - DEEP_DIVE state with school:', selectedSchool.name);
+      } else if (isViewingSchoolDetail) {
+        console.log('[BUG-DD-001] Maintaining detail view - school selected:', selectedSchool?.name);
       }
       
-      // BUG-DD-001: Guard against switching view if in DEEP_DIVE with selected school
-      const isDeepDivingSchool = response.data.state === STATES.DEEP_DIVE && selectedSchool !== null;
+      // Use the same guard for schools display logic
+      const isDeepDivingSchool = isViewingSchoolDetail;
       
       // FIX #3: First priority - if schools are returned, display them (ONLY if not in DEEP_DIVE)
       if (response.data.schools && response.data.schools.length > 0 && !isDeepDivingSchool) {
