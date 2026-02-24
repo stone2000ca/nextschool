@@ -935,9 +935,11 @@ Return ONLY valid JSON. Do NOT explain.`;
         }
       }
       
-      // Parse and normalize childGrade BEFORE building searchParams
-      const rawGrade = conversationFamilyProfile?.childGrade;
+      // AGGRESSIVE FALLBACK: Extract grade from multiple sources
       let parsedGrade = null;
+      
+      // Fallback 1: conversationFamilyProfile.childGrade
+      const rawGrade = conversationFamilyProfile?.childGrade;
       if (rawGrade !== null && rawGrade !== undefined) {
         if (typeof rawGrade === 'number') { parsedGrade = rawGrade; }
         else if (typeof rawGrade === 'string') {
@@ -951,11 +953,85 @@ Return ONLY valid JSON. Do NOT explain.`;
           if (isNaN(parsedGrade)) { parsedGrade = null; }
         }
       }
-      console.log('[GRADE DEBUG] rawGrade:', rawGrade, 'parsedGrade:', parsedGrade);
+      console.log('[GRADE FALLBACK 1] conversationFamilyProfile.childGrade:', rawGrade, '→ parsedGrade:', parsedGrade);
       
-      // Parse maxTuition
-      const parsedTuition = conversationFamilyProfile?.maxTuition ? parseInt(conversationFamilyProfile.maxTuition) : null;
-      console.log('[SEARCH] Building params with parsedGrade:', parsedGrade, 'parsedTuition:', parsedTuition);
+      // Fallback 2: context.extractedEntities?.childGrade
+      if (parsedGrade === null && context.extractedEntities?.childGrade !== null && context.extractedEntities?.childGrade !== undefined) {
+        const extracted = context.extractedEntities.childGrade;
+        parsedGrade = typeof extracted === 'number' ? extracted : parseInt(extracted);
+        if (isNaN(parsedGrade)) { parsedGrade = null; }
+        console.log('[GRADE FALLBACK 2] context.extractedEntities.childGrade:', extracted, '→ parsedGrade:', parsedGrade);
+      }
+      
+      // Fallback 3: Parse Brief text from conversation history
+      if (parsedGrade === null && conversationHistory) {
+        const briefMsg = conversationHistory.slice().reverse().find(m => m.role === 'assistant' && /•\s*Student:/i.test(m.content));
+        if (briefMsg) {
+          const gradeMatch = briefMsg.content.match(/•\s*Student:.*?\b(?:Grade\s+(\d+)|JK|SK|Kindergarten|K)\b/i);
+          if (gradeMatch) {
+            if (/JK/i.test(gradeMatch[0])) { parsedGrade = -1; }
+            else if (/SK|Kindergarten|(?<!\d)K(?!\w)/i.test(gradeMatch[0])) { parsedGrade = 0; }
+            else if (gradeMatch[1]) { parsedGrade = parseInt(gradeMatch[1]); }
+            console.log('[GRADE FALLBACK 3] Parsed from Brief text:', gradeMatch[0], '→ parsedGrade:', parsedGrade);
+          }
+        }
+      }
+      
+      // Fallback 4: context.conversationContext?.familyProfile?.childGrade
+      if (parsedGrade === null && context.conversationContext?.familyProfile?.childGrade !== null && context.conversationContext?.familyProfile?.childGrade !== undefined) {
+        parsedGrade = parseInt(context.conversationContext.familyProfile.childGrade);
+        if (isNaN(parsedGrade)) { parsedGrade = null; }
+        console.log('[GRADE FALLBACK 4] context.conversationContext.familyProfile.childGrade:', context.conversationContext.familyProfile.childGrade, '→ parsedGrade:', parsedGrade);
+      }
+      
+      console.log('[GRADE FINAL] parsedGrade:', parsedGrade);
+      
+      // AGGRESSIVE FALLBACK: Extract budget from multiple sources
+      let parsedTuition = null;
+      
+      // Fallback 1: conversationFamilyProfile.maxTuition
+      if (conversationFamilyProfile?.maxTuition) {
+        parsedTuition = typeof conversationFamilyProfile.maxTuition === 'number' ? conversationFamilyProfile.maxTuition : parseInt(conversationFamilyProfile.maxTuition);
+        if (isNaN(parsedTuition)) { parsedTuition = null; }
+        console.log('[BUDGET FALLBACK 1] conversationFamilyProfile.maxTuition:', conversationFamilyProfile.maxTuition, '→ parsedTuition:', parsedTuition);
+      }
+      
+      // Fallback 2: context.extractedEntities?.budgetSingle
+      if (parsedTuition === null && context.extractedEntities?.budgetSingle) {
+        parsedTuition = parseInt(context.extractedEntities.budgetSingle);
+        if (isNaN(parsedTuition)) { parsedTuition = null; }
+        console.log('[BUDGET FALLBACK 2] context.extractedEntities.budgetSingle:', context.extractedEntities.budgetSingle, '→ parsedTuition:', parsedTuition);
+      }
+      
+      // Fallback 3: context.extractedEntities?.budgetMax
+      if (parsedTuition === null && context.extractedEntities?.budgetMax) {
+        parsedTuition = parseInt(context.extractedEntities.budgetMax);
+        if (isNaN(parsedTuition)) { parsedTuition = null; }
+        console.log('[BUDGET FALLBACK 3] context.extractedEntities.budgetMax:', context.extractedEntities.budgetMax, '→ parsedTuition:', parsedTuition);
+      }
+      
+      // Fallback 4: Parse Brief text for budget
+      if (parsedTuition === null && conversationHistory) {
+        const briefMsg = conversationHistory.slice().reverse().find(m => m.role === 'assistant' && /•\s*Budget:/i.test(m.content));
+        if (briefMsg) {
+          // Match patterns like "$25,000", "$30K", "25000", "30k"
+          const budgetMatch = briefMsg.content.match(/•\s*Budget:.*?\$?([\d,]+)(?:,000|K)?/i);
+          if (budgetMatch) {
+            let extracted = budgetMatch[1].replace(/,/g, '');
+            if (/K$/i.test(budgetMatch[0])) {
+              extracted = parseInt(extracted) * 1000;
+            } else if (!/,000/.test(budgetMatch[0]) && extracted.length <= 2) {
+              extracted = parseInt(extracted) * 1000;
+            } else {
+              extracted = parseInt(extracted);
+            }
+            parsedTuition = extracted;
+            console.log('[BUDGET FALLBACK 4] Parsed from Brief text:', budgetMatch[0], '→ parsedTuition:', parsedTuition);
+          }
+        }
+      }
+      
+      console.log('[BUDGET FINAL] parsedTuition:', parsedTuition);
       
       const searchParams = {
         limit: 50,

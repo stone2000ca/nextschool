@@ -27,6 +27,11 @@ function toTitleCase(str) {
 
 async function performSearch(req) {
   const base44 = createClientFromRequest(req);
+    const payload = await req.json();
+    
+    // DIAGNOSTIC: Log COMPLETE incoming parameters
+    console.log('[SEARCH RECEIVED] Complete payload:', JSON.stringify(payload, null, 2));
+    
     const { 
       region, 
       country,
@@ -49,7 +54,7 @@ async function performSearch(req) {
       conversationId = null,
       userId = null,
       searchQuery = ''
-    } = await req.json();
+    } = payload;
 
     // TASK C: FUZZY SCHOOL NAME MATCHING - School name lookup map
     const schoolNameLookup = {
