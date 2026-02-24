@@ -1234,7 +1234,7 @@ FAMILY NEEDS:
 - Curriculum Preference: ${conversationFamilyProfile?.curriculumPreference?.join(', ') || 'Not specified'}
 `;
         
-        const responsePrompt = `[STATE: DEEP_DIVE] You are discussing ${selectedSchool?.name || 'a specific school'} with this family. 
+        const responsePrompt = `[STATE: DEEP_DIVE] You are evaluating ${selectedSchool?.name || 'a specific school'} for this family using a structured consultant framework.
 
 ${schoolDataStr}
 ${familyDataStr}
@@ -1244,11 +1244,47 @@ ${conversationSummary}
 
 Parent: "${message}"
 
-Analyze this school's strengths and potential concerns for THIS family. Discuss fit based on their specific priorities and needs. Offer to compare with other results if helpful. Do NOT ask intake questions. Max 200 words.
+DEEPDIVE v2 FRAMEWORK - Generate a structured evaluation card followed by conversational bridge:
 
-${consultantName === 'Jackie' ? 'YOU ARE JACKIE - Warm, empathetic.' : 'YOU ARE LIAM - Direct, strategic.'}
+**EVALUATION CARD FORMAT:**
 
-Respond as ${consultantName}.`;
+🏫 **${selectedSchool?.name || 'School Name'}**
+${selectedSchool?.website ? `🔗 ${selectedSchool.website}` : ''}
+
+**FIT ASSESSMENT:** [Strong Match / Good Match / Worth Exploring]
+- Strong Match = 3+ family priorities directly met
+- Good Match = 2 priorities met
+- Worth Exploring = 1 or fewer priorities met
+
+**1. FIT NARRATIVE**
+Connect this specific child to this specific school using concrete details from the Brief. Reference actual priorities, needs, and interests the parent mentioned. Be specific, not generic.
+
+**2. ACADEMIC PROGRAM**
+${selectedSchool?.curriculumType ? `Curriculum, specializations, class sizes` : 'Flag: No curriculum data available - ask school about academic programs'}
+
+**3. COMMUNITY & CULTURE**
+${selectedSchool?.description ? `School's vibe, values, student body feel` : 'Flag: Limited culture data - ask about school community during tour'}
+
+**4. TRADE-OFFS (Honest)**
+What this school offers vs. what it doesn't. Use ONLY data from SchoolProfile. Never fabricate. If data is missing, say "Not listed - worth asking about [specific question]."
+
+**5. LOGISTICS**
+Location (${selectedSchool?.city || 'location'}), commute, before/after care if relevant to family
+
+**6. MONEY**
+Tuition: ${selectedSchool?.tuition ? `$${selectedSchool.tuition}` : 'Not specified - ask school directly'}
+Family budget: ${conversationFamilyProfile?.maxTuition ? `$${conversationFamilyProfile.maxTuition}` : 'Not specified'}
+${selectedSchool?.financialAidAvailable ? 'Financial aid available' : 'Financial aid status: Unknown - ask admissions'}
+
+---
+
+After the card, bridge naturally to conversation. ${consultantName === 'Jackie' ? 'Jackie: Be warm and empathetic. Use "I think..." and "It sounds like..." phrasing.' : 'Liam: Be direct and strategic. Use "Here\'s what stands out..." and "Bottom line..." phrasing.'}
+
+CRITICAL HONESTY PATTERN for missing data:
+❌ DON'T fabricate or guess
+✅ DO say: "The school profile doesn't list [X], so it's worth asking during your tour: [specific question]"
+
+Respond as ${consultantName}. Max 300 words.`;
         
         const aiResponse = await base44.integrations.Core.InvokeLLM({
           prompt: responsePrompt
