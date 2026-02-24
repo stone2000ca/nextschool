@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   const processRequest = async () => {
     try {
       const base44 = createClientFromRequest(req);
-      const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userNotes, shortlistedSchools, userLocation } = await req.json();
+      const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userNotes, shortlistedSchools, userLocation, selectedSchoolId } = await req.json();
 
     console.log('ORCH START', { 
       messageLength: message?.length, 
@@ -26,9 +26,15 @@ Deno.serve(async (req) => {
     const context = conversationContext || {};
     const msgLower = message.toLowerCase();
     
+    // BUG-DD-002 FIX #1: FORCE DEEP_DIVE state when selectedSchoolId is present
+    if (selectedSchoolId) {
+      console.log('[BUG-DD-002 FIX] selectedSchoolId present, forcing DEEP_DIVE state:', selectedSchoolId);
+      context.state = 'DEEP_DIVE';
+    }
+    
     // AGGRESSIVE STATE RESET - must be FIRST thing after context is set
     const histLen = conversationHistory?.length || 0;
-    if (histLen <= 1) {
+    if (histLen <= 1 && !selectedSchoolId) {
       console.log('[HARD RESET] histLen=' + histLen + ', clearing stale state');
       context.state = 'WELCOME';
       context.briefStatus = null;
@@ -1291,118 +1297,167 @@ Respond as ${consultantName}. ONE question max.`;
     
     if (currentState === STATES.DEEP_DIVE) {
       let aiMessage = '';
+      let selectedSchool = null;
+      
       try {
-        // Load full school profile if selectedSchoolId provided
-        let selectedSchool = null;
+        // BUG-DD-002 FIX #2: Load full school profile when selectedSchoolId provided
         if (selectedSchoolId) {
           try {
             const schoolResults = await base44.entities.School.filter({ id: selectedSchoolId });
             if (schoolResults.length > 0) {
               selectedSchool = schoolResults[0];
+              console.log('[BUG-DD-002 FIX] Loaded school:', selectedSchool.name);
+            } else {
+              console.error('[BUG-DD-002] School not found for ID:', selectedSchoolId);
             }
           } catch (e) {
             console.error('[ERROR] Failed to load selected school:', e);
           }
         }
         
-        const history = conversationHistory || [];
-        const recentMessages = history.slice(-10);
-        const conversationSummary = recentMessages
-          .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
-          .join('\n');
-        
-        // Build detailed school data string
-        let schoolDataStr = '';
-        if (selectedSchool) {
-          schoolDataStr = `
-SCHOOL PROFILE:
-- Name: ${selectedSchool.name}
-- Location: ${selectedSchool.city}, ${selectedSchool.provinceState}
-- Grades: ${selectedSchool.lowestGrade}-${selectedSchool.highestGrade}
-- Tuition: ${selectedSchool.tuition ? '$' + selectedSchool.tuition : 'Not specified'}
-- Curriculum: ${selectedSchool.curriculumType || 'Traditional'}
-- Specializations: ${selectedSchool.specializations?.join(', ') || 'None listed'}
-- Student-Teacher Ratio: ${selectedSchool.studentTeacherRatio || 'Not specified'}
-- Description: ${selectedSchool.description || 'No description available'}
-- Arts Programs: ${selectedSchool.artsPrograms?.join(', ') || 'None listed'}
-- Sports Programs: ${selectedSchool.sportsPrograms?.join(', ') || 'None listed'}
-- Facilities: ${selectedSchool.facilities?.join(', ') || 'Not listed'}
-`;
+        // BUG-DD-002 FIX #4: Fallback - if InvokeLLM fails, return structured school data
+        if (!selectedSchool) {
+          console.error('[BUG-DD-002] No school loaded, cannot generate Deep Dive');
+          return Response.json({
+            message: "I couldn't load that school's details. Please try selecting it again.",
+            state: currentState,
+            briefStatus: briefStatus,
+            schools: currentSchools || [],
+            familyProfile: conversationFamilyProfile,
+            conversationContext: context
+          });
         }
         
-        // Build family data string
-        const familyDataStr = `
-FAMILY NEEDS:
-- Child Grade: ${conversationFamilyProfile?.childGrade || 'Not specified'}
-- Location: ${conversationFamilyProfile?.locationArea || 'Not specified'}
-- Budget: ${conversationFamilyProfile?.maxTuition ? '$' + conversationFamilyProfile.maxTuition : 'Not specified'}
-- Priorities: ${conversationFamilyProfile?.priorities?.join(', ') || 'Not specified'}
-- Learning Needs: ${conversationFamilyProfile?.learningNeeds?.join(', ') || 'None mentioned'}
-- Curriculum Preference: ${conversationFamilyProfile?.curriculumPreference?.join(', ') || 'Not specified'}
+        // Build detailed school data string
+        const schoolDataStr = `
+SCHOOL PROFILE (${selectedSchool.name}):
+- Name: ${selectedSchool.name}
+- Location: ${selectedSchool.city}, ${selectedSchool.provinceState || selectedSchool.country}
+- Grades Served: ${selectedSchool.lowestGrade}-${selectedSchool.highestGrade}
+- Tuition: ${selectedSchool.tuition || selectedSchool.dayTuition ? '$' + (selectedSchool.tuition || selectedSchool.dayTuition) : 'Not specified'}
+- Boarding Tuition: ${selectedSchool.boardingTuition ? '$' + selectedSchool.boardingTuition : 'N/A'}
+- Financial Aid: ${selectedSchool.financialAidAvailable ? 'Available' : 'Unknown'}
+- Curriculum: ${selectedSchool.curriculumType || 'Traditional'}
+- Curriculum Offerings: ${selectedSchool.curriculum?.join(', ') || 'Not listed'}
+- Specializations: ${selectedSchool.specializations?.join(', ') || 'None listed'}
+- Gender Policy: ${selectedSchool.genderPolicy || 'Co-ed'}
+- Enrollment: ${selectedSchool.enrollment || 'Not specified'}
+- Average Class Size: ${selectedSchool.avgClassSize || 'Not specified'}
+- Student-Teacher Ratio: ${selectedSchool.studentTeacherRatio || 'Not specified'}
+- Description: ${selectedSchool.description || 'No description available'}
+- Mission Statement: ${selectedSchool.missionStatement || 'Not available'}
+- Values: ${selectedSchool.values?.join(', ') || 'Not listed'}
+- Arts Programs: ${selectedSchool.artsPrograms?.join(', ') || 'None listed'}
+- Sports Programs: ${selectedSchool.sportsPrograms?.join(', ') || 'None listed'}
+- Languages: ${selectedSchool.languages?.join(', ') || 'Not listed'}
+- Facilities: ${selectedSchool.facilities?.join(', ') || 'Not listed'}
+- Campus Size: ${selectedSchool.campusSize || 'Not specified'}
+- Community Vibe: ${selectedSchool.communityVibe || 'Not available'}
+- Accreditations: ${selectedSchool.accreditations?.join(', ') || 'Not listed'}
+- Application Deadline: ${selectedSchool.applicationDeadline || 'Not specified'}
+- Entrance Requirements: ${selectedSchool.entranceRequirements || 'Not specified'}
 `;
         
-        const responsePrompt = `[STATE: DEEP_DIVE] Generate a comprehensive school evaluation using the 6-AREA FRAMEWORK below.
+        // Build family brief data string with child name
+        const childName = conversationFamilyProfile?.childName || 'your child';
+        const familyDataStr = `
+FAMILY BRIEF:
+- Child: ${childName}
+- Grade: ${conversationFamilyProfile?.childGrade !== null && conversationFamilyProfile?.childGrade !== undefined ? (conversationFamilyProfile.childGrade === -1 ? 'JK' : conversationFamilyProfile.childGrade === 0 ? 'SK' : 'Grade ' + conversationFamilyProfile.childGrade) : 'Not specified'}
+- Location: ${conversationFamilyProfile?.locationArea || 'Not specified'}
+- Budget: ${conversationFamilyProfile?.maxTuition ? '$' + conversationFamilyProfile.maxTuition : 'Not specified'}
+- Interests: ${conversationFamilyProfile?.interests?.join(', ') || 'Not specified'}
+- Priorities: ${conversationFamilyProfile?.priorities?.join(', ') || 'Not specified'}
+- Learning Needs: ${conversationFamilyProfile?.learning_needs?.join(', ') || 'None mentioned'}
+- Wellbeing Needs: ${conversationFamilyProfile?.wellbeing_needs?.join(', ') || 'None mentioned'}
+- Curriculum Preference: ${conversationFamilyProfile?.curriculumPreference?.join(', ') || 'Not specified'}
+- Program Preferences: ${conversationFamilyProfile?.programPreferences?.join(', ') || 'Not specified'}
+- Dealbreakers: ${conversationFamilyProfile?.dealbreakers?.join(', ') || 'Not specified'}
+`;
+        
+        // DEEPDIVE v2 PROMPT with 3-area framework
+        const responsePrompt = `[STATE: DEEP_DIVE] Generate a structured school analysis card using THIS child's specific profile.
 
 ${schoolDataStr}
 ${familyDataStr}
 
-Parent: "${message}"
+Parent's message: "${message}"
 
-CRITICAL: You MUST output in this EXACT 6-AREA structured format:
+OUTPUT FORMAT - Use this EXACT structure:
 
-**${selectedSchool?.name || 'School Name'}** - [Strong Match / Good Match / Worth Exploring]
-${selectedSchool?.city || 'City'} | ${selectedSchool?.lowestGrade ? `Grade ${selectedSchool.lowestGrade}-${selectedSchool.highestGrade}` : 'Grades N/A'} | ${selectedSchool?.genderPolicy || 'Co-ed'}
+**Area 1: FIT NARRATIVE**
+Connect THIS child (${childName}, ${conversationFamilyProfile?.childGrade !== null ? 'Grade ' + conversationFamilyProfile.childGrade : 'grade not specified'}) to THIS school (${selectedSchool.name}). Use specific entities from Family Brief: name, grade, interests (${conversationFamilyProfile?.interests?.join(', ') || 'not specified'}), learning needs (${conversationFamilyProfile?.learning_needs?.join(', ') || 'none mentioned'}). NOT generic facts. 2-3 sentences showing how ${childName}'s specific profile fits this school's specific offerings.
 
-**1. ACADEMIC FIT:**
-[2-3 sentences: How does this school's curriculum (${selectedSchool?.curriculumType || 'Traditional'}) match the child's grade (${conversationFamilyProfile?.childGrade || 'N/A'}) and academic needs? Mention class sizes, student-teacher ratio, learning support if available. Be specific with data from SchoolProfile.]
+**Area 2: HONEST TRADE-OFFS**
+What this school does well AND doesn't for THIS family. ONLY reference data from School Profile above. When data is missing, say what's missing and suggest a question to ask the school.
 
-**2. SPECIAL PROGRAMS:**
-[2-3 sentences: What programs align with family priorities (${conversationFamilyProfile?.priorities?.join(', ') || 'Not specified'})? Cover arts (${selectedSchool?.artsPrograms?.length > 0 ? selectedSchool.artsPrograms.join(', ') : 'Not listed'}), sports (${selectedSchool?.sportsPrograms?.length > 0 ? selectedSchool.sportsPrograms.join(', ') : 'Not listed'}), specializations (${selectedSchool?.specializations?.join(', ') || 'Not listed'}). If data missing, say "Not listed - ask about X".]
+WHAT IT DOES WELL:
+• [Specific strength #1 from School Profile data]
+• [Specific strength #2 from School Profile data]
 
-**3. CULTURE & COMMUNITY:**
-[2-3 sentences: What's the school's vibe? Use mission statement, values, campus feel, parent involvement, diversity if available from SchoolProfile. Connect to family's stated priorities about community/culture. Be honest if data is thin.]
+WHAT'S LESS CLEAR:
+• [Gap #1 in data - suggest what to ask]
+• [Gap #2 in data - suggest what to ask]
 
-**4. PRACTICAL CONSIDERATIONS:**
-• **Tuition:** ${selectedSchool?.tuition ? `$${selectedSchool.tuition}/year` : 'Not specified - contact school'}
-• **Financial Aid:** ${selectedSchool?.financialAidAvailable ? 'Available' : 'Unknown - ask admissions'}
-• **Budget Fit:** [One sentence comparing to family budget: ${conversationFamilyProfile?.maxTuition ? `$${conversationFamilyProfile.maxTuition}` : 'No budget specified'}]
-• **Location:** ${selectedSchool?.city || 'City'}, ${selectedSchool?.provinceState || 'Province'} [Add commute note if relevant]
-• **Admissions:** [Mention application deadlines, entrance requirements if listed in SchoolProfile. Otherwise: "Contact school for deadlines and requirements"]
-
-**5. WHAT PARENTS SAY:**
-[1-2 sentences: If SchoolProfile has parent testimonials, community vibe, or reputation data, summarize it here. If not available, say: "Parent feedback not available - consider visiting the school or asking for parent references."]
-
-**6. QUESTIONS TO ASK THE SCHOOL:**
-• [Question 1: Target a gap in the data - e.g., if no learning support info, ask about that]
-• [Question 2: Based on family priorities - e.g., if arts important, ask about showcase opportunities]
-• [Question 3: Practical - e.g., waitlist status, mid-year admissions, sibling priority]
+**Area 3: MONEY CONVERSATION**
+• Tuition: ${selectedSchool.tuition || selectedSchool.dayTuition ? '$' + (selectedSchool.tuition || selectedSchool.dayTuition).toLocaleString() + '/year' : 'Not specified - contact admissions'}
+• Family Budget: ${conversationFamilyProfile?.maxTuition ? '$' + conversationFamilyProfile.maxTuition.toLocaleString() : 'Not specified'}
+• Budget Fit: [One honest sentence comparing tuition to budget. If financial aid available, mention it: "${selectedSchool.financialAidAvailable ? 'Financial aid is available' : 'Financial aid status unknown - ask admissions'}"]
 
 ---
 
-${consultantName === 'Jackie' ? 'After the 6 areas, add 1-2 warm sentences bridging to conversation. Use "I think..." or "It sounds like..." to make it conversational.' : 'After the 6 areas, add 1-2 direct sentences. Use "Bottom line:" or "Here\'s what stands out..." to summarize.'}
+${consultantName === 'Jackie' 
+  ? `After the 3 areas, bridge to conversation naturally. Say something like: "Those are my initial thoughts on ${selectedSchool.name}. What jumps out at you?" Be warm and conversational.` 
+  : `After the 3 areas, bridge to conversation naturally. Say something like: "That's the picture for ${selectedSchool.name}. What do you want to explore further?" Be direct and strategic.`}
 
-FIT LABEL LOGIC:
-- Strong Match = 3+ family priorities directly met by school data
-- Good Match = 2 priorities met
-- Worth Exploring = 1 or fewer priorities met OR insufficient data
-
-NEVER fabricate data. If data is missing, explicitly state "Not listed" and suggest what to ask the school.`;
+CRITICAL RULES:
+- Use ${childName} by name in Area 1, not "your child"
+- ONLY use data from School Profile - NEVER fabricate
+- When data missing, explicitly say "Not listed" and suggest what to ask
+- Be honest about gaps - don't fill with assumptions`;
         
         const aiResponse = await base44.integrations.Core.InvokeLLM({
           prompt: responsePrompt
         });
 
-        aiMessage = aiResponse?.response || aiResponse || `Let me tell you about ${selectedSchool?.name || 'this school'}.`;
+        aiMessage = aiResponse?.response || aiResponse || null;
       } catch (e) {
-        console.error('[ERROR] DEEP_DIVE response failed:', e.message);
-        aiMessage = 'Tell me more about what aspects interest you.';
+        console.error('[ERROR] DEEP_DIVE InvokeLLM failed:', e.message);
+        aiMessage = null;
       }
       
+      // BUG-DD-002 FIX #4: Fallback if InvokeLLM fails
+      if (!aiMessage && selectedSchool) {
+        console.log('[BUG-DD-002 FIX #4] InvokeLLM failed, generating structured fallback');
+        const tuitionStr = selectedSchool.tuition || selectedSchool.dayTuition 
+          ? `$${(selectedSchool.tuition || selectedSchool.dayTuition).toLocaleString()}/year` 
+          : 'Not specified';
+        const gradesStr = `Grades ${selectedSchool.lowestGrade}-${selectedSchool.highestGrade}`;
+        const locationStr = `${selectedSchool.city}, ${selectedSchool.provinceState || selectedSchool.country}`;
+        const curriculumStr = selectedSchool.curriculumType || 'Traditional';
+        
+        aiMessage = `Let me pull up the details on ${selectedSchool.name}... Here's what I know:
+
+**${selectedSchool.name}**
+${locationStr} | ${gradesStr} | ${curriculumStr}
+
+**Quick Facts:**
+• Tuition: ${tuitionStr}
+• Enrollment: ${selectedSchool.enrollment || 'Not specified'}
+• Class Size: ${selectedSchool.avgClassSize ? 'Average ' + selectedSchool.avgClassSize + ' students' : 'Not specified'}
+• Curriculum: ${selectedSchool.curriculum?.join(', ') || curriculumStr}
+
+${selectedSchool.description ? '**About:** ' + selectedSchool.description : ''}
+
+What would you like to know more about?`;
+      }
+      
+      // BUG-DD-002 FIX #2: Return ONLY selectedSchool in schools array
       return Response.json({
          message: aiMessage,
          state: currentState,
          briefStatus: briefStatus,
-         schools: currentSchools || [],
+         schools: selectedSchool ? [selectedSchool] : [],
          familyProfile: conversationFamilyProfile,
          conversationContext: context
        });
