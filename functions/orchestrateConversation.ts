@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+// BUG-DD-002 fix: selectedSchoolId destructured
 // deploy-trigger-v5
 
 Deno.serve(async (req) => {
