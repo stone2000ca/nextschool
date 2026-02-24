@@ -890,8 +890,9 @@ Return ONLY valid JSON. Do NOT explain.`;
       context.state = currentState;
     }
 
-    if (currentState === STATES.RESULTS && currentSchools?.length === 0) {
-      // KI-12 DIAGNOSTIC: Log initial locationArea
+    if (currentState === STATES.RESULTS) {
+      // ALWAYS run fresh search when entering RESULTS state, regardless of currentSchools
+      console.log('[SEARCH] Running fresh school search in RESULTS state');
       console.log('[KI-12 DIAG] LocationArea BEFORE fallbacks:', conversationFamilyProfile?.locationArea);
       
       // KI-12 FALLBACK 1: Recover from context.extractedEntities
@@ -934,11 +935,32 @@ Return ONLY valid JSON. Do NOT explain.`;
         }
       }
       
-      // CRITICAL DIAGNOSTIC: Log conversationFamilyProfile before building searchParams
-      console.log('[SEARCH DEBUG] conversationFamilyProfile FULL OBJECT:', JSON.stringify(conversationFamilyProfile, null, 2));
-      console.log('[SEARCH DEBUG] conversationFamilyProfile.childGrade:', conversationFamilyProfile?.childGrade);
-      console.log('[SEARCH DEBUG] conversationFamilyProfile.maxTuition:', conversationFamilyProfile?.maxTuition);
-      console.log('[SEARCH DEBUG] conversationFamilyProfile.locationArea:', conversationFamilyProfile?.locationArea);
+      // Parse and normalize childGrade BEFORE building searchParams
+      let normalizedGrade = conversationFamilyProfile?.childGrade;
+      if (normalizedGrade !== null && normalizedGrade !== undefined) {
+        if (typeof normalizedGrade === 'string') {
+          const gradeLower = normalizedGrade.toLowerCase().trim();
+          const gradeMap = {
+            'pk': -2, 'preschool': -2,
+            'jk': -1, 'junior kindergarten': -1,
+            'k': 0, 'kindergarten': 0, 'sk': 0, 'senior kindergarten': 0
+          };
+          
+          if (gradeMap[gradeLower] !== undefined) {
+            normalizedGrade = gradeMap[gradeLower];
+          } else {
+            const match = normalizedGrade.match(/\d+/);
+            if (match) {
+              normalizedGrade = parseInt(match[0]);
+            }
+          }
+          console.log('[GRADE PARSE] Converted string grade:', conversationFamilyProfile.childGrade, '→', normalizedGrade);
+        }
+        // Update conversationFamilyProfile with normalized value
+        conversationFamilyProfile.childGrade = normalizedGrade;
+      }
+      
+      console.log('[SEARCH] Building params with childGrade:', conversationFamilyProfile?.childGrade, 'maxTuition:', conversationFamilyProfile?.maxTuition);
       
       const searchParams = {
         limit: 50,
@@ -973,33 +995,11 @@ Return ONLY valid JSON. Do NOT explain.`;
         console.log('[KI-12] Prioritizing explicit location:', conversationFamilyProfile.locationArea, 'over auto-detected region:', region);
       }
       
-      // GRADE FILTER FIX: Convert childGrade to numeric and ensure it's passed correctly
+      // GRADE FILTER: childGrade already normalized above, pass directly
       if (conversationFamilyProfile?.childGrade !== null && conversationFamilyProfile?.childGrade !== undefined) {
-        let numericGrade = conversationFamilyProfile.childGrade;
-        
-        // Handle string grade values (in case they slipped through)
-        if (typeof numericGrade === 'string') {
-          const gradeLower = numericGrade.toLowerCase().trim();
-          const gradeMap = {
-            'pk': -2, 'preschool': -2,
-            'jk': -1, 'junior kindergarten': -1,
-            'k': 0, 'kindergarten': 0, 'sk': 0, 'senior kindergarten': 0
-          };
-          
-          if (gradeMap[gradeLower] !== undefined) {
-            numericGrade = gradeMap[gradeLower];
-          } else {
-            // Extract numeric value from "Grade 9" format
-            const match = numericGrade.match(/\d+/);
-            if (match) {
-              numericGrade = parseInt(match[0]);
-            }
-          }
-        }
-        
-        searchParams.minGrade = numericGrade;
-        searchParams.maxGrade = numericGrade;
-        console.log('[GRADE FILTER] Passing minGrade:', numericGrade, 'from childGrade:', conversationFamilyProfile.childGrade);
+        searchParams.minGrade = conversationFamilyProfile.childGrade;
+        searchParams.maxGrade = conversationFamilyProfile.childGrade;
+        console.log('[GRADE FILTER] Passing minGrade/maxGrade:', conversationFamilyProfile.childGrade);
       }
       
       // BUDGET FILTER FIX: Ensure maxTuition is used as hard cap
@@ -1047,8 +1047,7 @@ Return ONLY valid JSON. Do NOT explain.`;
         region: searchParams.region
       });
 
-      // CRITICAL DIAGNOSTIC: Log final searchParams being sent to searchSchools
-      console.log('[SEARCH DEBUG] Final searchParams being sent to searchSchools:', JSON.stringify(searchParams, null, 2));
+      console.log('[SEARCH] Final searchParams:', { minGrade: searchParams.minGrade, maxGrade: searchParams.maxGrade, maxTuition: searchParams.maxTuition, city: searchParams.city });
       
       let schools = [];
       try {
@@ -1059,7 +1058,7 @@ Return ONLY valid JSON. Do NOT explain.`;
           searchQuery: message
         });
         schools = searchResult.data.schools || [];
-        console.log('[SEARCH DEBUG] Schools returned from searchSchools:', schools.length, schools.map(s => `${s.name} (${s.lowestGrade}-${s.highestGrade})`).slice(0, 5));
+        console.log('[SEARCH] Returned', schools.length, 'schools. First 3:', schools.slice(0, 3).map(s => `${s.name} (${s.lowestGrade}-${s.highestGrade})`));
       } catch (e) {
         console.error('[ERROR] searchSchools failed:', e.message);
       }
