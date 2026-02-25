@@ -284,6 +284,7 @@ export async function handleBrief(params) {
       briefMessageText = briefResult || 'Let me summarize what you\'ve shared.';
       console.log('[OPENROUTER] BRIEF generation');
     } catch (openrouterError) {
+      console.error('[ERROR] OpenRouter BRIEF failed:', openrouterError.message);
       console.log('[OPENROUTER FALLBACK] BRIEF generation falling back to InvokeLLM');
       try {
         const briefResult = await base44.integrations.Core.InvokeLLM({
@@ -292,7 +293,7 @@ export async function handleBrief(params) {
         });
         briefMessageText = briefResult?.response || briefResult || 'Let me summarize what you\'ve shared.';
       } catch (fallbackError) {
-        console.error('[FALLBACK ERROR] BRIEF generation failed:', fallbackError.message);
+        console.error('[ERROR] InvokeLLM BRIEF fallback failed:', fallbackError.message);
       }
     }
 
@@ -302,8 +303,26 @@ export async function handleBrief(params) {
     briefMessageText = briefMessageText.replace(/\[child\]/gi, briefChildDisplayName);
     briefMessage = briefMessageText;
   } catch (e) {
-    console.error('[ERROR] BRIEF response failed:', e.message);
-    briefMessage = 'Let me summarize what you\'ve shared. Does that sound right?';
+    console.error('[ERROR] All BRIEF generation failed:', e.message);
+    
+    // PROGRAMMATIC FALLBACK: Build brief from extracted entities
+    const fallbackBrief = [];
+    if (conversationFamilyProfile.childName) fallbackBrief.push(`Student: ${conversationFamilyProfile.childName}`);
+    if (context.extractedEntities?.childGrade) {
+      const gradeDisplay = context.extractedEntities.childGrade === -1 ? 'JK' : context.extractedEntities.childGrade === 0 ? 'SK' : `Grade ${context.extractedEntities.childGrade}`;
+      fallbackBrief.push(`Grade: ${gradeDisplay}`);
+    }
+    if (context.extractedEntities?.locationArea) fallbackBrief.push(`Location: ${context.extractedEntities.locationArea}`);
+    if (conversationFamilyProfile.maxTuition) fallbackBrief.push(`Budget: $${conversationFamilyProfile.maxTuition.toLocaleString()}`);
+    if (conversationFamilyProfile.priorities?.length) fallbackBrief.push(`Priorities: ${conversationFamilyProfile.priorities.join(', ')}`);
+    if (conversationFamilyProfile.interests?.length) fallbackBrief.push(`Interests: ${conversationFamilyProfile.interests.join(', ')}`);
+    if (conversationFamilyProfile.learning_needs?.length) fallbackBrief.push(`Learning needs: ${conversationFamilyProfile.learning_needs.join(', ')}`);
+    if (context.extractedEntities?.genderPreference) fallbackBrief.push(`Gender preference: ${context.extractedEntities.genderPreference}`);
+    if (context.extractedEntities?.boardingPreference) fallbackBrief.push('Boarding: Yes');
+    if (context.extractedEntities?.religiousPreference) fallbackBrief.push(`Religious preference: ${context.extractedEntities.religiousPreference}`);
+    
+    const briefContent = fallbackBrief.length > 0 ? fallbackBrief.map(b => `• ${b}`).join('\n') : 'I captured your preferences but could not format them.';
+    briefMessage = `Here's what I've captured so far:\n\n${briefContent}\n\nDoes that look right? Feel free to adjust anything.`;
   }
 
   // Response validator: strip school names during DISCOVERY
