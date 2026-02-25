@@ -91,6 +91,33 @@ Deno.serve(async (req) => {
     let briefEditCount = context.briefEditCount || 0;
     const MAX_BRIEF_EDITS = 3;
     
+    // DIAGNOSTIC: Track state values
+    try {
+      await base44.asServiceRole.entities.SearchLog.create({
+        query: 'STATE_DIAGNOSTIC',
+        inputFilters: {
+          currentState: currentState,
+          contextState: context.state,
+          selectedSchoolId: selectedSchoolId || 'none',
+          briefStatus: briefStatus,
+          historyLength: conversationHistory?.length || 0
+        },
+        totalSchoolsPassingFilters: 0,
+        topResults: [],
+        conversationId: conversationId,
+        userId: userId
+      });
+    } catch (diagErr) {
+      console.error('[DIAGNOSTIC] Failed to create STATE_DIAGNOSTIC log:', diagErr);
+    }
+    
+    // GUARD: Force DEEP_DIVE state when selectedSchoolId present
+    if (selectedSchoolId && currentState !== STATES.DEEP_DIVE) {
+      console.log('[STATE GUARD] Forcing DEEP_DIVE state. Was:', currentState, 'selectedSchoolId:', selectedSchoolId);
+      currentState = STATES.DEEP_DIVE;
+      context.state = STATES.DEEP_DIVE;
+    }
+    
     // STEP 0: Initialize/retrieve FamilyProfile
     let conversationFamilyProfile = null;
     const conversationId = context.conversationId;
@@ -898,6 +925,13 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
 
     if (currentState === STATES.RESULTS) {
+      // GUARD: Force DEEP_DIVE if selectedSchoolId present
+      if (selectedSchoolId) {
+        console.log('[RESULTS GUARD] selectedSchoolId present, forcing DEEP_DIVE state');
+        currentState = STATES.DEEP_DIVE;
+        context.state = STATES.DEEP_DIVE;
+      }
+      
       // BLOCKER 2 FIX: If selectedSchoolId present, skip RESULTS handler and fall through to DEEP_DIVE
       if (selectedSchoolId) {
         console.log('[RESULTS SKIP] selectedSchoolId present, falling through to DEEP_DIVE handler');
