@@ -10,6 +10,10 @@ Deno.serve(async (req) => {
   );
 
   const processRequest = async () => {
+    var classificationResult;
+    var currentState;
+    var briefStatus;
+    
     try {
       const base44 = createClientFromRequest(req);
       const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userNotes, shortlistedSchools, userLocation, selectedSchoolId } = await req.json();
@@ -75,14 +79,6 @@ Deno.serve(async (req) => {
     
     let briefEditCount = context.briefEditCount || 0;
     const MAX_BRIEF_EDITS = 3;
-    
-    // Update context with classified state
-    context.state = currentState;
-    context.briefStatus = briefStatus;
-    
-    // Store classification metadata in context
-    context.dataSufficiency = classificationResult.dataSufficiency;
-    context.transitionReason = classificationResult.transitionReason;
     
     const conversationId = context.conversationId;
     
@@ -329,7 +325,6 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
     
     // STEP 2: CALL CLASSIFYSTATE FOR STATE DETERMINATION
-    var classificationResult;
     try {
       const classifyResponse = await base44.functions.invoke('classifyState', {
         message,
@@ -351,8 +346,16 @@ Return ONLY valid JSON. Do NOT explain.`;
       };
     }
     
-    var currentState = classificationResult.state;
-    var briefStatus = classificationResult.briefStatus;
+    currentState = classificationResult.state;
+    briefStatus = classificationResult.briefStatus;
+    
+    // Update context with classified state
+    context.state = currentState;
+    context.briefStatus = briefStatus;
+    
+    // Store classification metadata in context
+    context.dataSufficiency = classificationResult.dataSufficiency;
+    context.transitionReason = classificationResult.transitionReason;
 
     console.log(`[STATE] ${currentState} | briefStatus: ${briefStatus} | dataSufficiency: ${context.dataSufficiency} | transitionReason: ${context.transitionReason}`);
 
