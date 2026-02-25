@@ -29,6 +29,13 @@ async function performSearch(req) {
   const base44 = createClientFromRequest(req);
     const payload = await req.json();
     
+    // P0 DIAGNOSTIC: Entry point tracing
+    console.log('=== SEARCHSCHOOLS ENTRY ===', JSON.stringify({
+      dealbreakers: payload?.familyProfile?.dealbreakers,
+      familyProfile: payload?.familyProfile,
+      allParams: Object.keys(payload || {})
+    }));
+    
     // DIAGNOSTIC: Log COMPLETE incoming parameters
     console.log('[SEARCH RECEIVED] Complete payload:', JSON.stringify(payload, null, 2));
     

@@ -1040,6 +1040,14 @@ Return ONLY valid JSON. Do NOT explain.`;
       
       console.log('[BUDGET FINAL] parsedTuition:', parsedTuition);
       
+      // P0 DIAGNOSTIC: 4-layer fallback extraction for dealbreakers
+      console.log('=== 4-LAYER FALLBACK EXTRACTION ===', JSON.stringify({
+        extractedDealbreakers: conversationFamilyProfile?.dealbreakers,
+        source: 'conversationFamilyProfile',
+        contextExtractedDealbreakers: context.extractedEntities?.dealbreakers,
+        sourceContext: 'context.extractedEntities'
+      }));
+      
       const searchParams = {
         limit: 50,
         familyProfile: conversationFamilyProfile
@@ -1126,6 +1134,12 @@ Return ONLY valid JSON. Do NOT explain.`;
       });
 
       console.log('[SEARCH] Final searchParams:', { minGrade: searchParams.minGrade, maxGrade: searchParams.maxGrade, maxTuition: searchParams.maxTuition, city: searchParams.city });
+      
+      // P0 DIAGNOSTIC: Call to searchSchools
+      console.log('=== ORCHESTRATE -> SEARCHSCHOOLS CALL ===', JSON.stringify({
+        dealbreakersBeingPassed: searchParams?.familyProfile?.dealbreakers,
+        familyProfileKeys: Object.keys(searchParams?.familyProfile || {})
+      }));
       
       let schools = [];
       try {
