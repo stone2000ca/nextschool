@@ -1507,7 +1507,7 @@ Rules: Start with "**Why ${selectedSchool.name}**", use ** for headers, • for 
           add_context_from_internet: false
         });
 
-        const aiContent = aiResponse?.response || aiResponse || null;
+        const aiContent = typeof aiResponse === 'string' ? aiResponse : (aiResponse?.response || null);
         
         // COMBINE: Programmatic header + AI content
         aiMessage = aiContent ? cardHeader + aiContent : null;
@@ -1517,16 +1517,18 @@ Rules: Start with "**Why ${selectedSchool.name}**", use ** for headers, • for 
       }
       
       // BUG-DD-002 FIX #4: Fallback if InvokeLLM fails
-      if (!aiMessage && selectedSchool) {
+      if (!aiMessage) {
         console.log('[BUG-DD-002 FIX #4] InvokeLLM failed, generating structured fallback');
-        const tuitionStr = selectedSchool.tuition || selectedSchool.dayTuition 
-          ? `$${(selectedSchool.tuition || selectedSchool.dayTuition).toLocaleString()}/year` 
-          : 'Not specified';
-        const gradesStr = `Grades ${selectedSchool.lowestGrade}-${selectedSchool.highestGrade}`;
-        const locationStr = `${selectedSchool.city}, ${selectedSchool.provinceState || selectedSchool.country}`;
-        const curriculumStr = selectedSchool.curriculumType || 'Traditional';
         
-        aiMessage = `Let me pull up the details on ${selectedSchool.name}... Here's what I know:
+        if (selectedSchool) {
+          const tuitionStr = selectedSchool.tuition || selectedSchool.dayTuition 
+            ? `$${(selectedSchool.tuition || selectedSchool.dayTuition).toLocaleString()}/year` 
+            : 'Not specified';
+          const gradesStr = `Grades ${selectedSchool.lowestGrade}-${selectedSchool.highestGrade}`;
+          const locationStr = `${selectedSchool.city}, ${selectedSchool.provinceState || selectedSchool.country}`;
+          const curriculumStr = selectedSchool.curriculumType || 'Traditional';
+          
+          aiMessage = `Let me pull up the details on ${selectedSchool.name}... Here's what I know:
 
 **${selectedSchool.name}**
 ${locationStr} | ${gradesStr} | ${curriculumStr}
@@ -1540,6 +1542,9 @@ ${locationStr} | ${gradesStr} | ${curriculumStr}
 ${selectedSchool.description ? '**About:** ' + selectedSchool.description : ''}
 
 What would you like to know more about?`;
+        } else {
+          aiMessage = "I'm having trouble loading that school's details right now. Could you try selecting it again?";
+        }
       }
       
       // BUG-DD-002 FIX #2: Return ONLY selectedSchool in schools array
