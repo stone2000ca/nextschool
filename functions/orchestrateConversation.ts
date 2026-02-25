@@ -929,12 +929,28 @@ Deno.serve(async (req) => {
 
     YOU ARE LIAM - Direct intro, structured data.`;
 
-         const briefResult = await base44.integrations.Core.InvokeLLM({
-           prompt: briefPrompt,
-           add_context_from_internet: false
-         });
-
-         let briefMessageText = briefResult?.response || briefResult || 'Let me summarize what you\'ve shared.';
+         let briefMessageText = 'Let me summarize what you\'ve shared.';
+         try {
+           const briefResult = await callOpenRouter({
+             systemPrompt: briefPrompt.split('\n\n')[0],
+             userPrompt: briefPrompt.split('\n\n').slice(1).join('\n\n'),
+             maxTokens: 800,
+             temperature: 0.5
+           });
+           briefMessageText = briefResult || 'Let me summarize what you\'ve shared.';
+           console.log('[OPENROUTER] BRIEF generation');
+         } catch (openrouterError) {
+           console.log('[OPENROUTER FALLBACK] BRIEF generation falling back to InvokeLLM');
+           try {
+             const briefResult = await base44.integrations.Core.InvokeLLM({
+               prompt: briefPrompt,
+               add_context_from_internet: false
+             });
+             briefMessageText = briefResult?.response || briefResult || 'Let me summarize what you\'ve shared.';
+           } catch (fallbackError) {
+             console.error('[FALLBACK ERROR] BRIEF generation failed:', fallbackError.message);
+           }
+         }
 
          // Post-processing safety net: replace any remaining [Child] or [child] placeholders
          briefMessageText = briefMessageText.replace(/\[Child\]/gi, briefChildDisplayName);
