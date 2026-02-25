@@ -1454,6 +1454,27 @@ CRITICAL RULES:
 6. ONLY reference data from School Profile - NEVER fabricate
 7. If data is missing, explicitly say "I don't have [X] data yet" rather than inventing`;
         
+        // DIAGNOSTIC: Log that DEEP_DIVE handler is firing
+        try {
+          await base44.asServiceRole.entities.SearchLog.create({
+            query: 'DEEPDIVE_HANDLER_FIRED',
+            inputFilters: {
+              searchType: 'DEEPDIVE_HANDLER_FIRED',
+              selectedSchoolId: selectedSchoolId,
+              currentState: currentState,
+              selectedSchoolName: selectedSchool?.name,
+              promptPreview: responsePrompt.substring(0, 200)
+            },
+            totalSchoolsPassingFilters: 1,
+            topResults: [],
+            conversationId: conversationId,
+            userId: userId
+          });
+          console.log('[DIAGNOSTIC] DEEPDIVE handler SearchLog created');
+        } catch (logErr) {
+          console.error('[DIAGNOSTIC] Failed to create SearchLog:', logErr);
+        }
+        
         const aiResponse = await base44.integrations.Core.InvokeLLM({
           prompt: responsePrompt
         });
