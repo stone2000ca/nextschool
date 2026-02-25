@@ -1236,6 +1236,7 @@ Respond as ${consultantName}. ONE question max.`;
     }
     
     if (currentState === STATES.DEEP_DIVE) {
+      console.log('[DEEPDIVE] Handler entered. selectedSchoolId:', selectedSchoolId, 'currentState:', currentState);
       let aiMessage = '';
       let selectedSchool = null;
       
@@ -1442,6 +1443,7 @@ What would you like to know more about?`;
       }
       
       // BUG-DD-002 FIX #2: Return ONLY selectedSchool in schools array
+      console.log('[DEEPDIVE] Returning aiMessage length:', aiMessage?.length, 'starts with:', aiMessage?.substring(0, 50));
       return Response.json({
          message: aiMessage,
          state: currentState,
