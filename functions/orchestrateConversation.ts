@@ -898,6 +898,11 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
 
     if (currentState === STATES.RESULTS) {
+      // BLOCKER 2 FIX: If selectedSchoolId present, skip RESULTS handler and fall through to DEEP_DIVE
+      if (selectedSchoolId) {
+        console.log('[RESULTS SKIP] selectedSchoolId present, falling through to DEEP_DIVE handler');
+        // Don't process RESULTS - let execution continue to DEEP_DIVE handler below
+      } else {
       // ALWAYS run fresh search when entering RESULTS state, regardless of currentSchools
       console.log('[SEARCH] Running fresh school search in RESULTS state');
       console.log('[KI-12 DIAG] LocationArea BEFORE fallbacks:', conversationFamilyProfile?.locationArea);
@@ -1267,6 +1272,7 @@ Respond as ${consultantName}. ONE question max.`;
          familyProfile: conversationFamilyProfile,
          conversationContext: context
        });
+      }
       }
 
     // Check for transition back to RESULTS from DEEP_DIVE
