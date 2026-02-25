@@ -1606,9 +1606,10 @@ Generate the 6-area DEEPDIVE card for this family-school match.`;
           ? `What stands out to you about ${selectedSchool.name}?`
           : `Want me to dig into any specific aspect?`;
         
-        // Combine all sections
-        aiMessage = `**${fitLabel}**\n\n${whySection}${whatToKnowSection}${costSection}${bridge}`;
-        console.log('[DEEPDIVE] Structured card built successfully');
+          // Combine all sections
+          aiMessage = `**${fitLabel}**\n\n${whySection}${whatToKnowSection}${costSection}${bridge}`;
+          console.log('[DEEPDIVE] Programmatic fallback card built successfully');
+        }
       } catch (e) {
         console.error('[DEEPDIVE ERROR] Card builder failed:', e.message, 'Stack:', e.stack);
         aiMessage = "I'm having trouble loading that school's details right now. Could you try selecting it again?";
