@@ -93,42 +93,42 @@ export function resolveTransition(params) {
     }
   }
 
-  // R4: HARD CAP AT TURN 7
+  // R5: HARD CAP AT TURN 7
   if (turnCount >= 7 && currentState === STATES.DISCOVERY) {
     nextState = STATES.BRIEF;
     briefStatus = 'generating';
     flags.FORCED_TRANSITION = true;
     transitionReason = 'hard_cap';
-    console.log('[R4] Escape Rule: Hard cap at turn 7, forcing BRIEF');
+    console.log('[R5] Escape Rule: Hard cap at turn 7, forcing BRIEF');
     console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason, briefStatus };
   }
 
-  // R5: SOFT NUDGE AT TURN 5
+  // R6: SOFT NUDGE AT TURN 5
   if (turnCount >= 5 && currentState === STATES.DISCOVERY && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
     flags.SUGGEST_BRIEF = true;
     transitionReason = 'soft_nudge';
-    console.log('[R5] Escape Rule: Soft nudge at turn 5');
+    console.log('[R6] Escape Rule: Soft nudge at turn 5');
     console.log('[RESOLVE] Output:', { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason });
     return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason };
   }
 
-  // R6: Intent maps (only for turnCount < 3, escape rules above handle turnCount >= 3)
-  if (intentSignal === 'request-brief' && turnCount < 3 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
+  // R7: Intent maps (legacy, for backward compat - R3/R4 override these)
+  if (intentSignal === 'request-brief' && turnCount < 2 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
     nextState = STATES.BRIEF;
     briefStatus = 'generating';
     flags.USER_INTENT_OVERRIDE = true;
     transitionReason = 'explicit_intent';
-    console.log('[R6] Intent: request-brief -> BRIEF (turnCount < 3)');
+    console.log('[R7] Intent: request-brief -> BRIEF (turnCount < 2)');
     console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason, briefStatus };
   }
 
-  if (intentSignal === 'request-results' && turnCount < 3 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
+  if (intentSignal === 'request-results' && turnCount < 2 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
     nextState = STATES.RESULTS;
     flags.USER_INTENT_OVERRIDE = true;
     transitionReason = 'explicit_intent';
-    console.log('[R6] Intent: request-results -> RESULTS (turnCount < 3)');
+    console.log('[R7] Intent: request-results -> RESULTS (turnCount < 2)');
     console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason };
   }
