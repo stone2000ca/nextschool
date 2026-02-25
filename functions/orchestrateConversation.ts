@@ -148,7 +148,8 @@ Deno.serve(async (req) => {
       turnCount,
       briefEditCount: currentBriefEditCount,
       selectedSchoolId,
-      previousSchoolId
+      previousSchoolId,
+      message
     });
     
     currentState = resolveResult.nextState;
