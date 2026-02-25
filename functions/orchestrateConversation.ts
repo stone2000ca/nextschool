@@ -1402,9 +1402,9 @@ ${consultantName === 'Jackie'
 
 OUTPUT FORMAT - DEEPDIVE Card with 6 areas:
 1. Fit Label - 2-4 word label like 'Strong Fit for ${childDisplayName}' or 'Worth Exploring for ${childDisplayName}'
-2. Why This School - 2-3 sentences synthesizing family priorities against school strengths
+2. Why This School - In the Why section, you MUST name each of the family's stated priorities and evaluate whether this school meets, partially meets, or does not meet each one. If the school's listed programs do not include a family priority, say so directly. Example: 'Sophia wants IB and arts/theatre. Lakeside offers full IB diploma, but arts and theatre are not listed as program specializations - ask whether they offer these as IB electives.' Never assume a school offers something that isn't in the provided data.
 3. What to Know - 2-3 honest bullets including one genuine limitation or thing to ask about
-4. Cost Reality - compare tuition to family budget with specific dollar math
+4. Cost Reality - In the Cost Reality section, you MUST state the school's tuition, the family's stated budget, and the exact dollar difference. Format: '[Tuition] per year - [amount] under/over [family's stated budget].' If tuition is not available, say 'Tuition not listed - ask the school directly.' Never estimate, infer, or reference 'typical' budgets. Use only the family's stated number.
 5. Dealbreaker Check - explicitly confirm no dealbreakers are violated (especially religious, grade)
 6. Tone Bridge - one sentence inviting the parent to explore more or ask questions
 
