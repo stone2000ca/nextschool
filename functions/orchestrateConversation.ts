@@ -1475,9 +1475,28 @@ FAMILY BRIEF:
           ? `$${(selectedSchool.tuition || selectedSchool.dayTuition).toLocaleString()}/yr` 
           : 'Not specified';
         const aidAvailable = selectedSchool.financialAidAvailable ? 'Yes' : 'Unknown';
-        const budgetDisplay = conversationFamilyProfile?.maxTuition 
-          ? `$${conversationFamilyProfile.maxTuition.toLocaleString()}` 
-          : 'not specified';
+        
+        // FIX 2: Programmatic Cost Reality comparison
+        const schoolTuition = selectedSchool.tuition || selectedSchool.dayTuition;
+        const familyBudget = conversationFamilyProfile?.maxTuition || conversationFamilyProfile?.budgetMax || context.extractedEntities?.maxTuition || context.extractedEntities?.budgetSingle;
+        let costRealityText = '';
+        
+        if (schoolTuition && familyBudget && familyBudget !== 'unlimited') {
+          const tuitionNum = typeof schoolTuition === 'number' ? schoolTuition : parseFloat(schoolTuition);
+          const budgetNum = typeof familyBudget === 'number' ? familyBudget : parseFloat(familyBudget);
+          
+          if (tuitionNum <= budgetNum) {
+            const difference = budgetNum - tuitionNum;
+            costRealityText = `$${tuitionNum.toLocaleString()}/year — Under your $${budgetNum.toLocaleString()} budget by $${difference.toLocaleString()}`;
+          } else {
+            const difference = tuitionNum - budgetNum;
+            costRealityText = `$${tuitionNum.toLocaleString()}/year — Above your $${budgetNum.toLocaleString()} budget by $${difference.toLocaleString()}`;
+          }
+        } else if (schoolTuition) {
+          costRealityText = `$${(typeof schoolTuition === 'number' ? schoolTuition : parseFloat(schoolTuition)).toLocaleString()}/year${familyBudget ? '' : ' — Budget not specified'}`;
+        } else {
+          costRealityText = 'Tuition not specified';
+        }
         
         const responsePrompt = `${schoolDataStr}
 ${familyDataStr}
