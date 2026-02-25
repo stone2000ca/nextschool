@@ -275,6 +275,7 @@ export async function handleBrief(params) {
 
     let briefMessageText = 'Let me summarize what you\'ve shared.';
     try {
+      console.log('[BRIEF] Generating brief with callOpenRouter, prompt length:', briefPrompt.length);
       const briefResult = await callOpenRouter({
         systemPrompt: briefPrompt.split('\n\n')[0],
         userPrompt: briefPrompt.split('\n\n').slice(1).join('\n\n'),
@@ -282,6 +283,7 @@ export async function handleBrief(params) {
         temperature: 0.5
       });
       briefMessageText = briefResult || 'Let me summarize what you\'ve shared.';
+      console.log('[BRIEF] OpenRouter returned result, length:', briefMessageText?.length, 'starts with:', briefMessageText?.substring(0, 50));
       console.log('[OPENROUTER] BRIEF generation');
     } catch (openrouterError) {
       console.error('[ERROR] OpenRouter BRIEF failed:', openrouterError.message);
@@ -295,6 +297,31 @@ export async function handleBrief(params) {
       } catch (fallbackError) {
         console.error('[ERROR] InvokeLLM BRIEF fallback failed:', fallbackError.message);
       }
+    }
+
+    // INLINE PROGRAMMATIC FALLBACK: If both LLM calls failed silently,
+    // briefMessageText is still the generic default. Build a brief from extracted entities.
+    if (briefMessageText === 'Let me summarize what you\'ve shared.') {
+      console.log('[BRIEF] Both LLM calls failed, using programmatic fallback');
+      const fallbackBrief = [];
+      if (conversationFamilyProfile.childName) fallbackBrief.push('Student: ' + conversationFamilyProfile.childName);
+      if (context.extractedEntities?.childGrade) {
+        const gradeDisplay = context.extractedEntities.childGrade === -1 ? 'JK' : context.extractedEntities.childGrade === 0 ? 'SK' : 'Grade ' + context.extractedEntities.childGrade;
+        fallbackBrief.push('Grade: ' + gradeDisplay);
+      }
+      if (context.extractedEntities?.locationArea) fallbackBrief.push('Location: ' + context.extractedEntities.locationArea);
+      if (conversationFamilyProfile.maxTuition) fallbackBrief.push('Budget: $' + conversationFamilyProfile.maxTuition.toLocaleString());
+      if (conversationFamilyProfile.priorities?.length) fallbackBrief.push('Priorities: ' + conversationFamilyProfile.priorities.join(', '));
+      if (conversationFamilyProfile.interests?.length) fallbackBrief.push('Interests: ' + conversationFamilyProfile.interests.join(', '));
+      if (conversationFamilyProfile.learning_needs?.length) fallbackBrief.push('Learning needs: ' + conversationFamilyProfile.learning_needs.join(', '));
+      if (context.extractedEntities?.genderPreference) fallbackBrief.push('Gender preference: ' + context.extractedEntities.genderPreference);
+      if (context.extractedEntities?.boardingPreference) fallbackBrief.push('Boarding: Yes');
+      if (context.extractedEntities?.religiousPreference) fallbackBrief.push('Religious preference: ' + context.extractedEntities.religiousPreference);
+      
+      const briefContent = fallbackBrief.length > 0
+        ? fallbackBrief.map(b => '\u2022 ' + b).join('\n')
+        : 'I captured your preferences but could not format them.';
+      briefMessageText = 'Here\'s what I\'ve captured so far:\n\n' + briefContent + '\n\nDoes that look right? Feel free to adjust anything.';
     }
 
     // Post-processing safety net: replace any remaining [Child] or [child] placeholders
