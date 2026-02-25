@@ -118,12 +118,15 @@ export async function handleBrief(params) {
     }
 
     // KI-16: Smart child name display with gender (used in BRIEF state)
+    // NOTE: Declare both briefChildDisplayName AND childDisplayName to prevent
+    // ReferenceError if Base44 live code references either variable name.
     let briefChildDisplayName = childName ? childName : 'your child';
     if (!childName && childGender === 'male') {
       briefChildDisplayName = 'your son';
     } else if (!childName && childGender === 'female') {
       briefChildDisplayName = 'your daughter';
     }
+    const childDisplayName = briefChildDisplayName;
 
     // KI-10: MULTI-CHILD DETECTION at code level
     const conversationText = conversationHistory?.map(m => m.content).join(' ') || '';
