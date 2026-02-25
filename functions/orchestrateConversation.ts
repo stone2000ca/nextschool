@@ -1377,6 +1377,135 @@ Respond as ${consultantName}. ONE question max.`;
           }
         }
         
+        // AGGRESSIVE FALLBACK: Extract maxTuition from multiple sources
+        let resolvedMaxTuition = null;
+        
+        // Fallback 1: conversationFamilyProfile.maxTuition
+        if (conversationFamilyProfile?.maxTuition) {
+          resolvedMaxTuition = typeof conversationFamilyProfile.maxTuition === 'number' ? conversationFamilyProfile.maxTuition : parseInt(conversationFamilyProfile.maxTuition);
+          if (isNaN(resolvedMaxTuition)) { resolvedMaxTuition = null; }
+          console.log('[DEEPDIVE BUDGET FALLBACK 1] conversationFamilyProfile.maxTuition:', conversationFamilyProfile.maxTuition, '→ resolvedMaxTuition:', resolvedMaxTuition);
+        }
+        
+        // Fallback 2: context.extractedEntities?.budgetSingle
+        if (resolvedMaxTuition === null && context.extractedEntities?.budgetSingle) {
+          resolvedMaxTuition = parseInt(context.extractedEntities.budgetSingle);
+          if (isNaN(resolvedMaxTuition)) { resolvedMaxTuition = null; }
+          console.log('[DEEPDIVE BUDGET FALLBACK 2] context.extractedEntities.budgetSingle:', context.extractedEntities.budgetSingle, '→ resolvedMaxTuition:', resolvedMaxTuition);
+        }
+        
+        // Fallback 3: context.extractedEntities?.budgetMax
+        if (resolvedMaxTuition === null && context.extractedEntities?.budgetMax) {
+          resolvedMaxTuition = parseInt(context.extractedEntities.budgetMax);
+          if (isNaN(resolvedMaxTuition)) { resolvedMaxTuition = null; }
+          console.log('[DEEPDIVE BUDGET FALLBACK 3] context.extractedEntities.budgetMax:', context.extractedEntities.budgetMax, '→ resolvedMaxTuition:', resolvedMaxTuition);
+        }
+        
+        // Fallback 4: Parse Brief text for budget
+        if (resolvedMaxTuition === null && conversationHistory) {
+          const briefMsg = conversationHistory.slice().reverse().find(m => m.role === 'assistant' && /•\s*Budget:/i.test(m.content));
+          if (briefMsg) {
+            const budgetMatch = briefMsg.content.match(/•\s*Budget:.*?\$?([\d,]+)(?:,000|K)?/i);
+            if (budgetMatch) {
+              let extracted = budgetMatch[1].replace(/,/g, '');
+              if (/K$/i.test(budgetMatch[0])) {
+                extracted = parseInt(extracted) * 1000;
+              } else if (!/,000/.test(budgetMatch[0]) && extracted.length <= 2) {
+                extracted = parseInt(extracted) * 1000;
+              } else {
+                extracted = parseInt(extracted);
+              }
+              resolvedMaxTuition = extracted;
+              console.log('[DEEPDIVE BUDGET FALLBACK 4] Parsed from Brief text:', budgetMatch[0], '→ resolvedMaxTuition:', resolvedMaxTuition);
+            }
+          }
+        }
+        
+        // Fallback 5: context.conversationContext?.familyProfile?.maxTuition
+        if (resolvedMaxTuition === null && context.conversationContext?.familyProfile?.maxTuition) {
+          resolvedMaxTuition = parseInt(context.conversationContext.familyProfile.maxTuition);
+          if (isNaN(resolvedMaxTuition)) { resolvedMaxTuition = null; }
+          console.log('[DEEPDIVE BUDGET FALLBACK 5] context.conversationContext.familyProfile.maxTuition:', context.conversationContext.familyProfile.maxTuition, '→ resolvedMaxTuition:', resolvedMaxTuition);
+        }
+        
+        console.log('[DEEPDIVE BUDGET FINAL] resolvedMaxTuition:', resolvedMaxTuition);
+        
+        // AGGRESSIVE FALLBACK: Extract priorities from multiple sources
+        let resolvedPriorities = null;
+        
+        // Fallback 1: conversationFamilyProfile.priorities
+        if (conversationFamilyProfile?.priorities && Array.isArray(conversationFamilyProfile.priorities) && conversationFamilyProfile.priorities.length > 0) {
+          resolvedPriorities = conversationFamilyProfile.priorities;
+          console.log('[DEEPDIVE PRIORITIES FALLBACK 1] conversationFamilyProfile.priorities:', resolvedPriorities);
+        }
+        
+        // Fallback 2: context.extractedEntities.priorities
+        if ((!resolvedPriorities || resolvedPriorities.length === 0) && context.extractedEntities?.priorities && Array.isArray(context.extractedEntities.priorities) && context.extractedEntities.priorities.length > 0) {
+          resolvedPriorities = context.extractedEntities.priorities;
+          console.log('[DEEPDIVE PRIORITIES FALLBACK 2] context.extractedEntities.priorities:', resolvedPriorities);
+        }
+        
+        // Fallback 3: Parse Brief text from conversation history
+        if ((!resolvedPriorities || resolvedPriorities.length === 0) && conversationHistory) {
+          const briefMsg = conversationHistory.slice().reverse().find(m => m.role === 'assistant' && /•\s*(?:Top )?priorities:/i.test(m.content));
+          if (briefMsg) {
+            const prioritiesMatch = briefMsg.content.match(/•\s*(?:Top )?priorities:\s*([^\n•]+)/i);
+            if (prioritiesMatch && prioritiesMatch[1]) {
+              const extractedPriorities = prioritiesMatch[1].trim();
+              if (!/not specified|none/i.test(extractedPriorities)) {
+                resolvedPriorities = extractedPriorities.split(',').map(s => s.trim()).filter(Boolean);
+                console.log('[DEEPDIVE PRIORITIES FALLBACK 3] Parsed from Brief text:', resolvedPriorities);
+              }
+            }
+          }
+        }
+        
+        // Fallback 4: context.conversationContext?.familyProfile?.priorities
+        if ((!resolvedPriorities || resolvedPriorities.length === 0) && context.conversationContext?.familyProfile?.priorities && Array.isArray(context.conversationContext.familyProfile.priorities) && context.conversationContext.familyProfile.priorities.length > 0) {
+          resolvedPriorities = context.conversationContext.familyProfile.priorities;
+          console.log('[DEEPDIVE PRIORITIES FALLBACK 4] context.conversationContext.familyProfile.priorities:', resolvedPriorities);
+        }
+        
+        console.log('[DEEPDIVE PRIORITIES FINAL] resolvedPriorities:', resolvedPriorities);
+        
+        // AGGRESSIVE FALLBACK: Extract interests from multiple sources
+        let resolvedInterests = null;
+        
+        // Fallback 1: conversationFamilyProfile.interests
+        if (conversationFamilyProfile?.interests && Array.isArray(conversationFamilyProfile.interests) && conversationFamilyProfile.interests.length > 0) {
+          resolvedInterests = conversationFamilyProfile.interests;
+          console.log('[DEEPDIVE INTERESTS FALLBACK 1] conversationFamilyProfile.interests:', resolvedInterests);
+        }
+        
+        // Fallback 2: context.extractedEntities.interests
+        if ((!resolvedInterests || resolvedInterests.length === 0) && context.extractedEntities?.interests && Array.isArray(context.extractedEntities.interests) && context.extractedEntities.interests.length > 0) {
+          resolvedInterests = context.extractedEntities.interests;
+          console.log('[DEEPDIVE INTERESTS FALLBACK 2] context.extractedEntities.interests:', resolvedInterests);
+        }
+        
+        // Fallback 3: Parse Brief text from conversation history
+        if ((!resolvedInterests || resolvedInterests.length === 0) && conversationHistory) {
+          const briefMsg = conversationHistory.slice().reverse().find(m => m.role === 'assistant' && /•\s*Interests:/i.test(m.content));
+          if (briefMsg) {
+            const interestsMatch = briefMsg.content.match(/•\s*Interests:\s*([^\n•]+)/i);
+            if (interestsMatch && interestsMatch[1]) {
+              const extractedInterests = interestsMatch[1].trim();
+              if (!/not specified|none/i.test(extractedInterests)) {
+                resolvedInterests = extractedInterests.split(',').map(s => s.trim()).filter(Boolean);
+                console.log('[DEEPDIVE INTERESTS FALLBACK 3] Parsed from Brief text:', resolvedInterests);
+              }
+            }
+          }
+        }
+        
+        // Fallback 4: context.conversationContext?.familyProfile?.interests
+        if ((!resolvedInterests || resolvedInterests.length === 0) && context.conversationContext?.familyProfile?.interests && Array.isArray(context.conversationContext.familyProfile.interests) && context.conversationContext.familyProfile.interests.length > 0) {
+          resolvedInterests = context.conversationContext.familyProfile.interests;
+          console.log('[DEEPDIVE INTERESTS FALLBACK 4] context.conversationContext.familyProfile.interests:', resolvedInterests);
+        }
+        
+        console.log('[DEEPDIVE INTERESTS FINAL] resolvedInterests:', resolvedInterests);
+        
         // STEP 1: COMPRESS SCHOOL DATA PAYLOAD
         const compressedSchoolData = {
           name: selectedSchool.name,
@@ -1440,9 +1569,9 @@ EXACT FORMAT TO USE:
 - Child: ${childDisplayName}
 - Grade: ${conversationFamilyProfile?.childGrade !== null && conversationFamilyProfile?.childGrade !== undefined ? conversationFamilyProfile.childGrade : 'Not specified'}
 - Location: ${conversationFamilyProfile?.locationArea || 'Not specified'}
-- Budget: ${conversationFamilyProfile?.maxTuition ? '$' + conversationFamilyProfile.maxTuition : 'Not specified'}
-- Interests: ${conversationFamilyProfile?.interests?.join(', ') || 'Not specified'}
-- Priorities: ${conversationFamilyProfile?.priorities?.join(', ') || 'Not specified'}
+- Budget: ${resolvedMaxTuition ? '$' + resolvedMaxTuition : 'Not specified'}
+- Interests: ${resolvedInterests?.join(', ') || 'Not specified'}
+- Priorities: ${resolvedPriorities?.join(', ') || 'Not specified'}
 - Dealbreakers: ${conversationFamilyProfile?.dealbreakers?.join(', ') || 'None specified'}
 
 SCHOOL DATA:
