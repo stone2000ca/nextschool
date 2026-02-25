@@ -25,6 +25,8 @@ Deno.serve(async (req) => {
     });
 
     const context = conversationContext || {};
+    let currentState = context.state || STATES.WELCOME;
+    let briefStatus = context.briefStatus || null;
     const msgLower = message.toLowerCase();
     
     // BUG-DD-002 FIX #1: FORCE DEEP_DIVE state when selectedSchoolId is present
@@ -362,8 +364,7 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
     
     // STEP 2: DETERMINISTIC STATE TRANSITIONS
-    let currentState = context.state || STATES.WELCOME;
-    let briefStatus = context.briefStatus || null;
+    // (currentState and briefStatus now declared at line 29-30)
 
     // Rule 1: WELCOME -> DISCOVERY on first message
     if (currentState === STATES.WELCOME && message) {
