@@ -24,8 +24,11 @@ Deno.serve(async (req) => {
     console.log('[CLASSIFY] Input:', { currentState, briefStatus, histLen, userMessageCount, selectedSchoolId });
 
     // RULE 1: WELCOME STATE
-    if (histLen <= 1 && !selectedSchoolId) {
-      console.log('[CLASSIFY] Rule 1: WELCOME state');
+    const isChipResponse = ['my child needs a new school', "i'm comparing a few schools", "i'm not sure where to start"].some(chip => msgLower.includes(chip.toLowerCase()));
+    const isShortMessage = message?.length < 20;
+    
+    if (histLen <= 1 && !selectedSchoolId && (isShortMessage || isChipResponse)) {
+      console.log('[CLASSIFY] Rule 1: WELCOME state (short/chip response)');
       return Response.json({
         state: 'WELCOME',
         briefStatus: null,
