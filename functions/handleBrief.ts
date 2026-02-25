@@ -306,14 +306,58 @@ export async function handleBrief(params) {
       }
     }
 
-    // INLINE PROGRAMMATIC FALLBACK: If both LLM calls failed silently or returned thin content,
-    // build a brief from extracted entities instead.
+    // KI-52 FIX: Stricter thin brief check - count core entities coverage
+    const coreEntitiesPresent = {
+      hasGrade: context.extractedEntities?.childGrade !== null && context.extractedEntities?.childGrade !== undefined,
+      hasLocation: !!context.extractedEntities?.locationArea,
+      hasBudget: !!context.extractedEntities?.budgetSingle || !!conversationFamilyProfile?.maxTuition
+    };
+    
+    const coreEntityCount = Object.values(coreEntitiesPresent).filter(Boolean).length;
+    
+    // Check if brief mentions the core entities that were provided
+    let mentionedCoreCount = 0;
+    if (coreEntitiesPresent.hasGrade) {
+      if (briefMessageText.match(/grade|jk|sk|kindergarten|preschool/i) || 
+          briefMessageText.includes(String(context.extractedEntities.childGrade))) {
+        mentionedCoreCount++;
+      }
+    }
+    if (coreEntitiesPresent.hasLocation) {
+      if (briefMessageText.includes(context.extractedEntities.locationArea)) {
+        mentionedCoreCount++;
+      }
+    }
+    if (coreEntitiesPresent.hasBudget) {
+      if (briefMessageText.match(/\$|budget|tuition|per year|\/year/i)) {
+        mentionedCoreCount++;
+      }
+    }
+
     const hasSubstantiveContent = (
       (conversationFamilyProfile.childName && briefMessageText.includes(conversationFamilyProfile.childName)) ||
       (context.extractedEntities?.locationArea && briefMessageText.includes(context.extractedEntities.locationArea)) ||
-      (context.extractedEntities?.childGrade && briefMessageText.includes(context.extractedEntities.childGrade))
+      (context.extractedEntities?.childGrade && (briefMessageText.includes(String(context.extractedEntities.childGrade)) || briefMessageText.match(/grade|jk|sk/i)))
     );
-    const isThinBrief = !hasSubstantiveContent || briefMessageText.length < 100;
+
+    // KI-52 DEBUG: Log before thin check evaluation
+    console.log('[BRIEF THIN CHECK DEBUG]', {
+      briefMessageTextLength: briefMessageText.length,
+      hasSubstantiveContent,
+      coreEntitiesPresent,
+      coreEntityCount,
+      mentionedCoreCount,
+      extractedChildGrade: context.extractedEntities?.childGrade,
+      extractedLocationArea: context.extractedEntities?.locationArea,
+      briefPreview: briefMessageText.substring(0, 80)
+    });
+
+    // INLINE PROGRAMMATIC FALLBACK: If both LLM calls failed silently or returned thin content,
+    // build a brief from extracted entities instead.
+    // Trigger fallback if: length < 150 OR no substantive content OR (2+ core entities provided but <2 mentioned in brief)
+    const isThinBrief = briefMessageText.length < 150 || 
+                        !hasSubstantiveContent || 
+                        (coreEntityCount >= 2 && mentionedCoreCount < 2);
     if (isThinBrief) {
       console.log('[BRIEF] Brief is thin/generic, using programmatic fallback. Length:', briefMessageText.length, 'hasSubstantive:', hasSubstantiveContent);
       const fallbackBrief = [];
