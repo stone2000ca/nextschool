@@ -1,7 +1,7 @@
 import { callOpenRouter } from './callOpenRouter.ts';
 
 export async function handleDiscovery(params) {
-  const { base44, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, conversationId, userId } = params;
+  const { base44, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, conversationId, userId, flags } = params;
 
   const STATES = {
     WELCOME: 'WELCOME',
