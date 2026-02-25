@@ -1460,33 +1460,26 @@ ${familyDataStr}
 
 Parent's message: "${message}"
 
-CRITICAL: Generate the following EXACT structured format. Do NOT write a conversational paragraph. Output ONLY structured sections with headers and bullets.
+Generate EXACT structured format:
 
 **Why ${selectedSchool.name} for ${childName}**
-Write 2-3 personalized sentences connecting ${childName}'s specific interests (${conversationFamilyProfile?.interests?.join(', ') || 'not specified'}), grade (${conversationFamilyProfile?.childGrade !== null ? 'Grade ' + conversationFamilyProfile.childGrade : 'not specified'}), and learning needs (${conversationFamilyProfile?.learning_needs?.join(', ') || 'none'}) to THIS school's actual programs from School Profile. Use child name "${childName}", NOT "your child". Reference ONLY real data from School Profile above. If School Profile is thin/missing data, say: "I don't have detailed program info for ${selectedSchool.name} yet — worth asking about on a visit."
+2-3 personalized sentences connecting ${childName}'s interests (${conversationFamilyProfile?.interests?.join(', ') || 'not specified'}), grade ${conversationFamilyProfile?.childGrade !== null ? conversationFamilyProfile.childGrade : 'not specified'}, and needs to THIS school's actual programs. Use ONLY real data from School Profile. If missing data, say: "I don't have detailed program info yet — worth asking on a visit."
 
 **What to Know**
-Generate 3-4 honest trade-off bullet points (use • symbol). These are NOT caveats, they are honest tensions:
-• What this school does well for THIS family (based ONLY on School Profile data above)
-• An honest trade-off or limitation (e.g., "Large class sizes may mean less individual attention" or "No boarding option if that becomes important")
-• What's unknown or a gap - use pattern: "I don't have enough detail on [specific thing] to compare — that's worth asking about on a visit"
-${!conversationFamilyProfile?.genderPreference && selectedSchool.genderPolicy !== 'Co-ed' ? '• This is a ' + selectedSchool.genderPolicy + ' school — worth considering if that matters to your family' : ''}
+3-4 bullet points (use •):
+• What this school does well for THIS family
+• An honest trade-off or limitation
+• What's unknown - "I don't have enough detail on [X] — worth asking on a visit"
+${!conversationFamilyProfile?.genderPreference && selectedSchool.genderPolicy !== 'Co-ed' ? '• This is a ' + selectedSchool.genderPolicy + ' school' : ''}
 
 **Cost Reality**
-${tuitionDisplay}/year — Write one factual sentence comparing tuition to family's stated budget (${budgetDisplay}). Examples: "Well within your $30K budget" or "$2K over your stated budget, but still in range" or "No tuition data available yet"
+${tuitionDisplay}/year — One sentence comparing to family budget (${budgetDisplay})
 
 ${consultantName === 'Jackie' 
-  ? `Finally, add a warm conversational bridge (1 sentence). Example: "The arts program really stands out for ${childName}. What jumps out at you?"` 
-  : `Finally, add a direct conversational bridge (1 sentence). Example: "The small class sizes really stand out for ${childName}. Want me to dig into that?"`}
+  ? `Add warm bridge (1 sentence). Example: "The arts program stands out for ${childName}. What jumps out?"` 
+  : `Add direct bridge (1 sentence). Example: "Small class sizes stand out. Want me to dig in?"`}
 
-CRITICAL RULES:
-1. Do NOT include fit label header (already generated)
-2. Start directly with "**Why ${selectedSchool.name} for ${childName}**"
-3. Use ** for bold section headers (no colon after header)
-4. Use • for bullet points in "What to Know"
-5. Separate sections with blank lines
-6. ONLY reference data from School Profile - NEVER fabricate
-7. If data is missing, explicitly say "I don't have [X] data yet" rather than inventing`;
+Rules: Start with "**Why ${selectedSchool.name}**", use ** for headers, • for bullets, ONLY real data, say "I don't have [X] data" if missing.`;
         
         // DIAGNOSTIC: Log that DEEP_DIVE handler is firing
         try {
@@ -1510,7 +1503,8 @@ CRITICAL RULES:
         }
         
         const aiResponse = await base44.integrations.Core.InvokeLLM({
-          prompt: responsePrompt
+          prompt: responsePrompt,
+          add_context_from_internet: false
         });
 
         const aiContent = aiResponse?.response || aiResponse || null;
