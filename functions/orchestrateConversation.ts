@@ -684,17 +684,38 @@ Deno.serve(async (req) => {
        
        if (briefStatus === BRIEF_STATUS.EDITING && isInitialAdjustRequest) {
          // First adjustment request - ask what to change
-         const adjustPrompt = consultantName === 'Jackie'
-           ? `The parent wants to adjust something in their brief. Ask them a warm, open-ended question about what they'd like to change. Max 50 words. Be encouraging.`
-           : `The parent wants to adjust their brief. Ask them directly what needs to change. Max 50 words.`;
-         
+         const adjustSystemPrompt = consultantName === 'Jackie'
+           ? `You are Jackie, a warm and encouraging education consultant. The parent wants to adjust something in their brief. Ask them a warm, open-ended question about what they'd like to change. Max 50 words. Be encouraging.`
+           : `You are Liam, a direct and strategic education consultant. The parent wants to adjust their brief. Ask them directly what needs to change. Max 50 words.`;
+
+         const adjustUserPrompt = `The parent message was: "${message}"
+
+       Ask what needs adjustment in their brief.`;
+
+         let briefMessage = "What would you like to adjust?";
          try {
-           const adjustResponse = await base44.integrations.Core.InvokeLLM({
-             prompt: adjustPrompt
+           const adjustResponse = await callOpenRouter({
+             systemPrompt: adjustSystemPrompt,
+             userPrompt: adjustUserPrompt,
+             maxTokens: 300,
+             temperature: 0.5
            });
-           briefMessage = adjustResponse?.response || adjustResponse || "What would you like to adjust?";
-         } catch (e) {
-           briefMessage = "What would you like to adjust?";
+           briefMessage = adjustResponse || "What would you like to adjust?";
+           console.log('[OPENROUTER] BRIEF adjustment');
+         } catch (openrouterError) {
+           console.log('[OPENROUTER FALLBACK] BRIEF adjustment falling back to InvokeLLM');
+           try {
+             const adjustPrompt = consultantName === 'Jackie'
+               ? `The parent wants to adjust something in their brief. Ask them a warm, open-ended question about what they'd like to change. Max 50 words. Be encouraging.`
+               : `The parent wants to adjust their brief. Ask them directly what needs to change. Max 50 words.`;
+
+             const fallbackResponse = await base44.integrations.Core.InvokeLLM({
+               prompt: adjustPrompt
+             });
+             briefMessage = fallbackResponse?.response || fallbackResponse || "What would you like to adjust?";
+           } catch (fallbackError) {
+             console.error('[FALLBACK ERROR] BRIEF adjustment failed:', fallbackError.message);
+           }
          }
          
          return Response.json({
