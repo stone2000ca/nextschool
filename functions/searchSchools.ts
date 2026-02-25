@@ -324,7 +324,16 @@ async function performSearch(req) {
       }
       
       // Hard filter 3: RELIGIOUS DEALBREAKER - if marked, exclude non-secular schools
-      const hasReligiousDealbreaker = familyProfile?.dealbreakers?.some(d => d.toLowerCase().includes('religious'));
+      const dealbreakers = payload.dealbreakers || familyProfile?.dealbreakers || [];
+      const hasReligiousDealbreaker = Array.isArray(dealbreakers) && dealbreakers.some(d => 
+        typeof d === 'string' && (
+          d.toLowerCase().includes('religious') || 
+          d.toLowerCase().includes('religion') ||
+          d.toLowerCase().includes('no religious') ||
+          d.toLowerCase().includes('secular only') ||
+          d.toLowerCase().includes('non-religious')
+        )
+      );
       if (hasReligiousDealbreaker) {
         console.log(`[RELIGIOUS FILTER] Checking ${school.name}, affiliation: ${school.religiousAffiliation}`);
         
@@ -550,7 +559,8 @@ async function performSearch(req) {
           curriculumType,
           specializations,
           schoolType,
-          maxDistanceKm
+          maxDistanceKm,
+          dealbreakers: payload.dealbreakers || familyProfile?.dealbreakers || []
         },
         totalSchoolsPassingFilters: originalFilteredCount,
         topResults: topResultsForLog,

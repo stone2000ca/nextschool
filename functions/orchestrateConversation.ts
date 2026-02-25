@@ -1040,17 +1040,48 @@ Return ONLY valid JSON. Do NOT explain.`;
       
       console.log('[BUDGET FINAL] parsedTuition:', parsedTuition);
       
-      // P0 DIAGNOSTIC: 4-layer fallback extraction for dealbreakers
-      console.log('=== 4-LAYER FALLBACK EXTRACTION ===', JSON.stringify({
-        extractedDealbreakers: conversationFamilyProfile?.dealbreakers,
-        source: 'conversationFamilyProfile',
-        contextExtractedDealbreakers: context.extractedEntities?.dealbreakers,
-        sourceContext: 'context.extractedEntities'
-      }));
+      // AGGRESSIVE FALLBACK: Extract dealbreakers from multiple sources (KI-17 pattern)
+      let parsedDealbreakers = null;
+      
+      // Fallback 1: conversationFamilyProfile.dealbreakers
+      if (conversationFamilyProfile?.dealbreakers && Array.isArray(conversationFamilyProfile.dealbreakers) && conversationFamilyProfile.dealbreakers.length > 0) {
+        parsedDealbreakers = conversationFamilyProfile.dealbreakers;
+        console.log('[DEALBREAKER FALLBACK 1] conversationFamilyProfile.dealbreakers:', parsedDealbreakers);
+      }
+      
+      // Fallback 2: context.extractedEntities.dealbreakers
+      if ((!parsedDealbreakers || parsedDealbreakers.length === 0) && context.extractedEntities?.dealbreakers && Array.isArray(context.extractedEntities.dealbreakers) && context.extractedEntities.dealbreakers.length > 0) {
+        parsedDealbreakers = context.extractedEntities.dealbreakers;
+        console.log('[DEALBREAKER FALLBACK 2] context.extractedEntities.dealbreakers:', parsedDealbreakers);
+      }
+      
+      // Fallback 3: Parse Brief text from conversation history
+      if ((!parsedDealbreakers || parsedDealbreakers.length === 0) && conversationHistory) {
+        const briefMsg = conversationHistory.slice().reverse().find(m => m.role === 'assistant' && /•\s*Dealbreakers:/i.test(m.content));
+        if (briefMsg) {
+          const dbMatch = briefMsg.content.match(/•\s*Dealbreakers:\s*([^\n•]+)/i);
+          if (dbMatch && dbMatch[1]) {
+            const extractedDb = dbMatch[1].trim();
+            if (!/not specified|none/i.test(extractedDb)) {
+              parsedDealbreakers = extractedDb.split(',').map(s => s.trim()).filter(Boolean);
+              console.log('[DEALBREAKER FALLBACK 3] Parsed from Brief text:', parsedDealbreakers);
+            }
+          }
+        }
+      }
+      
+      // Fallback 4: context.conversationContext?.familyProfile?.dealbreakers
+      if ((!parsedDealbreakers || parsedDealbreakers.length === 0) && context.conversationContext?.familyProfile?.dealbreakers && Array.isArray(context.conversationContext.familyProfile.dealbreakers) && context.conversationContext.familyProfile.dealbreakers.length > 0) {
+        parsedDealbreakers = context.conversationContext.familyProfile.dealbreakers;
+        console.log('[DEALBREAKER FALLBACK 4] context.conversationContext.familyProfile.dealbreakers:', parsedDealbreakers);
+      }
+      
+      console.log('[DEALBREAKER FINAL] parsedDealbreakers:', parsedDealbreakers);
       
       const searchParams = {
         limit: 50,
-        familyProfile: conversationFamilyProfile
+        familyProfile: conversationFamilyProfile,
+        dealbreakers: parsedDealbreakers
       };
 
       // KI-12: CRITICAL - Proper location filtering
@@ -1133,11 +1164,12 @@ Return ONLY valid JSON. Do NOT explain.`;
         region: searchParams.region
       });
 
-      console.log('[SEARCH] Final searchParams:', { minGrade: searchParams.minGrade, maxGrade: searchParams.maxGrade, maxTuition: searchParams.maxTuition, city: searchParams.city });
+      console.log('[SEARCH] Final searchParams:', { minGrade: searchParams.minGrade, maxGrade: searchParams.maxGrade, maxTuition: searchParams.maxTuition, city: searchParams.city, dealbreakers: searchParams.dealbreakers });
       
       // P0 DIAGNOSTIC: Call to searchSchools
       console.log('=== ORCHESTRATE -> SEARCHSCHOOLS CALL ===', JSON.stringify({
-        dealbreakersBeingPassed: searchParams?.familyProfile?.dealbreakers,
+        dealbreakersBeingPassed: searchParams?.dealbreakers,
+        familyProfileDealbreakers: searchParams?.familyProfile?.dealbreakers,
         familyProfileKeys: Object.keys(searchParams?.familyProfile || {})
       }));
       
