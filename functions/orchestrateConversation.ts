@@ -5,8 +5,10 @@ import { handleResults } from './handleResults.ts';
 import { handleBrief } from './handleBrief.ts';
 import { handleDiscovery } from './handleDiscovery.ts';
 import { extractEntities } from './extractEntities.ts';
+import { resolveTransition } from './resolveTransition.ts';
+// Sprint A: extractEntities + resolveTransition integration
 // BUG-DD-002 fix: selectedSchoolId destructured
-// deploy-trigger-v5
+// deploy-trigger-v7
 
 Deno.serve(async (req) => {
   const TIMEOUT_MS = 25000;
