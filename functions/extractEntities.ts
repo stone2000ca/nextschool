@@ -167,6 +167,7 @@ export async function extractEntities(params) {
       });
       intentSignal = result.intentSignal;
       console.log('[INTENT SIGNAL]', intentSignal);
+      console.log('[EXTRACT] OpenRouter returned intentSignal:', intentSignal);
     } catch (openrouterError) {
       console.log('[OPENROUTER FALLBACK] Entity extraction falling back to InvokeLLM');
       const extractionPrompt = `Extract ONLY factual data explicitly stated. Return JSON with NULL for anything not mentioned.
@@ -292,6 +293,7 @@ export async function extractEntities(params) {
       if (result?.intentSignal) {
         intentSignal = result.intentSignal;
       }
+      console.log('[EXTRACT] InvokeLLM returned intentSignal:', intentSignal);
       console.log('[OPENROUTER FALLBACK] Entity extraction failed, using InvokeLLM result');
     }
 
@@ -387,6 +389,9 @@ export async function extractEntities(params) {
   
   // Extract briefDelta from result (will be used in Sprint B)
   const briefDelta = result?.briefDelta || { additions: [], updates: [], removals: [] };
+  
+  // Safety fallback for intentSignal
+  intentSignal = intentSignal || 'continue';
   
   return {
     extractedEntities: extractedData,

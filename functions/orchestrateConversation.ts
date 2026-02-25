@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
     // STEP 2: ENTITY EXTRACTION (all other messages)
     extractionResult = await extractEntities({ base44, message, conversationFamilyProfile, context, conversationHistory });
     const { extractedEntities, updatedFamilyProfile, updatedContext } = extractionResult;
-    intentSignal = extractionResult.intentSignal;
+    intentSignal = extractionResult.intentSignal || 'continue';
     briefDelta = extractionResult.briefDelta;
     
     // Apply results
@@ -181,6 +181,8 @@ Deno.serve(async (req) => {
     currentState = resolveResult.nextState;
     briefStatus = resolveResult.briefStatus || context.briefStatus || null;
     const { flags } = resolveResult;
+    
+    console.log('[ORCH] resolveTransition returned:', { nextState: resolveResult.nextState, intentSignal, sufficiency: resolveResult.sufficiency, flags: resolveResult.flags });
     
     // Update context with resolved state
     context.state = currentState;

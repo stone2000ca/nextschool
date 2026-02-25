@@ -1,5 +1,3 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-
 // Pure function: deterministic state resolution based on intent signal and profile data
 export function resolveTransition(params) {
   const {
@@ -64,12 +62,13 @@ export function resolveTransition(params) {
   }
 
   // R3: Intent maps (highest priority)
-  if (intentSignal === 'request-brief' && sufficiency === 'MINIMUM' || sufficiency === 'RICH') {
+  if (intentSignal === 'request-brief' && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
     nextState = STATES.BRIEF;
     briefStatus = 'generating';
     flags.USER_INTENT_OVERRIDE = true;
     transitionReason = 'explicit_intent';
     console.log('[R3] Intent: request-brief -> BRIEF');
+    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason, briefStatus };
   }
 
@@ -78,6 +77,7 @@ export function resolveTransition(params) {
     flags.USER_INTENT_OVERRIDE = true;
     transitionReason = 'explicit_intent';
     console.log('[R3] Intent: request-results -> RESULTS');
+    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason };
   }
 
@@ -87,6 +87,7 @@ export function resolveTransition(params) {
     flags.USER_INTENT_OVERRIDE = true;
     transitionReason = 'explicit_intent';
     console.log('[R3] Intent: edit-criteria -> BRIEF (editing)');
+    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason, briefStatus };
   }
 
@@ -95,6 +96,7 @@ export function resolveTransition(params) {
     flags.USER_INTENT_OVERRIDE = true;
     transitionReason = 'explicit_intent';
     console.log('[R3] Intent: back-to-results -> RESULTS');
+    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason };
   }
 
@@ -104,6 +106,7 @@ export function resolveTransition(params) {
     flags.USER_INTENT_OVERRIDE = true;
     transitionReason = 'explicit_intent';
     console.log('[R3] Intent: restart -> DISCOVERY');
+    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason };
   }
 
@@ -112,17 +115,19 @@ export function resolveTransition(params) {
     flags.USER_INTENT_OVERRIDE = true;
     transitionReason = 'explicit_intent';
     console.log('[R3] Intent: ask-about-school -> DEEP_DIVE');
+    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason };
   }
 
   // R4: Auto-thresholds in DISCOVERY (turn-based progression)
   if (currentState === STATES.DISCOVERY) {
-    if (turnCount >= 8 && sufficiency === 'MINIMUM' || sufficiency === 'RICH') {
+    if (turnCount >= 8 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
       nextState = STATES.BRIEF;
       briefStatus = 'generating';
       flags.FORCED_TRANSITION = true;
       transitionReason = 'auto_threshold';
       console.log('[R4] Turn >= 8, force BRIEF');
+      console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
       return { nextState, sufficiency, flags, transitionReason, briefStatus };
     }
 
@@ -130,13 +135,15 @@ export function resolveTransition(params) {
       flags.OFFER_BRIEF = true;
       transitionReason = 'auto_threshold';
       console.log('[R4] Turn >= 6, set OFFER_BRIEF flag');
+      console.log('[RESOLVE] Output:', { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason });
       return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason };
     }
 
-    if (turnCount >= 4 && sufficiency === 'MINIMUM' || sufficiency === 'RICH') {
+    if (turnCount >= 4 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
       flags.SUGGEST_BRIEF = true;
       transitionReason = 'auto_threshold';
       console.log('[R4] Turn >= 4, set SUGGEST_BRIEF flag');
+      console.log('[RESOLVE] Output:', { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason });
       return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason };
     }
   }
@@ -144,12 +151,14 @@ export function resolveTransition(params) {
   // R5: Continue in DISCOVERY stays DISCOVERY
   if (currentState === STATES.DISCOVERY && intentSignal === 'continue') {
     console.log('[R5] DISCOVERY + continue intent, stay DISCOVERY');
+    console.log('[RESOLVE] Output:', { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason });
     return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason };
   }
 
   // R6: Off-topic stays current state
   if (intentSignal === 'off-topic') {
     console.log('[R6] Off-topic, stay in current state');
+    console.log('[RESOLVE] Output:', { nextState: currentState, sufficiency, flags, transitionReason });
     return { nextState: currentState, sufficiency, flags, transitionReason };
   }
 
@@ -160,6 +169,7 @@ export function resolveTransition(params) {
     flags.FORCED_TRANSITION = true;
     transitionReason = 'edit_cap_reached';
     console.log('[R7] Edit cap reached (3), move to RESULTS');
+    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason, briefStatus };
   }
 
@@ -167,11 +177,13 @@ export function resolveTransition(params) {
   if (currentState === STATES.DEEP_DIVE && !selectedSchoolId) {
     nextState = STATES.RESULTS;
     console.log('[R8] DEEP_DIVE but no selectedSchoolId, back to RESULTS');
+    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
     return { nextState, sufficiency, flags, transitionReason };
   }
 
   // Default: maintain current state
   console.log('[DEFAULT] Maintain current state:', currentState);
+  console.log('[RESOLVE] Output:', { nextState: currentState, sufficiency, flags, transitionReason });
   return { nextState: currentState, sufficiency, flags, transitionReason };
 }
 
