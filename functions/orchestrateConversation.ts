@@ -6,7 +6,10 @@ async function callOpenRouter(options) {
   const { systemPrompt, userPrompt, responseSchema, maxTokens = 1000, temperature = 0.7 } = options;
   
   const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
-  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not set');
+  if (!OPENROUTER_API_KEY) {
+    console.warn('[OPENROUTER] OPENROUTER_API_KEY not set - will fall back to InvokeLLM');
+    throw new Error('OPENROUTER_API_KEY not set');
+  }
   
   const messages = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
