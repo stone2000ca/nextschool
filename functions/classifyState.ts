@@ -37,8 +37,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // RULE 1a: If first message but NOT short/chip, force DISCOVERY
+    if (histLen <= 1 && !selectedSchoolId && !isShortMessage && !isChipResponse) {
+      console.log('[CLASSIFY] Rule 1a: First message is data-rich, forcing DISCOVERY');
+      currentState = 'DISCOVERY';
+      // Don't return - fall through to check other rules
+    }
+
     // RULE 1b: Force DISCOVERY if currently WELCOME but we have conversation history
-    if (currentState === 'WELCOME' && histLen > 1) {
+    if (currentState === 'WELCOME' && histLen >= 1) {
       console.log('[CLASSIFY] Rule 1b: WELCOME->DISCOVERY (conversation has started)');
       // Don't return yet - fall through to check other rules with currentState as DISCOVERY
       currentState = 'DISCOVERY';
