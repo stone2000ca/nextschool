@@ -329,7 +329,7 @@ Return ONLY valid JSON. Do NOT explain.`;
     }
     
     // STEP 2: CALL CLASSIFYSTATE FOR STATE DETERMINATION
-    let classificationResult;
+    var classificationResult;
     try {
       const classifyResponse = await base44.functions.invoke('classifyState', {
         message,
