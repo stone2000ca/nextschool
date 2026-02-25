@@ -1322,6 +1322,7 @@ Respond as ${consultantName}. ONE question max.`;
     }
     
     if (currentState === STATES.DEEP_DIVE) {
+      console.log('DEEPDIVE_START', selectedSchoolId);
       console.log('[DEEPDIVE] Handler entered. selectedSchoolId:', selectedSchoolId, 'currentState:', currentState);
       let aiMessage = '';
       let selectedSchool = null;
@@ -1330,16 +1331,20 @@ Respond as ${consultantName}. ONE question max.`;
         // BUG-DD-002 FIX #2: Load full school profile when selectedSchoolId provided
         if (selectedSchoolId) {
           try {
+            console.log('[DEEPDIVE] Fetching school with ID:', selectedSchoolId);
             const schoolResults = await base44.entities.School.filter({ id: selectedSchoolId });
+            console.log('[DEEPDIVE] School fetch results:', schoolResults.length);
             if (schoolResults.length > 0) {
               selectedSchool = schoolResults[0];
-              console.log('[BUG-DD-002 FIX] Loaded school:', selectedSchool.name);
+              console.log('[DEEPDIVE] Loaded school:', selectedSchool.name);
             } else {
-              console.error('[BUG-DD-002] School not found for ID:', selectedSchoolId);
+              console.error('[DEEPDIVE ERROR] School not found for ID:', selectedSchoolId);
             }
           } catch (e) {
-            console.error('[ERROR] Failed to load selected school:', e);
+            console.error('[DEEPDIVE ERROR] Failed to load selected school:', e.message, e.stack);
           }
+        } else {
+          console.error('[DEEPDIVE ERROR] No selectedSchoolId provided');
         }
         
         // BUG-DD-002 FIX #4: Fallback - if InvokeLLM fails, return structured school data
@@ -1502,17 +1507,22 @@ Rules: Start with "**Why ${selectedSchool.name}**", use ** for headers, • for 
           console.error('[DIAGNOSTIC] Failed to create SearchLog:', logErr);
         }
         
+        console.log('[DEEPDIVE] Calling InvokeLLM with prompt length:', responsePrompt.length);
         const aiResponse = await base44.integrations.Core.InvokeLLM({
           prompt: responsePrompt,
           add_context_from_internet: false
         });
+        console.log('DEEPDIVE_RESPONSE', typeof aiResponse, aiResponse);
 
         const aiContent = typeof aiResponse === 'string' ? aiResponse : (aiResponse?.response || null);
+        console.log('[DEEPDIVE] aiContent extracted, type:', typeof aiContent, 'length:', aiContent?.length);
         
         // COMBINE: Programmatic header + AI content
         aiMessage = aiContent ? cardHeader + aiContent : null;
+        console.log('[DEEPDIVE] aiMessage built, length:', aiMessage?.length);
       } catch (e) {
-        console.error('[ERROR] DEEP_DIVE InvokeLLM failed:', e.message);
+        console.error('[DEEPDIVE ERROR] InvokeLLM failed:', e.message, 'Stack:', e.stack);
+        console.error('[DEEPDIVE ERROR] Full error object:', JSON.stringify(e, null, 2));
         aiMessage = null;
       }
       
@@ -1549,6 +1559,7 @@ What would you like to know more about?`;
       
       // BUG-DD-002 FIX #2: Return ONLY selectedSchool in schools array
       console.log('[DEEPDIVE] Returning aiMessage length:', aiMessage?.length, 'starts with:', aiMessage?.substring(0, 50));
+      console.log('[DEEPDIVE] selectedSchool:', selectedSchool?.name, 'state:', currentState);
       return Response.json({
          message: aiMessage,
          state: currentState,
