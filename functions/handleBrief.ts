@@ -215,7 +215,9 @@ export async function handleBrief(params) {
     }
 
     const briefPrompt = consultantName === 'Jackie'
-     ? `[STATE: BRIEF] Generate a factual brief summary using the structured format below. Use ONLY what was explicitly stated by the parent.
+      ? `[STATE: BRIEF] Generate a factual brief summary using the structured format below. Use ONLY what was explicitly stated by the parent.
+
+    NEVER USE THESE PHRASES (HARD BAN): "That's wonderful", "How exciting", "It sounds like you're looking for", "I understand you're eager", "I'd love to help you explore", "That's great", "I appreciate you sharing". If you catch yourself starting with any of these, DELETE IT and start over.
 
     CRITICAL RULES - DO NOT VIOLATE (FIX 11):
     - Do NOT invent personality traits, motivations, or character descriptions that were not explicitly stated by the parent.
@@ -247,7 +249,9 @@ export async function handleBrief(params) {
    YOU ARE JACKIE - Warm intro, structured data.`
       : `[STATE: BRIEF] Generate a factual brief summary using the structured format below. Use ONLY what was explicitly stated by the parent.
 
-   CRITICAL RULES - DO NOT VIOLATE (FIX 11):
+      NEVER USE THESE PHRASES (HARD BAN): "That's wonderful", "How exciting", "It sounds like you're looking for", "I understand you're eager", "I'd love to help you explore", "That's great", "I appreciate you sharing". If you catch yourself starting with any of these, DELETE IT and start over.
+
+      CRITICAL RULES - DO NOT VIOLATE (FIX 11):
    - Do NOT invent personality traits, motivations, or character descriptions that were not explicitly stated by the parent.
    - If the parent said the child is struggling or has ADHD/learning differences, acknowledge that plainly and respectfully. Do NOT romanticize it.
    - If no personality was described, skip that section entirely.
