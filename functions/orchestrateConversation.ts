@@ -124,44 +124,69 @@ Deno.serve(async (req) => {
       };
     }
     
-    // STEP 1: ENTITY EXTRACTION (runs on EVERY message)
-    const { extractedEntities, updatedFamilyProfile, updatedContext, intentSignal } = await extractEntities({ base44, message, conversationFamilyProfile, context, conversationHistory });
+    // STEP 1: WELCOME HANDLER (skip extraction for true welcome state)
+    const isFirstMessage = conversationHistory?.length === 0;
+    let extractionResult = null;
+    let intentSignal = 'continue';
+    let briefDelta = { additions: [], updates: [], removals: [] };
+    let resolveResult = null;
+
+    if (isFirstMessage && !context.state) {
+      // True WELCOME: return greeting, skip extraction
+      console.log('[ORCH] First message, return WELCOME greeting');
+      return Response.json({
+        message: "I'm your NextSchool education consultant. I help families find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you?",
+        state: STATES.WELCOME,
+        briefStatus: null,
+        conversationContext: context,
+        schools: []
+      });
+    }
+
+    // STEP 2: ENTITY EXTRACTION (all other messages)
+    extractionResult = await extractEntities({ base44, message, conversationFamilyProfile, context, conversationHistory });
+    const { extractedEntities, updatedFamilyProfile, updatedContext } = extractionResult;
+    intentSignal = extractionResult.intentSignal;
+    briefDelta = extractionResult.briefDelta;
+    
     // Apply results
     Object.assign(conversationFamilyProfile, updatedFamilyProfile);
     Object.assign(context, updatedContext);
     
-    // STEP 2: CALL CLASSIFYSTATE FOR STATE DETERMINATION
-    try {
-      const classifyResponse = await base44.functions.invoke('classifyState', {
-        message,
-        conversationHistory,
-        conversationContext: context,
-        selectedSchoolId,
-        currentSchools
-      });
-      classificationResult = classifyResponse.data;
-      console.log('[CLASSIFY RESULT]', classificationResult);
-    } catch (e) {
-      console.error('[CLASSIFY ERROR]', e);
-      // Fallback to current state if classifyState fails
-      classificationResult = {
-        state: context.state || STATES.WELCOME,
-        briefStatus: context.briefStatus || null,
-        dataSufficiency: 'thin',
-        transitionReason: 'natural'
-      };
-    }
+    // STEP 3: BUILD PROFILE DATA FOR TRANSITION RESOLUTION
+    const profileData = {
+      location: conversationFamilyProfile?.locationArea || null,
+      gradeLevel: conversationFamilyProfile?.childGrade || null,
+      priorities: conversationFamilyProfile?.priorities || [],
+      dealbreakers: conversationFamilyProfile?.dealbreakers || [],
+      curriculum: conversationFamilyProfile?.curriculumPreference || [],
+      schoolType: conversationFamilyProfile?.schoolType || null
+    };
     
-    currentState = classificationResult.state;
-    briefStatus = classificationResult.briefStatus;
+    const turnCount = conversationHistory?.filter(m => m.role === 'user').length || 0;
+    const briefEditCount = context.briefEditCount || 0;
+    const previousSchoolId = context.previousSchoolId || null;
     
-    // Update context with classified state
+    // STEP 4: RESOLVE TRANSITION (deterministic state machine)
+    resolveResult = resolveTransition({
+      currentState: context.state || STATES.WELCOME,
+      intentSignal,
+      profileData,
+      turnCount,
+      briefEditCount,
+      selectedSchoolId,
+      previousSchoolId
+    });
+    
+    currentState = resolveResult.nextState;
+    briefStatus = resolveResult.briefStatus || context.briefStatus || null;
+    const { flags } = resolveResult;
+    
+    // Update context with resolved state
     context.state = currentState;
     context.briefStatus = briefStatus;
-    
-    // Store classification metadata in context
-    context.dataSufficiency = classificationResult.dataSufficiency;
-    context.transitionReason = classificationResult.transitionReason;
+    context.dataSufficiency = resolveResult.sufficiency;
+    context.transitionReason = resolveResult.transitionReason;
 
     console.log(`[STATE] ${currentState} | briefStatus: ${briefStatus} | dataSufficiency: ${context.dataSufficiency} | transitionReason: ${context.transitionReason}`);
 
