@@ -1365,7 +1365,22 @@ Respond as ${consultantName}. ONE question max.`;
         aiMessage = null;
         
         // PROGRAMMATIC CARD BUILDER
-        const childName = conversationFamilyProfile?.childName || 'your child';
+        // FIX 1: Smart child name resolution with proper fallback chain
+        let childDisplayName = 'your child';
+        
+        if (conversationFamilyProfile?.childName) {
+          childDisplayName = conversationFamilyProfile.childName;
+        } else if (context.extractedEntities?.childName) {
+          childDisplayName = context.extractedEntities.childName;
+        } else {
+          // Fallback to gender-based pronouns if available
+          const childGender = conversationFamilyProfile?.childGender || context.extractedEntities?.childGender;
+          if (childGender === 'male') {
+            childDisplayName = 'your son';
+          } else if (childGender === 'female') {
+            childDisplayName = 'your daughter';
+          }
+        }
         
         // Function to determine fit label
         const determineFitLabel = (school, brief) => {
@@ -1395,8 +1410,8 @@ Respond as ${consultantName}. ONE question max.`;
           
           const priorityMatchRate = priorities.length > 0 ? priorityMatches / priorities.length : 0.5;
           
-          if (priorityMatchRate >= 0.7) return `Great Fit for ${childName}`;
-          if (priorityMatchRate >= 0.4) return `Solid Option for ${childName}`;
+          if (priorityMatchRate >= 0.7) return `Great Fit for ${childDisplayName}`;
+          if (priorityMatchRate >= 0.4) return `Solid Option for ${childDisplayName}`;
           return 'Worth a Closer Look';
         };
         
