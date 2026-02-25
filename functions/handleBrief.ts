@@ -306,10 +306,16 @@ export async function handleBrief(params) {
       }
     }
 
-    // INLINE PROGRAMMATIC FALLBACK: If both LLM calls failed silently,
-    // briefMessageText is still the generic default. Build a brief from extracted entities.
-    if (briefMessageText === 'Let me summarize what you\'ve shared.') {
-      console.log('[BRIEF] Both LLM calls failed, using programmatic fallback');
+    // INLINE PROGRAMMATIC FALLBACK: If both LLM calls failed silently or returned thin content,
+    // build a brief from extracted entities instead.
+    const hasSubstantiveContent = (
+      (conversationFamilyProfile.childName && briefMessageText.includes(conversationFamilyProfile.childName)) ||
+      (context.extractedEntities?.locationArea && briefMessageText.includes(context.extractedEntities.locationArea)) ||
+      (context.extractedEntities?.childGrade && briefMessageText.includes(context.extractedEntities.childGrade))
+    );
+    const isThinBrief = !hasSubstantiveContent || briefMessageText.length < 100;
+    if (isThinBrief) {
+      console.log('[BRIEF] Brief is thin/generic, using programmatic fallback. Length:', briefMessageText.length, 'hasSubstantive:', hasSubstantiveContent);
       const fallbackBrief = [];
       if (conversationFamilyProfile.childName) fallbackBrief.push('Student: ' + conversationFamilyProfile.childName);
       if (context.extractedEntities?.childGrade) {
