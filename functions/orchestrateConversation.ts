@@ -165,13 +165,20 @@ Deno.serve(async (req) => {
 
     // STEP 3: STATE-SPECIFIC RESPONSE GENERATION
     if (currentState === STATES.WELCOME) {
-      return Response.json({
-        message: "I'm your NextSchool education consultant. I help families find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you?",
-        state: STATES.WELCOME,
-        briefStatus: null,
-        conversationContext: context,
-        schools: []
-      });
+      // Check if user already provided data - if so, route to DISCOVERY instead
+      const hasData = context.extractedEntities?.locationArea || context.extractedEntities?.childGrade || context.extractedEntities?.maxTuition;
+      if (!hasData) {
+        return Response.json({
+          message: "I'm your NextSchool education consultant. I help families find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you?",
+          state: STATES.WELCOME,
+          briefStatus: null,
+          conversationContext: context,
+          schools: []
+        });
+      }
+      // Fall through to DISCOVERY handler below
+      currentState = STATES.DISCOVERY;
+      context.state = STATES.DISCOVERY;
     }
     
     if (currentState === STATES.DISCOVERY) {
