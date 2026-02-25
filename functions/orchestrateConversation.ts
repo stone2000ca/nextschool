@@ -592,25 +592,55 @@ Deno.serve(async (req) => {
     - Your only job in this phase is to understand the family's needs
     - If the user asks about a specific school, respond: "I'd love to tell you about that school - let me first understand what you're looking for so I can give you the best perspective."`;
 
-         const responsePrompt = `${personaInstructions}
+         const discoverySystemPrompt = personaInstructions;
 
-    ENTITY EXTRACTION:
-    - LOCATION: ${hasLocation ? 'YES' : 'NO'}
-    - BUDGET: ${hasBudget ? 'YES' : 'NO'}
-    - GRADE: ${hasChildGrade ? 'YES' : 'NO'}
+         const discoveryUserPrompt = `ENTITY EXTRACTION STATUS:
+         - LOCATION: ${hasLocation ? 'YES' : 'NO'}
+         - BUDGET: ${hasBudget ? 'YES' : 'NO'}
+         - GRADE: ${hasChildGrade ? 'YES' : 'NO'}
 
-    Recent chat:
-    ${conversationSummary}
+         Recent chat:
+         ${conversationSummary}
 
-    Parent: "${message}"
+         Parent: "${message}"
 
-    Respond as ${consultantName}. ONE question max. No filler.`;
+         Respond as ${consultantName}. ONE question max. No filler.`;
 
-         const aiResponse = await base44.integrations.Core.InvokeLLM({
-           prompt: responsePrompt
-         });
+         let discoveryMessageRaw = 'Tell me more about your child.';
+         try {
+           const aiResponse = await callOpenRouter({
+             systemPrompt: discoverySystemPrompt,
+             userPrompt: discoveryUserPrompt,
+             maxTokens: 500,
+             temperature: 0.7
+           });
+           discoveryMessageRaw = aiResponse || 'Tell me more about your child.';
+           console.log('[OPENROUTER] DISCOVERY response');
+         } catch (openrouterError) {
+           console.log('[OPENROUTER FALLBACK] DISCOVERY response falling back to InvokeLLM');
+           try {
+             const responsePrompt = `${personaInstructions}
 
-         let discoveryMessageRaw = aiResponse?.response || aiResponse || 'Tell me more about your child.';
+         ENTITY EXTRACTION:
+         - LOCATION: ${hasLocation ? 'YES' : 'NO'}
+         - BUDGET: ${hasBudget ? 'YES' : 'NO'}
+         - GRADE: ${hasChildGrade ? 'YES' : 'NO'}
+
+         Recent chat:
+         ${conversationSummary}
+
+         Parent: "${message}"
+
+         Respond as ${consultantName}. ONE question max. No filler.`;
+
+             const fallbackResponse = await base44.integrations.Core.InvokeLLM({
+               prompt: responsePrompt
+             });
+             discoveryMessageRaw = fallbackResponse?.response || fallbackResponse || 'Tell me more about your child.';
+           } catch (fallbackError) {
+             console.error('[FALLBACK ERROR] DISCOVERY response failed:', fallbackError.message);
+           }
+         }
          
          // FIX 13: RESPONSE VALIDATOR - Remove sentences containing school names during DISCOVERY
          if (currentSchools && currentSchools.length > 0) {
