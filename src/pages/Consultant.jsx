@@ -1063,6 +1063,38 @@ Return empty array if user didn't provide any of these facts.`;
             console.log('[FILTER] Budget:', budgetNum, 'Schools:', filtered.length);
           }
         }
+        
+        // Religious Dealbreaker Filter: Exclude schools with religious affiliation or keywords in name
+        try {
+          const dealbreakers = profile?.dealbreakers || [];
+          const hasReligiousDealbreaker = Array.isArray(dealbreakers) && dealbreakers.some(d => typeof d === 'string' && d.toLowerCase().includes('religious'));
+          
+          if (hasReligiousDealbreaker) {
+            const beforeCount = filtered.length;
+            filtered = filtered.filter(school => {
+              const name = (school?.name || '').toLowerCase();
+              const affiliation = (school?.religiousAffiliation || '').toLowerCase();
+              
+              // Exclude if religiousAffiliation is set and not secular
+              if (affiliation && affiliation !== 'none' && affiliation !== 'secular' && affiliation !== 'non-denominational') {
+                console.log('[RELIGIOUS FILTER] Excluded by affiliation:', school.name, '(' + school.religiousAffiliation + ')');
+                return false;
+              }
+              
+              // Exclude by name keywords
+              const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'hebrew', 'saint', "st. michael's", "st michael's"];
+              if (religiousKeywords.some(kw => name.includes(kw))) {
+                console.log('[RELIGIOUS FILTER] Excluded by name keyword:', school.name);
+                return false;
+              }
+              
+              return true;
+            });
+            console.log('[FILTER] Religious dealbreaker: filtered from', beforeCount, 'to', filtered.length, 'schools');
+          }
+        } catch (religiousFilterError) {
+          console.error('[RELIGIOUS FILTER] Error, skipping religious filter:', religiousFilterError);
+        }
       } catch (filterError) {
         console.error('[FILTER] Error applying filters, showing all schools:', filterError);
         filtered = [...schools];
