@@ -27,21 +27,6 @@ Deno.serve(async (req) => {
     const context = conversationContext || {};
     const msgLower = message.toLowerCase();
     
-    // BUG-DD-002 FIX #1: FORCE DEEP_DIVE state when selectedSchoolId is present
-    if (selectedSchoolId) {
-      console.log('[BUG-DD-002 FIX] selectedSchoolId present, forcing DEEP_DIVE state:', selectedSchoolId);
-      context.state = 'DEEP_DIVE';
-    }
-    
-    // AGGRESSIVE STATE RESET - must be FIRST thing after context is set
-    const histLen = conversationHistory?.length || 0;
-    if (histLen <= 1 && !selectedSchoolId) {
-      console.log('[HARD RESET] histLen=' + histLen + ', clearing stale state');
-      context.state = 'WELCOME';
-      context.briefStatus = null;
-      context.briefEditCount = 0;
-    }
-    
     // STATE MACHINE: 5 states (strictly deterministic)
     const STATES = {
       WELCOME: 'WELCOME',
@@ -91,36 +76,18 @@ Deno.serve(async (req) => {
     let briefEditCount = context.briefEditCount || 0;
     const MAX_BRIEF_EDITS = 3;
     
-    // DIAGNOSTIC: Track state values
-    try {
-      await base44.asServiceRole.entities.SearchLog.create({
-        query: 'STATE_DIAGNOSTIC',
-        inputFilters: {
-          currentState: currentState,
-          contextState: context.state,
-          selectedSchoolId: selectedSchoolId || 'none',
-          briefStatus: briefStatus,
-          historyLength: conversationHistory?.length || 0
-        },
-        totalSchoolsPassingFilters: 0,
-        topResults: [],
-        conversationId: conversationId,
-        userId: userId
-      });
-    } catch (diagErr) {
-      console.error('[DIAGNOSTIC] Failed to create STATE_DIAGNOSTIC log:', diagErr);
-    }
+    // Update context with classified state
+    context.state = currentState;
+    context.briefStatus = briefStatus;
     
-    // GUARD: Force DEEP_DIVE state when selectedSchoolId present
-    if (selectedSchoolId && currentState !== STATES.DEEP_DIVE) {
-      console.log('[STATE GUARD] Forcing DEEP_DIVE state. Was:', currentState, 'selectedSchoolId:', selectedSchoolId);
-      currentState = STATES.DEEP_DIVE;
-      context.state = STATES.DEEP_DIVE;
-    }
+    // Store classification metadata in context
+    context.dataSufficiency = classificationResult.dataSufficiency;
+    context.transitionReason = classificationResult.transitionReason;
+    
+    const conversationId = context.conversationId;
     
     // STEP 0: Initialize/retrieve FamilyProfile
     let conversationFamilyProfile = null;
-    const conversationId = context.conversationId;
     
     if (userId && conversationId) {
       try {
@@ -361,152 +328,33 @@ Return ONLY valid JSON. Do NOT explain.`;
       }
     }
     
-    // STEP 2: DETERMINISTIC STATE TRANSITIONS
-    var currentState = context.state || STATES.WELCOME;
-    var briefStatus = context.briefStatus || null;
-
-    // Rule 1: WELCOME -> DISCOVERY on first message
-    if (currentState === STATES.WELCOME && message) {
-      currentState = STATES.DISCOVERY;
-    }
-
-    // FIX B: Question detection function
-    function isDirectQuestion(text) {
-      const t = text.trim();
-      if (t.endsWith('?')) return true;
-      const l = t.toLowerCase();
-      return ['what ','how ','why ','do ','does ','can ','could ','are ','is ','should ','would '].some(p => l.startsWith(p));
+    // STEP 2: CALL CLASSIFYSTATE FOR STATE DETERMINATION
+    let classificationResult;
+    try {
+      const classifyResponse = await base44.functions.invoke('classifyState', {
+        message,
+        conversationHistory,
+        conversationContext: context,
+        selectedSchoolId,
+        currentSchools
+      });
+      classificationResult = classifyResponse.data;
+      console.log('[CLASSIFY RESULT]', classificationResult);
+    } catch (e) {
+      console.error('[CLASSIFY ERROR]', e);
+      // Fallback to current state if classifyState fails
+      classificationResult = {
+        state: context.state || STATES.WELCOME,
+        briefStatus: context.briefStatus || null,
+        dataSufficiency: 'thin',
+        transitionReason: 'natural'
+      };
     }
     
-    // Rule 2: DISCOVERY -> BRIEF when Tier 1 data is met AND minimum turn count reached
-    // FIX A: Check accumulated entities in context.extractedEntities
-    if (currentState === STATES.DISCOVERY) {
-      const hasLocation = !!(context.extractedEntities?.locationArea || context.extractedEntities?.city || region);
-      const hasGradeOrType = !!(context.extractedEntities?.childGrade || context.extractedEntities?.curriculumPreference || context.extractedEntities?.schoolType);
-      const userMessageCount = conversationHistory?.filter(m => m.role === 'user').length || 0;
-      
-      // KI-11 LAYER 1: EXPLICIT DEMANDS - user directly asking for results/schools/brief
-      const explicitDemands = /\b(show me schools|show me the schools|just give me results|give me results|I'm done|that's everything|can you show me what you have|what do you recommend|let's see the brief|show me options|what schools|give me options|I want to see|show me what you've got)\b/i.test(msgLower);
-      
-      // KI-11 LAYER 2: FRUSTRATION SIGNALS
-      const recentUserMessages = conversationHistory?.filter(m => m.role === 'user').slice(-3) || [];
-      const shortMessageCount = recentUserMessages.filter(m => m.content.length < 50).length;
-      const hasCaps = /[A-Z]{4,}/.test(message); // 4+ consecutive caps
-      const frustrationPhrases = /\b(I already told you|I've asked|I said|you already asked|I mentioned|like I said|again|stop asking)\b/i.test(msgLower);
-      const frustrationSignal = (shortMessageCount >= 2 && recentUserMessages.length >= 2) || hasCaps || frustrationPhrases;
-      
-      // KI-11 LAYER 3: ENTITY COMPLETENESS THRESHOLD
-      const hasPriorityOrInterest = !!(context.extractedEntities?.priorities?.length > 0 || context.extractedEntities?.interests?.length > 0 || context.extractedEntities?.programPreferences?.length > 0);
-      const hasRichProfile = hasLocation && hasGradeOrType && hasPriorityOrInterest;
-      const hasMinimumData = hasLocation && hasGradeOrType;
-      
-      // Original readiness signals
-      const readinessSignals = /\b(show me the summary|move forward|that covers everything|I think that's it|ready to see|let's see the schools|let's move on|that's all|that should be enough)\b/i.test(msgLower);
-      
-      console.log('[KI-11 TRANSITION CHECK]', {
-        hasLocation, 
-        hasGradeOrType, 
-        userMessageCount, 
-        explicitDemands,
-        frustrationSignal,
-        hasRichProfile,
-        hasMinimumData,
-        entities: context.extractedEntities
-      });
-      
-      const isQuestion = isDirectQuestion(message);
-      
-      // KI-11: TRANSITION LOGIC with THREE DETECTION LAYERS
-      // LAYER 1: Explicit demands ALWAYS transition if minimum data exists
-      if (explicitDemands && hasMinimumData) {
-        currentState = STATES.BRIEF;
-        briefStatus = BRIEF_STATUS.GENERATING;
-        console.log('[KI-11 LAYER 1] Explicit demand detected, transitioning to BRIEF');
-      }
-      // LAYER 2: Frustration signals ALWAYS transition if minimum data exists
-      else if (frustrationSignal && hasMinimumData) {
-        currentState = STATES.BRIEF;
-        briefStatus = BRIEF_STATUS.GENERATING;
-        console.log('[KI-11 LAYER 2] Frustration signal detected, transitioning to BRIEF');
-      }
-      // LAYER 3: Auto-offer Brief after 4 exchanges if minimum data collected
-      else if (userMessageCount >= 4 && hasMinimumData) {
-        currentState = STATES.BRIEF;
-        briefStatus = BRIEF_STATUS.GENERATING;
-        console.log('[KI-11 LAYER 3] 4+ exchanges with minimum data, auto-transitioning to BRIEF');
-      }
-      // Original logic: (Tier 1 data + 3 turns AND not question) OR readiness signal
-      else if (hasLocation && hasGradeOrType && ((userMessageCount >= 3 && !isQuestion) || readinessSignals)) {
-        currentState = STATES.BRIEF;
-        briefStatus = BRIEF_STATUS.GENERATING;
-        if (readinessSignals) {
-          console.log('[READINESS SIGNAL] User explicitly ready, transitioning to BRIEF');
-        }
-      } else if (isQuestion) {
-        console.log('[QUESTION-FIRST GUARD] Question detected, staying in DISCOVERY');
-      } else if (hasLocation && hasGradeOrType && userMessageCount < 3 && !readinessSignals) {
-        console.log('[TURN COUNT GUARD] Tier 1 data met but only', userMessageCount, 'user messages, staying in DISCOVERY');
-      }
-    }
+    var currentState = classificationResult.state;
+    var briefStatus = classificationResult.briefStatus;
 
-    // Rule 3: BRIEF state handling
-    if (currentState === STATES.BRIEF) {
-      console.log('[BRIEF STATE]', {briefStatus, msgLower});
-      
-      const isConfirming = /(looks right|show me schools|yes|yeah|yep|correct|perfect|great|sounds good|looks good|go ahead|that's right|that's perfect)/i.test(msgLower);
-      const isAdjusting = /\b(change|adjust|edit|actually|wait|hold on|no|not right|different|let me|redo)\b/i.test(msgLower);
-      
-      if (briefStatus === BRIEF_STATUS.PENDING_REVIEW || briefStatus === BRIEF_STATUS.EDITING) {
-        if (isConfirming) {
-          console.log('[BRIEF->RESULTS] Confirmation detected, transitioning to RESULTS');
-          currentState = STATES.RESULTS;
-          briefStatus = BRIEF_STATUS.CONFIRMED;
-        } else if (isAdjusting) {
-          // Don't increment here - only increment when actual changes are provided
-          if (briefEditCount >= MAX_BRIEF_EDITS) {
-            currentState = STATES.RESULTS;
-            briefStatus = BRIEF_STATUS.CONFIRMED;
-          } else {
-            briefStatus = BRIEF_STATUS.EDITING;
-          }
-                } else if (briefStatus === BRIEF_STATUS.EDITING) {
-          // User provided specific adjustments - increment count and regenerate brief
-          console.log('[BRIEF ADJUST] User provided specific changes, regenerating brief with merged entities');
-          briefEditCount++;
-          if (briefEditCount >= MAX_BRIEF_EDITS) {
-            currentState = STATES.RESULTS;
-            briefStatus = BRIEF_STATUS.CONFIRMED;
-          } else {
-            briefStatus = BRIEF_STATUS.GENERATING;
-          }
-        }
-      } else if (briefStatus === BRIEF_STATUS.GENERATING) {
-        briefStatus = BRIEF_STATUS.PENDING_REVIEW;
-        console.log('[BRIEF] Set briefStatus to pending_review');
-      }
-    }
-
-    // Rule 4: RESULTS -> DEEP_DIVE when school selected or back to BRIEF to revise
-    if (currentState === STATES.RESULTS) {
-      const wantsRevise = /\b(change|revise|update|different criteria|start over|redo brief)\b/i.test(msgLower);
-      if (wantsRevise) {
-        currentState = STATES.BRIEF;
-        briefStatus = BRIEF_STATUS.EDITING;
-      }
-    }
-
-    // Rule 5: DEEP_DIVE -> RESULTS when going back
-    if (currentState === STATES.DEEP_DIVE) {
-      const wantsBack = /\b(back|other schools|show me others|more options|different school)\b/i.test(msgLower);
-      if (wantsBack) {
-        currentState = STATES.RESULTS;
-      }
-    }
-
-    context.state = currentState;
-    context.briefStatus = briefStatus;
-    context.briefEditCount = briefEditCount;
-    console.log(`[STATE] ${context.state} | briefStatus: ${briefStatus} (edits: ${briefEditCount})`);
+    console.log(`[STATE] ${currentState} | briefStatus: ${briefStatus} | dataSufficiency: ${context.dataSufficiency} | transitionReason: ${context.transitionReason}`);
 
     // STEP 3: STATE-SPECIFIC RESPONSE GENERATION
     if (currentState === STATES.WELCOME) {
@@ -1309,17 +1157,7 @@ Respond as ${consultantName}. ONE question max.`;
       }
       }
 
-    // Check for transition back to RESULTS from DEEP_DIVE
-    if (currentState === STATES.DEEP_DIVE) {
-      const backToResultsKeywords = ['show me others', 'back to results', 'see other schools', 'view other options', 'more schools'];
-      const wantsBackToResults = backToResultsKeywords.some(kw => message.toLowerCase().includes(kw));
-      
-      if (wantsBackToResults) {
-        currentState = STATES.RESULTS;
-        context.state = currentState;
-        console.log('[STATE TRANSITION] User requested back to results from DEEP_DIVE');
-      }
-    }
+
     
     if (currentState === STATES.DEEP_DIVE) {
       console.log('DEEPDIVE_START', selectedSchoolId);
