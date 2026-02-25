@@ -3,6 +3,7 @@ import { callOpenRouter } from './callOpenRouter.ts';
 import { handleDeepDive } from './handleDeepDive.ts';
 import { handleResults } from './handleResults.ts';
 import { handleBrief } from './handleBrief.ts';
+import { handleDiscovery } from './handleDiscovery.ts';
 // BUG-DD-002 fix: selectedSchoolId destructured
 // deploy-trigger-v5
 
