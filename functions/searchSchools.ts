@@ -317,9 +317,25 @@ async function performSearch(req) {
       }
       
       // Hard filter 3: RELIGIOUS DEALBREAKER - if marked, exclude non-secular schools
-      if (familyProfile?.dealbreakers?.includes('religious') || familyProfile?.dealbreakers?.includes('Religious')) {
-        if (school.religiousAffiliation && school.religiousAffiliation !== 'None' && school.religiousAffiliation !== 'none') {
-          console.log(`Hard-filtered ${school.name}: religious affiliation (${school.religiousAffiliation}) conflicts with family dealbreaker`);
+      const hasReligiousDealbreaker = familyProfile?.dealbreakers?.some(d => d.toLowerCase().includes('religious'));
+      if (hasReligiousDealbreaker) {
+        // Check religiousAffiliation field
+        if (school.religiousAffiliation && 
+            school.religiousAffiliation !== 'None' && 
+            school.religiousAffiliation !== 'none' &&
+            school.religiousAffiliation !== 'Non-denominational' && 
+            school.religiousAffiliation !== 'Secular') {
+          console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation (${school.religiousAffiliation}) conflicts with family dealbreaker`);
+          return false;
+        }
+        
+        // Secondary check: religious keywords in school name
+        const religiousKeywords = ['Christian', 'Catholic', 'Islamic', 'Jewish', 'Lutheran', 'Baptist', 'Adventist', 'Anglican'];
+        const schoolNameLower = school.name?.toLowerCase() || '';
+        const hasReligiousKeyword = religiousKeywords.some(keyword => schoolNameLower.includes(keyword.toLowerCase()));
+        
+        if (hasReligiousKeyword) {
+          console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: school name contains religious keyword, conflicts with family dealbreaker`);
           return false;
         }
       }
