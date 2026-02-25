@@ -1315,7 +1315,7 @@ FAMILY BRIEF:
 - Dealbreakers: ${conversationFamilyProfile?.dealbreakers?.join(', ') || 'Not specified'}
 `;
         
-        // DEEPDIVE v2 PROMPT with 3-area framework
+        // DEEPDIVE v3 PROMPT - 6-Area Auto-Card (Areas 1-3)
         const responsePrompt = `[STATE: DEEP_DIVE] Generate a structured school analysis card using THIS child's specific profile.
 
 ${schoolDataStr}
@@ -1325,36 +1325,42 @@ Parent's message: "${message}"
 
 OUTPUT FORMAT - Use this EXACT structure:
 
-**Area 1: FIT NARRATIVE**
-Connect THIS child (${childName}, ${conversationFamilyProfile?.childGrade !== null ? 'Grade ' + conversationFamilyProfile.childGrade : 'grade not specified'}) to THIS school (${selectedSchool.name}). Use specific entities from Family Brief: name, grade, interests (${conversationFamilyProfile?.interests?.join(', ') || 'not specified'}), learning needs (${conversationFamilyProfile?.learning_needs?.join(', ') || 'none mentioned'}). NOT generic facts. 2-3 sentences showing how ${childName}'s specific profile fits this school's specific offerings.
+---
+**${selectedSchool.name} - [Fit Label]**
+${selectedSchool.city}, ${selectedSchool.provinceState || selectedSchool.country} | Grades ${selectedSchool.lowestGrade}-${selectedSchool.highestGrade} | ${selectedSchool.genderPolicy || 'Co-ed'}
+${selectedSchool.website ? selectedSchool.website : ''}
 
-**Area 2: HONEST TRADE-OFFS**
-What this school does well AND doesn't for THIS family. ONLY reference data from School Profile above. When data is missing, say what's missing and suggest a question to ask the school.
+**Why ${selectedSchool.name} for ${childName}:**
+[2-3 personalized sentences connecting ${childName}'s interests (${conversationFamilyProfile?.interests?.join(', ') || 'not specified'}), grade (${conversationFamilyProfile?.childGrade !== null ? 'Grade ' + conversationFamilyProfile.childGrade : 'not specified'}), and learning needs (${conversationFamilyProfile?.learning_needs?.join(', ') || 'none mentioned'}) to THIS school's specific programs. Use child name, NOT "your child". Reference ONLY data from School Profile above.]
 
-WHAT IT DOES WELL:
-• [Specific strength #1 from School Profile data]
-• [Specific strength #2 from School Profile data]
+**What to Know:**
+- [Honest trade-off 1 - what school does well for THIS family based ONLY on School Profile data]
+- [Honest trade-off 2 - what school doesn't do well OR is unknown. If data is missing, use this pattern: "I don't have enough detail on [specific thing] to compare -- that's worth asking about on a visit."]
+${!conversationFamilyProfile?.genderPreference && selectedSchool.genderPolicy !== 'Co-ed' ? '- [Note: This is a ' + selectedSchool.genderPolicy + ' school - worth considering if that matters to your family]' : ''}
 
-WHAT'S LESS CLEAR:
-• [Gap #1 in data - suggest what to ask]
-• [Gap #2 in data - suggest what to ask]
-
-**Area 3: MONEY CONVERSATION**
-• Tuition: ${selectedSchool.tuition || selectedSchool.dayTuition ? '$' + (selectedSchool.tuition || selectedSchool.dayTuition).toLocaleString() + '/year' : 'Not specified - contact admissions'}
-• Family Budget: ${conversationFamilyProfile?.maxTuition ? '$' + conversationFamilyProfile.maxTuition.toLocaleString() : 'Not specified'}
-• Budget Fit: [One honest sentence comparing tuition to budget. If financial aid available, mention it: "${selectedSchool.financialAidAvailable ? 'Financial aid is available' : 'Financial aid status unknown - ask admissions'}"]
-
+**Cost Reality:**
+Tuition: ${selectedSchool.tuition || selectedSchool.dayTuition ? '$' + (selectedSchool.tuition || selectedSchool.dayTuition).toLocaleString() + '/yr' : 'Not specified'} | Aid Available: ${selectedSchool.financialAidAvailable ? 'Yes' : 'Unknown'}
+[One-line financial context comparing to family's stated budget: ${conversationFamilyProfile?.maxTuition ? '$' + conversationFamilyProfile.maxTuition.toLocaleString() : 'not specified'}]
 ---
 
 ${consultantName === 'Jackie' 
-  ? `After the 3 areas, bridge to conversation naturally. Say something like: "Those are my initial thoughts on ${selectedSchool.name}. What jumps out at you?" Be warm and conversational.` 
-  : `After the 3 areas, bridge to conversation naturally. Say something like: "That's the picture for ${selectedSchool.name}. What do you want to explore further?" Be direct and strategic.`}
+  ? `After the card, bridge to conversation warmly. Example: "Those are my initial thoughts on ${selectedSchool.name}. What jumps out at you?"` 
+  : `After the card, bridge to conversation directly. Example: "That's the picture for ${selectedSchool.name}. What do you want to explore further?"`}
+
+FIT LABEL LOGIC:
+Determine the Fit Label by analyzing the match between Family Brief and School Profile:
+- **Strong Match**: School meets majority of family priorities (${conversationFamilyProfile?.priorities?.join(', ') || 'not specified'}) AND all dealbreakers (${conversationFamilyProfile?.dealbreakers?.join(', ') || 'none stated'}) are confirmed (not null/unknown)
+- **Good Match**: School meets most priorities but minor gaps exist
+- **Worth Exploring**: School has interesting qualities but notable gaps OR any dealbreaker maps to null/unknown data
+- **OVERRIDE RULE**: If ANY family dealbreaker maps to null/unknown school field, max label is "Worth Exploring"
 
 CRITICAL RULES:
-- Use ${childName} by name in Area 1, not "your child"
-- ONLY use data from School Profile - NEVER fabricate
-- When data missing, explicitly say "Not listed" and suggest what to ask
-- Be honest about gaps - don't fill with assumptions`;
+1. Area "What to Know" MUST ONLY reference data directly available in School Profile. NEVER fabricate strengths or weaknesses.
+2. When data is missing, use Honesty Pattern: state what IS known, flag what's missing, give parent a specific question to ask the school.
+3. If school is single-gender and family has no stated preference, note it as contextual factor in "What to Know".
+4. Always use ${childName} from the Brief, not generic language like "your child".
+5. After the card, bridge to conversation naturally (Liam: direct. Jackie: warm).
+6. Do NOT invent school qualities not present in School Profile data above.`;
         
         const aiResponse = await base44.integrations.Core.InvokeLLM({
           prompt: responsePrompt
