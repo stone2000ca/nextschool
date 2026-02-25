@@ -882,9 +882,9 @@ Return ONLY valid JSON. Do NOT explain.`;
          let briefMessageText = briefResult?.response || briefResult || 'Let me summarize what you\'ve shared.';
 
          // Post-processing safety net: replace any remaining [Child] or [child] placeholders
-         briefMessageText = briefMessageText.replace(/\[Child\]/gi, childDisplayName);
-         briefMessageText = briefMessageText.replace(/\[child's name\]/gi, childDisplayName);
-         briefMessageText = briefMessageText.replace(/\[child\]/gi, childDisplayName);
+         briefMessageText = briefMessageText.replace(/\[Child\]/gi, briefChildDisplayName);
+         briefMessageText = briefMessageText.replace(/\[child's name\]/gi, briefChildDisplayName);
+         briefMessageText = briefMessageText.replace(/\[child\]/gi, briefChildDisplayName);
          briefMessage = briefMessageText;
          } catch (e) {
          console.error('[ERROR] BRIEF response failed:', e.message);
