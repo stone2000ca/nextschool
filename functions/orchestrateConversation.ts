@@ -1530,7 +1530,7 @@ Rules: Start with "**Why ${selectedSchool.name}**", use ** for headers, • for 
         console.error('[DEEPDIVE ERROR] Full error object:', JSON.stringify(e, null, 2));
         aiMessage = null;
       }
-      END COMMENTED OUT */
+      */
       
       // BUG-DD-002 FIX #4: Fallback if InvokeLLM fails
       if (!aiMessage) {
