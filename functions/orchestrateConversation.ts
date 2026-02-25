@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { callOpenRouter } from './callOpenRouter.ts';
 import { handleDeepDive } from './handleDeepDive.ts';
+import { handleResults } from './handleResults.ts';
 // BUG-DD-002 fix: selectedSchoolId destructured
 // deploy-trigger-v5
 
