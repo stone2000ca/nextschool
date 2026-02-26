@@ -1,3 +1,4 @@
+// deploy-trigger-v9
 // Inline callOpenRouter to avoid cross-file import issues
 async function callOpenRouter(options) {
   const { systemPrompt, userPrompt, responseSchema, maxTokens = 1000, temperature = 0.7 } = options;
@@ -70,6 +71,8 @@ async function callOpenRouter(options) {
 export async function extractEntities(params) {
   const { base44, message, conversationFamilyProfile, context, conversationHistory } = params;
 
+  // SCOPING FIX: Declare result at top level of function to ensure it's accessible throughout
+  let result = {};
   let extractedData = {};
   let intentSignal = 'continue';
 
@@ -163,7 +166,6 @@ export async function extractEntities(params) {
 
     Extract all factual data from the parent's message. Return ONLY valid JSON. Do NOT explain.`;
 
-    let result = {}; // Initialize to prevent undefined access
     try {
       result = await callOpenRouter({
         systemPrompt,
@@ -322,6 +324,7 @@ export async function extractEntities(params) {
       }
     }
 
+    // SCOPING FIX: Use the result variable that's already declared at function top
     let finalResult = result || {};
     if (extractedGrade !== null && !finalResult.childGrade) {
      finalResult = { ...finalResult, childGrade: extractedGrade };
