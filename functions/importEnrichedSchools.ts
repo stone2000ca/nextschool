@@ -146,13 +146,13 @@ Deno.serve(async (req) => {
     let updated = 0;
     let errors = [];
 
-    const retryWithBackoff = async (fn, maxRetries = 3) => {
+    const retryWithBackoff = async (fn, maxRetries = 5) => {
       for (let i = 0; i < maxRetries; i++) {
         try {
           return await fn();
         } catch (e) {
           if (e.message?.includes('Rate limit') && i < maxRetries - 1) {
-            const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
+            const delay = Math.pow(2, i) * 2000; // 2s, 4s, 8s, 16s, 32s
             console.log(`[RETRY] Waiting ${delay}ms before retry ${i + 1}/${maxRetries}`);
             await new Promise(resolve => setTimeout(resolve, delay));
           } else {
@@ -164,8 +164,8 @@ Deno.serve(async (req) => {
 
     for (const school of schools) {
       try {
-        // Small delay to avoid overwhelming the API
-        await new Promise(resolve => setTimeout(resolve, 10));
+        // Throttle requests to avoid rate limits (200ms between each)
+        await new Promise(resolve => setTimeout(resolve, 200));
 
         // Try to find existing school by slug or id
         let existing = null;
