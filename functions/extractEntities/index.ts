@@ -1,7 +1,46 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { callOpenRouter } from '../callOpenRouter.ts';
 
-export async function extractEntitiesLogic(params) {
+
+// callOpenRouter inlined — no local imports
+async function callOpenRouter({ systemPrompt, userPrompt, responseSchema, maxTokens = 500, temperature = 0.1 }) {
+  const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
+  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not set');
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'openai/gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      max_tokens: maxTokens,
+      temperature,
+      response_format: responseSchema ? {
+        type: 'json_schema',
+        json_schema: responseSchema
+      } : { type: 'json_object' }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter ${response.status}: ${errorText}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Empty OpenRouter response');
+  return JSON.parse(content);
+}
+
+
+// extractEntities logic — self-contained
+async function extractEntitiesLogic(params) {
   const { base44, message, conversationFamilyProfile, context, conversationHistory } = params;
 
   let result = {};
@@ -10,7 +49,7 @@ export async function extractEntitiesLogic(params) {
 
   try {
     const t1 = Date.now();
-    
+
     const knownData = conversationFamilyProfile ? {
       childName: conversationFamilyProfile.childName,
       childGrade: conversationFamilyProfile.childGrade,
@@ -36,23 +75,22 @@ export async function extractEntitiesLogic(params) {
       extractedGrade = gradeMap[gradeStr] !== undefined ? gradeMap[gradeStr] : parseInt(gradeStr);
     }
 
-    const systemPrompt = `Extract ONLY factual data explicitly stated. Return JSON with NULL for anything not mentioned.
+    const systemPrompt = `Extract ONLY factual data explicitly stated by the parent. Return JSON with NULL for anything not mentioned.
 
-RESPONSE SCHEMA:
+Return a flat JSON object (no nesting under "entities") matching this schema exactly:
 { 
-  entities: { childName, childGrade, locationArea, ... all extraction fields },
+  childName, childGrade, locationArea, maxTuition, interests, priorities,
+  dealbreakers, curriculumPreference, religiousPreference, boardingPreference,
+  genderPreference, schoolType, programPreferences, specialNeeds,
+  learningNeeds, wellbeingNeeds, academicStrengths,
   intentSignal: 'continue' | 'request-brief' | 'request-results' | 'edit-criteria' | 'ask-about-school' | 'back-to-results' | 'restart' | 'off-topic',
-  briefDelta: { 
-    additions: [{ field, value, confidence }],
-    updates: [{ field, old, new, confidence }],
-    removals: []
-  }
+  briefDelta: { additions: [{ field, value, confidence }], updates: [{ field, old, new, confidence }], removals: [] }
 }`;
 
     const userPrompt = `CURRENT KNOWN DATA:
 ${JSON.stringify(knownData, null, 2)}
 
-CONVERSATION HISTORY (last 10 messages):
+CONVERSATION HISTORY (last 5 messages):
 ${conversationSummary}
 
 PARENT'S MESSAGE:
@@ -72,9 +110,20 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
               childName: { type: ['string', 'null'] },
               childGrade: { type: ['number', 'null'] },
               locationArea: { type: ['string', 'null'] },
-              priorities: { type: 'array', items: { type: 'string' } },
+              maxTuition: { type: ['number', 'null'] },
               interests: { type: 'array', items: { type: 'string' } },
+              priorities: { type: 'array', items: { type: 'string' } },
               dealbreakers: { type: 'array', items: { type: 'string' } },
+              curriculumPreference: { type: ['string', 'null'] },
+              religiousPreference: { type: ['string', 'null'] },
+              boardingPreference: { type: ['boolean', 'null'] },
+              genderPreference: { type: ['string', 'null'] },
+              schoolType: { type: ['string', 'null'] },
+              programPreferences: { type: 'array', items: { type: 'string' } },
+              specialNeeds: { type: 'array', items: { type: 'string' } },
+              learningNeeds: { type: 'array', items: { type: 'string' } },
+              wellbeingNeeds: { type: 'array', items: { type: 'string' } },
+              academicStrengths: { type: 'array', items: { type: 'string' } },
               intentSignal: { type: 'string', enum: ['continue', 'request-brief', 'request-results', 'edit-criteria', 'ask-about-school', 'back-to-results', 'restart', 'off-topic'] },
               briefDelta: {
                 type: 'object',
@@ -114,19 +163,24 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
       finalResult = { ...finalResult, childGrade: extractedGrade };
     }
 
+    // Separate meta fields from entity data
+    const META_FIELDS = ['intentSignal', 'briefDelta'];
+
     const cleaned = {};
     for (const [key, value] of Object.entries(finalResult)) {
+      if (META_FIELDS.includes(key)) continue;
       if (value !== null && value !== undefined && !(Array.isArray(value) && value.length === 0)) {
         cleaned[key] = value;
       }
     }
-    
+
     extractedData = cleaned;
     console.log('[EXTRACT] took', Date.now() - t1, 'ms');
   } catch (e) {
     console.error('[ERROR] Extraction failed:', e.message);
   }
-  
+
+  // Merge into context (entity data only, no meta fields)
   const updatedContext = { ...context };
   if (!updatedContext.extractedEntities) {
     updatedContext.extractedEntities = {};
@@ -140,7 +194,8 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
       }
     }
   }
-  
+
+  // Merge into family profile (entity data only, no meta fields)
   const updatedFamilyProfile = { ...conversationFamilyProfile };
   if (Object.keys(extractedData).length > 0) {
     for (const [key, value] of Object.entries(extractedData)) {
@@ -166,10 +221,11 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
       }
     }
   }
-  
-  const briefDelta = extractedData?.briefDelta || { additions: [], updates: [], removals: [] };
+
+  // Pull meta fields from original result (not cleaned)
+  const briefDelta = result?.briefDelta || { additions: [], updates: [], removals: [] };
   intentSignal = intentSignal || 'continue';
-  
+
   return {
     extractedEntities: extractedData,
     updatedFamilyProfile,
@@ -179,11 +235,13 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
   };
 }
 
+
+// Base44 backend function entrypoint
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { message, conversationFamilyProfile, context, conversationHistory } = await req.json();
-    
+
     const result = await extractEntitiesLogic({
       base44,
       message,
@@ -191,7 +249,7 @@ Deno.serve(async (req) => {
       context,
       conversationHistory
     });
-    
+
     return Response.json(result);
   } catch (error) {
     return Response.json({ error: error.message || String(error) }, { status: 500 });
