@@ -168,7 +168,7 @@ async function extractEntities(params) {
     Extract all factual data from the parent's message. Return ONLY valid JSON. Do NOT explain.`;
 
     try {
-      result = await callOpenRouter({
+      result = (await callOpenRouter({
         systemPrompt,
         userPrompt,
         responseSchema: {
@@ -234,8 +234,8 @@ async function extractEntities(params) {
         },
         maxTokens: 500,
         temperature: 0.1
-      });
-      intentSignal = result.intentSignal;
+      })) || { intentSignal: 'continue', briefDelta: { additions: [], updates: [], removals: [] } };
+      intentSignal = result?.intentSignal || 'continue';
       console.log('[INTENT SIGNAL]', intentSignal);
       console.log('[EXTRACT] OpenRouter returned intentSignal:', intentSignal);
     } catch (openrouterError) {
@@ -248,8 +248,8 @@ async function extractEntities(params) {
     }
 
     let finalResult = result;
-    if (extractedGrade !== null && result && !result.childGrade) {
-     finalResult = { ...(result || {}), childGrade: extractedGrade };
+    if (extractedGrade !== null && result && result.childGrade === undefined) {
+     finalResult = { ...result, childGrade: extractedGrade };
     }
     
     if (finalResult.childAge && !finalResult.childGrade) {
