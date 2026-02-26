@@ -101,7 +101,7 @@ function resolveTransition(params) {
   if (selectedSchoolId && selectedSchoolId !== previousSchoolId) {
     return { nextState: STATES.DEEP_DIVE, sufficiency, flags, transitionReason: 'school_selected' };
   }
-  if (currentState === STATES.BRIEF && briefStatus === 'pending_review' && (intentSignal === 'request-results' || intentSignal === 'confirm-brief')) {
+  if (currentState === STATES.BRIEF && briefStatus === 'pending_review' && (intentSignal === 'confirm-brief' || intentSignal === 'request-results')) {
     flags.USER_INTENT_OVERRIDE = true;
     return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'brief_confirmed', briefStatus: 'confirmed' };
   }
@@ -193,7 +193,7 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
 RESPONSE SCHEMA:
 { 
   entities: { childName, childGrade, locationArea, maxTuition, ... all extraction fields },
-  intentSignal: 'continue' | 'request-brief' | 'request-results' | 'edit-criteria' | 'ask-about-school' | 'back-to-results' | 'restart' | 'off-topic',
+  intentSignal: 'continue' | 'request-brief' | 'request-results' | 'edit-criteria' | 'ask-about-school' | 'back-to-results' | 'restart' | 'off-topic' | 'confirm-brief',
   briefDelta: { 
     additions: [{ field, value, confidence }],
     updates: [{ field, old, new, confidence }],
@@ -202,7 +202,9 @@ RESPONSE SCHEMA:
 }
 
 CRITICAL: Extract budget/tuition amounts if mentioned (e.g., "$25,000", "25k per year", "budget is unlimited"). Store as maxTuition (number or "unlimited")
-Do NOT infer budget if user has not explicitly stated it.`;
+Do NOT infer budget if user has not explicitly stated it.
+
+CRITICAL: If the user confirms the brief or says something like "that looks right", "show me schools", "yes", "confirmed", "let's see", "go ahead", set intentSignal to 'confirm-brief'.`;
 
     const userPrompt = `CURRENT KNOWN DATA:
 ${JSON.stringify(knownData, null, 2)}
@@ -231,7 +233,7 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
               priorities: { type: 'array', items: { type: 'string' } },
               interests: { type: 'array', items: { type: 'string' } },
               dealbreakers: { type: 'array', items: { type: 'string' } },
-              intentSignal: { type: 'string', enum: ['continue', 'request-brief', 'request-results', 'edit-criteria', 'ask-about-school', 'back-to-results', 'restart', 'off-topic'] },
+              intentSignal: { type: 'string', enum: ['continue', 'request-brief', 'request-results', 'edit-criteria', 'ask-about-school', 'back-to-results', 'restart', 'off-topic', 'confirm-brief'] },
               briefDelta: {
                 type: 'object',
                 properties: {
@@ -503,10 +505,10 @@ FAMILY DATA:
 UNIFIED FORMAT:
 [REQUIRED warm, conversational intro - Jackie tone]
 
-• Student: ${briefChildDisplayName}
-• Location: ${locationArea || '(not specified)'}
-• Budget: ${budgetDisplay}
-${prioritiesStr ? '• Top priorities: ' + prioritiesStr + '\n' : ''}${interestsStr ? '• Interests: ' + interestsStr + '\n' : ''}${dealbreakersStr ? '• Dealbreakers: ' + dealbreakersStr + '\n' : ''}
+1. Student: ${briefChildDisplayName}
+2. Location: ${locationArea || '(not specified)'}
+3. Budget: ${budgetDisplay}
+${prioritiesStr ? '4. Top priorities: ' + prioritiesStr + '\n' : ''}${interestsStr ? '5. Interests: ' + interestsStr + '\n' : ''}${dealbreakersStr ? '6. Dealbreakers: ' + dealbreakersStr + '\n' : ''}
 Does that capture it? Anything to adjust?
 
 YOU ARE JACKIE.`
@@ -518,7 +520,7 @@ FAMILY DATA:
 - LOCATION: ${locationArea || '(not specified)'}
 - BUDGET: ${budgetDisplay}
 
-Format as structured bullet list. Be direct.
+Format as a numbered/ordered list (1. Student: ... 2. Location: ... 3. Budget: ... etc.). Be direct.
 
 YOU ARE LIAM.`;
 
