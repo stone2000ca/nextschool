@@ -141,13 +141,32 @@ Deno.serve(async (req) => {
 
     console.log('[IMPORT] Transformed', schools.length, 'schools');
 
-    // Bulk create/update schools
+    // Bulk create/update schools with retry logic
     let created = 0;
     let updated = 0;
     let errors = [];
 
+    const retryWithBackoff = async (fn, maxRetries = 3) => {
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          return await fn();
+        } catch (e) {
+          if (e.message?.includes('Rate limit') && i < maxRetries - 1) {
+            const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
+            console.log(`[RETRY] Waiting ${delay}ms before retry ${i + 1}/${maxRetries}`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          } else {
+            throw e;
+          }
+        }
+      }
+    };
+
     for (const school of schools) {
       try {
+        // Small delay to avoid overwhelming the API
+        await new Promise(resolve => setTimeout(resolve, 10));
+
         // Try to find existing school by slug or id
         let existing = null;
         if (school.id) {
@@ -159,10 +178,10 @@ Deno.serve(async (req) => {
         }
 
         if (existing) {
-          await base44.entities.School.update(existing.id, school);
+          await retryWithBackoff(() => base44.entities.School.update(existing.id, school));
           updated++;
         } else {
-          await base44.entities.School.create(school);
+          await retryWithBackoff(() => base44.entities.School.create(school));
           created++;
         }
       } catch (e) {
