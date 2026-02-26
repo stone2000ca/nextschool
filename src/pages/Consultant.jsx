@@ -1201,11 +1201,14 @@ Return empty array if user didn't provide any of these facts.`;
               {/* Consultant Header */}
               <div className="p-4 sm:p-6 border-b border-white/10 flex items-center justify-between bg-[#2A2A3D]">
               <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                <div className={`h-8 sm:h-10 w-8 sm:w-10 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0 ${
-                  selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]' : 'bg-[#6B9DAD]'
-                }`} aria-hidden="true">
-                  {selectedConsultant === 'Jackie' ? 'J' : 'L'}
-                </div>
+                <img 
+                  src={selectedConsultant === 'Jackie' 
+                    ? 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/f2bde0040_image.png'
+                    : 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/f2bde0040_image.png'
+                  }
+                  alt={selectedConsultant}
+                  className="h-8 sm:h-10 w-8 sm:w-10 rounded-full object-cover flex-shrink-0"
+                />
                 <div className="min-w-0 flex-1">
                   <h2 className={`font-bold text-base sm:text-lg truncate ${
                     selectedConsultant === 'Jackie' ? 'text-[#C27B8A]' : 'text-[#6B9DAD]'
@@ -1609,11 +1612,14 @@ Return empty array if user didn't provide any of these facts.`;
           {/* Chat Header */}
           <div className="p-3 sm:p-4 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className={`h-8 sm:h-10 w-8 sm:w-10 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0 ${
-                selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]' : 'bg-[#6B9DAD]'
-              }`} aria-hidden="true">
-                {selectedConsultant === 'Jackie' ? 'J' : 'L'}
-              </div>
+               <img 
+                  src={selectedConsultant === 'Jackie' 
+                    ? 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/f2bde0040_image.png'
+                    : 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/f2bde0040_image.png'
+                  }
+                  alt={selectedConsultant}
+                  className="h-8 sm:h-10 w-8 sm:w-10 rounded-full object-cover flex-shrink-0"
+               />
               <div className="min-w-0 flex-1">
                 <span className={`font-semibold block text-sm sm:text-base truncate ${
                   selectedConsultant === 'Jackie' ? 'text-[#C27B8A]' : 'text-[#6B9DAD]'
