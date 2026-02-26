@@ -376,15 +376,19 @@ export default function SchoolDirectory() {
                   >
                     <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
                       {/* Header Photo */}
-                      <div className="h-32 sm:h-40 bg-gradient-to-br from-slate-200 to-slate-300 relative overflow-hidden">
-                        {school.headerPhotoUrl && (
-                          <img 
-                            src={school.headerPhotoUrl} 
-                            alt={`${school.name} campus`}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                      </div>
+                       <div className="h-32 sm:h-40 relative overflow-hidden flex items-center justify-center bg-gradient-to-br from-teal-100 to-teal-200">
+                         {school.headerPhotoUrl ? (
+                           <img 
+                             src={school.headerPhotoUrl} 
+                             alt={`${school.name} campus`}
+                             className="w-full h-full object-cover"
+                           />
+                         ) : (
+                           <div className="text-center">
+                             <p className="text-sm font-medium text-teal-700">No image available</p>
+                           </div>
+                         )}
+                       </div>
 
                       <div className="p-3 sm:p-4">
                         {/* Logo and Name */}
