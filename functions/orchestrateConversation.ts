@@ -369,7 +369,13 @@ Deno.serve(async (req) => {
     }
 
     // STEP 2: ENTITY EXTRACTION (all other messages)
-    extractionResult = await extractEntities({ base44, message, conversationFamilyProfile, context, conversationHistory });
+    const extractionResponse = await base44.functions.invoke('extractEntities', { 
+      message, 
+      conversationFamilyProfile, 
+      context, 
+      conversationHistory 
+    });
+    extractionResult = extractionResponse.data;
     const { extractedEntities, updatedFamilyProfile, updatedContext } = extractionResult;
     intentSignal = extractionResult.intentSignal || 'continue';
     briefDelta = extractionResult.briefDelta;
