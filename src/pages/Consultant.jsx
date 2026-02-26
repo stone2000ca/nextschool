@@ -1203,8 +1203,8 @@ Return empty array if user didn't provide any of these facts.`;
               <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                 <img 
                   src={selectedConsultant === 'Jackie' 
-                    ? 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/f2bde0040_image.png'
-                    : 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/f2bde0040_image.png'
+                    ? 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/150ea2350_Jackie.jpg'
+                    : 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/568e5604d_liam.png'
                   }
                   alt={selectedConsultant}
                   className="h-8 sm:h-10 w-8 sm:w-10 rounded-full object-cover flex-shrink-0"
@@ -1614,8 +1614,8 @@ Return empty array if user didn't provide any of these facts.`;
             <div className="flex items-center gap-2 flex-1 min-w-0">
                <img 
                   src={selectedConsultant === 'Jackie' 
-                    ? 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/f2bde0040_image.png'
-                    : 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/f2bde0040_image.png'
+                    ? 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/150ea2350_Jackie.jpg'
+                    : 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/568e5604d_liam.png'
                   }
                   alt={selectedConsultant}
                   className="h-8 sm:h-10 w-8 sm:w-10 rounded-full object-cover flex-shrink-0"
