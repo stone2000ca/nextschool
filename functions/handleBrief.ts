@@ -300,106 +300,37 @@ export async function handleBrief(params) {
 
    YOU ARE LIAM - Direct intro, structured data.`;
 
-    let briefMessageText = 'Let me summarize what you\'ve shared.';
-    try {
-      console.log('[BRIEF] Generating brief with callOpenRouter, prompt length:', briefPrompt.length);
-      const briefResult = await callOpenRouter({
-        systemPrompt: briefPrompt.split('\n\n')[0],
-        userPrompt: briefPrompt.split('\n\n').slice(1).join('\n\n'),
-        maxTokens: 800,
-        temperature: 0.5
-      });
-      briefMessageText = briefResult || 'Let me summarize what you\'ve shared.';
-      console.log('[BRIEF] OpenRouter returned result, length:', briefMessageText?.length, 'starts with:', briefMessageText?.substring(0, 50));
-      console.log('[OPENROUTER] BRIEF generation');
-    } catch (openrouterError) {
-      console.error('[ERROR] OpenRouter BRIEF failed:', openrouterError.message);
-      console.log('[OPENROUTER FALLBACK] BRIEF generation falling back to InvokeLLM');
-      try {
-        const briefResult = await base44.integrations.Core.InvokeLLM({
-          prompt: briefPrompt,
-          add_context_from_internet: false
-        });
-        briefMessageText = briefResult?.response || briefResult || 'Let me summarize what you\'ve shared.';
-      } catch (fallbackError) {
-        console.error('[ERROR] InvokeLLM BRIEF fallback failed:', fallbackError.message);
-      }
-    }
-
-    // KI-52 FIX: Stricter thin brief check - count core entities coverage
-    const coreEntitiesPresent = {
-      hasGrade: context.extractedEntities?.childGrade !== null && context.extractedEntities?.childGrade !== undefined,
-      hasLocation: !!context.extractedEntities?.locationArea,
-      hasBudget: !!context.extractedEntities?.budgetSingle || !!conversationFamilyProfile?.maxTuition
-    };
+    // KI-52 FIX: Skip LLM entirely, use programmatic brief generation as PRIMARY method
+    console.log('[BRIEF] Using programmatic brief generation (no LLM call)');
     
-    const coreEntityCount = Object.values(coreEntitiesPresent).filter(Boolean).length;
+    const fallbackBrief = [];
+    if (conversationFamilyProfile.childName) fallbackBrief.push('Student: ' + conversationFamilyProfile.childName);
+    if (context.extractedEntities?.childGrade !== null && context.extractedEntities?.childGrade !== undefined) {
+      const gradeDisplay = context.extractedEntities.childGrade === -1 ? 'JK' : context.extractedEntities.childGrade === 0 ? 'SK' : 'Grade ' + context.extractedEntities.childGrade;
+      fallbackBrief.push('Grade: ' + gradeDisplay);
+    }
+    if (context.extractedEntities?.locationArea) fallbackBrief.push('Location: ' + context.extractedEntities.locationArea);
+    if (conversationFamilyProfile.maxTuition) fallbackBrief.push('Budget: $' + conversationFamilyProfile.maxTuition.toLocaleString());
+    if (conversationFamilyProfile.priorities?.length) fallbackBrief.push('Priorities: ' + conversationFamilyProfile.priorities.join(', '));
+    if (conversationFamilyProfile.interests?.length) fallbackBrief.push('Interests: ' + conversationFamilyProfile.interests.join(', '));
+    if (conversationFamilyProfile.learning_needs?.length) fallbackBrief.push('Learning needs: ' + conversationFamilyProfile.learning_needs.join(', '));
+    if (context.extractedEntities?.genderPreference) fallbackBrief.push('Gender preference: ' + context.extractedEntities.genderPreference);
+    if (context.extractedEntities?.classSize) fallbackBrief.push('Class size: ' + context.extractedEntities.classSize);
+    if (context.extractedEntities?.boardingPreference) fallbackBrief.push('Boarding: Yes');
+    if (context.extractedEntities?.religiousPreference) fallbackBrief.push('Religious preference: ' + context.extractedEntities.religiousPreference);
+    if (conversationFamilyProfile.curriculumPreference?.length) fallbackBrief.push('Curriculum: ' + conversationFamilyProfile.curriculumPreference.join(', '));
+    if (conversationFamilyProfile.dealbreakers?.length) fallbackBrief.push('Dealbreakers: ' + conversationFamilyProfile.dealbreakers.join(', '));
     
-    // Check if brief mentions the core entities that were provided
-    let mentionedCoreCount = 0;
-    if (coreEntitiesPresent.hasGrade) {
-      if (briefMessageText.match(/grade|jk|sk|kindergarten|preschool/i) || 
-          briefMessageText.includes(String(context.extractedEntities.childGrade))) {
-        mentionedCoreCount++;
-      }
-    }
-    if (coreEntitiesPresent.hasLocation) {
-      if (briefMessageText.includes(context.extractedEntities.locationArea)) {
-        mentionedCoreCount++;
-      }
-    }
-    if (coreEntitiesPresent.hasBudget) {
-      if (briefMessageText.match(/\$|budget|tuition|per year|\/year/i)) {
-        mentionedCoreCount++;
-      }
-    }
-
-    const hasSubstantiveContent = (
-      (conversationFamilyProfile.childName && briefMessageText.includes(conversationFamilyProfile.childName)) ||
-      (context.extractedEntities?.locationArea && briefMessageText.includes(context.extractedEntities.locationArea)) ||
-      (context.extractedEntities?.childGrade && (briefMessageText.includes(String(context.extractedEntities.childGrade)) || briefMessageText.match(/grade|jk|sk/i)))
-    );
-
-    // KI-52 DEBUG: Log before thin check evaluation
-    console.log('[BRIEF THIN CHECK DEBUG]', {
-      briefMessageTextLength: briefMessageText.length,
-      hasSubstantiveContent,
-      coreEntitiesPresent,
-      coreEntityCount,
-      mentionedCoreCount,
-      extractedChildGrade: context.extractedEntities?.childGrade,
-      extractedLocationArea: context.extractedEntities?.locationArea,
-      briefPreview: briefMessageText.substring(0, 80)
-    });
-
-    // INLINE PROGRAMMATIC FALLBACK: If both LLM calls failed silently or returned thin content,
-    // build a brief from extracted entities instead.
-    // Trigger fallback if: length < 150 OR no substantive content OR (2+ core entities provided but <2 mentioned in brief)
-    const isThinBrief = briefMessageText.length < 150 || 
-                        !hasSubstantiveContent || 
-                        (coreEntityCount >= 2 && mentionedCoreCount < 2);
-    if (isThinBrief) {
-      console.log('[BRIEF] Brief is thin/generic, using programmatic fallback. Length:', briefMessageText.length, 'hasSubstantive:', hasSubstantiveContent);
-      const fallbackBrief = [];
-      if (conversationFamilyProfile.childName) fallbackBrief.push('Student: ' + conversationFamilyProfile.childName);
-      if (context.extractedEntities?.childGrade) {
-        const gradeDisplay = context.extractedEntities.childGrade === -1 ? 'JK' : context.extractedEntities.childGrade === 0 ? 'SK' : 'Grade ' + context.extractedEntities.childGrade;
-        fallbackBrief.push('Grade: ' + gradeDisplay);
-      }
-      if (context.extractedEntities?.locationArea) fallbackBrief.push('Location: ' + context.extractedEntities.locationArea);
-      if (conversationFamilyProfile.maxTuition) fallbackBrief.push('Budget: $' + conversationFamilyProfile.maxTuition.toLocaleString());
-      if (conversationFamilyProfile.priorities?.length) fallbackBrief.push('Priorities: ' + conversationFamilyProfile.priorities.join(', '));
-      if (conversationFamilyProfile.interests?.length) fallbackBrief.push('Interests: ' + conversationFamilyProfile.interests.join(', '));
-      if (conversationFamilyProfile.learning_needs?.length) fallbackBrief.push('Learning needs: ' + conversationFamilyProfile.learning_needs.join(', '));
-      if (context.extractedEntities?.genderPreference) fallbackBrief.push('Gender preference: ' + context.extractedEntities.genderPreference);
-      if (context.extractedEntities?.boardingPreference) fallbackBrief.push('Boarding: Yes');
-      if (context.extractedEntities?.religiousPreference) fallbackBrief.push('Religious preference: ' + context.extractedEntities.religiousPreference);
-      
-      const briefContent = fallbackBrief.length > 0
-        ? fallbackBrief.map(b => '\u2022 ' + b).join('\n')
-        : 'I captured your preferences but could not format them.';
-      briefMessageText = 'Here\'s what I\'ve captured so far:\n\n' + briefContent + '\n\nDoes that look right? Feel free to adjust anything.';
-    }
+    const briefContent = fallbackBrief.length > 0
+      ? fallbackBrief.map(b => '• ' + b).join('\n')
+      : 'I captured your preferences but could not format them.';
+    
+    // Consultant-specific intro
+    const intro = consultantName === 'Jackie' 
+      ? "Let me make sure I've got this right:\n\n"
+      : "Here's what I'm hearing:\n\n";
+    
+    const briefMessageText = intro + briefContent + '\n\nDoes that capture everything? Anything you'd like to adjust?';
 
     // Post-processing safety net: replace any remaining [Child] or [child] placeholders
     briefMessageText = briefMessageText.replace(/\[Child\]/gi, briefChildDisplayName);
