@@ -101,13 +101,17 @@ function resolveTransition(params) {
   if (selectedSchoolId && selectedSchoolId !== previousSchoolId) {
     return { nextState: STATES.DEEP_DIVE, sufficiency, flags, transitionReason: 'school_selected' };
   }
+  if (currentState === STATES.BRIEF && briefStatus === 'pending_review' && (intentSignal === 'request-results' || intentSignal === 'confirm-brief')) {
+    flags.USER_INTENT_OVERRIDE = true;
+    return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'brief_confirmed', briefStatus: 'confirmed' };
+  }
   if ((intentSignal === 'request-brief' || intentSignal === 'request-results') && turnCount >= 3 && currentState === STATES.DISCOVERY) {
     if (sufficiency === 'MINIMUM' || sufficiency === 'RICH') {
       flags.USER_INTENT_OVERRIDE = true;
       return { nextState: STATES.BRIEF, sufficiency, flags, transitionReason: 'explicit_demand', briefStatus: 'generating' };
     }
   }
-  if (turnCount >= 7 && currentState === STATES.DISCOVERY) {
+  if (turnCount >= 5 && currentState === STATES.DISCOVERY) {
     flags.FORCED_TRANSITION = true;
     return { nextState: STATES.BRIEF, sufficiency, flags, transitionReason: 'hard_cap', briefStatus: 'generating' };
   }
@@ -188,14 +192,17 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
 
 RESPONSE SCHEMA:
 { 
-  entities: { childName, childGrade, locationArea, ... all extraction fields },
+  entities: { childName, childGrade, locationArea, maxTuition, ... all extraction fields },
   intentSignal: 'continue' | 'request-brief' | 'request-results' | 'edit-criteria' | 'ask-about-school' | 'back-to-results' | 'restart' | 'off-topic',
   briefDelta: { 
     additions: [{ field, value, confidence }],
     updates: [{ field, old, new, confidence }],
     removals: []
   }
-}`;
+}
+
+CRITICAL: Extract budget/tuition amounts if mentioned (e.g., "$25,000", "25k per year", "budget is unlimited"). Store as maxTuition (number or "unlimited")
+Do NOT infer budget if user has not explicitly stated it.`;
 
     const userPrompt = `CURRENT KNOWN DATA:
 ${JSON.stringify(knownData, null, 2)}
@@ -220,6 +227,7 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
               childName: { type: ['string', 'null'] },
               childGrade: { type: ['number', 'null'] },
               locationArea: { type: ['string', 'null'] },
+              maxTuition: { type: ['number', 'null'] },
               priorities: { type: 'array', items: { type: 'string' } },
               interests: { type: 'array', items: { type: 'string' } },
               dealbreakers: { type: 'array', items: { type: 'string' } },
