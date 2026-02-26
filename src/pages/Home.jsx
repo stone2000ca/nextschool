@@ -109,13 +109,22 @@ export default function Home() {
       <Navbar />
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-teal-900 to-slate-900 py-12 sm:py-20 lg:py-28">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-teal-400 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-400 rounded-full blur-3xl" />
-        </div>
+      <section className="relative overflow-hidden py-12 sm:py-20 lg:py-28">
+        {/* Video Background */}
+        <video
+          autoPlay
+          muted
+          loop
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ zIndex: 0 }}
+        >
+          <source src="https://jamesshi.com/wp-content/uploads/2026/02/nextschool_hero_video.mp4" type="video/mp4" />
+        </video>
         
-        <div id="main-content" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        {/* Overlay for text readability */}
+        <div className="absolute inset-0 bg-black/40" style={{ zIndex: 1 }} />
+        
+        <div id="main-content" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center" style={{ zIndex: 2 }}>
           <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
             You Know Your Child. We Know the Schools.
           </h1>
