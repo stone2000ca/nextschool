@@ -90,6 +90,13 @@
   }
 }
 
+@layer utilities {
+  .font-bold {
+    font-family: 'Playfair Display', serif !important;
+    font-weight: 500 !important;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
