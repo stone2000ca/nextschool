@@ -1,5 +1,41 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { callOpenRouter } from '../callOpenRouter.ts';
+
+// callOpenRouter inlined — no local imports
+async function callOpenRouter({ systemPrompt, userPrompt, responseSchema, maxTokens = 500, temperature = 0.1 }) {
+  const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
+  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not set');
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'openai/gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      max_tokens: maxTokens,
+      temperature,
+      response_format: responseSchema ? {
+        type: 'json_schema',
+        json_schema: responseSchema
+      } : { type: 'json_object' }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter ${response.status}: ${errorText}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Empty OpenRouter response');
+  return JSON.parse(content);
+}
 
 Deno.serve(async (req) => {
   try {
