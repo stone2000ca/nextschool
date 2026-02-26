@@ -163,7 +163,7 @@ export async function extractEntities(params) {
 
     Extract all factual data from the parent's message. Return ONLY valid JSON. Do NOT explain.`;
 
-    let result: any = {}; // Initialize to prevent undefined access
+    let result = {}; // Initialize to prevent undefined access
     try {
       result = await callOpenRouter({
         systemPrompt,
