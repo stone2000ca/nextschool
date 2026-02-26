@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { STATES, BRIEF_STATUS } from './stateMachineConfig';
+import { useBriefConfirmHandler } from '@/components/chat/BriefConfirmHandler';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Heart, FileText, Sparkles, LogIn, Menu, ArrowLeft, Badge, Trash2, MapPin, Star } from "lucide-react";
 import MessageBubble from '@/components/chat/MessageBubble';
@@ -1377,7 +1378,7 @@ Return empty array if user didn't provide any of these facts.`;
                   <>
                     <Button 
                       variant="outline" 
-                      onClick={() => handleSendMessage("That looks right - show me schools")}
+                      onClick={handleBriefConfirm}
                       disabled={isTyping}
                       className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
                         selectedConsultant === 'Jackie' 
@@ -1760,7 +1761,7 @@ Return empty array if user didn't provide any of these facts.`;
                 <>
                   <Button 
                     variant="outline" 
-                    onClick={() => handleSendMessage("That's right, let's see the schools")}
+                    onClick={handleBriefConfirm}
                     disabled={isTyping}
                     className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
                       selectedConsultant === 'Jackie' 
