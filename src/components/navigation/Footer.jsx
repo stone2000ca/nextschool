@@ -1,4 +1,3 @@
-import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 
@@ -6,11 +5,8 @@ export default function Footer() {
   return (
     <footer className="bg-slate-900 text-slate-400 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-center gap-2 mb-12">
-          <div className="h-6 w-6 rounded-lg bg-teal-600 flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-white" />
-          </div>
-          <span className="text-lg font-bold text-white">NextSchool</span>
+        <div className="flex items-center justify-center mb-12">
+          <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/c6c11cc4b_logo_NextSchool_full.png" alt="NextSchool" className="h-8" />
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">

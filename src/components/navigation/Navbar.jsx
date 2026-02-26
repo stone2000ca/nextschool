@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Sparkles, User } from "lucide-react";
+import { User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import { useState, useEffect } from "react";
@@ -32,10 +32,7 @@ export default function Navbar({ variant = "default" }) {
       <header className="border-b bg-white/80 backdrop-blur-sm">
         <div className="px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
           <Link to={createPageUrl('Home')} className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-lg font-bold text-slate-900">NextSchool</span>
+            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/c6c11cc4b_logo_NextSchool_full.png" alt="NextSchool" className="h-8" />
           </Link>
           {isAuthenticated && user ? (
             <Link to={createPageUrl('ParentDashboard')}>
@@ -63,10 +60,7 @@ export default function Navbar({ variant = "default" }) {
     <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <Link to={createPageUrl('Home')} className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-xl font-bold text-slate-900">NextSchool</span>
+          <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/c6c11cc4b_logo_NextSchool_full.png" alt="NextSchool" className="h-10" />
         </Link>
         <nav className="hidden md:flex gap-8 items-center">
           <Link to={createPageUrl('HowItWorks')} className="text-slate-600 hover:text-teal-600 text-sm">How it Works</Link>
