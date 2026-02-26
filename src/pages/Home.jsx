@@ -117,10 +117,10 @@ export default function Home() {
         
         <div id="main-content" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-            Find the Private School Where Your Child Will Thrive
+            You Know Your Child. We Know the Schools.
           </h1>
           <p className="text-lg sm:text-xl lg:text-2xl text-slate-200 mb-8 sm:mb-10 max-w-3xl mx-auto font-light">
-            Our AI education consultant evaluates schools across Canada, the US, and the UK to find the ones that truly fit your family's needs.
+            Tell us what matters to your family, and we'll narrow hundreds of options down to the few that actually fit.
           </p>
           <Link to={createPageUrl('Consultant')}>
             <Button 
@@ -128,7 +128,7 @@ export default function Home() {
               className="bg-teal-500 hover:bg-teal-600 text-white px-6 sm:px-8 py-5 sm:py-7 text-base sm:text-lg focus:ring-2 focus:ring-teal-400 focus:ring-offset-2"
               aria-label="Start conversation with AI consultant"
             >
-              Meet Your Consultant
+              Start a Conversation
               <ArrowRight className="ml-2 h-4 sm:h-5 w-4 sm:w-5" />
             </Button>
           </Link>

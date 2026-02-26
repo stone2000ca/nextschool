@@ -791,13 +791,7 @@ ${consultantName === 'Jackie'
   ? "JACKIE PERSONA: Warm, empathetic, supportive." 
   : "LIAM PERSONA: Direct, strategic, no-BS."}
 
-OUTPUT FORMAT - DEEPDIVE Card with 6 areas:
-1. Fit Label
-2. Why This School
-3. What to Know
-4. Cost Reality
-5. Dealbreaker Check
-6. Tone Bridge`;
+Write naturally in conversational prose about why this school fits the family. Cover the student-school alignment, any trade-offs or concerns, and the cost reality. Speak like a consultant would—no headers, labels, or formatting markers. Just natural, helpful conversation.`;
 
   const deepDiveUserPrompt = `FAMILY BRIEF:
 - Child: ${childDisplayName}
@@ -827,9 +821,19 @@ Generate the DEEPDIVE card for this family-school match.`;
     aiMessage = `**Great Fit for ${childDisplayName}**\n\n**Why ${selectedSchool.name} for ${childDisplayName}**\n${selectedSchool.description?.substring(0, 150) || 'School details available upon request.'}\n\n**Cost Reality**\nTuition: ${compressedSchoolData.tuitionFee}/year\n\nWhat would you like to know more about?`;
   }
 
-  console.log('[DEEPDIVE] Returning aiMessage length:', aiMessage?.length);
+  // Sanitize aiMessage: remove internal labels that may have leaked from the LLM
+  const sanitizedMessage = aiMessage
+    .split('\n')
+    .filter(line => {
+      const trimmed = line.trim();
+      return !/^(DEEPDIVE Card:|Fit Label|Why This School|What to Know|Cost Reality|Dealbreaker Check|Tone Bridge)/.test(trimmed);
+    })
+    .join('\n')
+    .trim();
+
+  console.log('[DEEPDIVE] Returning aiMessage length:', sanitizedMessage?.length);
   return {
-    message: aiMessage,
+    message: sanitizedMessage,
     state: currentState,
     briefStatus: briefStatus,
     schools: selectedSchool ? [selectedSchool] : [],
@@ -908,8 +912,11 @@ Deno.serve(async (req) => {
 
       if (isFirstMessage && !context.state) {
         console.log('[ORCH] First message, return WELCOME greeting');
+        const welcomeMessage = consultantName === 'Jackie'
+          ? "Hey there — I'm Jackie. I've worked with hundreds of families going through exactly this. Tell me a bit about your child and what's prompting the search."
+          : "Hi, I'm Liam. I'll help you cut through the noise and find schools that actually fit. What's driving the search?";
         return Response.json({
-          message: "I'm your NextSchool education consultant. I help families find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you?",
+          message: welcomeMessage,
           state: STATES.WELCOME,
           briefStatus: null,
           conversationContext: context,
