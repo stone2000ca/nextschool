@@ -238,13 +238,23 @@ export async function handleBrief(params) {
     UNIFIED FORMAT (FIX 14) - Use this exact structure:
    [REQUIRED warm, conversational intro - Jackie tone. Sound like you're reflecting back what you heard, NOT generating a report. Examples: "If I'm understanding correctly...", "Let me make sure I've got this right...", "Based on everything you've shared...". Be genuine and empathetic.]
 
+   **YOU MUST include a bullet-point summary. Your response MUST contain these bullet points with actual data from the conversation:**
+   • Student: [name if known], [grade]
+   • Location: [city/area]
+   • Budget: [amount]
+   • Key priorities: [list what parent said]
+   • Interests: [list what parent shared]
+
+   Do NOT skip the bullet points. Do NOT just say you will summarize - actually include the summary.
+
    **IF MULTIPLE CHILDREN DETECTED IN CONVERSATION: Repeat the bullet list below for EACH child with their own header (e.g., "Child 1:" and "Child 2:") and their specific details.**
 
    • Student: ${briefChildDisplayName}, ${childGrade !== null && childGrade !== undefined ? (childGrade === -1 ? 'JK' : childGrade === 0 ? 'SK' : 'Grade ' + childGrade) : '(not specified)'}
    • Location: ${locationArea || '(not specified)'}
    • Budget: ${budgetDisplay}
    ${genderPreference ? '• Gender preference: ' + genderPreference + '\n' : ''}${classSize ? '• Class size: ' + classSize + '\n' : ''}${prioritiesStr ? '• Top priorities: ' + prioritiesStr + '\n' : ''}${learningNeedsStr ? '• Learning needs: ' + learningNeedsStr + '\n' : ''}${wellbeingNeedsStr ? '• Wellbeing needs: ' + wellbeingNeedsStr + '\n' : ''}${programPreferencesStr ? '• Program preferences: ' + programPreferencesStr + '\n' : ''}${dealbreakersStr ? '• Dealbreakers: ' + dealbreakersStr + '\n' : ''}${curriculumStr ? '• Curriculum: ' + curriculumStr + '\n' : ''}${interestsStr ? '• Interests: ' + interestsStr + '\n' : ''}
-   Does that capture it? Anything to adjust?
+   
+   Does that capture everything? Anything you would like to adjust?
 
    YOU ARE JACKIE - Warm intro, structured data.`
       : `[STATE: BRIEF] Generate a factual brief summary using the structured format below. Use ONLY what was explicitly stated by the parent.
@@ -270,13 +280,23 @@ export async function handleBrief(params) {
    UNIFIED FORMAT (FIX 14) - Use this exact structure:
    [REQUIRED direct, conversational intro - Liam tone. Sound like you're confirming what you heard, NOT generating a report. Examples: "Let me make sure I've got this right...", "Based on what you've told me...", "Here's what I'm hearing...". Be natural and straightforward.]
    
+   **YOU MUST include a bullet-point summary. Your response MUST contain these bullet points with actual data from the conversation:**
+   • Student: [name if known], [grade]
+   • Location: [city/area]
+   • Budget: [amount]
+   • Key priorities: [list what parent said]
+   • Interests: [list what parent shared]
+
+   Do NOT skip the bullet points. Do NOT just say you will summarize - actually include the summary.
+
    **IF MULTIPLE CHILDREN DETECTED IN CONVERSATION: Repeat the bullet list below for EACH child with their own header (e.g., "Child 1:" and "Child 2:") and their specific details.**
    
    • Student: ${briefChildDisplayName}, Grade ${childGrade || '(not specified)'}
    • Location: ${locationArea || '(not specified)'}
    • Budget: ${budgetDisplay}
-   ${genderPreference ? '• Gender preference: ' + genderPreference + '\n' : ''}${classSize ? '• Class size: ' + classSize + '\n' : ''}${prioritiesStr ? '• Top priorities: ' + prioritiesStr + '\n' : ''}${learningNeedsStr ? '• Learning needs: ' + learningNeedsStr + '\n' : ''}${programPreferencesStr ? '• Program preferences: ' + programPreferencesStr + '\n' : ''}${dealbreakersStr ? '• Dealbreakers: ' + dealbreakersStr + '\n' : ''}${curriculumStr ? '• Curriculum: ' + curriculumStr + '\n' : ''}${interestsStr ? '• Interests: ' + interestsStr + '\n' : ''}
-   Sound right?
+   ${genderPreference ? '• Gender preference: ' + genderPreference + '\n' : ''}${classSize ? '• Class size: ' + classSize + '\n' : ''}${prioritiesStr ? '• Top priorities: ' + prioritiesStr + '\n' : ''}${learningNeedsStr ? '• Learning needs: ' + learningNeedsStr + '\n' : ''}${curriculumStr ? '• Curriculum: ' + curriculumStr + '\n' : ''}${interestsStr ? '• Interests: ' + interestsStr + '\n' : ''}
+   
+   Does that capture everything? Anything you would like to adjust?
 
    YOU ARE LIAM - Direct intro, structured data.`;
 
