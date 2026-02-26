@@ -166,6 +166,21 @@ Deno.serve(async (req) => {
 
     console.log(`[STATE] ${currentState} | briefStatus: ${briefStatus} | flags: ${JSON.stringify(flags)} | sufficiency: ${context.dataSufficiency} | reason: ${context.transitionReason}`);
 
+    // SAFETY NET: Deterministic keyword escape at orchestrator level
+    // Catches 'show me the brief' etc. even if resolveTransition's R2.5 was overwritten by sync
+    if (currentState === STATES.DISCOVERY) {
+      const msgCheck = (message || '').toLowerCase();
+      const briefEscapeKeywords = ['show me my brief', 'show me the brief', 'give me the brief', 'generate my brief', 'show me schools', 'just show me schools', 'show me results', 'enough questions', 'stop asking'];
+      const matchedEscape = briefEscapeKeywords.find(kw => msgCheck.includes(kw));
+      if (matchedEscape) {
+        console.log('[ORCH SAFETY NET] Keyword escape caught at orchestrator level:', matchedEscape);
+        currentState = STATES.BRIEF;
+        briefStatus = 'generating';
+        context.state = currentState;
+        context.briefStatus = briefStatus;
+      }
+    }
+
     // STEP 5: STATE-SPECIFIC RESPONSE GENERATION (pass flags to handlers)
     if (currentState === STATES.DISCOVERY) {
       return handleDiscovery({ 
