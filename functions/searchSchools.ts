@@ -367,7 +367,8 @@ async function performSearch(req) {
     region: s.region,
     specializations: s.specializations,
     distanceKm: s.distanceKm,
-    schoolType: s.schoolType
+    schoolType: s.schoolType,
+    headerPhotoUrl: s.headerPhotoUrl
   }));
 
   try {
