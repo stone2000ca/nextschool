@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { STATES, BRIEF_STATUS } from './stateMachineConfig';
-import { useBriefConfirmHandler } from '@/components/chat/BriefConfirmHandler';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Heart, FileText, Sparkles, LogIn, Menu, ArrowLeft, Badge, Trash2, MapPin, Star } from "lucide-react";
 import MessageBubble from '@/components/chat/MessageBubble';
@@ -644,7 +643,7 @@ export default function Consultant() {
       const response = await base44.functions.invoke('orchestrateConversation', {
         message: messageText,
         conversationHistory: messages,
-        conversationContext: contextOverride || currentConversation?.conversationContext || {},
+        conversationContext: currentConversation?.conversationContext || {},
         region: user?.profileRegion || 'Canada',
         userId: user?.id,
         consultantName: selectedConsultant,
@@ -1378,7 +1377,7 @@ Return empty array if user didn't provide any of these facts.`;
                   <>
                     <Button 
                       variant="outline" 
-                      onClick={handleBriefConfirm}
+                      onClick={() => handleSendMessage("__CONFIRM_BRIEF__")}
                       disabled={isTyping}
                       className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
                         selectedConsultant === 'Jackie' 
@@ -1761,7 +1760,7 @@ Return empty array if user didn't provide any of these facts.`;
                 <>
                   <Button 
                     variant="outline" 
-                    onClick={handleBriefConfirm}
+                    onClick={() => handleSendMessage("__CONFIRM_BRIEF__")}
                     disabled={isTyping}
                     className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
                       selectedConsultant === 'Jackie' 

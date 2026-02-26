@@ -856,6 +856,13 @@ Deno.serve(async (req) => {
       const base44 = createClientFromRequest(req);
       const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userLocation, selectedSchoolId } = await req.json();
 
+      // FIX: Force RESULTS state on brief confirmation signal
+      let context = conversationContext || {};
+      if (message === '__CONFIRM_BRIEF__') {
+        context.state = 'RESULTS';
+        context.briefStatus = 'confirmed';
+      }
+
       console.log('ORCH START', { 
         messageLength: message?.length, 
         conversationHistoryLength: conversationHistory?.length,
@@ -863,8 +870,6 @@ Deno.serve(async (req) => {
         userId: userId,
         hasUserLocation: !!userLocation
       });
-
-      const context = conversationContext || {};
       
       const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
       
