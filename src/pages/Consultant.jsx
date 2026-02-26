@@ -1662,49 +1662,41 @@ Return empty array if user didn't provide any of these facts.`;
                 schools={schools}
                 consultantName={selectedConsultant}
                 onViewSchoolProfile={async (slug) => {
-                  console.log('🔗 onViewSchoolProfile called with slug:', slug);
-                  console.log('📚 Available schools:', schools?.map(s => ({ name: s.name, slug: s.slug })));
-
-                  // Robust slug matching: try direct slug, then name matching
-                  let school = schools?.find(s => 
-                    s.slug === slug || 
-                    s.name.toLowerCase() === slug.toLowerCase() ||
-                    s.name.toLowerCase().replace(/[^a-z0-9]/g, '-') === slug
-                  );
-
-                  console.log('✅ School found in state:', school);
-
-                  if (school) {
-                    setSelectedSchool(school);
-                    setCurrentView('detail');
-                  } else {
-                    try {
-                      // Try database lookup by slug first
-                      console.log('🔍 Searching database for slug:', slug);
-                      let results = await base44.entities.School.filter({ slug });
-
-                      // If not found by slug, try by name (slug might be derived differently)
-                      if (!results || results.length === 0) {
-                        console.log('❌ Not found by slug, trying by name...');
-                        // Try to extract possible school name from slug
-                        const possibleName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                        results = await base44.entities.School.filter({ name: { $regex: slug.replace(/-/g, ' '), $options: 'i' } });
-                      }
-
-                      if (results && results.length > 0) {
-                        console.log('✅ School found in database:', results[0]);
-                        setSelectedSchool(results[0]);
-                        setCurrentView('detail');
-                      } else {
-                        console.warn('⚠️ School not found in database either. Slug:', slug);
-                      }
-                    } catch (error) {
-                      console.error('❌ Error finding school:', error);
-                    }
-                  }
-                }}
+                   let school = schools?.find(s => 
+                     s.slug === slug || 
+                     s.name.toLowerCase() === slug.toLowerCase() ||
+                     s.name.toLowerCase().replace(/[^a-z0-9]/g, '-') === slug
+                   );
+                   if (school) {
+                     setSelectedSchool(school);
+                     setCurrentView('detail');
+                   } else {
+                     try {
+                       let results = await base44.entities.School.filter({ slug });
+                       if (!results || results.length === 0) {
+                         results = await base44.entities.School.filter({ name: { $regex: slug.replace(/-/g, ' '), $options: 'i' } });
+                       }
+                       if (results && results.length > 0) {
+                         setSelectedSchool(results[0]);
+                         setCurrentView('detail');
+                       }
+                     } catch (error) {
+                       console.error('Error finding school:', error);
+                     }
+                   }
+                 }}
               />
             ))}
+            {confirmingSchool && (
+              <DeepDiveConfirmation 
+                school={confirmingSchool}
+                childName={familyProfile?.childName}
+                consultantName={selectedConsultant}
+                onAnalyze={() => handleConfirmDeepDive(confirmingSchool)}
+                onCancel={handleCancelDeepDive}
+                isLoading={isTyping}
+              />
+            )}
             {isTyping && <TypingIndicator message={loadingStages[loadingStage]} consultantName={selectedConsultant} />}
             <div ref={messagesEndRef} />
 
