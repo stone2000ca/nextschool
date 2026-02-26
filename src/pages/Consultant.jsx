@@ -573,7 +573,7 @@ export default function Consultant() {
     }
   };
 
-  const handleSendMessage = async (messageText, explicitSchoolId = null) => {
+  const handleSendMessage = async (messageText, explicitSchoolId = null, displayText = null) => {
     // Track message sent
     base44.functions.invoke('trackSessionEvent', {
       eventType: 'message_sent',
@@ -608,7 +608,7 @@ export default function Consultant() {
     // Add user message
     const userMessage = {
       role: 'user',
-      content: messageText,
+      content: displayText || messageText,
       timestamp: new Date().toISOString()
     };
     
@@ -1377,7 +1377,7 @@ Return empty array if user didn't provide any of these facts.`;
                   <>
                     <Button 
                       variant="outline" 
-                      onClick={() => handleSendMessage("__CONFIRM_BRIEF__")}
+                      onClick={() => handleSendMessage("__CONFIRM_BRIEF__", null, "That looks right - show me schools")}
                       disabled={isTyping}
                       className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
                         selectedConsultant === 'Jackie' 
@@ -1760,7 +1760,7 @@ Return empty array if user didn't provide any of these facts.`;
                 <>
                   <Button 
                     variant="outline" 
-                    onClick={() => handleSendMessage("__CONFIRM_BRIEF__")}
+                    onClick={() => handleSendMessage("__CONFIRM_BRIEF__", null, "That's right, let's see the schools")}
                     disabled={isTyping}
                     className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
                       selectedConsultant === 'Jackie' 
