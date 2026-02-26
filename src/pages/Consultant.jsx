@@ -17,6 +17,7 @@ import ComparisonView from '@/components/schools/ComparisonView';
 import ComparisonTable from '@/components/schools/ComparisonTable';
 import SortControl from '@/components/schools/SortControl';
 import LoginGateModal from '@/components/dialogs/LoginGateModal';
+import DeepDiveConfirmation from '@/components/dialogs/DeepDiveConfirmation';
 import FamilyBriefPanel from '@/components/chat/FamilyBriefPanel';
 import ProgressBar from '@/components/ui/progress-bar';
 import { Link } from 'react-router-dom';
