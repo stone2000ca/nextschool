@@ -1,8 +1,7 @@
+import { callOpenRouter } from './callOpenRouter.ts';
+
 export async function handleBrief(params) {
-  console.log('HANDLEBRIEF V3 DEPLOYED - callOpenRouter removed, childDisplayName declared');
   const { base44, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, conversationId, userId } = params;
-  
-  let childDisplayName = 'your child';
 
   const STATES = {
     WELCOME: 'WELCOME',
@@ -23,16 +22,6 @@ export async function handleBrief(params) {
   let updatedBriefStatus = briefStatus;
   let briefMessage;
   
-  // KI-16: Smart child name display with gender (used in BRIEF state)
-  // NOTE: Declare at top scope to prevent ReferenceError in catch blocks
-  let briefChildDisplayName = conversationFamilyProfile.childName ? conversationFamilyProfile.childName : 'your child';
-  if (!conversationFamilyProfile.childName && conversationFamilyProfile.childGender === 'male') {
-    briefChildDisplayName = 'your son';
-  } else if (!conversationFamilyProfile.childName && conversationFamilyProfile.childGender === 'female') {
-    briefChildDisplayName = 'your daughter';
-  }
-  const childDisplayName = briefChildDisplayName;
-  
   // BUG FIX: Handle adjust flow properly
   const isInitialAdjustRequest = /\b(change|adjust|edit|actually|wait|hold on|no|not right|different|let me|redo)\b/i.test(msgLower) && 
                                   !/budget|grade|location|school|curriculum|priority/i.test(msgLower);
@@ -49,17 +38,28 @@ export async function handleBrief(params) {
 
     let adjustMessage = "What would you like to adjust?";
     try {
-      const adjustPrompt = consultantName === 'Jackie'
-        ? `You are Jackie, a warm and encouraging education consultant. The parent wants to adjust something in their brief. Ask them a warm, open-ended question about what they'd like to change. Max 50 words. Be encouraging. Parent said: "${message}"`
-        : `You are Liam, a direct and strategic education consultant. The parent wants to adjust their brief. Ask them directly what needs to change. Max 50 words. Parent said: "${message}"`;
-
-      const llmResponse = await base44.integrations.Core.InvokeLLM({
-        prompt: adjustPrompt
+      const adjustResponse = await callOpenRouter({
+        systemPrompt: adjustSystemPrompt,
+        userPrompt: adjustUserPrompt,
+        maxTokens: 300,
+        temperature: 0.5
       });
-      adjustMessage = llmResponse?.response || llmResponse || "What would you like to adjust?";
-      console.log('[LLM] BRIEF adjustment generated');
-    } catch (error) {
-      console.error('[LLM ERROR] BRIEF adjustment failed:', error.message);
+      adjustMessage = adjustResponse || "What would you like to adjust?";
+      console.log('[OPENROUTER] BRIEF adjustment');
+    } catch (openrouterError) {
+      console.log('[OPENROUTER FALLBACK] BRIEF adjustment falling back to InvokeLLM');
+      try {
+        const adjustPrompt = consultantName === 'Jackie'
+          ? `The parent wants to adjust something in their brief. Ask them a warm, open-ended question about what they'd like to change. Max 50 words. Be encouraging.`
+          : `The parent wants to adjust their brief. Ask them directly what needs to change. Max 50 words.`;
+
+        const fallbackResponse = await base44.integrations.Core.InvokeLLM({
+          prompt: adjustPrompt
+        });
+        adjustMessage = fallbackResponse?.response || fallbackResponse || "What would you like to adjust?";
+      } catch (fallbackError) {
+        console.error('[FALLBACK ERROR] BRIEF adjustment failed:', fallbackError.message);
+      }
     }
     
     return Response.json({
@@ -116,6 +116,17 @@ export async function handleBrief(params) {
     } else if (maxTuition && typeof maxTuition === 'number') {
       budgetDisplay = `$${maxTuition.toLocaleString()}/year`;
     }
+
+    // KI-16: Smart child name display with gender (used in BRIEF state)
+    // NOTE: Declare both briefChildDisplayName AND childDisplayName to prevent
+    // ReferenceError if Base44 live code references either variable name.
+    let briefChildDisplayName = childName ? childName : 'your child';
+    if (!childName && childGender === 'male') {
+      briefChildDisplayName = 'your son';
+    } else if (!childName && childGender === 'female') {
+      briefChildDisplayName = 'your daughter';
+    }
+    const childDisplayName = briefChildDisplayName;
 
     // KI-10: MULTI-CHILD DETECTION at code level
     const conversationText = conversationHistory?.map(m => m.content).join(' ') || '';

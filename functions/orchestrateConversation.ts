@@ -1,266 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { callOpenRouter } from './callOpenRouter.ts';
+import { handleDeepDive } from './handleDeepDive.ts';
+import { handleResults } from './handleResults.ts';
+import { handleBrief } from './handleBrief.ts';
+import { handleDiscovery } from './handleDiscovery.ts';
+import { extractEntities } from './extractEntities.ts';
+import { resolveTransition } from './resolveTransition.ts';
 // Sprint A: extractEntities + resolveTransition integration
 // BUG-DD-002 fix: selectedSchoolId destructured
-// deploy-trigger-v9 - ALL imports removed, using base44.functions.invoke() instead
-
-// INLINED: resolveTransition function (no imports allowed in Deno functions)
-function resolveTransition(params) {
-  const {
-    currentState,
-    intentSignal,
-    profileData,
-    turnCount,
-    briefEditCount,
-    selectedSchoolId,
-    previousSchoolId,
-    message
-  } = params;
-
-  const STATES = {
-    WELCOME: 'WELCOME',
-    DISCOVERY: 'DISCOVERY',
-    BRIEF: 'BRIEF',
-    RESULTS: 'RESULTS',
-    DEEP_DIVE: 'DEEP_DIVE'
-  };
-
-  // Calculate sufficiency: RICH=location+grade+2priorities, MINIMUM=location+grade, THIN=missing either
-  const hasLocation = !!(profileData?.location);
-  const hasGrade = profileData?.gradeLevel !== null && profileData?.gradeLevel !== undefined;
-  const prioritiesCount = profileData?.priorities?.length || 0;
-  
-  let sufficiency = 'THIN';
-  if (hasLocation && hasGrade) {
-    if (prioritiesCount >= 2) {
-      sufficiency = 'RICH';
-    } else {
-      sufficiency = 'MINIMUM';
-    }
-  }
-
-  // Initialize flags
-  const flags = {
-    SUGGEST_BRIEF: false,
-    OFFER_BRIEF: false,
-    FORCED_TRANSITION: false,
-    USER_INTENT_OVERRIDE: false
-  };
-
-  let nextState = currentState;
-  let briefStatus = null;
-  let transitionReason = 'natural';
-
-  console.log('[RESOLVE] Input:', { currentState, intentSignal, sufficiency, turnCount, briefEditCount, selectedSchoolId });
-
-  // R1: WELCOME > DISCOVERY always (if not initial message)
-  if (currentState === STATES.WELCOME && turnCount > 0) {
-    nextState = STATES.DISCOVERY;
-    transitionReason = 'auto_welcome_exit';
-    console.log('[R1] WELCOME->DISCOVERY (conversation started)');
-    return { nextState, sufficiency, flags, transitionReason };
-  }
-
-  // R2: DEEP_DIVE override if selectedSchoolId present
-  if (selectedSchoolId && selectedSchoolId !== previousSchoolId) {
-    nextState = STATES.DEEP_DIVE;
-    transitionReason = 'school_selected';
-    console.log('[R2] Override to DEEP_DIVE (school selected)');
-    return { nextState, sufficiency, flags, transitionReason };
-  }
-
-  // R2.5: DETERMINISTIC INTENT ESCAPE - keyword pattern matching on raw message (no LLM dependency)
-  if (message && currentState === STATES.DISCOVERY) {
-    const messageLower = message.toLowerCase();
-    const briefPatterns = [
-      'show me my brief',
-      'show me the brief',
-      'give me the brief',
-      'generate my brief',
-      'put together the brief',
-      'ready for my brief',
-      'show me schools',
-      'just show me schools',
-      'show me results',
-      'i\'ve shared everything',
-      'that\'s all i have',
-      'i\'ve told you everything',
-      'enough questions',
-      'stop asking'
-    ];
-
-    const matchedKeyword = briefPatterns.find(pattern => messageLower.includes(pattern));
-    if (matchedKeyword) {
-      console.log('[R2.5] Deterministic intent escape triggered:', matchedKeyword);
-      console.log('[RESOLVE] Output:', { nextState: STATES.BRIEF, sufficiency, flags: { USER_INTENT_OVERRIDE: true }, transitionReason: 'deterministic_escape', briefStatus: 'generating' });
-      return {
-        nextState: STATES.BRIEF,
-        sufficiency,
-        flags: { ...flags, USER_INTENT_OVERRIDE: true },
-        transitionReason: 'deterministic_escape',
-        briefStatus: 'generating'
-      };
-    }
-  }
-
-  // R3: ABSOLUTE INTENT ESCAPE - user explicitly asks for brief/results = ALWAYS transition
-  // No sufficiency check, no turnCount check. User intent overrides everything.
-  if ((intentSignal === 'request-brief' || intentSignal === 'request-results') && currentState === STATES.DISCOVERY) {
-    console.log('[R3] ABSOLUTE ESCAPE - intent:', intentSignal, 'sufficiency:', sufficiency, 'turnCount:', turnCount);
-    console.log('[RESOLVE] Output:', { nextState: STATES.BRIEF, sufficiency, flags: { USER_INTENT_OVERRIDE: true }, transitionReason: 'explicit_demand' });
-    return {
-      nextState: STATES.BRIEF,
-      sufficiency,
-      flags: { ...flags, USER_INTENT_OVERRIDE: true },
-      transitionReason: 'explicit_demand',
-      briefStatus: 'generating'
-    };
-  }
-
-  // R4: HARD CAP AT TURN 7
-  if (turnCount >= 7 && currentState === STATES.DISCOVERY) {
-    nextState = STATES.BRIEF;
-    briefStatus = 'generating';
-    flags.FORCED_TRANSITION = true;
-    transitionReason = 'hard_cap';
-    console.log('[R4] Escape Rule: Hard cap at turn 7, forcing BRIEF');
-    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
-    return { nextState, sufficiency, flags, transitionReason, briefStatus };
-  }
-
-  // R5: SOFT NUDGE AT TURN 5
-  if (turnCount >= 5 && currentState === STATES.DISCOVERY && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
-    flags.SUGGEST_BRIEF = true;
-    transitionReason = 'soft_nudge';
-    console.log('[R5] Escape Rule: Soft nudge at turn 5');
-    console.log('[RESOLVE] Output:', { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason });
-    return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason };
-  }
-
-  // R6: Intent maps (legacy, for backward compat - R3/R4 handled above)
-  if (intentSignal === 'request-brief' && turnCount < 2 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
-    nextState = STATES.BRIEF;
-    briefStatus = 'generating';
-    flags.USER_INTENT_OVERRIDE = true;
-    transitionReason = 'explicit_intent';
-    console.log('[R6] Intent: request-brief -> BRIEF (turnCount < 2)');
-    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
-    return { nextState, sufficiency, flags, transitionReason, briefStatus };
-  }
-
-  if (intentSignal === 'request-results' && turnCount < 2 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
-    nextState = STATES.RESULTS;
-    flags.USER_INTENT_OVERRIDE = true;
-    transitionReason = 'explicit_intent';
-    console.log('[R6] Intent: request-results -> RESULTS (turnCount < 2)');
-    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
-    return { nextState, sufficiency, flags, transitionReason };
-  }
-
-  if (intentSignal === 'edit-criteria') {
-    nextState = STATES.BRIEF;
-    briefStatus = 'editing';
-    flags.USER_INTENT_OVERRIDE = true;
-    transitionReason = 'explicit_intent';
-    console.log('[R6] Intent: edit-criteria -> BRIEF (editing)');
-    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
-    return { nextState, sufficiency, flags, transitionReason, briefStatus };
-  }
-
-  if (intentSignal === 'back-to-results') {
-    nextState = STATES.RESULTS;
-    flags.USER_INTENT_OVERRIDE = true;
-    transitionReason = 'explicit_intent';
-    console.log('[R6] Intent: back-to-results -> RESULTS');
-    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
-    return { nextState, sufficiency, flags, transitionReason };
-  }
-
-  if (intentSignal === 'restart') {
-    nextState = STATES.DISCOVERY;
-    // Note: Caller should clear profile
-    flags.USER_INTENT_OVERRIDE = true;
-    transitionReason = 'explicit_intent';
-    console.log('[R6] Intent: restart -> DISCOVERY');
-    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
-    return { nextState, sufficiency, flags, transitionReason };
-  }
-
-  if (intentSignal === 'ask-about-school') {
-    nextState = STATES.DEEP_DIVE;
-    flags.USER_INTENT_OVERRIDE = true;
-    transitionReason = 'explicit_intent';
-    console.log('[R6] Intent: ask-about-school -> DEEP_DIVE');
-    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
-    return { nextState, sufficiency, flags, transitionReason };
-  }
-
-  // R7: Auto-thresholds in DISCOVERY (turn-based progression)
-  if (currentState === STATES.DISCOVERY) {
-    if (turnCount >= 8 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
-      nextState = STATES.BRIEF;
-      briefStatus = 'generating';
-      flags.FORCED_TRANSITION = true;
-      transitionReason = 'auto_threshold';
-      console.log('[R7] Turn >= 8, force BRIEF');
-      console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
-      return { nextState, sufficiency, flags, transitionReason, briefStatus };
-    }
-
-    if (turnCount >= 6 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
-      flags.OFFER_BRIEF = true;
-      transitionReason = 'auto_threshold';
-      console.log('[R7] Turn >= 6, set OFFER_BRIEF flag');
-      console.log('[RESOLVE] Output:', { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason });
-      return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason };
-    }
-
-    if (turnCount >= 4 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
-      flags.SUGGEST_BRIEF = true;
-      transitionReason = 'auto_threshold';
-      console.log('[R7] Turn >= 4, set SUGGEST_BRIEF flag');
-      console.log('[RESOLVE] Output:', { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason });
-      return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason };
-    }
-  }
-
-  // R8: Continue in DISCOVERY stays DISCOVERY
-  if (currentState === STATES.DISCOVERY && intentSignal === 'continue') {
-    console.log('[R8] DISCOVERY + continue intent, stay DISCOVERY');
-    console.log('[RESOLVE] Output:', { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason });
-    return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason };
-  }
-
-  // R9: Off-topic stays current state
-  if (intentSignal === 'off-topic') {
-    console.log('[R9] Off-topic, stay in current state');
-    console.log('[RESOLVE] Output:', { nextState: currentState, sufficiency, flags, transitionReason });
-    return { nextState: currentState, sufficiency, flags, transitionReason };
-  }
-
-  // R10: Brief edit count max 3
-  if (currentState === STATES.BRIEF && briefEditCount >= 3) {
-    nextState = STATES.RESULTS;
-    briefStatus = 'confirmed';
-    flags.FORCED_TRANSITION = true;
-    transitionReason = 'edit_cap_reached';
-    console.log('[R10] Edit cap reached (3), move to RESULTS');
-    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
-    return { nextState, sufficiency, flags, transitionReason, briefStatus };
-  }
-
-  // R11: DEEP_DIVE re-entry (stay in DEEP_DIVE unless explicit back intent)
-  if (currentState === STATES.DEEP_DIVE && !selectedSchoolId) {
-    nextState = STATES.RESULTS;
-    console.log('[R11] DEEP_DIVE but no selectedSchoolId, back to RESULTS');
-    console.log('[RESOLVE] Output:', { nextState, sufficiency, flags, transitionReason });
-    return { nextState, sufficiency, flags, transitionReason };
-  }
-
-  // Default: maintain current state
-  console.log('[DEFAULT] Maintain current state:', currentState);
-  console.log('[RESOLVE] Output:', { nextState: currentState, sufficiency, flags, transitionReason });
-  return { nextState: currentState, sufficiency, flags, transitionReason };
-}
+// deploy-trigger-v7
 
 Deno.serve(async (req) => {
   const TIMEOUT_MS = 25000;
@@ -369,13 +117,7 @@ Deno.serve(async (req) => {
     }
 
     // STEP 2: ENTITY EXTRACTION (all other messages)
-    const extractionResponse = await base44.functions.invoke('extractEntities', { 
-      message, 
-      conversationFamilyProfile, 
-      context, 
-      conversationHistory 
-    });
-    extractionResult = extractionResponse.data;
+    extractionResult = await extractEntities({ base44, message, conversationFamilyProfile, context, conversationHistory });
     const { extractedEntities, updatedFamilyProfile, updatedContext } = extractionResult;
     intentSignal = extractionResult.intentSignal || 'continue';
     briefDelta = extractionResult.briefDelta;
@@ -441,7 +183,8 @@ Deno.serve(async (req) => {
 
     // STEP 5: STATE-SPECIFIC RESPONSE GENERATION (pass flags to handlers)
     if (currentState === STATES.DISCOVERY) {
-      const discoveryResponse = await base44.functions.invoke('handleDiscovery', { 
+      return handleDiscovery({ 
+        base44, 
         message, 
         conversationFamilyProfile, 
         context, 
@@ -454,106 +197,102 @@ Deno.serve(async (req) => {
         userId,
         flags 
       });
-      return Response.json(discoveryResponse.data);
     }
     
     if (currentState === STATES.BRIEF) {
-      // DIRECT BRIEF GENERATION - handleBrief.ts has permanent deployment error
-      console.log('[ORCH BRIEF] Building brief directly in orchestrator (handleBrief bypassed)');
-      
-      const bullets = [];
-      
-      // 1. Child name
-      const childName = conversationFamilyProfile?.childName || 'your child';
-      
-      // 2. Grade
-      const grade = context.extractedEntities?.childGrade;
-      let gradeDisplay = null;
-      if (grade === -1) {
-        gradeDisplay = 'JK';
-      } else if (grade === 0) {
-        gradeDisplay = 'SK';
-      } else if (grade !== null && grade !== undefined) {
-        gradeDisplay = 'Grade ' + grade;
-      }
-      
-      if (childName !== 'your child' && gradeDisplay) {
-        bullets.push('Student: ' + childName + ', ' + gradeDisplay);
-      } else if (childName !== 'your child') {
-        bullets.push('Student: ' + childName);
-      } else if (gradeDisplay) {
-        bullets.push('Grade: ' + gradeDisplay);
-      }
-      
-      // 3. Location
-      const location = context.extractedEntities?.locationArea;
-      if (location) bullets.push('Location: ' + location);
-      
-      // 4. Budget
-      const maxTuition = conversationFamilyProfile?.maxTuition;
-      if (maxTuition && typeof maxTuition === 'number') {
-        bullets.push('Budget: $' + maxTuition.toLocaleString());
-      }
-      
-      // 5. Priorities
-      const priorities = conversationFamilyProfile?.priorities;
-      if (priorities && priorities.length > 0) {
-        bullets.push('Top priorities: ' + priorities.join(', '));
-      }
-      
-      // 6. Interests
-      const interests = conversationFamilyProfile?.interests;
-      if (interests && interests.length > 0) {
-        bullets.push('Interests: ' + interests.join(', '));
-      }
-      
-      // 7. Learning needs
-      const learningNeeds = conversationFamilyProfile?.learning_needs;
-      if (learningNeeds && learningNeeds.length > 0) {
-        bullets.push('Learning needs: ' + learningNeeds.join(', '));
-      }
-      
-      // 8. Gender preference
-      const genderPreference = context.extractedEntities?.genderPreference;
-      if (genderPreference) bullets.push('Gender preference: ' + genderPreference);
-      
-      // 9. Curriculum
-      const curriculum = conversationFamilyProfile?.curriculumPreference;
-      if (curriculum && curriculum.length > 0) {
-        bullets.push('Curriculum: ' + curriculum.join(', '));
-      }
-      
-      // 10. Dealbreakers
-      const dealbreakers = conversationFamilyProfile?.dealbreakers;
-      if (dealbreakers && dealbreakers.length > 0) {
-        bullets.push('Dealbreakers: ' + dealbreakers.join(', '));
-      }
-      
-      // Build message
-      const intro = consultantName === 'Jackie'
-        ? "Let me make sure I've got this right:\n\n"
-        : "Here's what I'm hearing:\n\n";
-      
-      const briefContent = bullets.length > 0
-        ? bullets.map(b => '\u2022 ' + b).join('\n')
-        : '\u2022 I captured your preferences but need more details.';
-      
-      const briefMessage = intro + briefContent + "\n\nDoes that capture everything? Anything you'd like to adjust?";
-      
-      console.log('[ORCH BRIEF] Generated brief with', bullets.length, 'bullets');
-      
-      return Response.json({
-        message: briefMessage,
-        state: STATES.BRIEF,
-        briefStatus: 'pending_review',
-        familyProfile: conversationFamilyProfile,
-        conversationContext: context,
-        schools: []
+      const briefResponse = await handleBrief({ 
+        base44, 
+        message, 
+        conversationFamilyProfile, 
+        context, 
+        conversationHistory, 
+        consultantName, 
+        currentState, 
+        briefStatus, 
+        currentSchools, 
+        conversationId, 
+        userId,
+        flags 
       });
+
+      // BRIEF CONTENT SAFETY NET: If handleBrief returned generic/thin content
+      // (Base44 version may be stale), rebuild programmatically from extracted entities.
+      try {
+        const briefData = await briefResponse.json();
+        const briefMsg = briefData.message || '';
+        const hasStructuredContent = briefMsg.includes('Grade') || briefMsg.includes('grade') || 
+          briefMsg.includes('Location') || briefMsg.includes('Budget') || briefMsg.includes('Student:');
+        const isGenericBrief = briefMsg.length < 150 || !hasStructuredContent;
+
+        if (isGenericBrief && (context.extractedEntities || conversationFamilyProfile)) {
+          console.log('[ORCH BRIEF SAFETY NET] Generic brief detected, length:', briefMsg.length, 'rebuilding programmatically');
+          const bullets = [];
+          if (conversationFamilyProfile?.childName) bullets.push('Student: ' + conversationFamilyProfile.childName);
+          const grade = conversationFamilyProfile?.childGrade ?? context.extractedEntities?.childGrade;
+          if (grade !== null && grade !== undefined) {
+            bullets.push('Grade: ' + (grade === -1 ? 'JK' : grade === 0 ? 'SK' : 'Grade ' + grade));
+          }
+          const loc = conversationFamilyProfile?.locationArea || context.extractedEntities?.locationArea;
+          if (loc) bullets.push('Location: ' + loc);
+          const budget = conversationFamilyProfile?.maxTuition || context.extractedEntities?.budgetSingle;
+          if (budget) bullets.push('Budget: $' + Number(budget).toLocaleString());
+          if (conversationFamilyProfile?.genderPreference || context.extractedEntities?.genderPreference) {
+            bullets.push('Gender preference: ' + (conversationFamilyProfile?.genderPreference || context.extractedEntities?.genderPreference));
+          }
+          if (conversationFamilyProfile?.curriculumPreference?.length) {
+            bullets.push('Curriculum: ' + conversationFamilyProfile.curriculumPreference.join(', '));
+          }
+          if (conversationFamilyProfile?.programPreferences?.length) {
+            bullets.push('Program preferences: ' + conversationFamilyProfile.programPreferences.join(', '));
+          }
+          if (conversationFamilyProfile?.priorities?.length) {
+            bullets.push('Top priorities: ' + conversationFamilyProfile.priorities.join(', '));
+          }
+          const learningNeeds = conversationFamilyProfile?.learning_needs || conversationFamilyProfile?.specialNeeds || [];
+          if (learningNeeds.length) bullets.push('Learning needs: ' + learningNeeds.join(', '));
+          if (conversationFamilyProfile?.wellbeing_needs?.length) {
+            bullets.push('Wellbeing needs: ' + conversationFamilyProfile.wellbeing_needs.join(', '));
+          }
+          if (conversationFamilyProfile?.interests?.length) {
+            bullets.push('Interests: ' + conversationFamilyProfile.interests.join(', '));
+          }
+          if (conversationFamilyProfile?.dealbreakers?.length) {
+            bullets.push('Dealbreakers: ' + conversationFamilyProfile.dealbreakers.join(', '));
+          }
+          if (context.extractedEntities?.boardingPreference) bullets.push('Boarding: Yes');
+          if (context.extractedEntities?.religiousPreference) {
+            bullets.push('Religious preference: ' + context.extractedEntities.religiousPreference);
+          }
+
+          if (bullets.length > 0) {
+            const intro = consultantName === 'Jackie'
+              ? "Let me make sure I've got this right:\n\n"
+              : "Here's what I'm hearing:\n\n";
+            briefData.message = intro + bullets.map(b => '\u2022 ' + b).join('\n') + "\n\nDoes that capture everything? Anything you'd like to adjust?";
+            console.log('[ORCH BRIEF SAFETY NET] Rebuilt brief with', bullets.length, 'bullets');
+          }
+        }
+        return new Response(JSON.stringify(briefData), { 
+          status: 200, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
+      } catch (safetyNetError) {
+        console.error('[ORCH BRIEF SAFETY NET] Error:', safetyNetError.message, '- returning original response');
+        // Can't re-read the response body (already consumed), so rebuild a minimal response
+        return Response.json({
+          message: "Here's what I've captured so far. Does that look right? Feel free to adjust anything.",
+          state: STATES.BRIEF,
+          briefStatus: briefStatus,
+          familyProfile: conversationFamilyProfile,
+          conversationContext: context,
+          schools: []
+        });
+      }
     }
 
     if (currentState === STATES.RESULTS) {
-      const resultsResponse = await base44.functions.invoke('handleResults', { 
+      return handleResults({ 
+        base44, 
         message, 
         conversationFamilyProfile, 
         context, 
@@ -569,11 +308,11 @@ Deno.serve(async (req) => {
         userId,
         flags 
       });
-      return Response.json(resultsResponse.data);
     }
 
     if (currentState === STATES.DEEP_DIVE) {
-      const deepDiveResponse = await base44.functions.invoke('handleDeepDive', { 
+      return handleDeepDive({ 
+        base44, 
         selectedSchoolId, 
         message, 
         conversationFamilyProfile, 
@@ -587,7 +326,6 @@ Deno.serve(async (req) => {
         userId,
         flags 
       });
-      return Response.json(deepDiveResponse.data);
     }
 
       // Fallback
