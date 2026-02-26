@@ -75,7 +75,7 @@ async function callOpenRouter(options) {
 // INLINED: resolveTransition
 // =============================================================================
 function resolveTransition(params) {
-  const { currentState, intentSignal, profileData, turnCount, briefEditCount, selectedSchoolId, previousSchoolId } = params;
+  const { currentState, intentSignal, profileData, turnCount, briefEditCount, selectedSchoolId, previousSchoolId, userMessage } = params;
 
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
@@ -101,6 +101,16 @@ function resolveTransition(params) {
   if (selectedSchoolId && selectedSchoolId !== previousSchoolId) {
     return { nextState: STATES.DEEP_DIVE, sufficiency, flags, transitionReason: 'school_selected' };
   }
+  
+  // DETERMINISTIC BRIEF CONFIRMATION CHECK - overrides LLM intent classification
+  const confirmPhrases = ['that looks right', 'show me schools', 'looks good', 'looks right', 'confirmed', 'yes'];
+  const msgLower = (userMessage || '').toLowerCase();
+  if (currentState === STATES.BRIEF && briefStatus === 'pending_review' && confirmPhrases.some(p => msgLower.includes(p))) {
+    flags.USER_INTENT_OVERRIDE = true;
+    console.log('[DETERMINISTIC] Brief confirmed by string match:', userMessage);
+    return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'brief_confirmed_deterministic', briefStatus: 'confirmed' };
+  }
+  
   if (currentState === STATES.BRIEF && briefStatus === 'pending_review' && (intentSignal === 'confirm-brief' || intentSignal === 'request-results')) {
     flags.USER_INTENT_OVERRIDE = true;
     return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'brief_confirmed', briefStatus: 'confirmed' };
@@ -944,7 +954,8 @@ Deno.serve(async (req) => {
         turnCount,
         briefEditCount: currentBriefEditCount,
         selectedSchoolId,
-        previousSchoolId
+        previousSchoolId,
+        userMessage: message
       });
       
       currentState = resolveResult.nextState;
