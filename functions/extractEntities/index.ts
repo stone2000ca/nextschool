@@ -1,0 +1,199 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { callOpenRouter } from '../callOpenRouter.ts';
+
+export async function extractEntitiesLogic(params) {
+  const { base44, message, conversationFamilyProfile, context, conversationHistory } = params;
+
+  let result = {};
+  let extractedData = {};
+  let intentSignal = 'continue';
+
+  try {
+    const t1 = Date.now();
+    
+    const knownData = conversationFamilyProfile ? {
+      childName: conversationFamilyProfile.childName,
+      childGrade: conversationFamilyProfile.childGrade,
+      locationArea: conversationFamilyProfile.locationArea,
+      maxTuition: conversationFamilyProfile.maxTuition,
+      interests: conversationFamilyProfile.interests,
+      priorities: conversationFamilyProfile.priorities,
+      dealbreakers: conversationFamilyProfile.dealbreakers,
+      curriculumPreference: conversationFamilyProfile.curriculumPreference,
+      religiousPreference: conversationFamilyProfile.religiousPreference,
+      boardingPreference: conversationFamilyProfile.boardingPreference
+    } : {};
+
+    const conversationSummary = conversationHistory?.slice(-5)
+      .map(m => `${m.role === 'user' ? 'Parent' : 'AI'}: ${m.content}`)
+      .join('\n') || '';
+
+    const gradeMatch = message.match(/\b(?:grade|gr\.?)\s*([0-9]+|\b(?:pk|jk|k|junior|senior)\b)/i);
+    let extractedGrade = null;
+    if (gradeMatch) {
+      const gradeStr = gradeMatch[1].toLowerCase();
+      const gradeMap = { 'pk': -2, 'jk': -1, 'k': 0, 'junior': 11, 'senior': 12 };
+      extractedGrade = gradeMap[gradeStr] !== undefined ? gradeMap[gradeStr] : parseInt(gradeStr);
+    }
+
+    const systemPrompt = `Extract ONLY factual data explicitly stated. Return JSON with NULL for anything not mentioned.
+
+RESPONSE SCHEMA:
+{ 
+  entities: { childName, childGrade, locationArea, ... all extraction fields },
+  intentSignal: 'continue' | 'request-brief' | 'request-results' | 'edit-criteria' | 'ask-about-school' | 'back-to-results' | 'restart' | 'off-topic',
+  briefDelta: { 
+    additions: [{ field, value, confidence }],
+    updates: [{ field, old, new, confidence }],
+    removals: []
+  }
+}`;
+
+    const userPrompt = `CURRENT KNOWN DATA:
+${JSON.stringify(knownData, null, 2)}
+
+CONVERSATION HISTORY (last 10 messages):
+${conversationSummary}
+
+PARENT'S MESSAGE:
+"${message}"
+
+Extract all factual data from the parent's message. Return ONLY valid JSON. Do NOT explain.`;
+
+    try {
+      result = await callOpenRouter({
+        systemPrompt,
+        userPrompt,
+        responseSchema: {
+          name: 'entity_extraction_with_intent',
+          schema: {
+            type: 'object',
+            properties: {
+              childName: { type: ['string', 'null'] },
+              childGrade: { type: ['number', 'null'] },
+              locationArea: { type: ['string', 'null'] },
+              priorities: { type: 'array', items: { type: 'string' } },
+              interests: { type: 'array', items: { type: 'string' } },
+              dealbreakers: { type: 'array', items: { type: 'string' } },
+              intentSignal: { type: 'string', enum: ['continue', 'request-brief', 'request-results', 'edit-criteria', 'ask-about-school', 'back-to-results', 'restart', 'off-topic'] },
+              briefDelta: {
+                type: 'object',
+                properties: {
+                  additions: { type: 'array' },
+                  updates: { type: 'array' },
+                  removals: { type: 'array' }
+                }
+              }
+            },
+            required: ['intentSignal', 'briefDelta'],
+            additionalProperties: false
+          }
+        },
+        maxTokens: 500,
+        temperature: 0.1
+      });
+      intentSignal = result?.intentSignal || 'continue';
+      console.log('[INTENT SIGNAL]', intentSignal);
+    } catch (openrouterError) {
+      console.error('[EXTRACT ERROR] OpenRouter failed:', openrouterError.message);
+      try {
+        const fallbackResult = await base44.integrations.Core.InvokeLLM({
+          prompt: `Extract data from: "${message}". Return JSON with intentSignal and briefDelta.`
+        });
+        result = fallbackResult || {};
+        intentSignal = result?.intentSignal || 'continue';
+      } catch (fallbackError) {
+        console.error('[FALLBACK ERROR] InvokeLLM extraction failed:', fallbackError.message);
+        result = {};
+        intentSignal = 'continue';
+      }
+    }
+
+    let finalResult = result || {};
+    if (extractedGrade !== null && !finalResult.childGrade) {
+      finalResult = { ...finalResult, childGrade: extractedGrade };
+    }
+
+    const cleaned = {};
+    for (const [key, value] of Object.entries(finalResult)) {
+      if (value !== null && value !== undefined && !(Array.isArray(value) && value.length === 0)) {
+        cleaned[key] = value;
+      }
+    }
+    
+    extractedData = cleaned;
+    console.log('[EXTRACT] took', Date.now() - t1, 'ms');
+  } catch (e) {
+    console.error('[ERROR] Extraction failed:', e.message);
+  }
+  
+  const updatedContext = { ...context };
+  if (!updatedContext.extractedEntities) {
+    updatedContext.extractedEntities = {};
+  }
+  for (const [key, value] of Object.entries(extractedData)) {
+    if (value !== null && value !== undefined) {
+      if (Array.isArray(value) && Array.isArray(updatedContext.extractedEntities[key]) && updatedContext.extractedEntities[key].length > 0) {
+        updatedContext.extractedEntities[key] = [...new Set([...updatedContext.extractedEntities[key], ...value])];
+      } else {
+        updatedContext.extractedEntities[key] = value;
+      }
+    }
+  }
+  
+  const updatedFamilyProfile = { ...conversationFamilyProfile };
+  if (Object.keys(extractedData).length > 0) {
+    for (const [key, value] of Object.entries(extractedData)) {
+      if (value !== null && value !== undefined) {
+        const existing = updatedFamilyProfile[key];
+        if (Array.isArray(value)) {
+          if (Array.isArray(existing) && existing.length > 0) {
+            updatedFamilyProfile[key] = [...new Set([...existing, ...value])];
+          } else {
+            updatedFamilyProfile[key] = value;
+          }
+        } else if (value !== '') {
+          updatedFamilyProfile[key] = value;
+        }
+      }
+    }
+    if (updatedFamilyProfile?.id) {
+      try {
+        const persistedProfile = await base44.entities.FamilyProfile.update(updatedFamilyProfile.id, updatedFamilyProfile);
+        Object.assign(updatedFamilyProfile, persistedProfile);
+      } catch (e) {
+        console.error('FamilyProfile update failed:', e);
+      }
+    }
+  }
+  
+  const briefDelta = extractedData?.briefDelta || { additions: [], updates: [], removals: [] };
+  intentSignal = intentSignal || 'continue';
+  
+  return {
+    extractedEntities: extractedData,
+    updatedFamilyProfile,
+    updatedContext,
+    intentSignal,
+    briefDelta
+  };
+}
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const { message, conversationFamilyProfile, context, conversationHistory } = await req.json();
+    
+    const result = await extractEntitiesLogic({
+      base44,
+      message,
+      conversationFamilyProfile,
+      context,
+      conversationHistory
+    });
+    
+    return Response.json(result);
+  } catch (error) {
+    return Response.json({ error: error.message || String(error) }, { status: 500 });
+  }
+});
