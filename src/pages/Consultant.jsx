@@ -1575,16 +1575,12 @@ Return empty array if user didn't provide any of these facts.`;
         />
       )}
 
-      {/* Family Brief Panel - Show during BRIEF state */}
-      {isAuthenticated && selectedConsultant && currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus) && (
-        <FamilyBriefPanel
+      {/* Family Brief overlay panel */}
+      {showFamilyBrief && isBriefState && (
+        <FamilyBrief
           familyProfile={familyProfile}
-          shortlist={shortlistData}
-          isExpanded={briefExpanded}
-          onToggleExpand={setBriefExpanded}
-          onSectionClick={(sectionId) => {
-            console.log('Section clicked:', sectionId);
-          }}
+          consultantName={selectedConsultant}
+          onClose={() => setShowFamilyBrief(false)}
         />
       )}
     </div>
