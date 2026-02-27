@@ -151,15 +151,25 @@ async function performSearch(req) {
 
   if (city && aliasedCities.length === 0) {
     const cityLower = city.trim().toLowerCase();
+    // Exact match first
     let cityMatches = locationFiltered.filter(s => 
       s.city && s.city.toLowerCase() === cityLower
     );
+    // Partial match fallback
     if (cityMatches.length === 0) {
       cityMatches = locationFiltered.filter(s => 
         s.city && s.city.toLowerCase().includes(cityLower)
       );
     }
-    locationFiltered = cityMatches;
+    // KI-22 FIX: If still 0 results but we have lat/lng coords, skip city filter entirely
+    // and let the distance-sort handle it — this handles Ontario cities where school records
+    // may use a different city name (e.g. "North York" vs "Toronto")
+    if (cityMatches.length === 0 && (resolvedLat || finalLat)) {
+      console.log(`[CITY FILTER] city="${city}" → 0 exact/partial matches, falling back to coordinate-based sort (lat/lng available)`);
+      // Do NOT restrict locationFiltered — let distance scoring handle it
+    } else {
+      locationFiltered = cityMatches;
+    }
     console.log(`[CITY FILTER] city="${city}" → ${locationFiltered.length} schools`);
   }
 
