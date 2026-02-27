@@ -965,7 +965,9 @@ Deno.serve(async (req) => {
       Object.assign(context, extractionResult.updatedContext);
 
       // STEP 2: WELCOME HANDLER — now runs after extraction so conversationFamilyProfile
-      // already contains any entities from the first message
+      // already contains any entities from the first message.
+      // We return familyProfile in the payload so the frontend passes it back on turn 2,
+      // ensuring entities from message 1 survive even when conversationId was not yet set.
       if (isFirstMessage && !context.state) {
         console.log('[ORCH] First message, return WELCOME greeting');
         const welcomeMessage = consultantName === 'Jackie'
@@ -976,6 +978,7 @@ Deno.serve(async (req) => {
           state: STATES.WELCOME,
           briefStatus: null,
           conversationContext: context,
+          familyProfile: conversationFamilyProfile,
           schools: []
         });
       }
