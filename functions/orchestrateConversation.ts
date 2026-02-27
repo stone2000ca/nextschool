@@ -296,21 +296,17 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
       }
     }
 
-    const systemPrompt = `Extract ONLY factual data explicitly stated. Return JSON with NULL for anything not mentioned.
+    const systemPrompt = `Extract factual data from the parent's message. Return JSON with NULL for anything not mentioned.
 
-RESPONSE SCHEMA:
-{ 
-  entities: { childName, childGrade, locationArea, maxTuition, ... all extraction fields },
-  intentSignal: 'continue' | 'request-brief' | 'request-results' | 'edit-criteria' | 'ask-about-school' | 'back-to-results' | 'restart' | 'off-topic' | 'confirm-brief',
-  briefDelta: { 
-    additions: [{ field, value, confidence }],
-    updates: [{ field, old, new, confidence }],
-    removals: []
-  }
-}
+GENDER INFERENCE (BUG-ENT-004): Infer the child's gender from relational terms even if not stated directly:
+- "my son", "my boy", "he", "him", "his" → gender = "male"
+- "my daughter", "my girl", "she", "her" → gender = "female"
+- If gender is ambiguous or not mentioned, return null for gender.
 
-CRITICAL: Extract budget/tuition amounts if mentioned (e.g., "$25,000", "25k per year", "budget is unlimited"). Store as maxTuition (number or "unlimited")
-Do NOT infer budget if user has not explicitly stated it.
+BUDGET EXTRACTION (BUG-ENT-004): Extract budget/tuition even in conversational formats:
+- "$25K", "25k", "25 thousand", "around $25,000", "about 25K", "up to 30k" → extract the number (e.g. 25000, 30000)
+- Store as maxTuition (integer number of dollars, or the string "unlimited" if they say no limit/flexible)
+- Do NOT infer budget if user has not explicitly stated it.
 
 CRITICAL: If the user explicitly negates or removes a previously stated preference (e.g. "actually, not interested in sports", "remove arts from my priorities", "I changed my mind about boarding"), populate the corresponding remove_* field (remove_interests, remove_priorities, remove_dealbreakers) with the items to remove. Leave additive arrays for new additions only.
 
