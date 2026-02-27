@@ -310,10 +310,10 @@ async function performSearch(req) {
 
   schools = scored.sort((a, b) => b.score - a.score).map(s => s.school);
 
-  if (resolvedLat && resolvedLng) {
+  if (finalLat && finalLng) {
     schools = schools.map(school => {
       if (school.lat && school.lng) {
-        const distance = calculateDistance(resolvedLat, resolvedLng, school.lat, school.lng);
+        const distance = calculateDistance(finalLat, finalLng, school.lat, school.lng);
         return { ...school, distanceKm: distance };
       }
       return school;
