@@ -980,6 +980,7 @@ Deno.serve(async (req) => {
       const profileData = {
         location: conversationFamilyProfile?.locationArea || null,
         gradeLevel: conversationFamilyProfile?.childGrade || null,
+        budget: conversationFamilyProfile?.maxTuition || null,
         priorities: conversationFamilyProfile?.priorities || [],
         dealbreakers: conversationFamilyProfile?.dealbreakers || [],
         curriculum: conversationFamilyProfile?.curriculumPreference || [],
