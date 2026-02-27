@@ -255,6 +255,9 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
               priorities: { type: 'array', items: { type: 'string' } },
               interests: { type: 'array', items: { type: 'string' } },
               dealbreakers: { type: 'array', items: { type: 'string' } },
+              remove_priorities: { type: 'array', items: { type: 'string' } },
+              remove_interests: { type: 'array', items: { type: 'string' } },
+              remove_dealbreakers: { type: 'array', items: { type: 'string' } },
               intentSignal: { type: 'string', enum: ['continue', 'request-brief', 'request-results', 'edit-criteria', 'ask-about-school', 'back-to-results', 'restart', 'off-topic', 'confirm-brief'] },
               briefDelta: {
                 type: 'object',
