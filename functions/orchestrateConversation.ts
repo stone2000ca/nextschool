@@ -81,6 +81,7 @@ function resolveTransition(params) {
 
   const hasLocation = !!(profileData?.location);
   const hasGrade = profileData?.gradeLevel !== null && profileData?.gradeLevel !== undefined;
+  const hasBudget = !!(profileData?.budget);
   const prioritiesCount = profileData?.priorities?.length || 0;
   
   let sufficiency = 'THIN';
@@ -92,6 +93,14 @@ function resolveTransition(params) {
   let nextState = currentState;
   let briefStatus = null;
   let transitionReason = 'natural';
+
+  // Dynamic cap tracking: store turn when Tier 1 first became complete
+  const tier1Complete = hasGrade && hasLocation && hasBudget;
+  let tier1CompletedTurn = params.tier1CompletedTurn || null;
+  if (tier1Complete && tier1CompletedTurn === null) {
+    tier1CompletedTurn = turnCount;
+    flags.tier1CompletedTurn = tier1CompletedTurn;
+  }
 
   console.log('[RESOLVE] Input:', { currentState, intentSignal, sufficiency, turnCount, briefEditCount, selectedSchoolId });
   console.log('[DEBUG-BRIEF] briefStatus:', params.briefStatus, 'userMessage:', userMessage);
