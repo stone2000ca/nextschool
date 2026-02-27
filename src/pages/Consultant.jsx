@@ -1230,9 +1230,9 @@ Return empty array if user didn't provide any of these facts.`;
         </div>
       ) : (
         /* RESULTS PHASE - Split Layout */
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative transition-all duration-400 pb-0">
+        <div className="flex-1 flex flex-row overflow-hidden relative transition-all duration-400 pb-0">
         {/* Mobile tab toggle */}
-        <div className="lg:hidden flex border-b bg-white">
+        <div className="lg:hidden flex border-b bg-white" style={{ display: 'none' }}>
           <button
             onClick={() => setMobileView('chat')}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
