@@ -83,6 +83,7 @@ export default function Consultant() {
   const [briefExpanded, setBriefExpanded] = useState(false);
   const [lastTypingTime, setLastTypingTime] = useState(Date.now());
   const [familyProfile, setFamilyProfile] = useState(null);
+  const [showFamilyBrief, setShowFamilyBrief] = useState(false);
   
   // DEEPDIVE confirmation state
   const [confirmingSchool, setConfirmingSchool] = useState(null);
