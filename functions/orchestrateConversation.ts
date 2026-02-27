@@ -383,6 +383,16 @@ async function handleDiscovery(base44, message, conversationFamilyProfile, conte
   const hasBudget = !!conversationFamilyProfile?.maxTuition;
   const hasGender = !!conversationFamilyProfile?.gender;
 
+  // Build "already known" summary — always injected so LLM never re-asks collected fields
+  const knownFacts = [];
+  if (hasGrade) knownFacts.push(`grade ${conversationFamilyProfile.childGrade}`);
+  if (hasGender) knownFacts.push(`${conversationFamilyProfile.gender}`);
+  if (hasLocation) knownFacts.push(`location: ${conversationFamilyProfile.locationArea}`);
+  if (hasBudget) knownFacts.push(`budget: $${conversationFamilyProfile.maxTuition}`);
+  const knownSummary = knownFacts.length > 0
+    ? `\nALREADY COLLECTED (DO NOT ASK AGAIN): ${knownFacts.join(', ')}.`
+    : '';
+
   let tier1Guidance = '';
   if (!hasGrade && !hasGender) {
     tier1Guidance = "TIER 1 PRIORITY: We need to understand who this is for. Ask about their child in a way that naturally reveals both their grade/age AND whether this is for a son or daughter. Example: 'Tell me about your son or daughter - what grade are they heading into?' Keep it warm and conversational.";
