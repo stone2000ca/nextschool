@@ -1154,19 +1154,13 @@ Return empty array if user didn't provide any of these facts.`;
 
       {isIntakePhase ? (
         /* INTAKE PHASE - Centered Layout */
-        <div id="main-content" className="flex-1 flex flex-col bg-[#1E1E2E] overflow-hidden relative">
-          {/* Family Brief toggle button (intake phase) */}
-          {showBriefToggle && (
-            <button
-              onClick={() => setShowFamilyBrief(v => !v)}
-              className="absolute top-3 right-3 z-40 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
-              style={{ background: showFamilyBrief ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)' }}
-              aria-label="Toggle Family Brief"
-            >
-              <ClipboardList className="h-3.5 w-3.5" />
-              Brief
-            </button>
-          )}
+        <div id="main-content" className="flex-1 flex bg-[#1E1E2E] overflow-hidden">
+          {/* T046: Icon Rail — visible in all states */}
+          <IconRail
+            currentState={currentState}
+            showFamilyBrief={showFamilyBrief}
+            onToggleBrief={() => setShowFamilyBrief(v => !v)}
+          />
           <div className="flex-1 flex items-center justify-center p-2 sm:p-4">
             <div className="w-full max-w-2xl h-full max-h-[95vh] sm:max-h-[90vh] bg-[#2A2A3D] rounded-xl sm:rounded-2xl shadow-2xl flex flex-col transition-all duration-400">
               <ChatPanel
