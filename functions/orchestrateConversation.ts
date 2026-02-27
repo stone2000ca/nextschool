@@ -992,9 +992,8 @@ async function handleDeepDive(base44, selectedSchoolId, message, conversationFam
 
 CRITICAL STATE RULE — READ THIS FIRST:
 You are in DEEPDIVE state. If the parent updates any preference mid-conversation (e.g. "actually grade 6", "budget changed", "we want boarding"), you MUST:
-1. Acknowledge it in ONE short sentence only. Example: "Got it, noted grade 6."
-2. Tell them they can refresh their matches: "You can hit Refresh Matches whenever you're ready."
-3. STOP. Do not write anything else.
+1. Acknowledge it in ONE short sentence only. Example: "Got it, noted grade 6 — your matches will update shortly."
+2. STOP. Do not write anything else. NEVER mention a "Refresh Matches" button — it does not exist.
 
 ABSOLUTE PROHIBITIONS when a preference update is detected:
 - Do NOT generate a numbered list of their preferences (Student, Location, Budget, etc.)
