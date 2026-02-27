@@ -996,6 +996,15 @@ Deno.serve(async (req) => {
 
       // STEP 1: ENTITY EXTRACTION — runs for EVERY message including the first one
       // so that data from message 1 is available before the WELCOME handler returns
+
+      // T040b: Snapshot Tier 1 fields before extraction/merge
+      const tier1Before = {
+        childGrade: conversationFamilyProfile?.childGrade ?? null,
+        locationArea: conversationFamilyProfile?.locationArea ?? null,
+        maxTuition: conversationFamilyProfile?.maxTuition ?? null,
+        gender: conversationFamilyProfile?.gender ?? null
+      };
+
       try {
         console.log('[ORCH] Running extractEntities inline');
         extractionResult = await extractEntitiesLogic(base44, processMessage, conversationFamilyProfile, context, conversationHistory);
