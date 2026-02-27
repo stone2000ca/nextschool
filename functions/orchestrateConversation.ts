@@ -273,6 +273,29 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
       extractedGrade = gradeMap[gradeStr] !== undefined ? gradeMap[gradeStr] : parseInt(gradeStr);
     }
 
+    // BUG-ENT-004: Regex pre-pass for gender (son/boy/he/him → male; daughter/girl/she/her → female)
+    let extractedGender = null;
+    if (/\b(son|boy|he|him|his)\b/i.test(message)) extractedGender = 'male';
+    else if (/\b(daughter|girl|she|her|hers)\b/i.test(message)) extractedGender = 'female';
+
+    // BUG-ENT-004: Regex pre-pass for conversational budget formats: 25K, $25K, 25 thousand, around $25,000
+    let extractedBudget = null;
+    const budgetMatch = message.match(/(?:budget|tuition|afford|pay|spend)?[^.]*?\$?\s*(\d{1,3}(?:,\d{3})*|\d+)\s*(?:k|thousand|K)?/i);
+    if (budgetMatch) {
+      const raw = budgetMatch[0];
+      const numStr = budgetMatch[1].replace(/,/g, '');
+      const num = parseInt(numStr);
+      if (!isNaN(num)) {
+        // Detect "K" or "thousand" multiplier
+        const isThousands = /\d\s*[kK]/.test(raw) || /thousand/i.test(raw);
+        const amount = isThousands ? num * 1000 : num;
+        // Only accept as budget if amount is in a plausible tuition range (5k–500k)
+        if (amount >= 5000 && amount <= 500000) {
+          extractedBudget = amount;
+        }
+      }
+    }
+
     const systemPrompt = `Extract ONLY factual data explicitly stated. Return JSON with NULL for anything not mentioned.
 
 RESPONSE SCHEMA:
