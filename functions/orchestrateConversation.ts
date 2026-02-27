@@ -1206,7 +1206,7 @@ Deno.serve(async (req) => {
       }
 
       if (currentState === STATES.RESULTS) {
-        responseData = await handleResults(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, selectedSchoolId, conversationId, userId);
+        responseData = await handleResults(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, selectedSchoolId, conversationId, userId, userLocation);
         return Response.json(responseData);
       }
 
