@@ -1280,7 +1280,10 @@ Deno.serve(async (req) => {
       }
 
       if (currentState === STATES.RESULTS) {
-        responseData = await handleResults(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, selectedSchoolId, conversationId, userId, userLocation);
+        const autoRefresh = context.autoRefreshed === true;
+        responseData = await handleResults(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, selectedSchoolId, conversationId, userId, userLocation, autoRefresh, extractionResult?.extractedEntities || {});
+        // T047: include autoRefreshed in context so frontend knows matches were silently updated
+        responseData.conversationContext = { ...(responseData.conversationContext || {}), autoRefreshed: autoRefresh };
         return Response.json(responseData);
       }
 
