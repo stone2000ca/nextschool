@@ -1027,6 +1027,25 @@ Deno.serve(async (req) => {
       Object.assign(conversationFamilyProfile, extractionResult.updatedFamilyProfile);
       Object.assign(context, extractionResult.updatedContext);
 
+      // T040b: Compare Tier 1 fields after merge and set resultsStale flag
+      // A field "changed" = (old was null AND new is non-null) OR (old was non-null AND new is non-null AND different)
+      const tier1After = {
+        childGrade: conversationFamilyProfile?.childGrade ?? null,
+        locationArea: conversationFamilyProfile?.locationArea ?? null,
+        maxTuition: conversationFamilyProfile?.maxTuition ?? null,
+        gender: conversationFamilyProfile?.gender ?? null
+      };
+      const tier1Changed = Object.keys(tier1Before).some(k => {
+        const oldVal = tier1Before[k];
+        const newVal = tier1After[k];
+        if (newVal === null || newVal === undefined) return false; // new null never triggers stale
+        if (oldVal === null || oldVal === undefined) return true;  // null → real value = changed
+        return oldVal !== newVal;                                   // both non-null, different = changed
+      });
+      const inResultsOrDeepDive = context.state === STATES.RESULTS || context.state === STATES.DEEP_DIVE;
+      context.resultsStale = tier1Changed && inResultsOrDeepDive;
+      if (tier1Changed) console.log('[T040b] Tier 1 changed:', tier1Before, '->', tier1After, '| resultsStale:', context.resultsStale);
+
       // STEP 2: WELCOME HANDLER — now runs after extraction so conversationFamilyProfile
       // already contains any entities from the first message.
       // We return familyProfile in the payload so the frontend passes it back on turn 2,
