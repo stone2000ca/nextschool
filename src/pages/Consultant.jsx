@@ -1354,9 +1354,7 @@ Return empty array if user didn't provide any of these facts.`;
         </main>
 
         {/* RIGHT CHAT PANEL */}
-        <aside className={`w-full lg:w-[450px] bg-[#2A2A3D] border-l border-white/10 flex flex-col transition-all duration-400 relative ${
-          mobileView === 'chat' ? 'block' : 'hidden lg:flex'
-        }`}>
+        <aside className="w-[450px] bg-[#2A2A3D] border-l border-white/10 flex flex-col transition-all duration-400 relative flex-shrink-0">
           <ChatPanel
             ref={inputRef}
             variant="sidebar"
