@@ -289,7 +289,7 @@ export default function Consultant() {
           
           // Reverse geocode to get address
           try {
-            const apiKey = Deno?.env?.get('GOOGLE_MAPS_API_KEY') || 'AIzaSyCJNHWSvBWXVfYXYxlz4Kg4NzQ9gCfMzIw';
+            const apiKey = Deno?.env?.get('GOOGLE_MAPS_API_KEY');
             const response = await fetch(
               `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
             );
