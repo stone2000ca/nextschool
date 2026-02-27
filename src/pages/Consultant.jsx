@@ -1266,9 +1266,7 @@ Return empty array if user didn't provide any of these facts.`;
         />
 
         {/* CENTER CONTENT AREA */}
-        <main className={`flex-1 overflow-hidden bg-white transition-opacity duration-200 ${
-          mobileView === 'schools' ? 'block' : 'hidden lg:block'
-        }`} style={{ animationDelay: '100ms' }}>
+        <main className="flex-1 overflow-hidden bg-white transition-opacity duration-200" style={{ animationDelay: '100ms' }}>
           {/* T044: Results stale banner */}
           {resultsStale && !staleBannerDismissed && [STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState) && (
             <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[#1E1E2E] border-b border-white/10">
