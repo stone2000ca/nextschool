@@ -1359,6 +1359,51 @@ Return empty array if user didn't provide any of these facts.`;
 
         </main>
 
+        {/* T046: Sliding Brief/Shortlist panel */}
+        {activePanel === 'brief' && (
+          <div
+            className="flex-shrink-0 h-full overflow-hidden"
+            style={{
+              width: 320,
+              animation: 'slideInFromRight 200ms ease-out',
+            }}
+          >
+            <FamilyBrief
+              familyProfile={familyProfile}
+              consultantName={selectedConsultant}
+              onClose={() => setActivePanel(null)}
+            />
+          </div>
+        )}
+        {activePanel === 'shortlist' && (
+          <div
+            className="flex-shrink-0 h-full overflow-hidden"
+            style={{
+              width: 320,
+              animation: 'slideInFromRight 200ms ease-out',
+              background: '#1A1A2A',
+              borderLeft: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <ShortlistPanel
+              shortlist={shortlistData}
+              onClose={() => setActivePanel(null)}
+              onRemove={handleToggleShortlist}
+              onViewSchool={(id) => {
+                handleViewSchoolDetail(id);
+                setActivePanel(null);
+              }}
+            />
+          </div>
+        )}
+
+        {/* T046: Right-side Icon Rail */}
+        <IconRail
+          currentState={currentState}
+          activePanel={activePanel}
+          onTogglePanel={(panel) => setActivePanel(p => p === panel ? null : panel)}
+        />
+
         {/* RIGHT CHAT PANEL */}
         <aside className="w-[450px] bg-[#2A2A3D] border-l border-white/10 flex flex-col transition-all duration-400 relative flex-shrink-0">
           <ChatPanel
