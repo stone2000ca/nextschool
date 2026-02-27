@@ -685,6 +685,13 @@ export default function Consultant() {
         setFamilyProfile(response.data.familyProfile);
       }
 
+      // T044: Read resultsStale flag from backend context
+      const backendResultsStale = response.data.conversationContext?.resultsStale === true;
+      if (backendResultsStale) {
+        setResultsStale(true);
+        setStaleBannerDismissed(false); // re-show banner on new Tier 1 change
+      }
+
       // CRITICAL: Update briefStatus from response immediately
       const newBriefStatus = response.data.briefStatus || null;
       if (newBriefStatus) {
