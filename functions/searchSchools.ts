@@ -105,15 +105,20 @@ async function performSearch(req) {
     'greater montreal': { cities: ['Montreal', 'Laval', 'Longueuil'] }
   };
 
-  let resolvedLat = userLat;
-  let resolvedLng = userLng;
-  if (city && !userLat && !userLng) {
+  // T045: resolvedLat/resolvedLng from orchestrator take priority (stated city coords),
+  // then fall back to neighbourhood lookup, then userLat/userLng from browser geolocation
+  let finalLat = resolvedLat || userLat;
+  let finalLng = resolvedLng || userLng;
+  if (!finalLat && !finalLng && city) {
     const neighbourhood = neighbourhoodMap[city.toLowerCase().trim()];
     if (neighbourhood) {
-      resolvedLat = neighbourhood.lat;
-      resolvedLng = neighbourhood.lng;
+      finalLat = neighbourhood.lat;
+      finalLng = neighbourhood.lng;
       console.log(`Resolved neighbourhood "${city}" to coordinates:`, neighbourhood);
     }
+  }
+  if (resolvedLat && resolvedLng) {
+    console.log(`[T045] Using orchestrator-resolved coords: ${finalLat}, ${finalLng}`);
   }
 
   let schools = await base44.entities.School.filter({}, '-created_date', 1000);
