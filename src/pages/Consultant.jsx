@@ -1223,6 +1223,20 @@ Return empty array if user didn't provide any of these facts.`;
               />
             </div>
           </div>
+
+          {/* T046: Right rail + sliding panel — intake phase */}
+          {activePanel === 'brief' && (
+            <FamilyBrief
+              familyProfile={familyProfile}
+              consultantName={selectedConsultant}
+              onClose={() => setActivePanel(null)}
+            />
+          )}
+          <IconRail
+            currentState={currentState}
+            activePanel={activePanel}
+            onTogglePanel={(panel) => setActivePanel(p => p === panel ? null : panel)}
+          />
         </div>
       ) : (
         /* RESULTS PHASE - Split Layout */
