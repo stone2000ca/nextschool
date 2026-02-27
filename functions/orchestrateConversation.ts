@@ -324,9 +324,29 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     }
   }
   
+  const REMOVAL_MAP: Record<string, string> = {
+    remove_priorities: 'priorities',
+    remove_interests: 'interests',
+    remove_dealbreakers: 'dealbreakers'
+  };
+
   const updatedFamilyProfile = { ...conversationFamilyProfile };
   if (Object.keys(extractedData).length > 0) {
+    // Step 1: Process removals first so additions on the same turn don't resurrect removed items
+    for (const [removeKey, targetField] of Object.entries(REMOVAL_MAP)) {
+      const toRemove = extractedData[removeKey];
+      if (Array.isArray(toRemove) && toRemove.length > 0 && Array.isArray(updatedFamilyProfile[targetField])) {
+        const removeSet = new Set(toRemove.map((s: string) => s.toLowerCase()));
+        updatedFamilyProfile[targetField] = (updatedFamilyProfile[targetField] as string[]).filter(
+          (item: string) => !removeSet.has(item.toLowerCase())
+        );
+        console.log(`[REMOVE] ${targetField}: removed [${toRemove.join(', ')}]`);
+      }
+    }
+
+    // Step 2: Process additions (skip the remove_* keys themselves)
     for (const [key, value] of Object.entries(extractedData)) {
+      if (key in REMOVAL_MAP) continue; // skip remove_* keys — already handled above
       if (value !== null && value !== undefined) {
         const existing = updatedFamilyProfile[key];
         if (Array.isArray(value)) {
