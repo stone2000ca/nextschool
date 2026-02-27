@@ -2,6 +2,22 @@ import { X, User, MapPin, Target, AlertTriangle } from 'lucide-react';
 
 const EMPTY = 'Not yet discussed';
 
+// Known acronyms that should stay uppercase
+const ACRONYMS = new Set(['IB', 'AP', 'STEM', 'ADHD', 'ESL', 'ELL', 'SSAT', 'SAT', 'ACT', 'ISEE', 'UK', 'US', 'CA', 'JK', 'SK']);
+
+function toTitleCase(str) {
+  if (!str) return str;
+  return String(str)
+    .split(/(\s+|,\s*|-\s*)/)
+    .map(part => {
+      const trimmed = part.trim().replace(/,+$/, '');
+      if (!trimmed) return part;
+      if (ACRONYMS.has(trimmed.toUpperCase())) return part.replace(trimmed, trimmed.toUpperCase());
+      return part.replace(trimmed, trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase());
+    })
+    .join('');
+}
+
 function formatGrade(grade) {
   if (grade === null || grade === undefined) return null;
   if (grade === -2) return 'Pre-K';
@@ -14,17 +30,17 @@ function formatBudget(val) {
   if (!val) return null;
   if (val === 'unlimited') return 'Flexible / No limit';
   const num = typeof val === 'number' ? val : parseInt(val);
-  if (isNaN(num)) return String(val);
+  if (isNaN(num)) return toTitleCase(String(val));
   return `$${num.toLocaleString()}/yr`;
 }
 
 function Field({ label, value }) {
-  const isEmpty = !value;
+  const display = value ? toTitleCase(String(value)) : null;
   return (
     <div className="mb-2">
       <span className="text-[10px] uppercase tracking-widest text-white/40 block mb-0.5">{label}</span>
-      <span className={isEmpty ? 'text-white/30 text-sm italic' : 'text-white/85 text-sm'}>
-        {isEmpty ? EMPTY : value}
+      <span className={!display ? 'text-white/30 text-sm italic' : 'text-white/85 text-sm'}>
+        {display || EMPTY}
       </span>
     </div>
   );
@@ -39,7 +55,7 @@ function TagList({ label, items }) {
         <div className="flex flex-wrap gap-1">
           {items.map((item, i) => (
             <span key={i} className="text-xs bg-white/10 text-white/75 rounded px-2 py-0.5">
-              {item}
+              {toTitleCase(item)}
             </span>
           ))}
         </div>
@@ -53,7 +69,6 @@ function TagList({ label, items }) {
 export default function FamilyBrief({ familyProfile, onClose, consultantName }) {
   const fp = familyProfile || {};
 
-  // Learning Needs: consolidate three fields
   const learningParts = [
     ...(fp.academicStrengths || []),
     ...(fp.academicStruggles || []),
@@ -64,11 +79,11 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName }) 
 
   return (
     <div
-      className="fixed top-0 right-0 h-full z-50 flex flex-col shadow-2xl overflow-hidden"
-      style={{ width: '300px', background: '#1A1A2A', borderLeft: '1px solid rgba(255,255,255,0.08)' }}
+      className="h-full flex flex-col overflow-hidden"
+      style={{ width: 320, background: '#1A1A2A', borderLeft: '1px solid rgba(255,255,255,0.08)' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10"
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0"
            style={{ background: '#1E1E2E' }}>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full" style={{ background: accentColor }} />
@@ -86,7 +101,6 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName }) 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
 
-        {/* Section: Child Profile */}
         <section>
           <div className="flex items-center gap-1.5 mb-3">
             <User className="h-3.5 w-3.5" style={{ color: accentColor }} />
@@ -95,15 +109,11 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName }) 
           <Field label="Name" value={fp.childName} />
           <Field label="Grade" value={formatGrade(fp.childGrade)} />
           <Field label="Gender" value={fp.gender} />
-          <Field
-            label="Learning Needs"
-            value={learningParts.length > 0 ? learningParts.join(', ') : null}
-          />
+          <Field label="Learning Needs" value={learningParts.length > 0 ? learningParts.join(', ') : null} />
         </section>
 
         <div className="border-t border-white/8" />
 
-        {/* Section: Priorities & Values */}
         <section>
           <div className="flex items-center gap-1.5 mb-3">
             <Target className="h-3.5 w-3.5" style={{ color: accentColor }} />
@@ -115,7 +125,6 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName }) 
 
         <div className="border-t border-white/8" />
 
-        {/* Section: Logistics */}
         <section>
           <div className="flex items-center gap-1.5 mb-3">
             <MapPin className="h-3.5 w-3.5" style={{ color: accentColor }} />
@@ -127,7 +136,6 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName }) 
 
         <div className="border-t border-white/8" />
 
-        {/* Section: Dealbreakers */}
         <section>
           <div className="flex items-center gap-1.5 mb-3">
             <AlertTriangle className="h-3.5 w-3.5" style={{ color: accentColor }} />
@@ -138,8 +146,7 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName }) 
 
       </div>
 
-      {/* Footer note */}
-      <div className="px-4 py-3 border-t border-white/10 text-[10px] text-white/25 text-center">
+      <div className="px-4 py-3 border-t border-white/10 text-[10px] text-white/25 text-center flex-shrink-0">
         Updates live as you chat
       </div>
     </div>
