@@ -2,28 +2,23 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { STATES, BRIEF_STATUS } from './stateMachineConfig';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus, Heart, FileText, Sparkles, LogIn, Menu, ArrowLeft, Badge, Trash2, MapPin, Star } from "lucide-react";
-import MessageBubble from '@/components/chat/MessageBubble';
-import ChatInput from '@/components/chat/ChatInput';
-import TypingIndicator from '@/components/chat/TypingIndicator';
+import { ChevronLeft, ChevronRight, Plus, Heart, FileText, Sparkles, Trash2, Star } from "lucide-react";
 import WelcomeState from '@/components/schools/WelcomeState';
 import ConsultantSelection from '@/components/chat/ConsultantSelection';
 import SchoolGrid from '@/components/schools/SchoolGrid';
-import SchoolDetail from '@/components/schools/SchoolDetail';
 import SchoolDetailPanel from '@/components/schools/SchoolDetailPanel';
 import ShortlistPanel from '@/components/chat/ShortlistPanel';
 import NotesPanel from '@/components/chat/NotesPanel';
 import ComparisonView from '@/components/schools/ComparisonView';
-import ComparisonTable from '@/components/schools/ComparisonTable';
 import SortControl from '@/components/schools/SortControl';
 import LoginGateModal from '@/components/dialogs/LoginGateModal';
-import DeepDiveConfirmation from '@/components/dialogs/DeepDiveConfirmation';
 import FamilyBriefPanel from '@/components/chat/FamilyBriefPanel';
+import ChatPanel from '@/components/chat/ChatPanel';
 import ProgressBar from '@/components/ui/progress-bar';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import Navbar from '@/components/navigation/Navbar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSchoolFiltering } from '@/hooks/useSchoolFiltering';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Consultant() {
@@ -60,12 +55,7 @@ export default function Consultant() {
   const [shortlistData, setShortlistData] = useState([]);
   
   // Distance feature
-  const [showDistances, setShowDistances] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
-  
-  // Sorting
-  const [sortField, setSortField] = useState('relevance');
-  const [sortDirection, setSortDirection] = useState('asc');
   
   // Delete conversation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -145,6 +135,18 @@ export default function Consultant() {
                         currentView !== 'comparison' && 
                         currentView !== 'comparison-table' &&
                         ![STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState);
+
+  // School filtering/sorting via extracted hook
+  const {
+    filteredSchools,
+    sortField,
+    sortDirection,
+    setSortField,
+    setSortDirection,
+    showDistances,
+    applyDistances,
+    resetSort,
+  } = useSchoolFiltering(schools, currentConversation?.conversationContext);
 
   // TASK B: Save/restore scroll position during transition
   useEffect(() => {
@@ -751,8 +753,7 @@ export default function Consultant() {
 
         setSchools(finalOrderedSchools);
         // Reset sort to relevance when new schools arrive
-        setSortField('relevance');
-        setSortDirection('asc');
+        resetSort();
         // BUG-DD-001 FIX: View switching handled in state mapping logic above
       }
 
@@ -998,141 +999,14 @@ Return empty array if user didn't provide any of these facts.`;
     }
   };
 
-  const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
   const applyDistancesToSchools = (location) => {
-    const schoolsWithDistance = schools.map(school => {
-      if (school.lat && school.lng) {
-        const distance = calculateHaversineDistance(
-          location.lat,
-          location.lng,
-          school.lat,
-          school.lng
-        );
-        return { ...school, distanceKm: distance };
-      }
-      return school;
-    });
-    
-    const sorted = schoolsWithDistance.sort((a, b) => 
-      (a.distanceKm || Infinity) - (b.distanceKm || Infinity)
-    );
-    
+    const sorted = applyDistances(location, schools);
     setSchools(sorted);
-    setShowDistances(true);
   };
 
 
 
-  const getFilteredAndSortedSchools = () => {
-    try {
-      if (!schools || schools.length === 0) return schools || [];
-      
-      let filtered = [...schools];
-      
-      // SAFE FRONTEND FILTERING with try/catch and optional chaining
-      try {
-        const profile = currentConversation?.conversationContext?.familyProfile;
-        
-        // Grade Filter: Exclude schools where highestGrade < child's grade
-        const childGrade = profile?.childGrade;
-        if (childGrade !== null && childGrade !== undefined) {
-          const gradeNum = typeof childGrade === 'number' ? childGrade : parseInt(String(childGrade));
-          
-          if (!isNaN(gradeNum)) {
-            filtered = filtered.filter(school => {
-              if (!school?.highestGrade && school?.highestGrade !== 0) return true;
-              return school.highestGrade >= gradeNum;
-            });
-            console.log('[FILTER] Grade:', gradeNum, 'Schools:', filtered.length);
-          }
-        }
-        
-        // Budget Filter: Exclude schools where tuition > budget (keep N/A)
-        const maxBudget = profile?.maxTuition;
-        if (maxBudget && maxBudget !== 'unlimited') {
-          const budgetNum = typeof maxBudget === 'number' ? maxBudget : parseInt(String(maxBudget));
-          
-          if (!isNaN(budgetNum)) {
-            filtered = filtered.filter(school => {
-              const tuition = school?.tuition || school?.dayTuition;
-              if (!tuition) return true;
-              return tuition <= budgetNum;
-            });
-            console.log('[FILTER] Budget:', budgetNum, 'Schools:', filtered.length);
-          }
-        }
-        
-        // Religious Dealbreaker Filter: Exclude schools with religious affiliation or keywords in name
-        try {
-          const dealbreakers = profile?.dealbreakers || [];
-          const hasReligiousDealbreaker = Array.isArray(dealbreakers) && dealbreakers.some(d => typeof d === 'string' && d.toLowerCase().includes('religious'));
-          
-          if (hasReligiousDealbreaker) {
-            const beforeCount = filtered.length;
-            filtered = filtered.filter(school => {
-              const name = (school?.name || '').toLowerCase();
-              const affiliation = (school?.religiousAffiliation || '').toLowerCase();
-              
-              // Exclude if religiousAffiliation is set and not secular
-              if (affiliation && affiliation !== 'none' && affiliation !== 'secular' && affiliation !== 'non-denominational') {
-                console.log('[RELIGIOUS FILTER] Excluded by affiliation:', school.name, '(' + school.religiousAffiliation + ')');
-                return false;
-              }
-              
-              // Exclude by name keywords
-              const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'hebrew', 'saint', "st. michael's", "st michael's"];
-              if (religiousKeywords.some(kw => name.includes(kw))) {
-                console.log('[RELIGIOUS FILTER] Excluded by name keyword:', school.name);
-                return false;
-              }
-              
-              return true;
-            });
-            console.log('[FILTER] Religious dealbreaker: filtered from', beforeCount, 'to', filtered.length, 'schools');
-          }
-        } catch (religiousFilterError) {
-          console.error('[RELIGIOUS FILTER] Error, skipping religious filter:', religiousFilterError);
-        }
-      } catch (filterError) {
-        console.error('[FILTER] Error applying filters, showing all schools:', filterError);
-        filtered = [...schools];
-      }
-      
-      // Apply sorting
-      if (sortField === 'relevance') return filtered;
-      
-      const sorted = [...filtered];
-      switch (sortField) {
-        case 'name':
-          sorted.sort((a, b) => (a?.name || '').localeCompare(b?.name || ''));
-          break;
-        case 'distance':
-          sorted.sort((a, b) => (a?.distanceKm ?? Infinity) - (b?.distanceKm ?? Infinity));
-          break;
-        case 'tuition':
-          sorted.sort((a, b) => (a?.tuition ?? Infinity) - (b?.tuition ?? Infinity));
-          break;
-      }
 
-      if (sortDirection === 'desc') sorted.reverse();
-      return sorted;
-      
-    } catch (error) {
-      console.error('[FILTER] Critical error, returning all schools:', error);
-      return schools || [];
-    }
-  };
 
   // Detect if user is scrolled up, show new message indicator on new messages
   useEffect(() => {
@@ -1207,215 +1081,67 @@ Return empty array if user didn't provide any of these facts.`;
         <div id="main-content" className="flex-1 flex flex-col bg-[#1E1E2E] overflow-hidden relative">
           <div className="flex-1 flex items-center justify-center p-2 sm:p-4">
             <div className="w-full max-w-2xl h-full max-h-[95vh] sm:max-h-[90vh] bg-[#2A2A3D] rounded-xl sm:rounded-2xl shadow-2xl flex flex-col transition-all duration-400">
-              {/* Consultant Header */}
-              <div className="p-4 sm:p-6 border-b border-white/10 flex items-center justify-between bg-[#2A2A3D]">
-              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                <img 
-                  src={selectedConsultant === 'Jackie' 
-                    ? 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/150ea2350_Jackie.jpg'
-                    : 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/568e5604d_liam.png'
-                  }
-                  alt={selectedConsultant}
-                  className="h-8 sm:h-10 w-8 sm:w-10 rounded-full object-cover flex-shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <h2 className={`font-bold text-base sm:text-lg truncate ${
-                    selectedConsultant === 'Jackie' ? 'text-[#C27B8A]' : 'text-[#6B9DAD]'
-                  }`}>{selectedConsultant}</h2>
-                  {isTyping ? (
-                    <p className="text-xs text-[#E8E8ED]/60">{selectedConsultant} is thinking...</p>
-                  ) : (
-                    <p className="text-xs text-[#E8E8ED]/60">Education Consultant</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-              {/* Messages */}
-              <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#1E1E2E] pb-32">
-                {[STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(currentState) && messages.length <= 1 && (
-                <div className="text-center space-y-6 py-8">
-                  <div className="space-y-2">
-                    <h1 className="text-3xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
-                    <p className="text-[#E8E8ED]/70">Your personalized school search, simplified</p>
-                  </div>
-                  <div className="grid gap-4 max-w-md mx-auto text-left">
-                    <div className="flex items-start gap-3">
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
-                        selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
-                      }`}>1</div>
-                      <div>
-                        <h3 className="font-semibold text-[#E8E8ED]">Tell us about your child</h3>
-                        <p className="text-sm text-[#E8E8ED]/60">Grade, location, priorities</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
-                        selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
-                      }`}>2</div>
-                      <div>
-                        <h3 className="font-semibold text-[#E8E8ED]">Review your brief</h3>
-                        <p className="text-sm text-[#E8E8ED]/60">Confirm what matters most</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
-                        selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
-                      }`}>3</div>
-                      <div>
-                        <h3 className="font-semibold text-[#E8E8ED]">See your matches</h3>
-                        <p className="text-sm text-[#E8E8ED]/60">Personalized school recommendations</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {messages.map((msg, index) => (
-                <MessageBubble
-                  key={index}
-                  message={msg}
-                  isUser={msg.role === 'user'}
-                  schools={schools}
-                  consultantName={selectedConsultant}
-                  onViewSchoolProfile={async (slug) => {
-                    let school = schools?.find(s => 
-                      s.slug === slug || 
-                      s.name.toLowerCase() === slug.toLowerCase() ||
-                      s.name.toLowerCase().replace(/[^a-z0-9]/g, '-') === slug
-                    );
-                    
-                    if (school) {
-                      setSelectedSchool(school);
-                      setCurrentView('detail');
-                    } else {
-                      try {
-                        let results = await base44.entities.School.filter({ slug });
-                        if (!results || results.length === 0) {
-                          const possibleName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                          results = await base44.entities.School.filter({ name: { $regex: slug.replace(/-/g, ' '), $options: 'i' } });
-                        }
-                        if (results && results.length > 0) {
-                          setSelectedSchool(results[0]);
-                          setCurrentView('detail');
-                        }
-                      } catch (error) {
-                        console.error('Error finding school:', error);
-                      }
-                    }
-                  }}
-                />
-              ))}
-              {isTyping && <TypingIndicator message={loadingStages[loadingStage]} consultantName={selectedConsultant} />}
-
-              {/* Feedback Prompt */}
-              {feedbackPromptShown && schools.length > 0 && !isTyping && (
-                <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-4 flex items-start gap-3">
-                  <div className="flex-1">
-                    <p className="text-sm text-teal-900">
-                      I hope that was helpful! If you have a minute, I'd love to hear how this went for you.
-                    </p>
-                  </div>
-                  <Link to={createPageUrl('Feedback')} className="flex-shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-teal-600 text-teal-600 hover:bg-teal-50"
-                    >
-                      Share Feedback
-                    </Button>
-                  </Link>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-              </div>
-
-                {/* Suggested Response Chips */}
-              {(() => {
-              const lastAIMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
-              const isBriefMessage = lastAIMessage?.content && (
-                lastAIMessage.content.includes("Does that capture") ||
-                lastAIMessage.content.includes("Anything I'm missing") ||
-                lastAIMessage.content.includes("Here's what I'm taking away") ||
-                lastAIMessage.content.includes("needs adjustment")
-              );
-              
-              // FIX 17: Show chips when in BRIEF state with pending_review/editing status OR initial greeting
-              const shouldShowChips = showResponseChips || 
-                                      (currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus)) ||
-                                      onboardingPhase === 'confirm_brief' ||
-                                      isBriefMessage;
-              
-                return shouldShowChips;
-              })() && (
-                <div className="p-3 sm:p-4 border-t border-white/10 bg-[#2A2A3D] flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
-                {(() => {
-                  const isBriefStatus = currentState === STATES.BRIEF && 
-                                        [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus);
-                  return showResponseChips && !isBriefStatus;
-                })() && (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handleSendMessage("My child needs a new school")}
-                      disabled={isTyping}
-                      className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
-                    >
-                      My child needs a new school
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handleSendMessage("I'm comparing a few schools already")}
-                      disabled={isTyping}
-                      className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
-                    >
-                      I'm comparing a few schools already
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handleSendMessage("I'm not sure where to start")}
-                      disabled={isTyping}
-                      className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
-                    >
-                      I'm not sure where to start
-                    </Button>
-                  </>
-                )}
-                {currentState === STATES.BRIEF && 
-                 [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus) && (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handleSendMessage("__CONFIRM_BRIEF__", null, "That looks right - show me schools")}
-                      disabled={isTyping}
-                      className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
-                        selectedConsultant === 'Jackie' 
-                          ? 'bg-[#C27B8A]/20 border-[#C27B8A] text-[#C27B8A] hover:bg-[#C27B8A]/30' 
-                          : 'bg-[#6B9DAD]/20 border-[#6B9DAD] text-[#6B9DAD] hover:bg-[#6B9DAD]/30'
-                      }`}
-                    >
-                      That looks right - show me schools
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handleSendMessage("I would like to adjust")}
-                      disabled={isTyping}
-                      className="text-sm px-4 py-2 rounded-full bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
-                    >
-                      I would like to adjust
-                    </Button>
-                  </>
-                )}
-                </div>
-                )}
-
-                {/* Chat Input - Fixed at bottom of modal */}
-                <ChatInput
+              <ChatPanel
                 ref={inputRef}
-                onSend={handleSendMessage}
-                disabled={isTyping}
+                variant="intake"
+                messages={messages}
+                schools={schools}
+                selectedConsultant={selectedConsultant}
+                currentState={currentState}
+                briefStatus={briefStatus}
+                isTyping={isTyping}
                 tokenBalance={tokenBalance}
                 isPremium={isPremium}
+                loadingStage={loadingStage}
+                loadingStages={loadingStages}
+                feedbackPromptShown={feedbackPromptShown}
+                showResponseChips={showResponseChips}
+                onSendMessage={handleSendMessage}
+                onViewSchoolDetail={(school) => {
+                  setSelectedSchool(school);
+                  setCurrentView('detail');
+                }}
+                onConfirmDeepDive={handleConfirmDeepDive}
+                onCancelDeepDive={handleCancelDeepDive}
+                heroContent={
+                  [STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(currentState) && messages.length <= 1 ? (
+                    <div className="text-center space-y-6 py-8">
+                      <div className="space-y-2">
+                        <h1 className="text-3xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
+                        <p className="text-[#E8E8ED]/70">Your personalized school search, simplified</p>
+                      </div>
+                      <div className="grid gap-4 max-w-md mx-auto text-left">
+                        <div className="flex items-start gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                            selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
+                          }`}>1</div>
+                          <div>
+                            <h3 className="font-semibold text-[#E8E8ED]">Tell us about your child</h3>
+                            <p className="text-sm text-[#E8E8ED]/60">Grade, location, priorities</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                            selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
+                          }`}>2</div>
+                          <div>
+                            <h3 className="font-semibold text-[#E8E8ED]">Review your brief</h3>
+                            <p className="text-sm text-[#E8E8ED]/60">Confirm what matters most</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                            selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
+                          }`}>3</div>
+                          <div>
+                            <h3 className="font-semibold text-[#E8E8ED]">See your matches</h3>
+                            <p className="text-sm text-[#E8E8ED]/60">Personalized school recommendations</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null
+                }
               />
             </div>
           </div>
@@ -1580,7 +1306,7 @@ Return empty array if user didn't provide any of these facts.`;
             <div className="h-full flex flex-col animate-fadeIn">
               <div className="p-3 sm:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <h2 className="text-base sm:text-lg font-semibold text-slate-900">
-                  Results ({getFilteredAndSortedSchools().length})
+                  Results ({filteredSchools.length})
                 </h2>
                 <SortControl
                   sortField={sortField}
@@ -1591,7 +1317,7 @@ Return empty array if user didn't provide any of these facts.`;
               </div>
               <div className="flex-1 overflow-auto p-3 sm:p-4">
                 <SchoolGrid
-                  schools={getFilteredAndSortedSchools()}
+                  schools={filteredSchools}
                   onViewDetails={handleViewSchoolDetail}
                   onToggleShortlist={handleToggleShortlist}
                   shortlistedIds={user?.shortlist || []}
@@ -1618,182 +1344,33 @@ Return empty array if user didn't provide any of these facts.`;
         <aside className={`w-full lg:w-[450px] bg-[#2A2A3D] border-l border-white/10 flex flex-col transition-all duration-400 ${
           mobileView === 'chat' ? 'block' : 'hidden lg:flex'
         }`}>
-          {/* Chat Header */}
-          <div className="p-3 sm:p-4 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-               <img 
-                  src={selectedConsultant === 'Jackie' 
-                    ? 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/150ea2350_Jackie.jpg'
-                    : 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/568e5604d_liam.png'
-                  }
-                  alt={selectedConsultant}
-                  className="h-8 sm:h-10 w-8 sm:w-10 rounded-full object-cover flex-shrink-0"
-               />
-              <div className="min-w-0 flex-1">
-                <span className={`font-semibold block text-sm sm:text-base truncate ${
-                  selectedConsultant === 'Jackie' ? 'text-[#C27B8A]' : 'text-[#6B9DAD]'
-                }`}>{selectedConsultant}</span>
-                {isTyping && (
-                  <span className="text-xs text-[#E8E8ED]/60">{selectedConsultant} is thinking...</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Messages - Dynamic height with scroll */}
-          <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#1E1E2E] min-h-0">
-            {/* Feedback Prompt in Sidebar */}
-            {feedbackPromptShown && schools.length > 0 && !isTyping && (
-              <div className="bg-teal-900/30 border border-teal-500/30 rounded-lg p-3 mb-2">
-                <p className="text-sm text-[#E8E8ED] mb-2">
-                  I hope that was helpful! If you have a minute, I'd love to hear how this went for you.
-                </p>
-                <Link to={createPageUrl('Feedback')} className="block">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full border-teal-500 text-teal-400 hover:bg-teal-900/50"
-                  >
-                    Share Feedback
-                  </Button>
-                </Link>
-              </div>
-            )}
-
-            {messages.map((msg, index) => (
-              <MessageBubble
-                key={index}
-                message={msg}
-                isUser={msg.role === 'user'}
-                schools={schools}
-                consultantName={selectedConsultant}
-                onViewSchoolProfile={async (slug) => {
-                   let school = schools?.find(s => 
-                     s.slug === slug || 
-                     s.name.toLowerCase() === slug.toLowerCase() ||
-                     s.name.toLowerCase().replace(/[^a-z0-9]/g, '-') === slug
-                   );
-                   if (school) {
-                     setSelectedSchool(school);
-                     setCurrentView('detail');
-                   } else {
-                     try {
-                       let results = await base44.entities.School.filter({ slug });
-                       if (!results || results.length === 0) {
-                         results = await base44.entities.School.filter({ name: { $regex: slug.replace(/-/g, ' '), $options: 'i' } });
-                       }
-                       if (results && results.length > 0) {
-                         setSelectedSchool(results[0]);
-                         setCurrentView('detail');
-                       }
-                     } catch (error) {
-                       console.error('Error finding school:', error);
-                     }
-                   }
-                 }}
-              />
-            ))}
-            {confirmingSchool && (
-              <DeepDiveConfirmation 
-                school={confirmingSchool}
-                childName={familyProfile?.childName}
-                consultantName={selectedConsultant}
-                onAnalyze={() => handleConfirmDeepDive(confirmingSchool)}
-                onCancel={handleCancelDeepDive}
-                isLoading={isTyping}
-              />
-            )}
-            {isTyping && <TypingIndicator message={loadingStages[loadingStage]} consultantName={selectedConsultant} />}
-            <div ref={messagesEndRef} />
-
-            {/* New Message Indicator */}
-            {showNewMessageIndicator && !isTyping && (
-              <div className="flex justify-center sticky bottom-0 z-30 pt-2">
-                <Button
-                  onClick={handleScrollDownClick}
-                  className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-full shadow-lg"
-                >
-                  New message ↓
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Suggested Response Chips - After greeting, for confirm_brief, BRIEF state, or Brief message detected */}
-          {(() => {
-            const shouldShowChips = showResponseChips || 
-                                    (currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus));
-            return shouldShowChips;
-          })() && (
-            <div className="p-3 sm:p-4 border-t border-white/10 bg-[#2A2A3D] flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
-              {(() => {
-                const isBriefState = currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus);
-                return showResponseChips && !isBriefState;
-              })() && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleSendMessage("My child needs a new school")}
-                    disabled={isTyping}
-                    className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
-                  >
-                    My child needs a new school
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleSendMessage("I'm comparing a few schools already")}
-                    disabled={isTyping}
-                    className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
-                  >
-                    I'm comparing a few schools already
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleSendMessage("I'm not sure where to start")}
-                    disabled={isTyping}
-                    className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
-                  >
-                    I'm not sure where to start
-                  </Button>
-                </>
-              )}
-              {currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus) && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleSendMessage("__CONFIRM_BRIEF__", null, "That's right, let's see the schools")}
-                    disabled={isTyping}
-                    className={`text-sm px-4 py-2 rounded-full border-2 font-medium ${
-                      selectedConsultant === 'Jackie' 
-                        ? 'bg-[#C27B8A]/20 border-[#C27B8A] text-[#C27B8A] hover:bg-[#C27B8A]/30' 
-                        : 'bg-[#6B9DAD]/20 border-[#6B9DAD] text-[#6B9DAD] hover:bg-[#6B9DAD]/30'
-                    }`}
-                  >
-                    That's right, let's see the schools
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleSendMessage("I'd like to adjust something")}
-                    disabled={isTyping}
-                    className="text-sm px-4 py-2 rounded-full bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
-                  >
-                    I'd like to adjust something
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Chat Input - Sticky at bottom */}
-          <div className="sticky bottom-0 z-40 bg-[#2A2A3D] border-t border-white/10">
-            <ChatInput
-              ref={inputRef}
-              onSend={handleSendMessage}
-              disabled={isTyping}
-              tokenBalance={tokenBalance}
-              isPremium={isPremium}
-            />
-          </div>
+          <ChatPanel
+            ref={inputRef}
+            variant="sidebar"
+            messages={messages}
+            schools={schools}
+            selectedConsultant={selectedConsultant}
+            currentState={currentState}
+            briefStatus={briefStatus}
+            isTyping={isTyping}
+            tokenBalance={tokenBalance}
+            isPremium={isPremium}
+            loadingStage={loadingStage}
+            loadingStages={loadingStages}
+            feedbackPromptShown={feedbackPromptShown}
+            showResponseChips={showResponseChips}
+            confirmingSchool={confirmingSchool}
+            familyProfile={familyProfile}
+            showNewMessageIndicator={showNewMessageIndicator}
+            onScrollDownClick={handleScrollDownClick}
+            onSendMessage={handleSendMessage}
+            onViewSchoolDetail={(school) => {
+              setSelectedSchool(school);
+              setCurrentView('detail');
+            }}
+            onConfirmDeepDive={handleConfirmDeepDive}
+            onCancelDeepDive={handleCancelDeepDive}
+          />
           </aside>
         </div>
       )}
