@@ -940,6 +940,22 @@ Deno.serve(async (req) => {
       let intentSignal = 'continue';
       let briefDelta = { additions: [], updates: [], removals: [] };
 
+      // STEP 0b: Seed conversationFamilyProfile from context.extractedEntities if DB profile is empty
+      // This handles the case where turn 1 entities were extracted but DB persist was skipped
+      // (e.g. no conversationId on turn 1). On turn 2 the frontend sends extractedEntities back
+      // inside conversationContext, so we can use them to pre-populate the profile.
+      if (conversationFamilyProfile && context.extractedEntities) {
+        for (const [key, value] of Object.entries(context.extractedEntities)) {
+          if (value !== null && value !== undefined && !['briefDelta', 'intentSignal'].includes(key)) {
+            const existing = conversationFamilyProfile[key];
+            const isEmpty = existing === null || existing === undefined || (Array.isArray(existing) && existing.length === 0);
+            if (isEmpty) {
+              conversationFamilyProfile[key] = value;
+            }
+          }
+        }
+      }
+
       // STEP 1: ENTITY EXTRACTION — runs for EVERY message including the first one
       // so that data from message 1 is available before the WELCOME handler returns
       try {
