@@ -303,7 +303,7 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
         cleaned[key] = value;
       }
     }
-    
+
     extractedData = cleaned;
     console.log('[EXTRACT] took', Date.now() - t1, 'ms');
   } catch (e) {
