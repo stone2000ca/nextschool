@@ -1358,17 +1358,6 @@ Return empty array if user didn't provide any of these facts.`;
         <aside className={`w-full lg:w-[450px] bg-[#2A2A3D] border-l border-white/10 flex flex-col transition-all duration-400 relative ${
           mobileView === 'chat' ? 'block' : 'hidden lg:flex'
         }`}>
-          {showBriefToggle && (
-            <button
-              onClick={() => setShowFamilyBrief(v => !v)}
-              className="absolute top-3 right-3 z-40 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
-              style={{ background: showFamilyBrief ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)' }}
-              aria-label="Toggle Family Brief"
-            >
-              <ClipboardList className="h-3.5 w-3.5" />
-              Brief
-            </button>
-          )}
           <ChatPanel
             ref={inputRef}
             variant="sidebar"
