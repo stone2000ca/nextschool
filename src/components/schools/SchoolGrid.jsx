@@ -3,10 +3,15 @@ import SchoolCard from './SchoolCard';
 
 export default function SchoolGrid({ schools, onViewDetails, onToggleShortlist, shortlistedIds = [] }) {
   const [displayedCount, setDisplayedCount] = useState(20);
+  const [visible, setVisible] = useState(false);
   const scrollContainerRef = useRef(null);
 
   useEffect(() => {
     setDisplayedCount(20); // Reset when schools change
+    // Trigger fade-in animation on mount / key change
+    setVisible(false);
+    const t = setTimeout(() => setVisible(true), 30);
+    return () => clearTimeout(t);
   }, [schools]);
 
   useEffect(() => {
