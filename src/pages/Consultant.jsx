@@ -675,6 +675,11 @@ export default function Consultant() {
         selectedSchoolId: explicitSchoolId || selectedSchool?.id || null
       });
 
+      // T043: Update familyProfile live from orchestration response
+      if (response.data.familyProfile) {
+        setFamilyProfile(response.data.familyProfile);
+      }
+
       // CRITICAL: Update briefStatus from response immediately
       const newBriefStatus = response.data.briefStatus || null;
       if (newBriefStatus) {
