@@ -399,12 +399,14 @@ async function handleDiscovery(base44, message, conversationFamilyProfile, conte
     ? `[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
 ${tier1Guidance}
 Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
-CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.${briefOfferInstruction}
+CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.
+CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.${briefOfferInstruction}
 YOU ARE JACKIE - Senior education consultant, 10+ years placing families in private schools. You're warm but efficient.`
     : `[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
 ${tier1Guidance}
 Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
-CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.${briefOfferInstruction}
+CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.
+CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.${briefOfferInstruction}
 YOU ARE LIAM - Senior education strategist, 10+ years in private school placement. You're direct and data-driven.`;
 
   const discoveryUserPrompt = `Recent chat:\n${conversationSummary}\n\nParent: "${message}"\n\nRespond as ${consultantName}. ONE question max. No filler.`;
@@ -933,27 +935,13 @@ Deno.serve(async (req) => {
         };
       }
       
-      // STEP 1: WELCOME HANDLER
       const isFirstMessage = conversationHistory?.length === 0;
       let extractionResult = null;
       let intentSignal = 'continue';
       let briefDelta = { additions: [], updates: [], removals: [] };
 
-      if (isFirstMessage && !context.state) {
-        console.log('[ORCH] First message, return WELCOME greeting');
-        const welcomeMessage = consultantName === 'Jackie'
-          ? "Hey there — I'm Jackie. I've worked with hundreds of families going through exactly this. Tell me a bit about your child and what's prompting the search."
-          : "Hi, I'm Liam. I'll help you cut through the noise and find schools that actually fit. What's driving the search?";
-        return Response.json({
-          message: welcomeMessage,
-          state: STATES.WELCOME,
-          briefStatus: null,
-          conversationContext: context,
-          schools: []
-        });
-      }
-
-      // STEP 2: ENTITY EXTRACTION (inlined, no function invoke)
+      // STEP 1: ENTITY EXTRACTION — runs for EVERY message including the first one
+      // so that data from message 1 is available before the WELCOME handler returns
       try {
         console.log('[ORCH] Running extractEntities inline');
         extractionResult = await extractEntitiesLogic(base44, processMessage, conversationFamilyProfile, context, conversationHistory);
@@ -972,9 +960,25 @@ Deno.serve(async (req) => {
         briefDelta = { additions: [], updates: [], removals: [] };
       }
       
-      // Apply results
+      // Apply extraction results before any state handler runs
       Object.assign(conversationFamilyProfile, extractionResult.updatedFamilyProfile);
       Object.assign(context, extractionResult.updatedContext);
+
+      // STEP 2: WELCOME HANDLER — now runs after extraction so conversationFamilyProfile
+      // already contains any entities from the first message
+      if (isFirstMessage && !context.state) {
+        console.log('[ORCH] First message, return WELCOME greeting');
+        const welcomeMessage = consultantName === 'Jackie'
+          ? "Hey there — I'm Jackie. I've worked with hundreds of families going through exactly this. Tell me a bit about your child and what's prompting the search."
+          : "Hi, I'm Liam. I'll help you cut through the noise and find schools that actually fit. What's driving the search?";
+        return Response.json({
+          message: welcomeMessage,
+          state: STATES.WELCOME,
+          briefStatus: null,
+          conversationContext: context,
+          schools: []
+        });
+      }
       
       // STEP 3: BUILD PROFILE DATA
       const profileData = {
