@@ -66,6 +66,8 @@ export default function SchoolGrid({
           shortlistedIds={shortlistedIds}
           familyProfile={familyProfile}
           accentColor={accentColor}
+          priorityOverrides={priorityOverrides}
+          onPriorityToggle={onPriorityToggle}
         />
         <TierSection
           title="Also Worth Exploring"
@@ -76,6 +78,8 @@ export default function SchoolGrid({
           shortlistedIds={shortlistedIds}
           familyProfile={familyProfile}
           accentColor={accentColor}
+          priorityOverrides={priorityOverrides}
+          onPriorityToggle={onPriorityToggle}
         />
         {tier3Count > 0 && (
           <div>
@@ -99,6 +103,8 @@ export default function SchoolGrid({
                 shortlistedIds={shortlistedIds}
                 familyProfile={familyProfile}
                 accentColor={accentColor}
+                priorityOverrides={priorityOverrides}
+                onPriorityToggle={onPriorityToggle}
               />
             )}
           </div>
