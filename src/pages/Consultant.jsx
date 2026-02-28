@@ -1487,7 +1487,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
                 onConfirmDeepDive={handleConfirmDeepDive}
                 onCancelDeepDive={handleCancelDeepDive}
                 heroContent={
-                  [STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(currentState) && messages.length <= 1 ? (
+                  currentState === STATES.WELCOME ? (
                     <div className="text-center space-y-6 py-8">
                       <div className="space-y-2">
                         <h1 className="text-3xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
