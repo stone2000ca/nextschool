@@ -1118,7 +1118,7 @@ Generate the DEEPDIVE card for this family-school match.`;
     message: sanitizedMessage,
     state: currentState,
     briefStatus: briefStatus,
-    schools: selectedSchool ? [selectedSchool] : [],
+    schools: currentSchools || [],
     familyProfile: conversationFamilyProfile,
     conversationContext: context
   };

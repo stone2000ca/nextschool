@@ -731,17 +731,24 @@ export default function Consultant() {
     }
   };
 
-  const handleBackToResults = () => {
+  const handleBackToResults = async () => {
     setSelectedSchool(null);
     setCurrentView('schools');
     if (currentConversation) {
+      const updatedContext = {
+        ...currentConversation.conversationContext,
+        state: STATES.RESULTS,
+        selectedSchoolId: null,
+      };
       setCurrentConversation(prevConvo => ({
         ...prevConvo,
-        conversationContext: {
-          ...prevConvo.conversationContext,
-          state: STATES.RESULTS,
-        },
+        conversationContext: updatedContext,
       }));
+      if (currentConversation.id) {
+        await base44.entities.ChatHistory.update(currentConversation.id, {
+          conversationContext: updatedContext,
+        });
+      }
     }
   };
 
