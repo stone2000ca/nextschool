@@ -66,9 +66,9 @@ import SchoolAdmin from './pages/SchoolAdmin';
 import SchoolAdminDashboard from './pages/SchoolAdminDashboard';
 import SchoolDirectory from './pages/SchoolDirectory';
 import SchoolProfile from './pages/SchoolProfile';
+import SharedShortlistView from './pages/SharedShortlistView';
 import Terms from './pages/Terms';
 import stateMachineConfig from './pages/stateMachineConfig';
-import SharedShortlistView from './pages/SharedShortlistView';
 import __Layout from './Layout.jsx';
 
 
@@ -92,9 +92,9 @@ export const PAGES = {
     "SchoolAdminDashboard": SchoolAdminDashboard,
     "SchoolDirectory": SchoolDirectory,
     "SchoolProfile": SchoolProfile,
+    "SharedShortlistView": SharedShortlistView,
     "Terms": Terms,
     "stateMachineConfig": stateMachineConfig,
-    "SharedShortlistView": SharedShortlistView,
 }
 
 export const pagesConfig = {
