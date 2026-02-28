@@ -158,6 +158,87 @@ export function buildPriorityChecks(school, familyProfile) {
 }
 
 // =============================================================================
+// T-RES-008: Adjacent Attributes ("Also Worth Knowing")
+// =============================================================================
+function buildAlsoWorthKnowing(school, familyProfile) {
+  const priorityIds = new Set();
+  if (familyProfile) {
+    if (familyProfile.childGrade != null) priorityIds.add('grade');
+    if (familyProfile.maxTuition) priorityIds.add('budget');
+    if (familyProfile.gender) priorityIds.add('gender');
+    if (familyProfile.curriculumPreference?.length > 0) priorityIds.add('curriculum');
+    if (familyProfile.boardingPreference && familyProfile.boardingPreference !== 'day_only') priorityIds.add('boarding');
+    if (familyProfile.religiousPreference) priorityIds.add('religious');
+    if (familyProfile.priorities?.some(p => /class size/i.test(p))) priorityIds.add('classSize');
+    if (familyProfile.learningDifferences?.length > 0) priorityIds.add('learningSupport');
+  }
+
+  const items = [];
+
+  // University placements
+  if (!priorityIds.has('university') && school.universityPlacements) {
+    try {
+      const parsed = typeof school.universityPlacements === 'string' ? JSON.parse(school.universityPlacements) : school.universityPlacements;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        items.push(`Graduates placed at ${parsed.slice(0, 2).join(', ')}`);
+      }
+    } catch (e) {
+      if (typeof school.universityPlacements === 'string' && school.universityPlacements.length > 5) {
+        items.push(`University placements: ${school.universityPlacements.substring(0, 60)}`);
+      }
+    }
+  }
+
+  // Arts programs
+  if (school.artsPrograms?.length > 0 && !familyProfile?.interests?.some(i => /art/i.test(i))) {
+    items.push(`Arts: ${school.artsPrograms.slice(0, 2).join(', ')}`);
+  }
+
+  // Sports programs
+  if (school.sportsPrograms?.length > 0 && !familyProfile?.interests?.some(i => /sport/i.test(i))) {
+    items.push(`Sports: ${school.sportsPrograms.slice(0, 2).join(', ')}`);
+  }
+
+  // Clubs
+  if (school.clubs?.length > 0 && items.length < 2) {
+    items.push(`Clubs: ${school.clubs.slice(0, 2).join(', ')}`);
+  }
+
+  // Financial aid
+  if (school.financialAidAvailable) {
+    items.push('Financial aid available');
+  }
+
+  // Scholarships
+  if (!school.financialAidAvailable && school.scholarshipsJson) {
+    try {
+      const scholarships = typeof school.scholarshipsJson === 'string' ? JSON.parse(school.scholarshipsJson) : school.scholarshipsJson;
+      if (Array.isArray(scholarships) && scholarships.length > 0) {
+        items.push(`Scholarships available`);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  // Facilities (only notable ones)
+  if (school.facilities?.length > 0 && items.length < 3) {
+    const notable = school.facilities.filter(f => /pool|theatre|theater|studio|lab|arena|gym|field/i.test(f));
+    if (notable.length > 0) items.push(`Facilities: ${notable.slice(0, 2).join(', ')}`);
+  }
+
+  // Accreditations
+  if (school.accreditations?.length > 0 && items.length < 3) {
+    items.push(`Accredited: ${school.accreditations.slice(0, 1).join(', ')}`);
+  }
+
+  // Transportation
+  if (school.transportationOptions && items.length < 3) {
+    items.push(school.transportationOptions.substring(0, 60));
+  }
+
+  return items.slice(0, 3);
+}
+
+// =============================================================================
 // CheckmarkIcon helper
 // =============================================================================
 function CheckIcon({ status }) {
