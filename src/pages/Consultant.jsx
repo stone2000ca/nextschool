@@ -13,6 +13,7 @@ import ShortlistPanel from '@/components/chat/ShortlistPanel';
 import NotesPanel from '@/components/chat/NotesPanel';
 import ComparisonView from '@/components/schools/ComparisonView';
 import SortControl from '@/components/schools/SortControl';
+import { getTuitionBand, buildPriorityChecks } from '@/components/schools/SchoolCard';
 import LoginGateModal from '@/components/dialogs/LoginGateModal';
 import FamilyBriefPanel from '@/components/chat/FamilyBriefPanel';
 import ChatPanel from '@/components/chat/ChatPanel';
