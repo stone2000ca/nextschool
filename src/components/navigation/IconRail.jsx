@@ -74,15 +74,6 @@ export default function IconRail({ currentState, activePanel, onTogglePanel }) {
         </div>
       </div>
 
-      {/* --- Chat --- */}
-      <RailIcon
-        icon={MessageSquare}
-        label="Chat"
-        enabled={true}
-        active={chatActive}
-        onClick={() => onTogglePanel('chat')}
-      />
-
       {/* --- Shortlist --- */}
       <RailIcon
         icon={Bookmark}

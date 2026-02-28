@@ -1630,6 +1630,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
               shortlist={shortlistData}
               onClose={() => setActivePanel(null)}
               onRemove={handleToggleShortlist}
+              familyProfile={familyProfile}
               onViewSchool={(id) => {
                 handleViewSchoolDetail(id);
                 setActivePanel(null);
