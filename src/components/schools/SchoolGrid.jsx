@@ -43,27 +43,64 @@ function TierSection({ title, subtitle, schools, onViewDetails, onToggleShortlis
 // =============================================================================
 function PinnedShortlistSection({ shortlistedSchools, onViewDetails, onToggleShortlist, familyProfile, accentColor, priorityOverrides, onPriorityToggle, onNarrateComparison }) {
   const [showComparison, setShowComparison] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = async () => {
+    setShareLoading(true);
+    try {
+      const schoolIds = shortlistedSchools.map(s => s.id);
+      const familyProfileId = familyProfile?.id || null;
+      const result = await base44.functions.invoke('generateSharedShortlistLink', { familyProfileId, schoolIds });
+      const shareUrl = result.data?.shareUrl;
+      if (shareUrl) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 3000);
+      }
+    } catch (e) {
+      console.error('Share failed:', e);
+    } finally {
+      setShareLoading(false);
+    }
+  };
 
   if (!shortlistedSchools || shortlistedSchools.length === 0) return null;
   const canCompare = shortlistedSchools.length >= 2;
 
   return (
     <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         <Pin className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
         <h3 className="text-sm font-semibold text-amber-900">Your Shortlist</h3>
         <span className="ml-1 text-xs font-medium bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
           {shortlistedSchools.length} {shortlistedSchools.length === 1 ? 'school' : 'schools'}
         </span>
-        {canCompare && (
+        <div className="ml-auto flex items-center gap-2">
+          {/* Share with Partner button */}
           <button
-            onClick={() => setShowComparison(true)}
-            className="ml-auto flex items-center gap-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-full transition-colors"
+            onClick={handleShare}
+            disabled={shareLoading}
+            className="flex items-center gap-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
           >
-            <GitCompareArrows className="h-3.5 w-3.5" />
-            Compare These
+            {shareCopied ? (
+              <><Check className="h-3.5 w-3.5" /> Link copied!</>
+            ) : shareLoading ? (
+              <><div className="h-3.5 w-3.5 border border-white/40 border-t-white rounded-full animate-spin" /> Sharing…</>
+            ) : (
+              <><Share2 className="h-3.5 w-3.5" /> Share with Partner</>
+            )}
           </button>
-        )}
+          {canCompare && (
+            <button
+              onClick={() => setShowComparison(true)}
+              className="flex items-center gap-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-full transition-colors"
+            >
+              <GitCompareArrows className="h-3.5 w-3.5" />
+              Compare These
+            </button>
+          )}
+        </div>
       </div>
       {/* Mobile: horizontal scroll; desktop: wrap */}
       <div className="flex gap-3 overflow-x-auto sm:flex-wrap pb-1 sm:pb-0 -mx-1 px-1">
