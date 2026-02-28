@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import SchoolCard from './SchoolCard';
 import ShortlistComparisonModal from './ShortlistComparisonModal';
-import { ChevronDown, ChevronUp, Pin, GitCompareArrows } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pin, GitCompareArrows, Share2, Check } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
 // =============================================================================
 // T-RES-003: Tiered SchoolGrid
