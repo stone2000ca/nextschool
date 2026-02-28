@@ -367,7 +367,7 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
             </span>
           )}
           {tuitionBand.label
-            ? <span className="font-bold tracking-widest text-slate-600">{tuitionBand.label}</span>
+            ? <span className="text-xl font-black tracking-[0.3em] text-slate-600 leading-none">{tuitionBand.label}</span>
             : <span className="italic text-slate-400 text-xs">Contact school</span>
           }
         </div>
