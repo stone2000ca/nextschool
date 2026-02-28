@@ -1576,7 +1576,11 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
         {/* CENTER CONTENT AREA */}
         <main
           className="overflow-hidden bg-white transition-all duration-200 ease-out"
-          style={{ flex: 1, minWidth: 0 }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            animation: isTransitioning ? 'slideInFromLeft 420ms cubic-bezier(0.22,1,0.36,1) both' : undefined,
+          }}
         >
 
 
