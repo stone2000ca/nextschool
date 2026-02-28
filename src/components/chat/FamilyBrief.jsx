@@ -106,7 +106,10 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName }) 
             <User className="h-3.5 w-3.5" style={{ color: accentColor }} />
             <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Child Profile</span>
           </div>
-          <Field label="Name" value={fp.childName} />
+          <Field
+            label="Child"
+            value={fp.childName || (fp.gender === 'male' ? 'Your son' : fp.gender === 'female' ? 'Your daughter' : 'Your child')}
+          />
           <Field label="Grade" value={formatGrade(fp.childGrade)} />
           <Field label="Gender" value={fp.gender} />
           <Field label="Learning Needs" value={learningParts.length > 0 ? learningParts.join(', ') : null} />
