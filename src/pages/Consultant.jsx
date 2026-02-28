@@ -934,9 +934,22 @@ export default function Consultant() {
         // BUG-DD-001 FIX: View switching handled in state mapping logic above
       }
 
+      // KI-52: Brief content validator — swap thin LLM brief for programmatic fallback
+      let aiMessageContent = response.data.message;
+      if (response.data.state === STATES.BRIEF || currentConversation?.conversationContext?.state === STATES.BRIEF) {
+        const latestProfile = response.data.familyProfile || familyProfile;
+        if (!validateBriefContent(aiMessageContent)) {
+          const fallback = generateProgrammaticBrief(latestProfile);
+          if (fallback) {
+            console.warn('[KI-52] Brief failed validation — using programmatic fallback');
+            aiMessageContent = fallback;
+          }
+        }
+      }
+
       const aiMessage = {
         role: 'assistant',
-        content: response.data.message,
+        content: aiMessageContent,
         timestamp: new Date().toISOString()
       };
 
