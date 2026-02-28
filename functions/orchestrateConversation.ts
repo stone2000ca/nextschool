@@ -1157,7 +1157,8 @@ Deno.serve(async (req) => {
           if (value !== null && value !== undefined && !['briefDelta', 'intentSignal'].includes(key)) {
             const existing = conversationFamilyProfile[key];
             const isEmpty = existing === null || existing === undefined || (Array.isArray(existing) && existing.length === 0);
-            if (isEmpty) {
+                      const isTier1 = ['maxTuition', 'childGrade', 'locationArea', 'gender'].includes(key);
+          if (isEmpty || isTier1) {
               conversationFamilyProfile[key] = value;
             }
           }
