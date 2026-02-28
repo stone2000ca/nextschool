@@ -166,10 +166,34 @@ function CheckIcon({ status }) {
   return <Circle className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />;
 }
 
+// Priority flex state icons
+const FLEX_STATES = ['nicetohave', 'musthave', 'dontcare'];
+const FLEX_ICONS = {
+  musthave:   { icon: Lock,   label: 'Must Have',   cls: 'text-teal-600' },
+  nicetohave: { icon: Scale,  label: 'Nice to Have', cls: 'text-slate-400' },
+  dontcare:   { icon: EyeOff, label: "Don't Care",  cls: 'text-slate-300' },
+};
+
+function FlexButton({ rowId, state, onToggle, totalActive }) {
+  const cfg = FLEX_ICONS[state] || FLEX_ICONS.nicetohave;
+  const Icon = cfg.icon;
+  const isDisabled = state !== 'dontcare' && totalActive <= 1;
+  return (
+    <button
+      title={`${cfg.label} — click to change`}
+      disabled={isDisabled}
+      onClick={(e) => { e.stopPropagation(); onToggle(rowId); }}
+      className={`ml-auto flex-shrink-0 transition-opacity ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-70'} ${cfg.cls}`}
+    >
+      <Icon className="h-3 w-3" />
+    </button>
+  );
+}
+
 // =============================================================================
 // T-RES-004: SchoolCard with collapsed / expanded states
 // =============================================================================
-export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0, accentColor = "#0D9488", familyProfile = null }) {
+export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0, accentColor = "#0D9488", familyProfile = null, priorityOverrides = {}, onPriorityToggle = null }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   function formatGrade(grade) {
