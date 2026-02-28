@@ -144,8 +144,25 @@ export function buildPriorityChecks(school, familyProfile) {
     return a.rowNum - b.rowNum;
   });
 
+  // If we have fewer than 3 data-backed rows, pad with essential unknowns
   const dataBacked = rows.filter(r => r.status !== 'unknown').length;
-  if (dataBacked < 3) return [];
+  if (rows.length === 0) {
+    // No criteria at all — synthesize minimal fallback rows from profile
+    const fallback = [];
+    if (familyProfile.childGrade != null) fallback.push({ id: 'grade', rowNum: 1, label: 'Grade', status: 'unknown', detail: '—' });
+    if (familyProfile.maxTuition) fallback.push({ id: 'budget', rowNum: 2, label: 'Budget', status: 'unknown', detail: '—' });
+    fallback.push({ id: 'distance', rowNum: 0, label: 'Distance', status: 'unknown', detail: '—' });
+    return fallback.slice(0, 3);
+  }
+  if (dataBacked < 3) {
+    // Pad with up to 3 rows even if mostly unknown
+    let circleCount = 0;
+    const filtered = rows.filter(r => {
+      if (r.status === 'unknown') { circleCount++; return circleCount <= 2; }
+      return true;
+    });
+    return filtered.slice(0, 6);
+  }
 
   let circleCount = 0;
   const filtered = rows.filter(r => {
