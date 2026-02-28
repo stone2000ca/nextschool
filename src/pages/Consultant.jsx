@@ -1608,7 +1608,40 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
               isShortlisted={user?.shortlist?.includes(selectedSchool.id) || false}
             />
           ) : currentState === STATES.RESULTS && schools.length === 0 ? (
-            <WelcomeState onPromptClick={handleSendMessage} />
+            <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+              <div className="max-w-md">
+                <div className="text-6xl mb-4">🔍</div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-3">No schools matched your criteria</h2>
+                <p className="text-slate-600 mb-6">Try broadening your search with one of these suggestions:</p>
+                <div className="space-y-2 text-left">
+                  <button 
+                    onClick={() => handleSendMessage("Can you show me schools with a higher budget?")}
+                    className="w-full p-3 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-lg text-sm font-medium transition-colors text-left"
+                  >
+                    • Increase your budget range
+                  </button>
+                  <button 
+                    onClick={() => handleSendMessage("What schools are available in nearby areas?")}
+                    className="w-full p-3 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-lg text-sm font-medium transition-colors text-left"
+                  >
+                    • Search in nearby cities
+                  </button>
+                  <button 
+                    onClick={() => handleSendMessage("Show me schools without my priority filters")}
+                    className="w-full p-3 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-lg text-sm font-medium transition-colors text-left"
+                  >
+                    • Relax your priority filters
+                  </button>
+                  <button 
+                    onClick={() => handleSendMessage("What grade levels are available?")}
+                    className="w-full p-3 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-lg text-sm font-medium transition-colors text-left"
+                  >
+                    • Adjust grade level
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
           ) : currentState === STATES.RESULTS && schools.length > 0 ? (
             <div className="h-full flex flex-col animate-fadeIn">
               <div className="p-3 sm:p-4 border-b flex flex-col gap-2">

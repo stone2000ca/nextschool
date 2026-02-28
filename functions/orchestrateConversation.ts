@@ -313,6 +313,7 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
       extractedLocation = locationMatch[1].trim();
     }
 
+    // BUG-ENT-004: Budget extraction with ALWAYS-RUN regex fallback
     let extractedBudget = null;
     const budgetMatch = message.match(/(?:budget|tuition|afford|pay|spend)?[^.]*?\$?\s*(\d{1,3}(?:,\d{3})*|\d+)\s*(?:k|thousand|K)?/i);
     if (budgetMatch) {
@@ -418,8 +419,11 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     if (extractedGender !== null && !finalResult.gender) {
       finalResult = { ...finalResult, gender: extractedGender };
     }
-    if (extractedBudget !== null && !finalResult.maxTuition) {
-      finalResult = { ...finalResult, maxTuition: extractedBudget };
+    // BUG-ENT-004 FIX: Regex fallback ALWAYS runs if LLM extraction failed to extract budget
+    if ((extractedBudget !== null || (finalResult.maxTuition === null || finalResult.maxTuition === undefined)) && !finalResult.maxTuition) {
+      if (extractedBudget !== null) {
+        finalResult = { ...finalResult, maxTuition: extractedBudget };
+      }
     }
     if (extractedLocation !== null && !finalResult.locationArea) {
       finalResult = { ...finalResult, locationArea: extractedLocation };
@@ -839,12 +843,33 @@ async function handleResults(base44, message, conversationFamilyProfile, context
     if (regionAliases.includes(locationAreaLower)) {
       searchParams.region = conversationFamilyProfile.locationArea;
     } else {
+      // BUG-SEARCH-002 FIX: Auto-infer province from major Canadian cities
+      const cityToProvinceMap = {
+        'toronto': 'Ontario',
+        'vancouver': 'British Columbia',
+        'calgary': 'Alberta',
+        'edmonton': 'Alberta',
+        'montreal': 'Quebec',
+        'ottawa': 'Ontario',
+        'winnipeg': 'Manitoba',
+        'halifax': 'Nova Scotia',
+        'victoria': 'British Columbia',
+        'quebec city': 'Quebec',
+        'saskatoon': 'Saskatchewan',
+        'regina': 'Saskatchewan'
+      };
       const locationParts = conversationFamilyProfile.locationArea.split(',').map(s => s.trim());
       if (locationParts.length >= 2) {
         searchParams.city = locationParts[0];
         searchParams.provinceState = locationParts[1];
       } else if (locationParts.length === 1) {
         searchParams.city = locationParts[0];
+        // Auto-infer province from city lookup
+        const inferredProvince = cityToProvinceMap[locationParts[0].toLowerCase()];
+        if (inferredProvince) {
+          searchParams.provinceState = inferredProvince;
+          console.log(`[AUTO-INFER] City "${locationParts[0]}" → Province "${inferredProvince}"`);
+        }
       }
     }
   }

@@ -173,7 +173,8 @@ async function performSearch(req) {
     console.log(`[CITY FILTER] city="${city}" → ${locationFiltered.length} schools`);
   }
 
-  if (provinceState && aliasedProvinces.length === 0) {
+  // BUG-SEARCH-002 FIX: Only apply province filter if provinceState is actually provided
+  if (provinceState && provinceState.trim() && aliasedProvinces.length === 0) {
     const psUpper = provinceState.toUpperCase().trim();
     const fullProvinceName = provinceAbbreviations[psUpper] || stateAbbreviations[psUpper];
     const normalizedProvince = fullProvinceName || toTitleCase(provinceState.trim());
