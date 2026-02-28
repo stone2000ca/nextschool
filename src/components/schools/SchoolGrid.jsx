@@ -38,10 +38,14 @@ function TierSection({ title, subtitle, schools, onViewDetails, onToggleShortlis
 }
 
 // =============================================================================
-// T-SL-001: Pinned Shortlist Section
+// T-SL-001 + T-SL-003: Pinned Shortlist Section with Compare button
 // =============================================================================
 function PinnedShortlistSection({ shortlistedSchools, onViewDetails, onToggleShortlist, familyProfile, accentColor, priorityOverrides, onPriorityToggle }) {
+  const [showComparison, setShowComparison] = useState(false);
+
   if (!shortlistedSchools || shortlistedSchools.length === 0) return null;
+  const canCompare = shortlistedSchools.length >= 2;
+
   return (
     <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
       <div className="flex items-center gap-2 mb-3">
@@ -50,6 +54,15 @@ function PinnedShortlistSection({ shortlistedSchools, onViewDetails, onToggleSho
         <span className="ml-1 text-xs font-medium bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
           {shortlistedSchools.length} {shortlistedSchools.length === 1 ? 'school' : 'schools'}
         </span>
+        {canCompare && (
+          <button
+            onClick={() => setShowComparison(true)}
+            className="ml-auto flex items-center gap-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-full transition-colors"
+          >
+            <GitCompareArrows className="h-3.5 w-3.5" />
+            Compare These
+          </button>
+        )}
       </div>
       {/* Mobile: horizontal scroll; desktop: wrap */}
       <div className="flex gap-3 overflow-x-auto sm:flex-wrap pb-1 sm:pb-0 -mx-1 px-1">
@@ -69,6 +82,13 @@ function PinnedShortlistSection({ shortlistedSchools, onViewDetails, onToggleSho
           </div>
         ))}
       </div>
+      {showComparison && (
+        <ShortlistComparisonModal
+          schools={shortlistedSchools}
+          familyProfile={familyProfile}
+          onClose={() => setShowComparison(false)}
+        />
+      )}
     </div>
   );
 }
