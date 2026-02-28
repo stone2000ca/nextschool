@@ -743,7 +743,7 @@ FAMILY DATA:
 - INTERESTS: ${interestsStr || '(not specified)'}
 - DEALBREAKERS: ${dealbreakersStr || '(not specified)'}
 
-Format as a numbered list (1. Student: ... 2. Location: ... 3. Budget: ... etc.). Be direct.`;
+Format as a numbered list. Start the first item with "${briefChildDisplayName}:" (NOT "Student:" or "Child:"). Example: "1. ${briefChildDisplayName}: Grade 7". Be direct.`;
 
     let briefMessageText = "Let me summarize what you've shared.";
     const briefSysPrompt = consultantName === 'Jackie' ? jackieBriefSystemPrompt : liamBriefSystemPrompt;
