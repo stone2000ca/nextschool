@@ -307,10 +307,21 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
     if (/\b(son|boy|he|him|his)\b/i.test(message)) extractedGender = 'male';
     else if (/\b(daughter|girl|she|her|hers)\b/i.test(message)) extractedGender = 'female';
 
+    // FIX-LOC-004: Helper function to clean non-geographic words from location strings
+    const cleanLocation = (loc) => {
+      if (!loc) return null;
+      // Strip common non-geographic words that might be appended by LLM or regex
+      const nonGeographicKeywords = /\b(budget|tuition|price|cost|afford|pay|spend|priority|priorities|interest|looking|need|want)\b/gi;
+      let cleaned = loc.replace(nonGeographicKeywords, '').replace(/\s,/, ',').trim();
+      // Remove trailing commas and collapse multiple spaces
+      cleaned = cleaned.replace(/,+$/, '').replace(/\s\s+/g, ' ').trim();
+      return cleaned === '' ? null : cleaned;
+    };
+
     let extractedLocation = null;
     const locationMatch = message.match(/\b(?:in|near|around|from)\s+([A-Z][a-zA-Z]+(?:[\s-][A-Z][a-zA-Z]+)?(?:,\s*[A-Za-z]{2,})?)/);
     if (locationMatch && locationMatch[1]) {
-      extractedLocation = locationMatch[1].trim();
+      extractedLocation = cleanLocation(locationMatch[1].trim());
     }
 
     // BUG-ENT-004: Budget extraction with ALWAYS-RUN regex fallback
