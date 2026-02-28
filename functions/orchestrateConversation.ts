@@ -906,29 +906,52 @@ async function handleResults(base44, message, conversationFamilyProfile, context
         !['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers', 'gender'].includes(k)
       ).join(', ');
 
+      const schoolCount = matchingSchools.length;
+      const isFirstResults = !autoRefresh && conversationHistory?.filter(m => m.role === 'assistant' && m.content?.includes('school')).length === 0;
+      const isThinResults = schoolCount < 5 && schoolCount > 0;
+
+      // T-RES-007: Consultant Narration
+      // Build the narration instruction for initial results presentation
+      let narrateInstruction = '';
+      if (autoRefresh && autoRefreshEntitiesStr) {
+        narrateInstruction = `AUTO-REFRESH MODE: New information was just extracted (${autoRefreshEntitiesStr}). The matches have ALREADY been silently updated. You MUST:
+1. In ONE natural sentence, tell the parent you've updated their matches based on the new info. E.g. "I've refreshed your matches based on the STEM interest — here's what changed." or "Updated your matches now that I know the budget is $30K."
+2. Then briefly describe the top results shown, as usual. Max 150 words total.
+3. Do NOT ask "Does that look right?" or any confirmation question.`;
+      } else if (isThinResults) {
+        narrateInstruction = `THIN RESULTS MODE: Only ${schoolCount} school${schoolCount === 1 ? '' : 's'} matched. You MUST:
+1. Open with something like: "I found ${schoolCount} school${schoolCount === 1 ? '' : 's'} that fit your criteria. Want me to ask a few more questions to widen the search?"
+2. Briefly describe the school(s) available. Max 100 words total.`;
+      } else if (isFirstResults) {
+        narrateInstruction = `INITIAL RESULTS PRESENTATION: This is the first time showing results. You MUST:
+1. Open with a warm, natural lead-in like: "Here are your strongest matches based on everything you've told me." (Jackie: warm & encouraging, Liam: direct & confident — use your voice)
+2. Briefly highlight 1-2 notable schools. 
+3. End with: "Take your time browsing. When a school catches your eye, save it to your shortlist."
+Max 160 words total.`;
+      } else {
+        narrateInstruction = `If the parent updates any preference (e.g. "actually grade 6", "our budget changed", "we want boarding", "looking in Vancouver now"), you MUST:
+1. Acknowledge it in ONE short sentence only. Example: "Got it, noted grade 6 — I've updated your matches."
+2. STOP. Do not write anything else.`;
+      }
+
       const resultsSystemPrompt = `[STATE: RESULTS] You are currently showing school results to the parent.
 
 CRITICAL STATE RULE — READ THIS FIRST:
 You are in RESULTS state. The parent is viewing their school matches.
 
-${autoRefresh && autoRefreshEntitiesStr ? `AUTO-REFRESH MODE: New information was just extracted (${autoRefreshEntitiesStr}). The matches have ALREADY been silently updated. You MUST:
-1. In ONE natural sentence, tell the parent you've updated their matches based on the new info. E.g. "I've refreshed your matches based on the STEM interest — here's what changed." or "Updated your matches now that I know the budget is $30K."
-2. Then briefly describe the top results shown, as usual. Max 150 words total.
-3. Do NOT ask "Does that look right?" or any confirmation question.` : `If the parent updates any preference (e.g. "actually grade 6", "our budget changed", "we want boarding", "looking in Vancouver now"), you MUST:
-1. Acknowledge it in ONE short sentence only. Example: "Got it, noted grade 6 — I've updated your matches."
-2. STOP. Do not write anything else.`}
+${narrateInstruction}
 
 ABSOLUTE PROHIBITIONS in RESULTS state when a preference update is detected:
 - Do NOT generate a numbered list of their preferences (Student, Location, Budget, etc.)
 - Do NOT produce a brief summary or profile recap
 - Do NOT ask "Does that look right?" or any confirmation question
 - Do NOT re-list what you know about their family
-- Do NOT produce more than 2 sentences total for a preference update (unless AUTO-REFRESH MODE)
+- Do NOT produce more than 2 sentences total for a preference update (unless in AUTO-REFRESH or THIN RESULTS mode)
 - NEVER mention a "Refresh Matches" button — it does not exist
 
 If the parent is asking about the schools (not updating preferences), explain the matches. Focus on fit. Max 150 words.
 
-${consultantName === 'Jackie' ? 'YOU ARE JACKIE - Warm, empathetic.' : 'YOU ARE LIAM - Direct, strategic.'}`;
+${consultantName === 'Jackie' ? 'YOU ARE JACKIE - Warm, empathetic, experienced.' : 'YOU ARE LIAM - Direct, strategic, no-BS.'}`;
 
       const resultsUserPrompt = `Recent chat:\n${conversationSummary}\n${schoolContext}\n\nParent: "${message}"\n\nRespond as ${consultantName}. ONE question max.`;
 
