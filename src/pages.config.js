@@ -68,6 +68,7 @@ import SchoolDirectory from './pages/SchoolDirectory';
 import SchoolProfile from './pages/SchoolProfile';
 import Terms from './pages/Terms';
 import stateMachineConfig from './pages/stateMachineConfig';
+import SharedShortlistView from './pages/SharedShortlistView';
 import __Layout from './Layout.jsx';
 
 
@@ -93,6 +94,7 @@ export const PAGES = {
     "SchoolProfile": SchoolProfile,
     "Terms": Terms,
     "stateMachineConfig": stateMachineConfig,
+    "SharedShortlistView": SharedShortlistView,
 }
 
 export const pagesConfig = {
