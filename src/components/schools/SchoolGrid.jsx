@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import SchoolCard from './SchoolCard';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pin } from 'lucide-react';
 
 // =============================================================================
 // T-RES-003: Tiered SchoolGrid
