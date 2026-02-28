@@ -59,6 +59,7 @@ export default function SchoolGrid({ schools, onViewDetails, onToggleShortlist, 
               onViewDetails={() => onViewDetails(school.id)}
               onToggleShortlist={onToggleShortlist}
               isShortlisted={shortlistedIds.includes(school.id)}
+              familyProfile={familyProfile}
             />
           </div>
         ))}
