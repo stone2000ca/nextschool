@@ -36,11 +36,48 @@ function TierSection({ title, subtitle, schools, onViewDetails, onToggleShortlis
   );
 }
 
+// =============================================================================
+// T-SL-001: Pinned Shortlist Section
+// =============================================================================
+function PinnedShortlistSection({ shortlistedSchools, onViewDetails, onToggleShortlist, familyProfile, accentColor, priorityOverrides, onPriorityToggle }) {
+  if (!shortlistedSchools || shortlistedSchools.length === 0) return null;
+  return (
+    <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+      <div className="flex items-center gap-2 mb-3">
+        <Pin className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+        <h3 className="text-sm font-semibold text-amber-900">Your Shortlist</h3>
+        <span className="ml-1 text-xs font-medium bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+          {shortlistedSchools.length} {shortlistedSchools.length === 1 ? 'school' : 'schools'}
+        </span>
+      </div>
+      {/* Mobile: horizontal scroll; desktop: wrap */}
+      <div className="flex gap-3 overflow-x-auto sm:flex-wrap pb-1 sm:pb-0 -mx-1 px-1">
+        {shortlistedSchools.map((school, index) => (
+          <div key={school.id} className="w-[200px] sm:w-[240px] flex-shrink-0">
+            <SchoolCard
+              school={school}
+              index={index}
+              onViewDetails={() => onViewDetails(school.id)}
+              onToggleShortlist={onToggleShortlist}
+              isShortlisted={true}
+              familyProfile={familyProfile}
+              accentColor={accentColor}
+              priorityOverrides={priorityOverrides}
+              onPriorityToggle={onPriorityToggle}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function SchoolGrid({
   schools,
   onViewDetails,
   onToggleShortlist,
   shortlistedIds = [],
+  shortlistedSchools = [],
   familyProfile = null,
   accentColor = "#0D9488",
   tieredSchools = null,
@@ -48,6 +85,8 @@ export default function SchoolGrid({
   onPriorityToggle = null,
 }) {
   const [tier3Expanded, setTier3Expanded] = useState(false);
+
+  const sharedShortlistProps = { shortlistedSchools, onViewDetails, onToggleShortlist, familyProfile, accentColor, priorityOverrides, onPriorityToggle };
 
   // If tieredSchools prop is provided, use tiered mode
   if (tieredSchools) {
@@ -57,6 +96,7 @@ export default function SchoolGrid({
 
     return (
       <div>
+        <PinnedShortlistSection {...sharedShortlistProps} />
         <TierSection
           title="⭐ Top Matches"
           subtitle="Best fit for your family based on your priorities"
