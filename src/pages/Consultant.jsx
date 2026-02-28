@@ -22,7 +22,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import Navbar from '@/components/navigation/Navbar';
 import { useSchoolFiltering } from '@/hooks/useSchoolFiltering';
-import { buildPriorityChecks } from '@/components/schools/SchoolCard';
+
 
 // =============================================================================
 // T-RES-003: Tiered Results Engine
