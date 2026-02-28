@@ -224,6 +224,10 @@ export default function Consultant() {
   // T046: Right-side rail panel state
   const [activePanel, setActivePanel] = useState(null); // 'brief' | 'shortlist' | null
 
+  // BRIEF→RESULTS transition animation
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const prevIsIntakePhaseRef = useRef(true);
+
   // T-RES-005: Sort mode
   const [sortMode, setSortMode] = useState('bestFit');
 
