@@ -349,9 +349,9 @@ export default function SchoolGrid({
       <div className="mb-4 text-sm text-slate-600">
         Showing {schools.length} schools
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="flex flex-wrap gap-3">
         {schools.map((school, index) => (
-          <div key={school.id} className="w-full">
+          <div key={school.id} className="w-[240px]">
             <SchoolCard
               school={school}
               index={index}
