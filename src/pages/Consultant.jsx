@@ -138,6 +138,25 @@ export default function Consultant() {
   const [showFamilyBrief, setShowFamilyBrief] = useState(false);
   // T046: Right-side rail panel state
   const [activePanel, setActivePanel] = useState(null); // 'brief' | 'shortlist' | null
+
+  // T-RES-005: Sort mode
+  const [sortMode, setSortMode] = useState('bestFit');
+
+  // T-RES-006: Priority overrides { [rowId]: 'musthave' | 'nicetohave' | 'dontcare' }
+  const [priorityOverrides, setPriorityOverrides] = useState({});
+
+  const handlePriorityToggle = (rowId) => {
+    setPriorityOverrides(prev => {
+      const CYCLE = ['nicetohave', 'musthave', 'dontcare'];
+      const current = prev[rowId] || 'nicetohave';
+      const next = CYCLE[(CYCLE.indexOf(current) + 1) % CYCLE.length];
+      // Guard: at least 1 priority must remain non-dontcare
+      const updated = { ...prev, [rowId]: next };
+      const allDontCare = Object.values(updated).every(v => v === 'dontcare');
+      if (allDontCare) return prev;
+      return updated;
+    });
+  };
   
   // DEEPDIVE confirmation state
   const [confirmingSchool, setConfirmingSchool] = useState(null);
