@@ -200,7 +200,7 @@ export default function SchoolGrid({
     prevShortlistedRef.current = shortlistedIds;
   }
 
-  const sharedShortlistProps = { shortlistedSchools, onViewDetails, onToggleShortlist, familyProfile, accentColor, priorityOverrides, onPriorityToggle, onNarrateComparison };
+  const sharedShortlistProps = { shortlistedSchools, onViewDetails, onToggleShortlist, familyProfile, accentColor, priorityOverrides, onPriorityToggle, onNarrateComparison, onOpenComparison };
 
   // If tieredSchools prop is provided, use tiered mode
   if (tieredSchools) {
