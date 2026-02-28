@@ -1494,6 +1494,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
                 familyProfile={familyProfile}
                 priorityOverrides={priorityOverrides}
                 onPriorityToggle={handlePriorityToggle}
+                onNarrateComparison={handleNarrateComparison}
                 />
               </div>
             </div>
