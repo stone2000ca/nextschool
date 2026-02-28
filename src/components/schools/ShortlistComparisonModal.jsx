@@ -69,13 +69,22 @@ function getCellForRow(rowId, school, familyProfile) {
   return { status: found.status, detail: found.detail };
 }
 
-export default function ShortlistComparisonModal({ schools, familyProfile, onClose }) {
+export default function ShortlistComparisonModal({ schools, familyProfile, onClose, onNarrateComparison }) {
   const MAX = 3;
   const [selected, setSelected] = useState(() => schools.slice(0, MAX).map(s => s.id));
   const scrollRef = useRef(null);
+  const narratedRef = useRef(false);
 
   const displaySchools = schools.filter(s => selected.includes(s.id)).slice(0, MAX);
   const rows = buildRowsFromProfiles(displaySchools, familyProfile);
+
+  // T-SL-005: Trigger narration once on open (fresh each time modal mounts)
+  useEffect(() => {
+    if (!narratedRef.current && displaySchools.length >= 2 && onNarrateComparison) {
+      narratedRef.current = true;
+      onNarrateComparison(displaySchools);
+    }
+  }, []);
 
   const toggleSchool = (id) => {
     setSelected(prev => {
