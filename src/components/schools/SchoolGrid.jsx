@@ -41,10 +41,41 @@ function TierSection({ title, subtitle, schools, onViewDetails, onToggleShortlis
 // =============================================================================
 // T-SL-001 + T-SL-003: Pinned Shortlist Section with Compare button
 // =============================================================================
+function ShareModal({ shareUrl, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-slate-900">Share Your Shortlist</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <p className="text-sm text-slate-500 mb-4">Send this link to your partner so they can view your shortlisted schools.</p>
+        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+          <span className="text-xs text-slate-700 flex-1 truncate">{shareUrl}</span>
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-md transition-colors flex-shrink-0"
+          >
+            {copied ? <><Check className="h-3.5 w-3.5" /> Copied!</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PinnedShortlistSection({ shortlistedSchools, onViewDetails, onToggleShortlist, familyProfile, accentColor, priorityOverrides, onPriorityToggle, onNarrateComparison }) {
   const [showComparison, setShowComparison] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState(null);
 
   const handleShare = async () => {
     setShareLoading(true);
@@ -52,12 +83,8 @@ function PinnedShortlistSection({ shortlistedSchools, onViewDetails, onToggleSho
       const schoolIds = shortlistedSchools.map(s => s.id);
       const familyProfileId = familyProfile?.id || null;
       const result = await base44.functions.invoke('generateSharedShortlistLink', { familyProfileId, schoolIds });
-      const shareUrl = result.data?.shareUrl;
-      if (shareUrl) {
-        await navigator.clipboard.writeText(shareUrl);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 3000);
-      }
+      const url = result.data?.shareUrl;
+      if (url) setShareUrl(url);
     } catch (e) {
       console.error('Share failed:', e);
     } finally {
