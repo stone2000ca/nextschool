@@ -689,7 +689,12 @@ async function handleBrief(base44, message, conversationFamilyProfile, context, 
       budgetDisplay = `$${maxTuition.toLocaleString()}/year`;
     }
 
-    let briefChildDisplayName = childName ? childName : 'your child';
+    const briefChildGenderLabel = conversationFamilyProfile?.gender === 'male'
+      ? 'Your son'
+      : conversationFamilyProfile?.gender === 'female'
+      ? 'Your daughter'
+      : 'Your child';
+    let briefChildDisplayName = childName ? childName : briefChildGenderLabel;
 
     const jackieBriefSystemPrompt = `[STATE: BRIEF] You are Jackie, a warm and experienced education consultant. Generate a brief summary of what the family has shared. Use ONLY what was explicitly stated by the parent.
 
