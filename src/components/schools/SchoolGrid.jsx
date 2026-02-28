@@ -351,9 +351,9 @@ export default function SchoolGrid({
       <div className="mb-4 text-sm text-slate-600">
         Showing {schools.length} schools
       </div>
-      <div className="flex flex-wrap gap-3">
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', alignItems: 'stretch' }}>
         {schools.map((school, index) => (
-          <div key={school.id} className="w-[240px]">
+          <div key={school.id} className="flex">
             <SchoolCard
               school={school}
               index={index}
