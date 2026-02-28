@@ -1260,6 +1260,7 @@ Return empty array if user didn't provide any of these facts.`;
                   showDistances={showDistances}
                   isLoading={isTyping && schools.length === 0}
                   accentColor={selectedConsultant === 'Jackie' ? '#C27B8A' : '#6B9DAD'}
+                  familyProfile={familyProfile}
                 />
               </div>
             </div>
