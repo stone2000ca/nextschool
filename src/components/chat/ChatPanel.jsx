@@ -220,7 +220,7 @@ const ChatPanel = forwardRef(function ChatPanel({
                 variant="outline"
                 onClick={() => onSendMessage("My child needs a new school")}
                 disabled={isTyping}
-                className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
+                className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-teal-600 hover:border-teal-600 hover:text-white"
               >
                 My child needs a new school
               </Button>
@@ -228,7 +228,7 @@ const ChatPanel = forwardRef(function ChatPanel({
                 variant="outline"
                 onClick={() => onSendMessage("I'm comparing a few schools already")}
                 disabled={isTyping}
-                className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
+                className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-teal-600 hover:border-teal-600 hover:text-white"
               >
                 I'm comparing a few schools already
               </Button>
@@ -236,7 +236,7 @@ const ChatPanel = forwardRef(function ChatPanel({
                 variant="outline"
                 onClick={() => onSendMessage("I'm not sure where to start")}
                 disabled={isTyping}
-                className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-[#2A2A3D]/80 hover:border-white/30"
+                className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-teal-600 hover:border-teal-600 hover:text-white"
               >
                 I'm not sure where to start
               </Button>
