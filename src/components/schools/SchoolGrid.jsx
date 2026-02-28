@@ -71,8 +71,7 @@ function ShareModal({ shareUrl, onClose }) {
   );
 }
 
-function PinnedShortlistSection({ shortlistedSchools, onViewDetails, onToggleShortlist, familyProfile, accentColor, priorityOverrides, onPriorityToggle, onNarrateComparison }) {
-  const [showComparison, setShowComparison] = useState(false);
+function PinnedShortlistSection({ shortlistedSchools, onViewDetails, onToggleShortlist, familyProfile, accentColor, priorityOverrides, onPriorityToggle, onNarrateComparison, onOpenComparison }) {
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
 
