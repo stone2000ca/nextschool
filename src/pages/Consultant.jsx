@@ -259,10 +259,6 @@ export default function Consultant() {
   // School filtering/sorting via extracted hook
   const {
     filteredSchools,
-    sortField,
-    sortDirection,
-    setSortField,
-    setSortDirection,
     showDistances,
     applyDistances,
     resetSort,
