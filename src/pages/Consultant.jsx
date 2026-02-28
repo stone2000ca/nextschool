@@ -1040,6 +1040,16 @@ Return empty array if user didn't provide any of these facts.`;
 
   // T047: No manual refresh handler needed — matches auto-refresh on entity extraction
 
+  // T-SL-004: Shortlist nudge — injects a consultant message for shortlist state changes
+  const injectShortlistNudge = (nudgeText) => {
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: nudgeText,
+      timestamp: new Date().toISOString(),
+      isNudge: true,
+    }]);
+  };
+
   const handleToggleShortlist = async (schoolId) => {
     // Login gate for shortlist
     if (!isAuthenticated) {
@@ -1051,15 +1061,13 @@ Return empty array if user didn't provide any of these facts.`;
     try {
       const currentShortlist = user.shortlist || [];
       let updatedShortlist;
-      const school = schools.find(s => s.id === schoolId);
+      const school = schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId);
+      const isRemoving = currentShortlist.includes(schoolId);
       
-      if (currentShortlist.includes(schoolId)) {
-        // Remove from shortlist
+      if (isRemoving) {
         updatedShortlist = currentShortlist.filter(id => id !== schoolId);
       } else {
-        // Add to shortlist
         updatedShortlist = [...currentShortlist, schoolId];
-        // Track shortlisted
         base44.functions.invoke('trackSessionEvent', {
           eventType: 'shortlisted',
           consultantName: selectedConsultant,
@@ -1068,14 +1076,66 @@ Return empty array if user didn't provide any of these facts.`;
         }).catch(err => console.error('Failed to track:', err));
       }
       
-      // Update user
       await base44.auth.updateMe({ shortlist: updatedShortlist });
-      
-      // Update local state
       setUser({ ...user, shortlist: updatedShortlist });
-      
-      // Reload shortlist data
       await loadShortlist(user.id);
+
+      // T-SL-004: Determine nudge (max 1 per action, only in RESULTS state)
+      if (currentState === STATES.RESULTS) {
+        const newCount = updatedShortlist.length;
+        const isJackie = selectedConsultant === 'Jackie';
+
+        if (!isRemoving) {
+          // --- ADDING ---
+          if (newCount === 1) {
+            injectShortlistNudge(isJackie
+              ? "Great pick — I'll keep that at the top for you. Keep browsing and save anything else that catches your eye."
+              : "Noted. I've pinned that one for you. Keep going — save anything worth a closer look."
+            );
+          } else if (newCount === 2) {
+            injectShortlistNudge(isJackie
+              ? "You've got two saved now — want me to compare them side by side? Just say 'compare' and I'll walk you through the differences."
+              : "Two shortlisted. Hit 'Compare These' in your shortlist, or ask me to break down the differences."
+            );
+          } else if (newCount >= 3) {
+            // Check: does this pick contradict the brief? (above budget)
+            const budget = familyProfile?.maxTuition;
+            const schoolTuition = school?.dayTuition ?? school?.tuition;
+            if (budget && schoolTuition && schoolTuition > budget) {
+              injectShortlistNudge(isJackie
+                ? `I noticed ${school.name} is above your stated budget — that's totally fine to explore, but want me to flag that when we compare?`
+                : `Worth noting: ${school.name} is above your budget range. I can still work with it — just want you to have the full picture.`
+              );
+            } else {
+              // Check similarity: all same curriculum or school type
+              const shortlistedData = shortlistData.filter(s => updatedShortlist.includes(s.id));
+              const curriculums = shortlistedData.map(s => s.curriculumType).filter(Boolean);
+              const allSameCurriculum = curriculums.length >= 2 && curriculums.every(c => c === curriculums[0]);
+              const types = shortlistedData.map(s => s.schoolType).filter(Boolean);
+              const allSameType = types.length >= 2 && types.every(t => t === types[0]);
+              if (allSameCurriculum || allSameType) {
+                injectShortlistNudge(isJackie
+                  ? "Your picks are looking quite similar in profile — want me to surface a school with a different approach as a contrast?"
+                  : "Your shortlist is fairly uniform so far. Want me to pull in a wildcard — something with a different structure or vibe?"
+                );
+              } else {
+                injectShortlistNudge(isJackie
+                  ? "Strong shortlist forming. When you're ready, I can help you narrow it down or compare them in detail."
+                  : "Good shortlist. Say the word when you want to start narrowing — I can rank these against your priorities."
+                );
+              }
+            }
+          }
+        } else {
+          // --- REMOVING --- only nudge if list hits 0 after browsing results
+          if (newCount === 0 && schools.length > 0) {
+            injectShortlistNudge(isJackie
+              ? "Take your time — save anything that catches your eye and I'll keep track of them for you."
+              : "No rush. Save any that stand out and I'll track them. I can always resurface something you passed on."
+            );
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to toggle shortlist:', error);
     }
