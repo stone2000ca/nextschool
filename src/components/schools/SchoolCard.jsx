@@ -359,34 +359,47 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
             )}
           </div>
 
-          <div className="flex items-center gap-1 text-slate-900 font-semibold text-xs sm:text-sm mb-3">
-            <DollarSign className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
-            <span className="line-clamp-1">
-              {school.dayTuition && school.boardingTuition ? (
-                <span className="text-xs">
-                  {getCurrencySymbol(school.currency)}{school.dayTuition.toLocaleString()} (day) / {getCurrencySymbol(school.currency)}{school.boardingTuition.toLocaleString()} (boarding)
-                </span>
-              ) : school.dayTuition ? (
-                <>
-                  {getCurrencySymbol(school.currency)}{school.dayTuition.toLocaleString()}
-                  <span className="text-xs text-slate-500 font-normal ml-1">(day)</span>
-                </>
-              ) : school.boardingTuition ? (
-                <>
-                  {getCurrencySymbol(school.currency)}{school.boardingTuition.toLocaleString()}
-                  <span className="text-xs text-slate-500 font-normal ml-1">(boarding)</span>
-                </>
-              ) : (
-                <>
-                  {getCurrencySymbol(school.currency)}{school.tuition?.toLocaleString() || 'N/A'}
-                  <span className="text-xs text-slate-500 font-normal ml-1">/year</span>
-                </>
-              )}
-            </span>
+          {/* T-RES-002: Tuition Band */}
+          <div className="flex items-center gap-1.5 mb-3">
+            <DollarSign className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0 text-slate-500" />
+            {tuitionBand.label ? (
+              <>
+                <span className="text-xs font-bold text-slate-800">{tuitionBand.label}</span>
+                <span className="text-xs text-slate-500">{tuitionBand.display}</span>
+              </>
+            ) : (
+              <span className="text-xs text-slate-400 italic">{tuitionBand.display}</span>
+            )}
           </div>
 
-          {/* Match Explanations */}
-          {school.matchExplanations && school.matchExplanations.length > 0 && (
+          {/* T-RES-001: Priority Checkmarks OR existing match commentary */}
+          {showChecklist ? (
+            <>
+              {school.matchExplanations?.[0] && (
+                <p className="text-xs text-slate-500 mb-2 line-clamp-2">
+                  {school.matchExplanations[0].text?.split('.')[0] + '.'}
+                </p>
+              )}
+              <div className="my-2 border-t border-slate-200" />
+              <div className="space-y-1.5 text-xs">
+                {priorityChecks.map((row) => (
+                  <div key={row.id} className="flex items-center gap-2">
+                    {row.status === 'match' ? (
+                      <Check className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                    ) : row.status === 'mismatch' ? (
+                      <X className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                    ) : (
+                      <Circle className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                    )}
+                    <span className={`font-medium ${row.status === 'match' ? 'text-slate-700' : row.status === 'mismatch' ? 'text-slate-600' : 'text-slate-400'}`}>
+                      {row.label}
+                    </span>
+                    <span className="text-slate-400 truncate">{row.detail}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : school.matchExplanations && school.matchExplanations.length > 0 ? (
             <>
               <div className="my-3 border-t border-slate-200" />
               <div className="space-y-2 text-xs">
@@ -404,7 +417,7 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
                 ))}
               </div>
             </>
-          )}
+          ) : null}
         </div>
       </div>
 
