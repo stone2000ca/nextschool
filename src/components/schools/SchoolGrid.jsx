@@ -7,7 +7,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 // Renders three tiers: Top Matches, Also Worth Exploring, See All Matches
 // =============================================================================
 
-function TierSection({ title, subtitle, schools, onViewDetails, onToggleShortlist, shortlistedIds, familyProfile, accentColor }) {
+function TierSection({ title, subtitle, schools, onViewDetails, onToggleShortlist, shortlistedIds, familyProfile, accentColor, priorityOverrides, onPriorityToggle }) {
   if (!schools || schools.length === 0) return null;
   return (
     <div className="mb-6">
@@ -26,6 +26,8 @@ function TierSection({ title, subtitle, schools, onViewDetails, onToggleShortlis
               isShortlisted={shortlistedIds.includes(school.id)}
               familyProfile={familyProfile}
               accentColor={accentColor}
+              priorityOverrides={priorityOverrides}
+              onPriorityToggle={onPriorityToggle}
             />
           </div>
         ))}
