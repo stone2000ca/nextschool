@@ -4,31 +4,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 // T045: Canadian Metro Coordinates Lookup
 // =============================================================================
 const CANADIAN_METRO_COORDS = {
+  // Toronto & GTA
   'toronto': { lat: 43.6532, lng: -79.3832 },
   'gta': { lat: 43.6532, lng: -79.3832 },
   'greater toronto area': { lat: 43.6532, lng: -79.3832 },
-  'vancouver': { lat: 49.2827, lng: -123.1207 },
-  'lower mainland': { lat: 49.2827, lng: -123.1207 },
-  'metro vancouver': { lat: 49.2827, lng: -123.1207 },
-  'greater vancouver': { lat: 49.2827, lng: -123.1207 },
-  'montreal': { lat: 45.5017, lng: -73.5673 },
-  'calgary': { lat: 51.0447, lng: -114.0719 },
-  'ottawa': { lat: 45.4215, lng: -75.6972 },
-  'edmonton': { lat: 53.5461, lng: -113.4938 },
-  'winnipeg': { lat: 49.8951, lng: -97.1384 },
-  'halifax': { lat: 44.6488, lng: -63.5752 },
-  'victoria': { lat: 48.4284, lng: -123.3656 },
-  'mississauga': { lat: 43.5890, lng: -79.6441 },
-  'brampton': { lat: 43.7315, lng: -79.7624 },
-  'hamilton': { lat: 43.2557, lng: -79.8711 },
-  'london': { lat: 42.9849, lng: -81.2453 },
-  'kitchener': { lat: 43.4516, lng: -80.4925 },
-  'windsor': { lat: 42.3149, lng: -83.0364 },
-  'regina': { lat: 50.4452, lng: -104.6189 },
-  'saskatoon': { lat: 52.1332, lng: -106.6700 },
-  'st. john\'s': { lat: 47.5615, lng: -52.7126 },
-  'st johns': { lat: 47.5615, lng: -52.7126 },
-  'whitehorse': { lat: 60.7212, lng: -135.0568 },
+  'toronto area': { lat: 43.6532, lng: -79.3832 },
   'north york': { lat: 43.7615, lng: -79.4111 },
   'scarborough': { lat: 43.7764, lng: -79.2318 },
   'markham': { lat: 43.8561, lng: -79.3370 },
@@ -36,14 +16,58 @@ const CANADIAN_METRO_COORDS = {
   'vaughan': { lat: 43.8361, lng: -79.4983 },
   'oakville': { lat: 43.4675, lng: -79.6877 },
   'burlington': { lat: 43.3255, lng: -79.7990 },
+  'mississauga': { lat: 43.5890, lng: -79.6441 },
+  'brampton': { lat: 43.7315, lng: -79.7624 },
+  // Vancouver & Lower Mainland
+  'vancouver': { lat: 49.2827, lng: -123.1207 },
+  'greater vancouver': { lat: 49.2827, lng: -123.1207 },
+  'greater vancouver area': { lat: 49.2827, lng: -123.1207 },
+  'lower mainland': { lat: 49.2827, lng: -123.1207 },
+  'metro vancouver': { lat: 49.2827, lng: -123.1207 },
+  // Quebec
+  'montreal': { lat: 45.5017, lng: -73.5673 },
+  'québec city': { lat: 46.8139, lng: -71.2080 },
+  'quebec city': { lat: 46.8139, lng: -71.2080 },
+  // Ontario
+  'ottawa': { lat: 45.4215, lng: -75.6972 },
+  'hamilton': { lat: 43.2557, lng: -79.8711 },
+  'london on': { lat: 42.9849, lng: -81.2453 },
+  'london ontario': { lat: 42.9849, lng: -81.2453 },
+  'london': { lat: 42.9849, lng: -81.2453 },
+  'kitchener': { lat: 43.4516, lng: -80.4925 },
+  'waterloo': { lat: 43.4668, lng: -80.5164 },
+  'windsor': { lat: 42.3149, lng: -83.0364 },
+  // Alberta
+  'calgary': { lat: 51.0447, lng: -114.0719 },
+  'edmonton': { lat: 53.5461, lng: -113.4938 },
+  // Manitoba
+  'winnipeg': { lat: 49.8951, lng: -97.1384 },
+  // Saskatchewan
+  'saskatoon': { lat: 52.1332, lng: -106.6700 },
+  'regina': { lat: 50.4452, lng: -104.6189 },
+  // Nova Scotia
+  'halifax': { lat: 44.6488, lng: -63.5752 },
+  // BC
+  'victoria': { lat: 48.4284, lng: -123.3656 },
+  // Newfoundland
+  'st. john\'s': { lat: 47.5615, lng: -52.7126 },
+  'st johns': { lat: 47.5615, lng: -52.7126 },
+  'st johns nl': { lat: 47.5615, lng: -52.7126 },
+  // Yukon
+  'whitehorse': { lat: 60.7212, lng: -135.0568 },
 };
 
 function resolveLocationCoords(locationArea) {
   if (!locationArea) return null;
   const key = locationArea.toLowerCase().trim();
+  // Direct match first
   if (CANADIAN_METRO_COORDS[key]) return CANADIAN_METRO_COORDS[key];
-  for (const [city, coords] of Object.entries(CANADIAN_METRO_COORDS)) {
-    if (key.includes(city) || city.includes(key)) return coords;
+  // Partial match — key contains a known city name, or vice versa
+  for (const [cityKey, coords] of Object.entries(CANADIAN_METRO_COORDS)) {
+    if (key.includes(cityKey) || cityKey.includes(key)) {
+      console.log(`[T045] Partial match: '${key}' → '${cityKey}'`);
+      return coords;
+    }
   }
   return null;
 }
