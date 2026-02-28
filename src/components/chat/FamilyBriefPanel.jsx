@@ -7,7 +7,8 @@ export default function FamilyBriefPanel({
   shortlist = [], 
   isExpanded, 
   onToggleExpand,
-  onSectionClick 
+  onSectionClick,
+  extractedEntities = {}
 }) {
   const [newlyPopulated, setNewlyPopulated] = useState(null);
 
@@ -99,18 +100,22 @@ export default function FamilyBriefPanel({
       id: 'budget',
       icon: DollarSign,
       title: 'Budget',
-      populated: familyProfile?.budgetRange || familyProfile?.maxTuition,
-      content: () => (
-        <div className="space-y-1">
-          {familyProfile?.maxTuition === 'unlimited' ? (
-            <p className="text-sm">Budget is flexible</p>
-          ) : familyProfile?.maxTuition ? (
-            <p className="text-sm">${familyProfile.maxTuition.toLocaleString()}/year</p>
-          ) : familyProfile?.budgetRange ? (
-            <p className="text-sm">{formatBudgetRange(familyProfile.budgetRange)}</p>
-          ) : null}
-        </div>
-      )
+      populated: familyProfile?.budgetRange || familyProfile?.maxTuition || extractedEntities?.maxTuition,
+      content: () => {
+        // BUG-ENT-005 FIX: Use extractedEntities as fallback when entity hasn't persisted yet
+        const maxTuition = familyProfile?.maxTuition || extractedEntities?.maxTuition;
+        return (
+          <div className="space-y-1">
+            {maxTuition === 'unlimited' ? (
+              <p className="text-sm">Budget is flexible</p>
+            ) : maxTuition ? (
+              <p className="text-sm">${maxTuition.toLocaleString()}/year</p>
+            ) : familyProfile?.budgetRange ? (
+              <p className="text-sm">{formatBudgetRange(familyProfile.budgetRange)}</p>
+            ) : null}
+          </div>
+        );
+      }
     },
     {
       id: 'priorities',
