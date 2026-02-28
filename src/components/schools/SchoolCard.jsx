@@ -423,20 +423,10 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
               );
             })()}
           </div>
-        )}
       </div>
 
       {/* Actions */}
       <div className="px-3 pb-3 mt-auto flex flex-col gap-2">
-        {/* Expand / collapse toggle */}
-        <button
-          className="w-full flex items-center justify-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors py-1"
-          onClick={() => setIsExpanded(e => !e)}
-          aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
-        >
-          {isExpanded ? <><ChevronUp className="h-3.5 w-3.5" /> Less</> : <><ChevronDown className="h-3.5 w-3.5" /> {hasChecks ? `${greenCount}/${totalChecks} match` : 'Details'}</>}
-        </button>
-
         <div className="flex gap-2">
           <Button
             size="sm"
