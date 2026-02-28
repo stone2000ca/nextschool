@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import SchoolCard from './SchoolCard';
 import { ChevronDown, ChevronUp, Pin } from 'lucide-react';
 
