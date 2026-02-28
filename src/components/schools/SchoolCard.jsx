@@ -349,10 +349,10 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
               <Navigation className="h-3 w-3" />{school.distanceKm.toFixed(1)} km
             </span>
           )}
-          <span className="inline-flex items-center gap-1 text-slate-600">
-            <DollarSign className="h-3 w-3" />
-            {tuitionBand.label ? <><strong>{tuitionBand.label}</strong> {tuitionBand.display}</> : <span className="italic text-slate-400">{tuitionBand.display}</span>}
-          </span>
+          {tuitionBand.label
+            ? <span className="font-bold tracking-widest text-slate-600">{tuitionBand.label}</span>
+            : <span className="italic text-slate-400 text-xs">Contact school</span>
+          }
         </div>
 
         {/* Grades + curriculum chips */}
