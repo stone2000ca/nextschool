@@ -193,19 +193,20 @@ async function performSearch(req) {
   }
 
   let hardFiltered = locationFiltered.filter(school => {
-    const parsedMinGrade = minGrade !== undefined && minGrade !== null ? parseInt(minGrade) : null;
-    if (parsedMinGrade !== null) {
-      let sLow = parseInt(school.lowestGrade);
-      let sHigh = parseInt(school.highestGrade);
-      if (isNaN(sLow) || isNaN(sHigh)) {
-        console.log(`[GRADE FILTER] Filtered out ${school.name}: Missing grade info`);
-        return false;
-      }
-      if (!(sLow <= parsedMinGrade && sHigh >= parsedMinGrade)) {
-        console.log(`[GRADE FILTER] Excluded ${school.name}: grades ${sLow}-${sHigh}, need ${parsedMinGrade}`);
-        return false;
-      }
-    }
+     const parsedMinGrade = minGrade !== undefined && minGrade !== null ? parseInt(minGrade) : null;
+     if (parsedMinGrade !== null) {
+       let sLow = parseInt(school.lowestGrade);
+       let sHigh = parseInt(school.highestGrade);
+       // BUG-SEARCH-003 FIX: If grades are missing, don't filter out the school — let distance/other scoring handle it
+       if (!isNaN(sLow) && !isNaN(sHigh)) {
+         if (!(sLow <= parsedMinGrade && sHigh >= parsedMinGrade)) {
+           console.log(`[GRADE FILTER] Excluded ${school.name}: grades ${sLow}-${sHigh}, need ${parsedMinGrade}`);
+           return false;
+         }
+       } else {
+         console.log(`[GRADE FILTER] Keeping ${school.name}: Missing grade info, but not filtering out`);
+       }
+     }
     
     const schoolTuition = school.tuition || school.dayTuition || school.tuitionMin || null;
     if (maxTuition && maxTuition !== 'unlimited') {

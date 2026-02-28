@@ -699,17 +699,23 @@ async function handleBrief(base44, message, conversationFamilyProfile, context, 
   }
   
   try {
-    const { childName, childGrade, locationArea, maxTuition, interests, priorities, dealbreakers } = conversationFamilyProfile;
-    const interestsStr = interests?.length > 0 ? interests.join(', ') : '';
-    const prioritiesStr = priorities?.length > 0 ? priorities.join(', ') : '';
-    const dealbreakersStr = dealbreakers?.length > 0 ? dealbreakers.join(', ') : '';
+     const { childName, childGrade, locationArea, interests, priorities, dealbreakers } = conversationFamilyProfile;
+     // BUG-ENT-005 FIX: Check context.extractedEntities for maxTuition if not in FamilyProfile
+     let maxTuition = conversationFamilyProfile.maxTuition;
+     if ((!maxTuition || maxTuition === null || maxTuition === undefined) && context.extractedEntities?.maxTuition) {
+       maxTuition = context.extractedEntities.maxTuition;
+       console.log('[BRIEF] Using extracted maxTuition:', maxTuition);
+     }
+     const interestsStr = interests?.length > 0 ? interests.join(', ') : '';
+     const prioritiesStr = priorities?.length > 0 ? priorities.join(', ') : '';
+     const dealbreakersStr = dealbreakers?.length > 0 ? dealbreakers.join(', ') : '';
 
-    let budgetDisplay = '(not specified)';
-    if (maxTuition === 'unlimited') {
-      budgetDisplay = 'Budget is flexible';
-    } else if (maxTuition && typeof maxTuition === 'number') {
-      budgetDisplay = `$${maxTuition.toLocaleString()}/year`;
-    }
+     let budgetDisplay = '(not specified)';
+     if (maxTuition === 'unlimited') {
+       budgetDisplay = 'Budget is flexible';
+     } else if (maxTuition && typeof maxTuition === 'number') {
+       budgetDisplay = `$${maxTuition.toLocaleString()}/year`;
+     }
 
     const briefChildGenderLabel = conversationFamilyProfile?.gender === 'male'
       ? 'Your son'
@@ -1194,23 +1200,14 @@ Deno.serve(async (req) => {
       const base44 = createClientFromRequest(req);
       const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userLocation, selectedSchoolId } = await req.json();
 
-      // FIX-C: __CONFIRM_BRIEF__ sentinel only forces RESULTS if briefStatus was already pending_review.
-      // If brief hasn't been shown yet, route to BRIEF first (generating state).
+      // FIX-C: __CONFIRM_BRIEF__ sentinel always goes directly to RESULTS, skipping BRIEF state entirely.
       let context = conversationContext || {};
       let processMessage = message;
       if (message === '__CONFIRM_BRIEF__') {
         processMessage = 'show me schools';
-        if (context.briefStatus === 'pending_review') {
-          // Brief was shown and user confirmed — safe to go to RESULTS
-          context.state = 'RESULTS';
-          context.briefStatus = 'confirmed';
-          console.log('[FIX-C] __CONFIRM_BRIEF__ sentinel: briefStatus was pending_review, going to RESULTS');
-        } else {
-          // Brief hasn't been shown yet — route to BRIEF first
-          context.state = 'BRIEF';
-          context.briefStatus = 'generating';
-          console.log('[FIX-C] __CONFIRM_BRIEF__ sentinel: briefStatus was', context.briefStatus, '— routing to BRIEF first');
-        }
+        context.state = 'RESULTS';
+        context.briefStatus = 'confirmed';
+        console.log('[FIX-C] __CONFIRM_BRIEF__ sentinel: skipping BRIEF, going directly to RESULTS');
       }
 
       console.log('ORCH START', { 
