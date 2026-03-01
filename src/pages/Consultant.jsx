@@ -134,6 +134,9 @@ export default function Consultant() {
   // Track whether shortlist has ever been auto-populated (prevents re-populating after user manually empties)
   const hasAutoPopulatedShortlist = useRef(false);
   
+  // WC6: Store restored session data for returning user context
+  const [restoredSessionData, setRestoredSessionData] = useState(null);
+  
   // Progressive loading states
   const [loadingStage, setLoadingStage] = useState(0);
   const loadingStages = [
@@ -321,6 +324,16 @@ export default function Consultant() {
         setSessionRestored(true);
         return;
       }
+
+      // WC6: Store session data for returning user context
+      setRestoredSessionData({
+        sessionId: chatSession.id,
+        profileName: chatSession.profileName,
+        consultantName: chatSession.consultantSelected,
+        matchedSchoolsCount: chatSession.matchedSchools ? JSON.parse(chatSession.matchedSchools).length : 0,
+        createdDate: chatSession.created_date,
+        updatedDate: chatSession.updated_date
+      });
 
       // Restore consultant selection
       if (chatSession.consultantSelected) {
@@ -724,6 +737,29 @@ export default function Consultant() {
                                            (messageText.toLowerCase().includes('show') || 
                                             messageText.toLowerCase().includes('right')));
       
+      // WC6: Build returning user context if session was restored
+      let returningUserContext = null;
+      if (restoredSessionData && familyProfile) {
+        const shortlistedSchoolNames = shortlistData.map(s => s.name).slice(0, 5);
+        const lastActive = restoredSessionData.updatedDate 
+          ? new Date(restoredSessionData.updatedDate).toLocaleDateString()
+          : null;
+        
+        returningUserContext = {
+          isReturningUser: true,
+          childName: familyProfile.childName,
+          childGrade: familyProfile.childGrade,
+          location: familyProfile.locationArea,
+          budget: familyProfile.maxTuition ? `$${familyProfile.maxTuition.toLocaleString()}` : null,
+          priorities: familyProfile.priorities?.join(', ') || null,
+          matchedSchoolsCount: restoredSessionData.matchedSchoolsCount || 0,
+          shortlistedSchools: shortlistedSchoolNames,
+          lastActive: lastActive,
+          profileName: restoredSessionData.profileName,
+          consultantName: restoredSessionData.consultantName
+        };
+      }
+
       // Call orchestrateConversation with current schools context and user location
       const response = await base44.functions.invoke('orchestrateConversation', {
         message: messageText,
@@ -741,7 +777,8 @@ export default function Consultant() {
           lng: userLocation.lng,
           address: userLocation.address
         } : null,
-        selectedSchoolId: explicitSchoolId || selectedSchool?.id || null
+        selectedSchoolId: explicitSchoolId || selectedSchool?.id || null,
+        returningUserContext
       });
 
       // T043: Update familyProfile live from orchestration response
