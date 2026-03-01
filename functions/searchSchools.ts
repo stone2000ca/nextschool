@@ -266,7 +266,6 @@ async function performSearch(req) {
 
     // Gender dealbreaker filter — parsed from free-text dealbreakers array
     // DB values: 'Co-ed', 'All-Boys', 'All-Girls', 'Co-ed with single-gender classes'
-    const dealbreakers = payload.dealbreakers || familyProfile?.dealbreakers || [];
     if (Array.isArray(dealbreakers) && dealbreakers.length > 0) {
       const dbText = dealbreakers.join(' ').toLowerCase();
       const wantsAllGirls = /\ball[\s-]?girls?\b|girls[\s-]?only|single[\s-]?gender.*girl|daughter.*all[\s-]?girl/i.test(dbText);
