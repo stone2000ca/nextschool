@@ -142,6 +142,7 @@ function TierSection({ tier, filled, open, onToggle, children }) {
       </button>
       {open && (
         <div className="p-5 bg-white space-y-4">
+          <p className="text-sm italic text-slate-400 -mt-1">{tier.motivational}</p>
           {children}
         </div>
       )}
