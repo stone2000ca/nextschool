@@ -369,6 +369,21 @@ export default function Consultant() {
         console.log('[RESTORE] setSelectedConsultant:', chatSession.consultantSelected);
       }
 
+      // DIRECT SEARCH CALL - Simplest possible fix
+      try {
+        const searchResult = await searchSchools({ 
+          region: chatSession.locationArea || 'Toronto', 
+          grade: String(chatSession.childGrade || 5), 
+          maxTuition: String(chatSession.maxTuition || 30000) 
+        });
+        console.log('RESTORE searchSchools result:', searchResult);
+        if (searchResult && searchResult.length > 0) {
+          setSchools(searchResult);
+        }
+      } catch (err) {
+        console.error('RESTORE searchSchools error:', err);
+      }
+
       // Fetch and restore ChatHistory messages and context
       let chatHistory = null;
       if (chatSession.chatHistoryId) {
