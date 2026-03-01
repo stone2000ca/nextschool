@@ -44,10 +44,13 @@ const mapStateToView = (state) => {
   return 'chat';
 };
 
-export default function Consultant() {
+function ConsultantContent() {
   const [searchParams] = useSearchParams();
   const sessionIdParam = searchParams.get('sessionId');
   const sessionParamProcessedRef = useRef(false);
+  
+  // WC3: Use extracted hook (requires ChatContextProvider to wrap component)
+  const handleSendMessage = useMessageHandler();
   
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -921,6 +924,52 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
     );
   }
 
+  // WC3: Context value passed to provider
+  const chatContextValue = {
+    // State values
+    messages,
+    isTyping,
+    currentConversation,
+    selectedConsultant,
+    onboardingPhase,
+    schools,
+    user,
+    selectedSchool,
+    isAuthenticated,
+    familyProfile,
+    shortlistData,
+    userLocation,
+    briefStatus,
+    tokenBalance,
+    isPremium,
+    extractedEntitiesData,
+    
+    // Setters
+    setMessages,
+    setIsTyping,
+    setCurrentConversation,
+    setSchools,
+    setBriefStatus,
+    setCurrentView,
+    setTokenBalance,
+    setExtractedEntitiesData,
+    setFamilyProfile,
+    setFeedbackPromptShown,
+    setShowLoginGate,
+    setShowUpgradeModal,
+    
+    // Helpers
+    loadShortlist,
+    resetSort,
+    trackEvent,
+    chatScrollRef,
+    sessionId,
+    restoredSessionData,
+    lastTypingTime,
+    setLastTypingTime,
+    isDevMode,
+  };
+
   return (
     <div className="h-screen flex flex-col bg-slate-50">
 
@@ -1387,4 +1436,31 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
       {/* T046: Panel rendered inline in layout, no overlay needed */}
     </div>
   );
+}
+
+// WC3: Export wrapped component with ChatContextProvider
+export default function Consultant() {
+  return (
+    <ChatContextProvider value={null}>
+      <ConsultantContentWrapper />
+    </ChatContextProvider>
+  );
+}
+
+// Wrapper to access context-dependent hooks
+function ConsultantContentWrapper() {
+  const [searchParams] = useSearchParams();
+  const sessionIdParam = searchParams.get('sessionId');
+  
+  // Use state locally for context value
+  const [contextReady, setContextReady] = useState(false);
+  
+  useEffect(() => {
+    setContextReady(true);
+  }, []);
+  
+  if (!contextReady) return null;
+  
+  // Return the main ConsultantContent component
+  return <ConsultantContent />;
 }
