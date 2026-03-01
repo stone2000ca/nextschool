@@ -371,14 +371,17 @@ export default function Consultant() {
 
       // DIRECT SEARCH CALL - Simplest possible fix
       try {
-        const searchResult = await searchSchools({ 
+        const response = await searchSchools({ 
           region: chatSession.locationArea || 'Toronto', 
           grade: String(chatSession.childGrade || 5), 
           maxTuition: String(chatSession.maxTuition || 30000) 
         });
-        console.log('RESTORE searchSchools result:', searchResult);
-        if (searchResult && searchResult.length > 0) {
-          setSchools(searchResult);
+        console.log('RESTORE searchSchools response:', response);
+        const schools = response.data || response;
+        console.log('RESTORE schools extracted:', schools?.length);
+        if (schools && schools.length > 0) {
+          setSchools(schools);
+          console.log('RESTORE setSchools called with', schools.length, 'schools');
         }
       } catch (err) {
         console.error('RESTORE searchSchools error:', err);
