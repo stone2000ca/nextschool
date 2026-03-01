@@ -384,12 +384,19 @@ export default function Consultant() {
       // FIX #1: Re-run search using searchSchools backend function with saved profile data
       let restoredSchools = [];
       try {
+        // Extract city from locationArea (e.g., 'midtown Toronto' -> 'Toronto')
+        const cityName = chatSession.locationArea ? chatSession.locationArea.split(' ').pop() : undefined;
+        
         const searchParams = {
-          region: chatSession.locationArea,
+          city: cityName,
           minGrade: chatSession.childGrade,
           maxTuition: chatSession.maxTuition,
           limit: 20
         };
+        console.log('[RESTORE] Extracted city from locationArea:', {
+          original: chatSession.locationArea,
+          extracted: cityName
+        });
         console.log('[RESTORE] Calling searchSchools with params:', JSON.stringify(searchParams));
         
         const searchResponse = await base44.functions.invoke('searchSchools', searchParams);
@@ -397,7 +404,8 @@ export default function Consultant() {
         const validSchools = searchResponse.data || [];
         console.log('[RESTORE] searchSchools response:', JSON.stringify({
           schoolCount: validSchools.length,
-          firstSchool: validSchools.length > 0 ? validSchools[0].name : null
+          firstSchool: validSchools.length > 0 ? validSchools[0].name : null,
+          schoolNames: validSchools.slice(0, 3).map(s => s.name)
         }));
         
         setSchools(validSchools);
