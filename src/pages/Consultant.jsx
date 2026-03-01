@@ -307,10 +307,10 @@ export default function Consultant() {
 
   // WC5: Session loading from URL param
   useEffect(() => {
-    if (sessionIdParam && !sessionRestored && isAuthenticated && user) {
+    if (sessionIdParam && !sessionParamProcessedRef.current && isAuthenticated && user) {
       restoreSessionFromParam();
     }
-  }, [sessionIdParam, isAuthenticated, user?.id, sessionRestored]);
+  }, [sessionIdParam, isAuthenticated, user?.id]);
 
   // Load family profile for Brief panel and restore guest session after login
   useEffect(() => {
