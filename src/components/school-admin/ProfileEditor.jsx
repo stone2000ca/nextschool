@@ -684,10 +684,21 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
           <a href={createPageUrl(`SchoolProfile?id=${school.id}`)} target="_blank" rel="noopener noreferrer">
             <Button variant="outline"><Eye className="h-4 w-4 mr-2" />Preview</Button>
           </a>
-          <Button onClick={handleSave} disabled={isSaving} className="bg-teal-600 hover:bg-teal-700">
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
+          <div className="relative group">
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className={`${showTier1Warning ? 'opacity-50 cursor-not-allowed bg-slate-400 hover:bg-slate-400' : 'bg-teal-600 hover:bg-teal-700'}`}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+            {showTier1Warning && (
+              <div className="absolute bottom-full right-0 mb-2 w-56 bg-slate-800 text-white text-xs rounded-lg px-3 py-2 hidden group-hover:block z-10 text-center">
+                Complete all required fields to save
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
