@@ -461,8 +461,43 @@ export default function ClaimSchool() {
       <Navbar />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Already claimed state */}
+        {alreadyClaimed && !showDisputeForm && (
+          <Card className="p-8">
+            <div className="text-center">
+              <div className="h-14 w-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+                <Lock className="h-7 w-7 text-amber-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900 mb-3">This school is already claimed</h1>
+              <p className="text-slate-600 mb-6 max-w-sm mx-auto">
+                This school was claimed by someone at{' '}
+                <strong>{alreadyClaimed.domain || 'another organization'}</strong>.
+                If this is an error, request access below.
+              </p>
+              <Button
+                onClick={() => setShowDisputeForm(true)}
+                className="bg-teal-600 hover:bg-teal-700 px-8"
+              >
+                Request Access
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Dispute form */}
+        {alreadyClaimed && showDisputeForm && (
+          <Card className="p-8">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Request Access</h2>
+            <DisputeForm
+              schoolId={schoolId}
+              schoolName={school.name}
+              onCancel={() => setShowDisputeForm(false)}
+            />
+          </Card>
+        )}
+
         {/* Step 1: Intro */}
-        {step === 1 && (
+        {!alreadyClaimed && step === 1 && (
           <Card className="p-8">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-slate-900 mb-4">Claim {school.name}</h1>
