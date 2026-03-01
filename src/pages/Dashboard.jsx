@@ -19,8 +19,11 @@ export default function Dashboard() {
   const [sessionMap, setSessionMap] = useState({});
   const [error, setError] = useState(null);
   const [showNewSearchModal, setShowNewSearchModal] = useState(false);
+  const [showArchiveChoiceModal, setShowArchiveChoiceModal] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showArchivedTab, setShowArchivedTab] = useState(false);
+  const [reactivateError, setReactivateError] = useState(null);
 
   useEffect(() => {
     checkAuthAndLoadSessions();
@@ -104,7 +107,8 @@ export default function Dashboard() {
 
   const handleNewSearch = () => {
     // WC8: Case 1 (free user with 0 sessions) - navigate directly
-    if (sessions.length === 0) {
+    const activeSessions = sessions.filter(s => s.status === 'active');
+    if (activeSessions.length === 0) {
       navigate(createPageUrl('Consultant'));
       return;
     }
@@ -113,7 +117,7 @@ export default function Dashboard() {
     const isPaid = user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise';
     if (!isPaid) {
       // Show upgrade modal for free users
-      const activeSession = sessions.find(s => s.status === 'active');
+      const activeSession = activeSessions[0];
       const matchedCount = activeSession ? (() => {
         try {
           return activeSession.matchedSchools ? JSON.parse(activeSession.matchedSchools).length : 0;
@@ -126,8 +130,60 @@ export default function Dashboard() {
       return;
     }
 
-    // Paid users can start over without modal
-    setShowNewSearchModal(true);
+    // WC14: Case 3 (paid user under 5 active sessions) - navigate directly
+    if (activeSessions.length < 5) {
+      navigate(createPageUrl('Consultant'));
+      return;
+    }
+
+    // WC14: Case 4 (paid user at 5 active sessions) - show archive choice modal
+    setShowArchiveChoiceModal(true);
+  };
+
+  const handleArchiveSessionForNewSearch = async (sessionToArchive) => {
+    setModalLoading(true);
+    try {
+      await base44.entities.ChatSession.update(sessionToArchive.id, { status: 'archived' });
+      setShowArchiveChoiceModal(false);
+      // Refresh sessions
+      await checkAuthAndLoadSessions();
+      navigate(createPageUrl('Consultant'));
+    } catch (err) {
+      console.error('Failed to archive session:', err);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleReactivateSession = async (archivedSession) => {
+    const activeSessions = sessions.filter(s => s.status === 'active');
+    
+    // Check if at 5 active sessions
+    if (activeSessions.length >= 5) {
+      setReactivateError('You have 5 active profiles. Archive another session first.');
+      return;
+    }
+
+    try {
+      await base44.entities.ChatSession.update(archivedSession.id, { status: 'active' });
+      setReactivateError(null);
+      await checkAuthAndLoadSessions();
+    } catch (err) {
+      console.error('Failed to reactivate session:', err);
+      setReactivateError('Failed to reactivate. Please try again.');
+    }
+  };
+
+  const handleDeleteArchivedSession = async (sessionToDelete) => {
+    try {
+      await base44.entities.ChatSession.update(sessionToDelete.id, { 
+        status: 'deleted',
+        isActive: false 
+      });
+      await checkAuthAndLoadSessions();
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+    }
   };
 
   const handleStartOver = async () => {
@@ -239,23 +295,113 @@ export default function Dashboard() {
         ) : (
           /* Sessions Grid + Shortlist */
           <div>
-            <h2 className="text-xl font-semibold text-white mb-6">
-              Your Search Profiles ({sessions.length})
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-              {sessions.map((session) => (
-                <SchoolSearchProfile
-                  key={session.id}
-                  session={session}
-                  onViewMatches={() => {}}
-                  onEditProfile={() => {}}
-                  onArchive={handleSessionArchived}
-                  isPaid={user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise'}
-                />
-              ))}
+            {/* Active / Archived Toggle */}
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => setShowArchivedTab(false)}
+                className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
+                  !showArchivedTab 
+                    ? 'text-white border-teal-500' 
+                    : 'text-white/50 border-transparent hover:text-white/70'
+                }`}
+              >
+                Active ({sessions.filter(s => s.status === 'active').length})
+              </button>
+              <button
+                onClick={() => setShowArchivedTab(true)}
+                className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
+                  showArchivedTab 
+                    ? 'text-white border-teal-500' 
+                    : 'text-white/50 border-transparent hover:text-white/70'
+                }`}
+              >
+                Archived ({sessions.filter(s => s.status === 'archived').length})
+              </button>
             </div>
 
+            {/* Active Sessions */}
+            {!showArchivedTab && (
+              <div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+                  {sessions.filter(s => s.status === 'active').map((session) => (
+                    <SchoolSearchProfile
+                      key={session.id}
+                      session={session}
+                      onViewMatches={() => {}}
+                      onEditProfile={() => {}}
+                      onArchive={handleSessionArchived}
+                      isPaid={user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise'}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Archived Sessions */}
+            {showArchivedTab && (
+              <div>
+                {sessions.filter(s => s.status === 'archived').length === 0 ? (
+                  <div className="bg-[#2A2A3D] rounded-lg p-8 border border-white/10 text-center">
+                    <div className="text-4xl mb-3">📦</div>
+                    <p className="text-white/60">No archived profiles yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {sessions.filter(s => s.status === 'archived').map((session) => (
+                      <div
+                        key={session.id}
+                        className="bg-[#2A2A3D]/60 border border-white/10 rounded-lg p-5 flex items-start justify-between opacity-60 hover:opacity-75 transition-opacity"
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white">
+                            {session.profileName || 'Untitled Profile'}
+                          </h3>
+                          <p className="text-sm text-white/60 mt-1">
+                            {session.childName && `${session.childName}`}
+                            {session.childName && session.childGrade != null && ` • Grade ${session.childGrade}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise' ? (
+                            <>
+                              <button
+                                onClick={() => handleReactivateSession(session)}
+                                className="px-3 py-1.5 bg-teal-600/20 hover:bg-teal-600/40 text-teal-300 text-sm rounded-lg font-medium transition-colors"
+                              >
+                                Reactivate
+                              </button>
+                              <button
+                                onClick={() => handleDeleteArchivedSession(session)}
+                                className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 text-sm rounded-lg font-medium transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          ) : (
+                            <div className="px-3 py-1.5 bg-amber-600/20 text-amber-300 text-xs rounded-lg font-medium">
+                              Upgrade to reactivate
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {reactivateError && (
+                      <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+                        {reactivateError}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Global Shortlist */}
+            {!showArchivedTab && (
+
+            )}
+
             {/* WC7: Global Shortlist Section */}
+            {!showArchivedTab && (
             <div className="mt-12 pt-8 border-t border-white/10">
               <h2 className="text-xl font-semibold text-white mb-6">Your Shortlisted Schools</h2>
               {shortlistedSchools.length === 0 ? (
@@ -291,9 +437,52 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* WC14: Archive Choice Modal (Case 4 - 5 active sessions) */}
+      {showArchiveChoiceModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#2A2A3D] rounded-lg max-w-md w-full p-6 border border-white/10">
+            <div className="flex items-start gap-3 mb-4">
+              <AlertCircle className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h2 className="text-xl font-semibold text-white mb-2">5 Active Profiles Limit</h2>
+                <p className="text-white/70 text-sm">
+                  You've reached your limit of 5 active profiles. Archive one to start a new search.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
+              {sessions.filter(s => s.status === 'active').map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => handleArchiveSessionForNewSearch(session)}
+                  disabled={modalLoading}
+                  className="w-full p-3 text-left bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <p className="text-white font-medium text-sm">{session.profileName || 'Untitled'}</p>
+                  <p className="text-white/60 text-xs mt-0.5">
+                    {session.childName && `${session.childName}`}
+                    {session.childName && session.childGrade != null && ` • Grade ${session.childGrade}`}
+                  </p>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowArchiveChoiceModal(false)}
+              disabled={modalLoading}
+              className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* WC8: New Search Confirmation Modal (Paid Users) */}
       {showNewSearchModal && sessions.length > 0 && (
