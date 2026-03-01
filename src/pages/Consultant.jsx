@@ -416,19 +416,23 @@ export default function Consultant() {
 
   const loadFamilyProfile = async () => {
     if (!user?.id || !currentConversation?.id) return;
-    
+
     try {
       const profiles = await base44.entities.FamilyProfile.filter({
         userId: user.id,
         conversationId: currentConversation.id
       });
-      
+
       if (profiles.length > 0) {
         setFamilyProfile(profiles[0]);
       }
     } catch (error) {
       console.error('Failed to load family profile:', error);
     }
+  };
+
+  const handleRestoreGuestSession = () => {
+    restoreGuestSession(isAuthenticated, user, currentConversation, setMessages, setSelectedConsultant, setCurrentConversation, base44);
   };
 
 
