@@ -119,12 +119,30 @@ export default function SchoolAdmin() {
     premium: <Crown className="h-3 w-3" />
   };
 
-  const navItems = [
-    { id: 'profile', label: 'Profile Editor', icon: Building2 },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3, locked: school.subscriptionTier === 'free' },
-    { id: 'inquiries', label: 'Inquiries', icon: Mail },
-    { id: 'subscription', label: 'Subscription', icon: CreditCard },
-    { id: 'csv', label: 'CSV Upload', icon: Upload }
+  const navGroups = [
+    {
+      label: 'Content',
+      items: [
+        { id: 'profile', label: 'Profile Editor', icon: Building2 },
+        { id: 'media', label: 'Photos & Media', icon: Image },
+        { id: 'testimonials', label: 'Testimonials', icon: MessageSquareQuote },
+      ],
+    },
+    {
+      label: 'Engagement',
+      items: [
+        { id: 'inquiries', label: 'Inquiries', icon: Mail },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3, locked: school.subscriptionTier === 'free' },
+      ],
+    },
+    {
+      label: 'Admin',
+      items: [
+        { id: 'csv', label: 'CSV Upload', icon: Upload },
+        { id: 'subscription', label: 'Subscription', icon: CreditCard },
+        { id: 'account', label: 'Account', icon: User },
+      ],
+    },
   ];
 
   return (
