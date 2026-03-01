@@ -556,7 +556,7 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
 // =============================================================================
 // INLINED: handleDiscovery
 // =============================================================================
-async function handleDiscovery(base44, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentSchools, flags) {
+async function handleDiscovery(base44, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentSchools, flags, returningUserContextBlock) {
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
   const history = conversationHistory || [];
@@ -602,14 +602,14 @@ async function handleDiscovery(base44, message, conversationFamilyProfile, conte
 If the user signals they are done with questions (e.g. "show me schools", "no more questions", "stop asking", "that's enough", "I'm done", "just show me results", "skip", "go ahead", "let's see", "move on"), you MUST immediately stop asking questions. Do NOT ask any clarifying or follow-up question. Do NOT explain what information is missing. Your ONLY job at that point is to acknowledge their request in one warm sentence and confirm the brief is being prepared. This rule overrides all instructions about thoroughness, completeness, or missing Tier 1 data.\n\n`;
 
   const personaInstructions = consultantName === 'Jackie'
-    ? `${stopIntentConstraint}[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
+    ? `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}${stopIntentConstraint}[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
 ${knownSummary}
 ${tier1Guidance}
 Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
 CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.
 CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.${briefOfferInstruction}
 YOU ARE JACKIE - Senior education consultant, 10+ years placing families in private schools. You're warm but efficient.`
-    : `${stopIntentConstraint}[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
+    : `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}${stopIntentConstraint}[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
 ${knownSummary}
 ${tier1Guidance}
 Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
@@ -666,7 +666,7 @@ YOU ARE LIAM - Senior education strategist, 10+ years in private school placemen
 // =============================================================================
 // INLINED: handleBrief
 // =============================================================================
-async function handleBrief(base44, message, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, flags) {
+async function handleBrief(base44, message, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, flags, returningUserContextBlock) {
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
   const BRIEF_STATUS = { GENERATING: 'generating', PENDING_REVIEW: 'pending_review', EDITING: 'editing', CONFIRMED: 'confirmed' };
 
@@ -747,15 +747,15 @@ async function handleBrief(base44, message, conversationFamilyProfile, context, 
       : 'Your child';
     let briefChildDisplayName = childName ? childName : briefChildGenderLabel;
 
-    const jackieBriefSystemPrompt = `[STATE: BRIEF] You are Jackie, a warm and experienced education consultant. Generate a brief summary of what the family has shared. Use ONLY what was explicitly stated by the parent.
+    const jackieBriefSystemPrompt = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}[STATE: BRIEF] You are Jackie, a warm and experienced education consultant. Generate a brief summary of what the family has shared. Use ONLY what was explicitly stated by the parent.
 
-CRITICAL RULES:
-- Start with a warm, natural conversational sentence (1-2 sentences) acknowledging the family's situation before the numbered summary.
-- Do NOT invent personality traits, motivations, or character descriptions that were not explicitly stated by the parent.
-- If no personality was described, skip that section entirely.
-- End with: "Does that capture it? Anything to adjust?"
+    CRITICAL RULES:
+    - Start with a warm, natural conversational sentence (1-2 sentences) acknowledging the family's situation before the numbered summary.
+    - Do NOT invent personality traits, motivations, or character descriptions that were not explicitly stated by the parent.
+    - If no personality was described, skip that section entirely.
+    - End with: "Does that capture it? Anything to adjust?"
 
-YOU ARE JACKIE — warm, empathetic, experienced.`;
+    YOU ARE JACKIE — warm, empathetic, experienced.`;
 
     const jackieBriefUserPrompt = `Generate the family brief summary.
 
@@ -779,7 +779,7 @@ Format:
   ${dealbreakersStr ? '6. Dealbreakers: ' + dealbreakersStr : ''}
 - End with: "Does that capture it? Anything to adjust?"`;
 
-    const liamBriefSystemPrompt = `[STATE: BRIEF] You are Liam, a direct and strategic education consultant. Generate a brief summary of what the family has shared. Use ONLY what was explicitly stated by the parent. Format as a numbered list. End with "Does that look right? Anything to change?"
+    const liamBriefSystemPrompt = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}[STATE: BRIEF] You are Liam, a direct and strategic education consultant. Generate a brief summary of what the family has shared. Use ONLY what was explicitly stated by the parent. Format as a numbered list. End with "Does that look right? Anything to change?"
 
 YOU ARE LIAM — direct, strategic.`;
 
@@ -841,7 +841,7 @@ Format as a numbered list. Start the first item with "${briefChildDisplayName}:"
 // =============================================================================
 // INLINED: handleResults
 // =============================================================================
-async function handleResults(base44, message, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, selectedSchoolId, conversationId, userId, userLocation, autoRefresh = false, extractedEntities = {}) {
+async function handleResults(base44, message, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, selectedSchoolId, conversationId, userId, userLocation, autoRefresh = false, extractedEntities = {}, returningUserContextBlock) {
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
   if (selectedSchoolId) {
@@ -1015,7 +1015,7 @@ Max 160 words total.`;
         ? `\n\nCOMPARISON CONTEXT: The parent is currently viewing a side-by-side comparison of: ${context.comparingSchools.join(', ')}. If they ask questions about these schools, answer with that comparison context in mind.`
         : '';
 
-      const resultsSystemPrompt = `[STATE: RESULTS] You are currently showing school results to the parent.
+      const resultsSystemPrompt = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}[STATE: RESULTS] You are currently showing school results to the parent.
 
 CRITICAL STATE RULE — READ THIS FIRST:
 You are in RESULTS state. The parent is viewing their school matches.
@@ -1085,7 +1085,7 @@ ${consultantName === 'Jackie' ? 'YOU ARE JACKIE - Warm, empathetic, experienced.
 // =============================================================================
 // INLINED: handleDeepDive
 // =============================================================================
-async function handleDeepDive(base44, selectedSchoolId, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools) {
+async function handleDeepDive(base44, selectedSchoolId, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, returningUserContextBlock) {
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
   console.log('[DEEPDIVE_START]', selectedSchoolId);
@@ -1138,7 +1138,7 @@ async function handleDeepDive(base44, selectedSchoolId, message, conversationFam
     genderPolicy: selectedSchool.genderPolicy || 'Co-ed'
   };
   
-  const deepDiveSystemPrompt = `You are ${consultantName}, an education consultant. The parent is currently in a deep-dive on a specific school.
+  const deepDiveSystemPrompt = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}You are ${consultantName}, an education consultant. The parent is currently in a deep-dive on a specific school.
 
 CRITICAL STATE RULE — READ THIS FIRST:
 You are in DEEPDIVE state. If the parent updates any preference mid-conversation (e.g. "actually grade 6", "budget changed", "we want boarding"), you MUST:
@@ -1221,7 +1221,28 @@ Deno.serve(async (req) => {
     
     try {
       const base44 = createClientFromRequest(req);
-      const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userLocation, selectedSchoolId } = await req.json();
+      const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userLocation, selectedSchoolId, returningUserContext } = await req.json();
+
+      // WC6: Build RETURNING USER CONTEXT block if present
+      let returningUserContextBlock = null;
+      if (returningUserContext?.isReturningUser) {
+        const contextParts = [];
+        if (returningUserContext.profileName) contextParts.push(`Session: ${returningUserContext.profileName}`);
+        if (returningUserContext.childName || returningUserContext.childGrade) {
+          const childInfo = returningUserContext.childName 
+            ? `${returningUserContext.childName}${returningUserContext.childGrade ? `, Grade ${returningUserContext.childGrade}` : ''}`
+            : `Grade ${returningUserContext.childGrade}`;
+          contextParts.push(`Child: ${childInfo}`);
+        }
+        if (returningUserContext.location) contextParts.push(`Location: ${returningUserContext.location}`);
+        if (returningUserContext.budget) contextParts.push(`Budget: ${returningUserContext.budget}`);
+        if (returningUserContext.priorities) contextParts.push(`Priorities: ${returningUserContext.priorities}`);
+        if (returningUserContext.matchedSchoolsCount >= 0) contextParts.push(`Matched schools: ${returningUserContext.matchedSchoolsCount}`);
+        if (returningUserContext.shortlistedSchools?.length > 0) contextParts.push(`Shortlisted: ${returningUserContext.shortlistedSchools.join(', ')}`);
+        if (returningUserContext.lastActive) contextParts.push(`Last active: ${returningUserContext.lastActive}`);
+        
+        returningUserContextBlock = `RETURNING USER CONTEXT:\n- ${contextParts.join('\n- ')}\nThis is a returning user. Acknowledge their return naturally in your first response.`;
+      }
 
       // FIX-C: __CONFIRM_BRIEF__ sentinel goes directly to RESULTS state for immediate school display.
       let context = conversationContext || {};
@@ -1403,13 +1424,13 @@ Deno.serve(async (req) => {
       let responseData;
 
       if (currentState === STATES.DISCOVERY) {
-        responseData = await handleDiscovery(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, currentSchools, flags);
+        responseData = await handleDiscovery(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, currentSchools, flags, returningUserContextBlock);
         responseData.extractedEntities = extractionResult?.extractedEntities || {};
         return Response.json(responseData);
       }
 
       if (currentState === STATES.BRIEF) {
-        responseData = await handleBrief(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, flags);
+        responseData = await handleBrief(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, flags, returningUserContextBlock);
         responseData.extractedEntities = extractionResult?.extractedEntities || {};
         return Response.json(responseData);
       }
@@ -1428,14 +1449,14 @@ Deno.serve(async (req) => {
           }
         }
         const autoRefresh = context.autoRefreshed === true;
-        responseData = await handleResults(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, selectedSchoolId, conversationId, userId, userLocation, autoRefresh, extractionResult?.extractedEntities || {});
+        responseData = await handleResults(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, briefStatus, selectedSchoolId, conversationId, userId, userLocation, autoRefresh, extractionResult?.extractedEntities || {}, returningUserContextBlock);
         responseData.conversationContext = { ...(responseData.conversationContext || {}), autoRefreshed: autoRefresh };
         responseData.extractedEntities = extractionResult?.extractedEntities || {};
         return Response.json(responseData);
       }
 
       if (currentState === STATES.DEEP_DIVE) {
-        responseData = await handleDeepDive(base44, selectedSchoolId, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools);
+        responseData = await handleDeepDive(base44, selectedSchoolId, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, returningUserContextBlock);
         return Response.json(responseData);
       }
 
