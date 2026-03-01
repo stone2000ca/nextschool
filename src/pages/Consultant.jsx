@@ -363,17 +363,11 @@ export default function Consultant() {
       // Fetch and restore matched schools BEFORE setting onboardingPhase
       if (chatSession.matchedSchools) {
         try {
+          const allSchools = await School.filter();
           const matchedSchoolIds = JSON.parse(chatSession.matchedSchools);
-          console.log('[RESTORE] Parsed matchedSchoolIds:', matchedSchoolIds);
-          if (matchedSchoolIds && matchedSchoolIds.length > 0) {
-            // Fetch actual School entities individually using Promise.all
-            const schoolData = await Promise.all(
-              matchedSchoolIds.map(id => School.get(id))
-            );
-            const validSchools = schoolData.filter(s => s !== null);
-            console.log('[RESTORE] Fetched schools count:', validSchools.length);
-            setSchools(validSchools);
-          }
+          const validSchools = allSchools.filter(s => matchedSchoolIds.includes(s.id));
+          console.log('[RESTORE] Restored schools count:', validSchools.length);
+          setSchools(validSchools);
         } catch (e) {
           console.error('[RESTORE] Failed to restore schools:', e);
         }
