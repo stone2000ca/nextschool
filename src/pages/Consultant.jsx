@@ -431,32 +431,7 @@ export default function Consultant() {
     }
   };
 
-  // Restore guest session data after login
-  const restoreGuestSession = () => {
-    if (isAuthenticated && user) {
-      const guestData = localStorage.getItem('guestConversationData');
-      if (guestData) {
-        try {
-          const { messages: guestMessages, consultant, conversationContext } = JSON.parse(guestData);
-          // Restore the conversation
-          if (guestMessages && guestMessages.length > 0) {
-            setMessages(guestMessages);
-            setSelectedConsultant(consultant);
-            if (conversationContext) {
-              setCurrentConversation({ 
-                ...currentConversation, 
-                conversationContext 
-              });
-            }
-          }
-          // Clear guest data
-          localStorage.removeItem('guestConversationData');
-        } catch (e) {
-          console.error('Failed to restore guest session:', e);
-        }
-      }
-    }
-  };
+
 
   const loadUserLocation = async () => {
     // Check localStorage first
