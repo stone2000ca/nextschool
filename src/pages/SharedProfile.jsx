@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { createPageUrl } from '../utils';
@@ -8,7 +8,8 @@ import { ArrowRight, MapPin, DollarSign, Heart } from 'lucide-react';
 import Navbar from '@/components/navigation/Navbar';
 
 export default function SharedProfile() {
-  const { shareToken } = useParams();
+  const [searchParams] = useSearchParams();
+  const shareToken = searchParams.get('token');
   const [session, setSession] = useState(null);
   const [schools, setSchools] = useState([]);
   const [shortlistedSchools, setShortlistedSchools] = useState([]);

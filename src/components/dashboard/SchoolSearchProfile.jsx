@@ -121,7 +121,7 @@ export default function SchoolSearchProfile({
       // Generate UUID for shareToken
       const shareToken = crypto.randomUUID();
       await base44.entities.ChatSession.update(session.id, { shareToken });
-      const url = `https://nextschool.ca/profile/${shareToken}`;
+      const url = `https://nextschool.ca/SharedProfile?token=${shareToken}`;
       setShareUrl(url);
       setShowShareModal(true);
     } catch (err) {
