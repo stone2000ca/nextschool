@@ -358,7 +358,7 @@ async function performSearch(req) {
     });
   }
 
-  const scored = hardFiltered.map(school => {
+  const scored = schoolsToRank.map(school => {
     let score = 0;
     
     // BUG-MATCH-S41 FIX: Soft penalty for grades outside range (instead of hard filter)
