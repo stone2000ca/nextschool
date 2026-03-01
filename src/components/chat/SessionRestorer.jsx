@@ -211,7 +211,7 @@ export const restoreGuestSession = (isAuthenticated, user, currentConversation, 
         ...prev,
         conversationContext: {
           ...conversationContext,
-          state: conversationContext.state || STATES.WELCOME
+          state: conversationContext.state || STATES_FOR_GUEST.WELCOME
         }
       }));
     }
