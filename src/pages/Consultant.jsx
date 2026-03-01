@@ -1583,7 +1583,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
 
         {/* CENTER CONTENT AREA */}
         <main
-          className="overflow-hidden bg-white transition-all duration-200 ease-out"
+          className="overflow-y-auto bg-white transition-all duration-200 ease-out"
           style={{
             flex: 1,
             minWidth: 0,
@@ -1608,6 +1608,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
           ) : currentView === 'detail' && selectedSchool ? (
             <SchoolDetailPanel
               school={selectedSchool}
+              familyProfile={familyProfile}
               onBack={() => {
                 setSelectedSchool(null);
                 setCurrentView('schools');
