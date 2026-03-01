@@ -500,9 +500,12 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
     <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Profile Editor</h2>
-          <p className="text-slate-600 text-sm mt-0.5">Complete each tier to improve your school's visibility and match rate.</p>
+        <div className="flex items-center gap-5">
+          <CompletenessRing score={weightedScore} />
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Profile Editor</h2>
+            <p className="text-slate-600 text-sm mt-0.5">Complete each tier to improve your school's visibility and match rate.</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {autoSaved && (
