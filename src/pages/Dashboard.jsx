@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import Navbar from '@/components/navigation/Navbar';
 import ChatSessionCard from '@/components/dashboard/ChatSessionCard.jsx';
+import SchoolSearchProfile from '@/components/dashboard/SchoolSearchProfile.jsx';
 import { Plus, Settings, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
