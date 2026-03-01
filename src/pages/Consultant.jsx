@@ -372,16 +372,48 @@ export default function Consultant() {
         console.log('[RESTORE] setSelectedConsultant:', chatSession.consultantSelected);
       }
 
-      // DIRECT SEARCH CALL - Simplest possible fix
+      // DIRECT SEARCH CALL - Match orchestrateConversation's pattern
       try {
-        const searchParams = { 
-          region: chatSession.locationArea || 'Toronto', 
-          grade: String(chatSession.childGrade || 5), 
-          maxTuition: String(chatSession.maxTuition || 30000) 
+        // Parse locationArea like orchestrateConversation does (lines 887-921)
+        const locationArea = chatSession.locationArea;
+        const searchParams = {
+          limit: 50,
+          minGrade: chatSession.childGrade,
+          maxGrade: chatSession.childGrade,
+          maxTuition: chatSession.maxTuition
         };
+
+        // Check if location is a region alias
+        if (locationArea) {
+          const locationAreaLower = locationArea.toLowerCase().trim();
+          const regionAliases = ['gta', 'greater toronto area', 'lower mainland', 'metro vancouver', 'greater vancouver'];
+          if (regionAliases.includes(locationAreaLower)) {
+            searchParams.region = locationArea;
+          } else {
+            // Auto-infer province from city like orchestrateConversation does
+            const cityToProvinceMap = {
+              'toronto': 'Ontario', 'vancouver': 'British Columbia', 'calgary': 'Alberta',
+              'edmonton': 'Alberta', 'montreal': 'Quebec', 'ottawa': 'Ontario',
+              'winnipeg': 'Manitoba', 'halifax': 'Nova Scotia', 'victoria': 'British Columbia',
+              'quebec city': 'Quebec', 'saskatoon': 'Saskatchewan', 'regina': 'Saskatchewan'
+            };
+            const locationParts = locationArea.split(',').map(s => s.trim());
+            if (locationParts.length >= 2) {
+              searchParams.city = locationParts[0];
+              searchParams.provinceState = locationParts[1];
+            } else if (locationParts.length === 1) {
+              searchParams.city = locationParts[0];
+              const inferredProvince = cityToProvinceMap[locationParts[0].toLowerCase()];
+              if (inferredProvince) {
+                searchParams.provinceState = inferredProvince;
+              }
+            }
+          }
+        }
+
         const response = await searchSchools(searchParams);
         console.log('RESTORE searchSchools response:', response);
-        setDebugInfo('searchParams: region=' + searchParams.region + ' grade=' + searchParams.grade + ' maxTuition=' + searchParams.maxTuition + ' | schools=' + (response?.data?.schools?.length || 0));
+        setDebugInfo('location=' + locationArea + ' | city=' + (searchParams.city || 'N/A') + ' grade=' + chatSession.childGrade + ' tuition=' + chatSession.maxTuition + ' | schools=' + (response?.data?.schools?.length || 0));
         const schoolsData = response?.data?.schools || [];
         console.log('RESTORE schools extracted:', schoolsData?.length);
         if (schoolsData && schoolsData.length > 0) {
