@@ -205,10 +205,14 @@ export default function Consultant() {
     setCurrentView(stateToView(conversationState));
   }, [currentConversation?.conversationContext?.state, selectedSchool, currentView]);
   
-  // ARCHITECTURAL FIX: Single source of truth for layout - eliminates race condition
-  // When schools.length > 0, show split layout (schools grid + chat panel)
-  // When schools.length === 0, show single-column layout (chat only)
-  const showSchoolGrid = schools.length > 0;
+  const isIntakePhase = !isRestoringSessionRef.current && (
+                        schools.length === 0 && 
+                        currentView !== 'schools' && 
+                        currentView !== 'detail' && 
+                        currentView !== 'comparison' && 
+                        currentView !== 'comparison-table' &&
+                        ![STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState)
+                      );
 
   // School filtering/sorting via extracted hook
   const {
@@ -1445,9 +1449,9 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
       {/* Header */}
       <Navbar variant="minimal" />
 
-      {!showSchoolGrid ? (
-         /* SINGLE COLUMN LAYOUT - No schools yet */
-         <div id="main-content" className="flex-1 flex bg-[#1E1E2E] overflow-hidden">
+      {isIntakePhase ? (
+        /* INTAKE PHASE - Centered Layout */
+        <div id="main-content" className="flex-1 flex bg-[#1E1E2E] overflow-hidden">
           <div className="flex-1 flex items-center justify-center p-2 sm:p-4">
             <div className="w-full max-w-2xl h-full max-h-[95vh] sm:max-h-[90vh] bg-[#2A2A3D] rounded-xl sm:rounded-2xl shadow-2xl flex flex-col transition-all duration-400">
               <ChatPanel
