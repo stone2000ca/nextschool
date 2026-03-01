@@ -31,6 +31,8 @@ Deno.serve(async (req) => {
     try {
       await base44.asServiceRole.entities.School.update(school.id, { genderPolicy: 'Co-ed' });
       updated++;
+      // Throttle to avoid rate limits
+      await new Promise(r => setTimeout(r, 150));
     } catch (e) {
       console.error(`Failed to update ${school.name}:`, e.message);
       failed++;
