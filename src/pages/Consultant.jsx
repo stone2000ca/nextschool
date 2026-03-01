@@ -1659,7 +1659,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
                 </div>
               </div>
               </div>
-              ) : currentState === STATES.RESULTS && schools.length > 0 ? (
+              ) : (currentState === STATES.RESULTS || showSchoolGrid) && schools.length > 0 ? (
             <div className="h-full flex flex-col animate-fadeIn">
               <div className="p-3 sm:p-4 border-b flex flex-col gap-2">
                 <div className="flex items-center justify-between">
