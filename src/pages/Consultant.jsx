@@ -397,37 +397,32 @@ export default function Consultant() {
         console.log('[RESTORE] Using ChatSession data as FamilyProfile fallback');
       }
 
-      // FIX #1: Re-run search using searchSchools backend function with saved profile data
+      // FIX #1: Fetch stored school IDs from ChatSession.matchedSchools
       let restoredSchools = [];
       try {
-        // Extract city from locationArea (e.g., 'midtown Toronto' -> 'Toronto')
-        const cityName = chatSession.locationArea ? chatSession.locationArea.split(' ').pop() : undefined;
+        const schoolIds = chatSession.matchedSchools 
+          ? JSON.parse(chatSession.matchedSchools) 
+          : [];
         
-        const searchParams = {
-          city: cityName,
-          minGrade: chatSession.childGrade,
-          maxTuition: chatSession.maxTuition,
-          limit: 20
-        };
-        console.log('[RESTORE] Extracted city from locationArea:', {
-          original: chatSession.locationArea,
-          extracted: cityName
-        });
-        console.log('[RESTORE] Calling searchSchools with params:', JSON.stringify(searchParams));
-        
-        const searchResponse = await base44.functions.invoke('searchSchools', searchParams);
-        
-        const validSchools = searchResponse.data || [];
-        console.log('[RESTORE] searchSchools response:', JSON.stringify({
-          schoolCount: validSchools.length,
-          firstSchool: validSchools.length > 0 ? validSchools[0].name : null,
-          schoolNames: validSchools.slice(0, 3).map(s => s.name)
-        }));
-        
-        restoredSchools = validSchools;
-        console.log('[RESTORE] searchSchools resolved with', validSchools.length, 'schools');
+        if (Array.isArray(schoolIds) && schoolIds.length > 0) {
+          console.log('[RESTORE] Fetching', schoolIds.length, 'schools by ID:', schoolIds);
+          
+          // Fetch all school records in parallel
+          const schoolRecords = await Promise.all(
+            schoolIds.map(id => base44.entities.School.get(id).catch(e => {
+              console.error('[RESTORE] Failed to fetch school:', id, e);
+              return null;
+            }))
+          );
+          
+          restoredSchools = schoolRecords.filter(Boolean);
+          console.log('[RESTORE] Fetched', restoredSchools.length, 'school records');
+          console.log('[RESTORE] School names:', restoredSchools.slice(0, 3).map(s => s.name));
+        } else {
+          console.log('[RESTORE] No matchedSchools stored in ChatSession');
+        }
       } catch (e) {
-        console.error('[RESTORE] Failed to restore schools via searchSchools:', e);
+        console.error('[RESTORE] Failed to restore schools from matchedSchools:', e);
       }
 
       // CRITICAL: Batch state updates AFTER searchSchools completes to force UI to RESULTS phase
