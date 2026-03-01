@@ -58,7 +58,7 @@ export default function ForSchools() {
           <p className="text-xl text-slate-300 max-w-3xl mx-auto mb-8">
             Claim your free profile on NextSchool and control how families discover your school.
           </p>
-          <Link to={createPageUrl('SchoolDirectory')}>
+          <Link to={createPageUrl('Portal')}>
             <Button size="lg" className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-7 text-lg">
               Find Your School & Claim Your Profile
               <ArrowRight className="ml-2 h-5 w-5" />
