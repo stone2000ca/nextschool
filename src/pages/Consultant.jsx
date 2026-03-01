@@ -371,6 +371,7 @@ export default function Consultant() {
 
       // DIRECT SEARCH CALL - Simplest possible fix
       try {
+        alert('ABOUT TO CALL searchSchools');
         const response = await searchSchools({ 
           region: chatSession.locationArea || 'Toronto', 
           grade: String(chatSession.childGrade || 5), 
