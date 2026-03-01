@@ -415,13 +415,12 @@ export default function Consultant() {
         console.error('[RESTORE] Failed to restore schools via searchSchools:', e);
       }
 
-      // CRITICAL: Set currentView to 'schools' BEFORE setting currentConversation
+      // CRITICAL: Set currentView to 'schools' and state to RESULTS BEFORE setting schools
       // This ensures isIntakePhase condition evaluates correctly
-      if (restoredSchools.length > 0) {
-        setCurrentView('schools');
-        console.log('[RESTORE] setCurrentView called with "schools"');
-      }
-
+      console.log('[RESTORE] Setting state to RESULTS with', restoredSchools.length, 'schools');
+      setCurrentView('schools');
+      setOnboardingPhase(STATES.RESULTS);
+      
       // Set currentConversation with RESULTS state in context
       if (chatHistory) {
         const restoredContext = {
@@ -433,12 +432,15 @@ export default function Consultant() {
           ...chatHistory,
           conversationContext: restoredContext
         });
-        console.log('[RESTORE] setCurrentConversation with state:', STATES.RESULTS);
+        console.log('[RESTORE] setCurrentConversation with state: RESULTS, schools:', restoredSchools.length);
       }
 
-      // Set onboardingPhase to RESULTS
-      setOnboardingPhase(STATES.RESULTS);
-      console.log('[RESTORE] setOnboardingPhase to STATES.RESULTS');
+      // Also explicitly set schools state to ensure grid renders
+      if (restoredSchools.length > 0) {
+        console.log('[RESTORE] Schools set in state:', restoredSchools.length, 'items');
+      } else {
+        console.warn('[RESTORE] No schools restored - grid will be empty');
+      }
 
       // Load shortlist from user if authenticated
       if (isAuthenticated && user) {
