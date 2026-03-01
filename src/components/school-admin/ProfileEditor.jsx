@@ -433,7 +433,7 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
   const weightedScore = calcWeightedScore(formData, testimonials.length);
 
   // Tier 1 completeness for warning banner
-  const tier1Filled = countFilled(formData, TIERS[0].fields);
+  const tier1Filled = countFilled(formData, TIERS[0].fields, testimonials.length);
   const tier1Total = TIERS[0].fields.length;
   const showTier1Warning = tier1Filled < tier1Total;
 
