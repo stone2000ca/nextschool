@@ -893,38 +893,61 @@ export default function Consultant() {
       }
 
       // P0 FIX: Create ChatSession when brief is confirmed and transitioning to RESULTS
-      // Use response.data.familyProfile (just updated) instead of state variable (async)
-      const profileForSession = response.data.familyProfile || familyProfile;
-      if (response.data.state === STATES.RESULTS && isAuthenticated && user && profileForSession && currentConversation?.id) {
+      // DEBUG: Log all variables before condition check
+      console.log('[CHATSESSION DEBUG] Before create check:', {
+        isAuthenticated,
+        userId: user?.id,
+        state: response.data.state,
+        responseHasFamilyProfile: !!response.data.familyProfile,
+        stateFamilyProfile: response.data.familyProfile,
+        stateVar_familyProfile: familyProfile,
+        newBriefStatus,
+        STATES_RESULTS: STATES.RESULTS
+      });
+
+      // SIMPLIFIED: Just check if state is RESULTS - ignore auth/profile for now to verify create works
+      if (response.data.state === STATES.RESULTS) {
         try {
           const matchedSchoolIds = response.data.schools ? response.data.schools.map(s => s.id) : [];
-          const profileName = profileForSession.childName 
+          const profileForSession = response.data.familyProfile || familyProfile;
+          const profileName = profileForSession?.childName 
             ? `${profileForSession.childName}'s School Search Profile`
             : 'School Search Profile';
           
+          console.log('[CHATSESSION] Attempting create with:', {
+            userId: user?.id,
+            currentConversationId: currentConversation?.id,
+            sessionToken: sessionId,
+            matchedSchoolCount: matchedSchoolIds.length
+          });
+
           const chatSession = await base44.entities.ChatSession.create({
             sessionToken: sessionId,
-            userId: user.id,
-            familyProfileId: profileForSession.id || null,
-            chatHistoryId: currentConversation.id,
+            userId: user?.id,
+            familyProfileId: profileForSession?.id || null,
+            chatHistoryId: currentConversation?.id,
             status: 'active',
             consultantSelected: selectedConsultant,
-            childName: profileForSession.childName,
-            childGrade: profileForSession.childGrade,
-            locationArea: profileForSession.locationArea,
-            maxTuition: profileForSession.maxTuition,
-            priorities: profileForSession.priorities,
+            childName: profileForSession?.childName,
+            childGrade: profileForSession?.childGrade,
+            locationArea: profileForSession?.locationArea,
+            maxTuition: profileForSession?.maxTuition,
+            priorities: profileForSession?.priorities,
             matchedSchools: JSON.stringify(matchedSchoolIds),
             profileName
           });
           
-          console.log('[CHAT SESSION CREATION] New ChatSession created:', chatSession.id);
+          console.log('[CHAT SESSION CREATION SUCCESS] New ChatSession created:', chatSession.id);
           
           // Update URL with sessionId
           const newUrl = createPageUrl(`Consultant?sessionId=${chatSession.id}`);
           window.history.replaceState({}, document.title, newUrl);
         } catch (sessionError) {
-          console.error('Failed to create ChatSession:', sessionError);
+          console.error('[CHAT SESSION CREATION ERROR]', {
+            error: sessionError.message,
+            stack: sessionError.stack,
+            fullError: sessionError
+          });
         }
       }
 
