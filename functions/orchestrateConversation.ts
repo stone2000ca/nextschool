@@ -1314,7 +1314,7 @@ Extract:
 // MAIN: Deno.serve — orchestrateConversation
 // =============================================================================
 Deno.serve(async (req) => {
-  const TIMEOUT_MS = 25000;
+  const TIMEOUT_MS = 45000;
   
   const timeoutPromise = new Promise((_, reject) => 
     setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_MS)
