@@ -985,8 +985,7 @@ export default function Consultant() {
         if (isAuthenticated && user && !hasAutoPopulatedShortlist.current) {
           const currentShortlist = user.shortlist || [];
           if (currentShortlist.length === 0) {
-            const tiers = buildTiers(finalOrderedSchools, familyProfile);
-            const topIds = (tiers?.topMatches || []).slice(0, 5).map(s => s.id);
+            const topIds = finalOrderedSchools.slice(0, 5).map(s => s.id);
             if (topIds.length > 0) {
               hasAutoPopulatedShortlist.current = true;
               await base44.auth.updateMe({ shortlist: topIds });
