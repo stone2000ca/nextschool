@@ -421,16 +421,16 @@ export default function Consultant() {
           schoolNames: validSchools.slice(0, 3).map(s => s.name)
         }));
         
-        setSchools(validSchools);
         restoredSchools = validSchools;
-        console.log('[RESTORE] setSchools called with', validSchools.length, 'schools');
+        console.log('[RESTORE] searchSchools resolved with', validSchools.length, 'schools');
       } catch (e) {
         console.error('[RESTORE] Failed to restore schools via searchSchools:', e);
       }
 
-      // CRITICAL: Set currentView to 'schools' and state to RESULTS BEFORE setting schools
-      // This ensures isIntakePhase condition evaluates correctly
-      console.log('[RESTORE] Setting state to RESULTS with', restoredSchools.length, 'schools');
+      // CRITICAL: Batch state updates AFTER searchSchools completes to force UI to RESULTS phase
+      // Set schools FIRST so isIntakePhase sees schools.length > 0
+      console.log('[RESTORE] Setting RESULTS state with', restoredSchools.length, 'schools');
+      setSchools(restoredSchools);
       setCurrentView('schools');
       setOnboardingPhase(STATES.RESULTS);
       
