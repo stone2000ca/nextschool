@@ -307,6 +307,15 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
     if (/\b(son|boy|he|him|his)\b/i.test(message)) extractedGender = 'male';
     else if (/\b(daughter|girl|she|her|hers)\b/i.test(message)) extractedGender = 'female';
 
+    // Regex detection for explicit school gender preference / exclusions
+    let extractedSchoolGenderPref = null;
+    let extractedSchoolGenderExclusions = [];
+    if (/\b(all[\s-]girls?|girls?[\s-]only|single[\s-]gender.*girl|only girls?)\b/i.test(message)) extractedSchoolGenderPref = 'all-girls';
+    else if (/\b(all[\s-]boys?|boys?[\s-]only|single[\s-]gender.*boy|only boys?)\b/i.test(message)) extractedSchoolGenderPref = 'all-boys';
+    else if (/\b(co[\s-]?ed|coeducational|mixed gender)\b/i.test(message)) extractedSchoolGenderPref = 'co-ed';
+    if (/\bno (all[\s-]?boys?|boys?[\s-]?only)\b/i.test(message)) extractedSchoolGenderExclusions.push('all-boys');
+    if (/\bno (all[\s-]?girls?|girls?[\s-]?only)\b/i.test(message)) extractedSchoolGenderExclusions.push('all-girls');
+
     // FIX-LOC-004: Helper function to clean non-geographic words from location strings
     const cleanLocation = (loc) => {
       if (!loc) return null;
@@ -384,6 +393,8 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
               locationArea: { type: ['string', 'null'] },
               maxTuition: { type: ['number', 'null'] },
               gender: { type: ['string', 'null'] },
+              schoolGenderPreference: { type: ['string', 'null'] },
+              schoolGenderExclusions: { type: 'array', items: { type: 'string' } },
               priorities: { type: 'array', items: { type: 'string' } },
               interests: { type: 'array', items: { type: 'string' } },
               dealbreakers: { type: 'array', items: { type: 'string' } },
@@ -430,6 +441,16 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     }
     if (extractedGender !== null && !finalResult.gender) {
       finalResult = { ...finalResult, gender: extractedGender };
+    }
+    // Map extracted gender to childGender on FamilyProfile
+    if (finalResult.gender) {
+      finalResult.childGender = finalResult.gender;
+    }
+    if (extractedSchoolGenderPref && !finalResult.schoolGenderPreference) {
+      finalResult = { ...finalResult, schoolGenderPreference: extractedSchoolGenderPref };
+    }
+    if (extractedSchoolGenderExclusions.length > 0 && (!finalResult.schoolGenderExclusions || finalResult.schoolGenderExclusions.length === 0)) {
+      finalResult = { ...finalResult, schoolGenderExclusions: extractedSchoolGenderExclusions };
     }
     // BUG-ENT-004 FIX: Simplified — use regex budget if LLM did not provide one
     if ((finalResult.maxTuition === null || finalResult.maxTuition === undefined) && extractedBudget !== null) {
