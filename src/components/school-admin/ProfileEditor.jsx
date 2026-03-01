@@ -23,7 +23,7 @@ function isFilled(value) {
 const TIER_WEIGHTS = [
   { fields: ['name','city','provinceState','country','lowestGrade','highestGrade','genderPolicy','dayTuition','schoolType'], weight: 50 },
   { fields: ['description','website','boardingAvailable','religiousAffiliation','languageOfInstruction','avgClassSize','studentTeacherRatio'], weight: 30 },
-  { fields: ['artsPrograms','sportsPrograms','clubs','facilities','specialEdPrograms','curriculumType','accreditations'], weight: 15 },
+  { fields: ['artsPrograms','sportsPrograms','clubs','facilities','specialEdPrograms','curriculumType','accreditations','_testimonials'], weight: 15 },
   { fields: ['logoUrl','headerPhotoUrl','photoGallery'], weight: 5 },
 ];
 
