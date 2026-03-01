@@ -893,25 +893,27 @@ export default function Consultant() {
       }
 
       // P0 FIX: Create ChatSession when brief is confirmed and transitioning to RESULTS
-      if (response.data.state === STATES.RESULTS && isAuthenticated && user && familyProfile && currentConversation?.id) {
+      // Use response.data.familyProfile (just updated) instead of state variable (async)
+      const profileForSession = response.data.familyProfile || familyProfile;
+      if (response.data.state === STATES.RESULTS && isAuthenticated && user && profileForSession && currentConversation?.id) {
         try {
           const matchedSchoolIds = response.data.schools ? response.data.schools.map(s => s.id) : [];
-          const profileName = familyProfile.childName 
-            ? `${familyProfile.childName}'s School Search Profile`
+          const profileName = profileForSession.childName 
+            ? `${profileForSession.childName}'s School Search Profile`
             : 'School Search Profile';
           
           const chatSession = await base44.entities.ChatSession.create({
             sessionToken: sessionId,
             userId: user.id,
-            familyProfileId: familyProfile.id || null,
+            familyProfileId: profileForSession.id || null,
             chatHistoryId: currentConversation.id,
             status: 'active',
             consultantSelected: selectedConsultant,
-            childName: familyProfile.childName,
-            childGrade: familyProfile.childGrade,
-            locationArea: familyProfile.locationArea,
-            maxTuition: familyProfile.maxTuition,
-            priorities: familyProfile.priorities,
+            childName: profileForSession.childName,
+            childGrade: profileForSession.childGrade,
+            locationArea: profileForSession.locationArea,
+            maxTuition: profileForSession.maxTuition,
+            priorities: profileForSession.priorities,
             matchedSchools: JSON.stringify(matchedSchoolIds),
             profileName
           });
