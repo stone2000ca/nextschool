@@ -180,3 +180,44 @@ export async function restoreSessionFromParam(
     setRestoringSession(false);
   }
 }
+
+export const restoreGuestSession = (isAuthenticated, user, currentConversation, setMessages, setSelectedConsultant, setCurrentConversation, base44) => {
+  const guestData = localStorage.getItem('guestConversationData');
+  if (!guestData || isAuthenticated) return;
+
+  try {
+    const {
+      messages,
+      consultant,
+      conversationContext,
+      familyProfile,
+      briefStatus,
+      extractedEntitiesData,
+      sessionId
+    } = JSON.parse(guestData);
+
+    // Restore messages
+    setMessages(messages || []);
+
+    // Restore consultant if not already selected
+    if (consultant) {
+      setSelectedConsultant(consultant);
+    }
+
+    // Restore conversation context
+    if (conversationContext) {
+      setCurrentConversation(prev => ({
+        ...prev,
+        conversationContext: {
+          ...conversationContext,
+          state: conversationContext.state || STATES.WELCOME
+        }
+      }));
+    }
+
+    // Clear localStorage after restore
+    localStorage.removeItem('guestConversationData');
+  } catch (error) {
+    console.error('Failed to restore guest session:', error);
+  }
+};
