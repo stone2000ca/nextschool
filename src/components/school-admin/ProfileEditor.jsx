@@ -420,7 +420,14 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
     setFormData(prev => ({ ...prev, [field]: value, verifiedFields: updatedVerified }));
   };
 
+  const [showValidation, setShowValidation] = useState(false);
+
   const handleSave = async () => {
+    if (showTier1Warning) {
+      setShowValidation(true);
+      setOpenTiers(prev => ({ ...prev, tier1: true }));
+      return;
+    }
     await onSave(formData);
     setAutoSaved(true);
     setTimeout(() => setAutoSaved(false), 2000);
