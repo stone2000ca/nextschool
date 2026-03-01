@@ -405,13 +405,15 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
   const [autoSaved, setAutoSaved] = useState(false);
   const [verifiedFields, setVerifiedFields] = useState(school?.verifiedFields || {});
   const [openTiers, setOpenTiers] = useState({ tier1: true, tier2: false, tier3: false, tier4: false });
-  const [testimonials, setTestimonials] = useState([]);
+  const [testimonialCount, setTestimonialCount] = useState(0);
 
   useEffect(() => {
     setFormData(school);
     setVerifiedFields(school?.verifiedFields || {});
     if (school?.id) {
-      base44.entities.Testimonial.filter({ school_id: school.id }).then(setTestimonials).catch(() => {});
+      base44.entities.Testimonial.filter({ school_id: school.id })
+        .then(list => setTestimonialCount(list.length))
+        .catch(() => {});
     }
   }, [school]);
 
