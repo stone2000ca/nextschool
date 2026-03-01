@@ -25,11 +25,27 @@ export default function SchoolAdmin() {
       const userData = await base44.auth.me();
       setUser(userData);
 
-      // Find school where this user is the admin
-      const schools = await base44.entities.School.filter({ adminUserId: userData.id });
-      
-      if (schools && schools.length > 0) {
-        setSchool(schools[0]);
+      // Check account_type — only "school" or "both" can access this portal
+      if (userData.account_type && userData.account_type === 'family') {
+        setLoading(false);
+        return;
+      }
+
+      // Look up SchoolAdmin records for this user (new userId field)
+      const adminRecords = await base44.entities.SchoolAdmin.filter({ userId: userData.id, isActive: true });
+
+      if (adminRecords && adminRecords.length > 0) {
+        // Load the first associated school (multi-school selector can come later)
+        const schoolData = await base44.entities.School.filter({ id: adminRecords[0].schoolId });
+        if (schoolData && schoolData.length > 0) {
+          setSchool(schoolData[0]);
+        }
+      } else {
+        // Fallback: legacy adminUserId field on School
+        const schools = await base44.entities.School.filter({ adminUserId: userData.id });
+        if (schools && schools.length > 0) {
+          setSchool(schools[0]);
+        }
       }
     } catch (error) {
       console.error('Failed to load school data:', error);
