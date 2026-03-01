@@ -80,19 +80,8 @@ function generateProgrammaticBrief(profile) {
 // =============================================================================
 // T-RES-003: Tiered Results Engine
 // =============================================================================
-function scoreSchool(school, familyProfile) {
-  const checks = buildPriorityChecks(school, familyProfile);
-  const greenCount = checks.filter(r => r.status === 'match').length;
-
-  // Tiebreaker 1: data completeness (non-null fields)
-  const importantFields = ['name', 'city', 'curriculumType', 'genderPolicy', 'dayTuition', 'tuition', 'lowestGrade', 'highestGrade', 'boardingAvailable', 'description', 'headerPhotoUrl', 'logoUrl'];
-  const completeness = importantFields.filter(f => school[f] != null && school[f] !== '').length;
-
-  // Tiebreaker 2: proximity (lower = better, null = worst)
-  const proximity = school.distanceKm != null ? school.distanceKm : 99999;
-
-  return { greenCount, completeness, proximity };
-}
+const IMPORTANT_FIELDS = ['name', 'city', 'curriculumType', 'genderPolicy', 'dayTuition', 'tuition', 'lowestGrade', 'highestGrade', 'boardingAvailable', 'description', 'headerPhotoUrl', 'logoUrl'];
+const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
 
 function buildTiers(schools, familyProfile, sortMode = 'bestFit', priorityOverrides = {}) {
   if (!schools || schools.length === 0) return null;
@@ -130,8 +119,7 @@ function buildTiers(schools, familyProfile, sortMode = 'bestFit', priorityOverri
       if (row.status === 'match') score += (flex === 'musthave' ? 2 : 1);
       if (row.status === 'mismatch' && flex === 'musthave') mustHaveFail = true;
     });
-    const importantFields = ['name', 'city', 'curriculumType', 'genderPolicy', 'dayTuition', 'tuition', 'lowestGrade', 'highestGrade', 'boardingAvailable', 'description', 'headerPhotoUrl', 'logoUrl'];
-    const completeness = importantFields.filter(f => s[f] != null && s[f] !== '').length;
+    const completeness = IMPORTANT_FIELDS.filter(f => s[f] != null && s[f] !== '').length;
     const proximity = s.distanceKm != null ? s.distanceKm : 99999;
     return { school: s, score, completeness, proximity, mustHaveFail };
   });
@@ -269,6 +257,24 @@ export default function Consultant() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   
+  // Helper to map conversation state to view
+  const stateToView = (state) => {
+    if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(state)) return 'chat';
+    if (state === STATES.RESULTS) return 'schools';
+    if (state === STATES.DEEP_DIVE) return 'detail';
+    return 'chat';
+  };
+
+  // Helper to track session events
+  const trackEvent = (eventType, metadata = {}) => {
+    base44.functions.invoke('trackSessionEvent', {
+      eventType,
+      consultantName: selectedConsultant,
+      sessionId,
+      ...metadata
+    }).catch(err => console.error('Failed to track:', err));
+  };
+
   // Determine UI phase based on state and schools
   const currentState = currentConversation?.conversationContext?.state || STATES.WELCOME;
 
@@ -302,11 +308,7 @@ export default function Consultant() {
     
     // Only sync view from state if NO school is selected
     const conversationState = currentConversation?.conversationContext?.state || STATES.WELCOME;
-    if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(conversationState)) {
-      setCurrentView('chat');
-    } else if (conversationState === STATES.RESULTS) {
-      setCurrentView('schools');
-    }
+    setCurrentView(stateToView(conversationState));
   }, [currentConversation?.conversationContext?.state, selectedSchool, currentView]);
   
   const isIntakePhase = schools.length === 0 && 
@@ -575,7 +577,7 @@ export default function Consultant() {
         // Show welcome message
         const greeting = {
           role: 'assistant',
-          content: "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?",
+          content: DEFAULT_GREETING,
           timestamp: new Date().toISOString()
         };
         setMessages([greeting]);
@@ -662,11 +664,7 @@ export default function Consultant() {
   const handleSelectConsultant = (consultantName) => {
     setSelectedConsultant(consultantName);
     // Track consultant selection
-    base44.functions.invoke('trackSessionEvent', {
-      eventType: 'consultant_selected',
-      consultantName,
-      sessionId
-    }).catch(err => console.error('Failed to track:', err));
+    trackEvent('consultant_selected');
 
     // CRITICAL: Complete state reset for fresh conversation
     setCurrentConversation({ conversationContext: {} });
@@ -718,15 +716,7 @@ export default function Consultant() {
     const isDeepDiveWithSchool = conversationState === STATES.DEEP_DIVE && selectedSchool !== null;
     
     if (!isDeepDiveWithSchool) {
-      if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(conversationState)) {
-        setCurrentView('chat');
-      } else if (conversationState === STATES.RESULTS) {
-        setCurrentView('schools');
-      } else if (conversationState === STATES.DEEP_DIVE) {
-        setCurrentView('detail');
-      } else {
-        setCurrentView('chat');
-      }
+      setCurrentView(stateToView(conversationState));
     }
     setSchools(convo.conversationContext?.schools || []);
     // BUG-DD-001 FIX: Only clear selectedSchool if NOT in DEEP_DIVE state
@@ -768,11 +758,7 @@ export default function Consultant() {
 
   const handleSendMessage = async (messageText, explicitSchoolId = null, displayText = null) => {
     // Track message sent
-    base44.functions.invoke('trackSessionEvent', {
-      eventType: 'message_sent',
-      consultantName: selectedConsultant,
-      sessionId
-    }).catch(err => console.error('Failed to track:', err));
+    trackEvent('message_sent');
     // SOFT LOGIN GATE: Check if user is confirming the Brief without being logged in
     const isBriefConfirmation = messageText === '__CONFIRM_BRIEF__' ||
                                  messageText.toLowerCase().includes("that's right") || 
@@ -930,12 +916,7 @@ export default function Consultant() {
       // FIX #3: First priority - if schools are returned, display them (ONLY if not in DEEP_DIVE)
       if (response.data.schools && response.data.schools.length > 0 && !isDeepDivingSchool) {
         // Track schools shown
-        base44.functions.invoke('trackSessionEvent', {
-          eventType: 'schools_shown',
-          consultantName: selectedConsultant,
-          sessionId,
-          metadata: { schoolCount: response.data.schools.length }
-        }).catch(err => console.error('Failed to track:', err));
+        trackEvent('schools_shown', { metadata: { schoolCount: response.data.schools.length } });
 
         // Show feedback prompt if not already shown
         if (!feedbackPromptShown && messages.length > 5) {
@@ -1132,12 +1113,7 @@ Return empty array if user didn't provide any of these facts.`;
   const handleViewSchoolDetail = async (schoolId) => {
     const school = schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId);
     if (school) {
-      base44.functions.invoke('trackSessionEvent', {
-        eventType: 'school_clicked',
-        consultantName: selectedConsultant,
-        sessionId,
-        metadata: { schoolName: school.name }
-      }).catch(err => console.error('Failed to track:', err));
+      trackEvent('school_clicked', { metadata: { schoolName: school.name } });
       setSelectedSchool(school);
       setCurrentView('detail');
       setConfirmingSchool(school);
@@ -1276,12 +1252,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
         updatedShortlist = currentShortlist.filter(id => id !== schoolId);
       } else {
         updatedShortlist = [...currentShortlist, schoolId];
-        base44.functions.invoke('trackSessionEvent', {
-          eventType: 'shortlisted',
-          consultantName: selectedConsultant,
-          sessionId,
-          metadata: { schoolName: school?.name }
-        }).catch(err => console.error('Failed to track:', err));
+        trackEvent('shortlisted', { metadata: { schoolName: school?.name } });
       }
       
       await base44.auth.updateMe({ shortlist: updatedShortlist });
