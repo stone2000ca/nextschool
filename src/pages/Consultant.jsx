@@ -734,8 +734,8 @@ export default function Consultant() {
       }
 
       // Store extractedEntities from response for FamilyBrief fallback display
-      if (response.data.extractedEntities) {
-        setExtractedEntitiesData(response.data.extractedEntities);
+      if (response.data?.extractedEntities) {
+        setExtractedEntitiesData(response.data?.extractedEntities);
         console.log('[BUDGET FIX] Stored extractedEntities:', response.data.extractedEntities);
       }
 
