@@ -4,12 +4,13 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, CheckCircle2, AlertTriangle, Upload, Loader2, Search, HelpCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, AlertTriangle, Upload, Loader2, Search, HelpCircle, Lock } from 'lucide-react';
 import Navbar from '@/components/navigation/Navbar';
 import Footer from '@/components/navigation/Footer';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { debounce } from 'lodash';
+import DisputeForm from '@/components/claim/DisputeForm';
 
 export default function ClaimSchool() {
   const location = useLocation();
