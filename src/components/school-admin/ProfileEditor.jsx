@@ -85,7 +85,7 @@ const TIERS = [
     color: 'teal',
     weight: 0.15,
     motivational: "Stand out with program details. These help parents picture their child's life here.",
-    fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations'],
+    fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculumType', 'accreditations', '_testimonials'],
   },
   {
     id: 'tier4',
