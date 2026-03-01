@@ -145,7 +145,7 @@ export default function ForSchools() {
           <p className="text-xl text-slate-700 mb-8">
             Start with a free profile today. Upgrade anytime to unlock more features.
           </p>
-          <Link to={createPageUrl('SchoolDirectory')}>
+          <Link to={createPageUrl('Portal')}>
             <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-7 text-lg">
               Find Your School & Claim
               <ArrowRight className="ml-2 h-5 w-5" />
