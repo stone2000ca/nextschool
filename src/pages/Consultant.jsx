@@ -1280,11 +1280,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
 
   return (
     <div className="h-screen flex flex-col bg-slate-50">
-      {/* DEBUG BANNER */}
-      <div className="fixed top-0 left-0 right-0 z-[999] bg-red-600 text-white p-2 text-xs font-mono overflow-auto max-h-16">
-        sessionIdParam: {sessionIdParam} | isAuth: {isAuthenticated ? 'Y' : 'N'} | user: {user ? 'Y' : 'N'} | sessionRestored: {sessionRestored ? 'Y' : 'N'} | schools: {schools.length} | {debugInfo}
-      </div>
-      
+
       {/* TASK E: Skip navigation */}
       <a 
         href="#main-content" 
