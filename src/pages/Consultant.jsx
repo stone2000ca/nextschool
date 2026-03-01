@@ -330,6 +330,7 @@ export default function Consultant() {
     // CRITICAL: Set flag FIRST to override isIntakePhase during restoration
     isRestoringSessionRef.current = true;
     setRestoringSession(true);
+    alert('RESTORE FUNCTION ENTERED');
     try {
       // Fetch ChatSession
       console.log('[RESTORE] Attempting to fetch ChatSession with ID:', sessionIdParam);
