@@ -71,6 +71,7 @@ import SharedShortlistView from './pages/SharedShortlistView';
 import SubmitSchool from './pages/SubmitSchool';
 import Terms from './pages/Terms';
 import stateMachineConfig from './pages/stateMachineConfig';
+import Dashboard from './pages/Dashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -99,6 +100,7 @@ export const PAGES = {
     "SubmitSchool": SubmitSchool,
     "Terms": Terms,
     "stateMachineConfig": stateMachineConfig,
+    "Dashboard": Dashboard,
 }
 
 export const pagesConfig = {
