@@ -45,9 +45,12 @@ const mapStateToView = (state) => {
 };
 
 export default function Consultant() {
-  const [searchParams] = useSearchParams();
-  const sessionIdParam = searchParams.get('sessionId');
-  const sessionParamProcessedRef = useRef(false);
+   // Safe trackEvent definition - defaults to no-op if not defined globally
+   const trackEvent = (typeof window !== 'undefined' && window.trackEvent) ? window.trackEvent : (name, data) => {};
+
+   const [searchParams] = useSearchParams();
+   const sessionIdParam = searchParams.get('sessionId');
+   const sessionParamProcessedRef = useRef(false);
   
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
