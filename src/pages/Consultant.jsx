@@ -37,6 +37,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
 
 export default function Consultant() {
+  if (typeof window !== 'undefined' && window.location.search.includes('sessionId') && !window.__debugAlertShown) { window.__debugAlertShown = true; alert('TOP OF COMPONENT. URL: ' + window.location.search); }
+  
   const [searchParams] = useSearchParams();
   const sessionIdParam = searchParams.get('sessionId');
   
