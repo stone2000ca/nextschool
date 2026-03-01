@@ -368,7 +368,7 @@ export default function Consultant() {
           if (matchedSchoolIds && matchedSchoolIds.length > 0) {
             // Fetch actual School entities individually using Promise.all
             const schoolData = await Promise.all(
-              matchedSchoolIds.map(id => base44.entities.School.get(id))
+              matchedSchoolIds.map(id => School.get(id))
             );
             const validSchools = schoolData.filter(s => s !== null);
             console.log('[RESTORE] Fetched schools count:', validSchools.length);
