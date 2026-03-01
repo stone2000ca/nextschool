@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { X, Zap, Share2, Grid3x3, Bell, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { base44 } from '@/api/base44Client';
 
 const variantConfig = {
   NEW_SEARCH: {
@@ -61,14 +62,29 @@ export default function UpgradePaywallModal({
   profileData = {}
 }) {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   const config = variantConfig[variant] || variantConfig.SHARE;
   const Icon = config.icon;
 
   if (!isOpen) return null;
 
-  const handleAction = (action) => {
+  const handleAction = async (action) => {
     if (action === 'upgrade') {
-      navigate(createPageUrl('Pricing'));
+      setIsLoading(true);
+      try {
+        const user = await base44.auth.me();
+        const response = await base44.functions.invoke('createCheckoutSession', {
+          userId: user.id,
+          priceId: 'price_pro_monthly'
+        });
+        if (response.data?.checkoutUrl) {
+          window.location.href = response.data.checkoutUrl;
+        }
+      } catch (error) {
+        console.error('Failed to create checkout session:', error);
+        setIsLoading(false);
+      }
+      return;
     } else if (action === 'startOver') {
       if (onStartOver) onStartOver();
     } else if (action === 'cancel') {
@@ -136,15 +152,16 @@ export default function UpgradePaywallModal({
               key={idx}
               onClick={() => handleAction(btn.action)}
               variant={btn.variant}
+              disabled={isLoading && btn.action === 'upgrade'}
               className={
                 btn.isPrimary
-                  ? 'w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-black font-semibold py-6'
+                  ? 'w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-black font-semibold py-6 disabled:opacity-50 disabled:cursor-not-allowed'
                   : btn.variant === 'outline'
-                  ? 'w-full border-white/20 text-white hover:bg-white/10 py-6'
-                  : 'w-full text-white/70 hover:text-white py-6'
+                  ? 'w-full border-white/20 text-white hover:bg-white/10 py-6 disabled:opacity-50 disabled:cursor-not-allowed'
+                  : 'w-full text-white/70 hover:text-white py-6 disabled:opacity-50 disabled:cursor-not-allowed'
               }
             >
-              {btn.label}
+              {isLoading && btn.action === 'upgrade' ? 'Redirecting to checkout...' : btn.label}
             </Button>
           ))}
         </div>
