@@ -370,30 +370,28 @@ export default function Consultant() {
 
       // FIX #1: Re-run search using searchSchools backend function with saved profile data
       let restoredSchools = [];
-      if (chatSession.matchedSchools) {
-        try {
-          const searchParams = {
-            region: chatSession.locationArea,
-            minGrade: chatSession.childGrade,
-            maxTuition: chatSession.maxTuition,
-            limit: 20
-          };
-          console.log('[RESTORE] Calling searchSchools with params:', JSON.stringify(searchParams));
-          
-          const searchResponse = await base44.functions.invoke('searchSchools', searchParams);
-          
-          const validSchools = searchResponse.data || [];
-          console.log('[RESTORE] searchSchools response:', JSON.stringify({
-            schoolCount: validSchools.length,
-            firstSchool: validSchools.length > 0 ? validSchools[0].name : null
-          }));
-          
-          setSchools(validSchools);
-          restoredSchools = validSchools;
-          console.log('[RESTORE] setSchools called with', validSchools.length, 'schools');
-        } catch (e) {
-          console.error('[RESTORE] Failed to restore schools via searchSchools:', e);
-        }
+      try {
+        const searchParams = {
+          region: chatSession.locationArea,
+          minGrade: chatSession.childGrade,
+          maxTuition: chatSession.maxTuition,
+          limit: 20
+        };
+        console.log('[RESTORE] Calling searchSchools with params:', JSON.stringify(searchParams));
+        
+        const searchResponse = await base44.functions.invoke('searchSchools', searchParams);
+        
+        const validSchools = searchResponse.data || [];
+        console.log('[RESTORE] searchSchools response:', JSON.stringify({
+          schoolCount: validSchools.length,
+          firstSchool: validSchools.length > 0 ? validSchools[0].name : null
+        }));
+        
+        setSchools(validSchools);
+        restoredSchools = validSchools;
+        console.log('[RESTORE] setSchools called with', validSchools.length, 'schools');
+      } catch (e) {
+        console.error('[RESTORE] Failed to restore schools via searchSchools:', e);
       }
 
       // CRITICAL: Set currentView to 'schools' BEFORE setting currentConversation
