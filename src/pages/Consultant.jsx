@@ -329,6 +329,7 @@ export default function Consultant() {
     if (!sessionIdParam) return;
     
     // CRITICAL: Set flag FIRST to override isIntakePhase during restoration
+    sessionParamProcessedRef.current = true;
     isRestoringSessionRef.current = true;
     setRestoringSession(true);
     try {
