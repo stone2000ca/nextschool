@@ -1,11 +1,31 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Lock, Calendar, Plus, Sparkles } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Lock, Calendar, Plus, Sparkles, X, Edit2, Trash2 } from 'lucide-react';
+
+const BLANK_EVENT = {
+  eventType: 'open_house',
+  title: '',
+  date: '',
+  endDate: '',
+  description: '',
+  registrationUrl: '',
+  virtualUrl: '',
+  capacity: '',
+  location: '',
+};
 
 export default function EventsSection({ school }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(BLANK_EVENT);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (school?.id) {
@@ -15,6 +35,74 @@ export default function EventsSection({ school }) {
         .finally(() => setLoading(false));
     }
   }, [school?.id]);
+
+  const openForm = (event = null) => {
+    if (event) {
+      setFormData(event);
+      setEditingId(event.id);
+    } else {
+      setFormData(BLANK_EVENT);
+      setEditingId(null);
+    }
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setFormData(BLANK_EVENT);
+    setEditingId(null);
+  };
+
+  const handleSave = async () => {
+    if (!formData.title || !formData.date) {
+      alert('Title and date are required.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        schoolId: school.id,
+        eventType: formData.eventType,
+        title: formData.title,
+        date: formData.date,
+        endDate: formData.endDate || null,
+        description: formData.description,
+        registrationUrl: formData.registrationUrl || null,
+        virtualUrl: formData.virtualUrl || null,
+        capacity: formData.capacity ? parseInt(formData.capacity, 10) : null,
+        location: formData.location || null,
+        source: 'school_portal',
+        isConfirmed: true,
+        isActive: true,
+      };
+
+      if (editingId) {
+        await base44.entities.SchoolEvent.update(editingId, payload);
+        setEvents(events.map(e => e.id === editingId ? { ...e, ...payload } : e));
+      } else {
+        const newEvent = await base44.entities.SchoolEvent.create(payload);
+        setEvents([...events, newEvent]);
+      }
+      closeForm();
+    } catch (error) {
+      console.error('Failed to save event:', error);
+      alert('Failed to save event.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (eventId) => {
+    if (!confirm('Delete this event?')) return;
+    try {
+      await base44.entities.SchoolEvent.delete(eventId);
+      setEvents(events.filter(e => e.id !== eventId));
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      alert('Failed to delete event.');
+    }
+  };
 
   const isPremium = school.subscriptionTier === 'premium';
   const aiEnrichedEvents = events.filter(e => e.source === 'ai_enriched');
