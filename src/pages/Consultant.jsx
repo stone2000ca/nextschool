@@ -359,9 +359,19 @@ export default function Consultant() {
         }
       }
 
-      // Determine onboardingPhase based on session state
-      const phase = chatSession.matchedSchools ? STATES.RESULTS : STATES.DISCOVERY;
-      setOnboardingPhase(phase);
+      // Fetch and restore matched schools BEFORE setting onboardingPhase
+      if (chatSession.matchedSchools) {
+        try {
+          const matchedSchoolIds = JSON.parse(chatSession.matchedSchools);
+          if (matchedSchoolIds && matchedSchoolIds.length > 0) {
+            // Fetch actual School entities using filter
+            const schoolData = await base44.entities.School.filter({ id: { $in: matchedSchoolIds } });
+            setSchools(schoolData);
+          }
+        } catch (e) {
+          console.error('Failed to restore schools:', e);
+        }
+      }
 
       // Set currentConversation
       if (chatSession.chatHistoryId) {
@@ -370,6 +380,10 @@ export default function Consultant() {
           setCurrentConversation(chatHistory);
         }
       }
+
+      // Determine onboardingPhase based on session state - set AFTER schools are loaded
+      const phase = chatSession.matchedSchools ? STATES.RESULTS : STATES.DISCOVERY;
+      setOnboardingPhase(phase);
 
       // Add welcome-back message
       const childName = chatSession.childName || 'your child';
