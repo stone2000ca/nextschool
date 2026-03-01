@@ -364,8 +364,8 @@ export default function SchoolSearchProfile({
           </Button>
           <Button
             onClick={() => setIsEditMode(true)}
-            variant="outline"
-            className="flex-1 border-white/20 !text-white hover:bg-white/10 gap-2 text-sm"
+            variant="secondary"
+            className="flex-1 gap-2 text-sm"
           >
             <Edit className="w-4 h-4" />
             Edit Profile
@@ -373,8 +373,8 @@ export default function SchoolSearchProfile({
           {isPaid ? (
             <Button
               onClick={handleShare}
-              variant="outline"
-              className="flex-1 border-white/20 !text-white hover:bg-white/10 gap-2 text-sm"
+              variant="secondary"
+              className="flex-1 gap-2 text-sm"
             >
               <Share2 className="w-4 h-4" />
               Share Profile
@@ -382,8 +382,8 @@ export default function SchoolSearchProfile({
           ) : (
             <Button
               onClick={() => setShowShareUpgrade(true)}
-              variant="outline"
-              className="flex-1 border-white/20 !text-white hover:bg-white/10 gap-2 text-sm"
+              variant="secondary"
+              className="flex-1 gap-2 text-sm"
             >
               <Share2 className="w-4 h-4" />
               Share Profile
@@ -516,8 +516,8 @@ export default function SchoolSearchProfile({
                 });
               }}
               disabled={isSaving}
-              variant="outline"
-              className="flex-1 border-white/20 !text-white hover:bg-white/10 text-sm"
+              variant="secondary"
+              className="flex-1 text-sm"
             >
               Cancel Edit
             </Button>
@@ -565,8 +565,8 @@ export default function SchoolSearchProfile({
             {/* Remove Sharing Button */}
             <Button
               onClick={handleRemoveSharing}
-              variant="outline"
-              className="w-full border-white/20 !text-white hover:bg-white/10 gap-2"
+              variant="secondary"
+              className="w-full gap-2"
             >
               <X className="w-4 h-4" />
               Revoke Access
