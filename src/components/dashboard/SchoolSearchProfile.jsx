@@ -343,16 +343,10 @@ export default function SchoolSearchProfile({
             <span className="text-sm text-white/60">Shortlisted</span>
             <span className="text-lg font-bold text-teal-400">{session.shortlistedCount || 0}</span>
           </div>
-          {bestMatchSchool && (
+          {bestMatchSchool && typeof bestMatchSchool === 'object' && bestMatchSchool.name && (
             <div className="pt-2 border-t border-white/10">
               <p className="text-xs text-white/50 mb-1">Best Match</p>
-              <p className="text-sm font-semibold text-teal-300">
-                {typeof bestMatchSchool === 'string' && bestMatchSchool.length === 24 
-                  ? 'Loading...' 
-                  : typeof bestMatchSchool === 'object' && bestMatchSchool.name
-                  ? bestMatchSchool.name
-                  : bestMatchSchool}
-              </p>
+              <p className="text-sm font-semibold text-teal-300">{bestMatchSchool.name}</p>
             </div>
           )}
         </div>
@@ -371,7 +365,7 @@ export default function SchoolSearchProfile({
           <Button
             onClick={() => setIsEditMode(true)}
             variant="outline"
-            className="flex-1 border-white/20 text-white hover:bg-white/10 gap-2 text-sm"
+            className="flex-1 border-white/20 !text-white hover:bg-white/10 gap-2 text-sm"
           >
             <Edit className="w-4 h-4" />
             Edit Profile
@@ -380,7 +374,7 @@ export default function SchoolSearchProfile({
             <Button
               onClick={handleShare}
               variant="outline"
-              className="flex-1 border-white/20 text-white hover:bg-white/10 gap-2 text-sm"
+              className="flex-1 border-white/20 !text-white hover:bg-white/10 gap-2 text-sm"
             >
               <Share2 className="w-4 h-4" />
               Share Profile
@@ -389,7 +383,7 @@ export default function SchoolSearchProfile({
             <Button
               onClick={() => setShowShareUpgrade(true)}
               variant="outline"
-              className="flex-1 border-white/20 text-white hover:bg-white/10 gap-2 text-sm"
+              className="flex-1 border-white/20 !text-white hover:bg-white/10 gap-2 text-sm"
             >
               <Share2 className="w-4 h-4" />
               Share Profile
@@ -511,22 +505,22 @@ export default function SchoolSearchProfile({
               {isSaving ? 'Updating matches...' : 'Save Changes'}
             </Button>
             <Button
-               onClick={() => {
-                 setIsEditMode(false);
-                 setEditData({
-                   childGrade: session.childGrade,
-                   maxTuition: session.maxTuition,
-                   locationArea: session.locationArea,
-                   priorities: session.priorities || [],
-                   learningDifferences: session.learningDifferences || [],
-                 });
-               }}
-               disabled={isSaving}
-               variant="outline"
-               className="flex-1 border-white/20 text-white hover:bg-white/10 text-sm"
-             >
-               Cancel Edit
-             </Button>
+              onClick={() => {
+                setIsEditMode(false);
+                setEditData({
+                  childGrade: session.childGrade,
+                  maxTuition: session.maxTuition,
+                  locationArea: session.locationArea,
+                  priorities: session.priorities || [],
+                  learningDifferences: session.learningDifferences || [],
+                });
+              }}
+              disabled={isSaving}
+              variant="outline"
+              className="flex-1 border-white/20 !text-white hover:bg-white/10 text-sm"
+            >
+              Cancel Edit
+            </Button>
           </div>
         </div>
       )}
@@ -572,7 +566,7 @@ export default function SchoolSearchProfile({
             <Button
               onClick={handleRemoveSharing}
               variant="outline"
-              className="w-full border-white/20 text-white hover:bg-white/10 gap-2"
+              className="w-full border-white/20 !text-white hover:bg-white/10 gap-2"
             >
               <X className="w-4 h-4" />
               Revoke Access
