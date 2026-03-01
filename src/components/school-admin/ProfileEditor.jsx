@@ -266,6 +266,134 @@ function ImageUploadField({ label, field, hint, formData, onChange }) {
 }
 
 // =============================================================================
+// TestimonialsEditor
+// =============================================================================
+const BLANK_TESTIMONIAL = { author_first_name: '', author_role: 'parent', quote_text: '', year: '', is_visible: true };
+
+function TestimonialsEditor({ schoolId, testimonials, setTestimonials }) {
+  const [saving, setSaving] = useState(false);
+
+  const add = () => {
+    if (testimonials.length >= 5) return;
+    setTestimonials([...testimonials, { ...BLANK_TESTIMONIAL, _new: true, _localId: Date.now() }]);
+  };
+
+  const update = (idx, field, value) => {
+    setTestimonials(testimonials.map((t, i) => i === idx ? { ...t, [field]: value } : t));
+  };
+
+  const remove = async (idx) => {
+    const t = testimonials[idx];
+    if (t.id) {
+      await base44.entities.Testimonial.delete(t.id);
+    }
+    setTestimonials(testimonials.filter((_, i) => i !== idx));
+  };
+
+  const saveAll = async () => {
+    setSaving(true);
+    const updated = [];
+    for (const t of testimonials) {
+      const payload = {
+        school_id: schoolId,
+        author_first_name: t.author_first_name.slice(0, 50),
+        author_role: t.author_role,
+        quote_text: t.quote_text.slice(0, 500),
+        year: t.year ? t.year.slice(0, 4) : '',
+        is_visible: t.is_visible !== false,
+      };
+      if (t.id) {
+        const res = await base44.entities.Testimonial.update(t.id, payload);
+        updated.push(res);
+      } else {
+        const res = await base44.entities.Testimonial.create(payload);
+        updated.push(res);
+      }
+    }
+    setTestimonials(updated);
+    setSaving(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-slate-500">{testimonials.length}/5 testimonials added</span>
+        <div className="flex gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={saveAll} disabled={saving || testimonials.length === 0}>
+            {saving ? 'Saving...' : 'Save Testimonials'}
+          </Button>
+          {testimonials.length < 5 && (
+            <Button type="button" size="sm" onClick={add}>+ Add Testimonial</Button>
+          )}
+        </div>
+      </div>
+
+      {testimonials.map((t, idx) => (
+        <div key={t.id || t._localId || idx} className="border rounded-lg p-4 bg-slate-50 space-y-3">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Testimonial {idx + 1}</span>
+            <button type="button" onClick={() => remove(idx)} className="text-slate-400 hover:text-red-500">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">First Name</Label>
+              <Input
+                value={t.author_first_name}
+                maxLength={50}
+                onChange={(e) => update(idx, 'author_first_name', e.target.value)}
+                placeholder="e.g. Sarah"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Role</Label>
+              <Select value={t.author_role} onValueChange={(v) => update(idx, 'author_role', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="parent">Parent</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="alumni">Alumni</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between">
+              <Label className="text-xs">Quote</Label>
+              <span className={`text-xs ${t.quote_text.length > 480 ? 'text-red-500' : 'text-slate-400'}`}>
+                {t.quote_text.length}/500
+              </span>
+            </div>
+            <Textarea
+              value={t.quote_text}
+              maxLength={500}
+              rows={3}
+              onChange={(e) => update(idx, 'quote_text', e.target.value)}
+              placeholder="Share what makes this school special..."
+            />
+          </div>
+          <div className="w-24">
+            <Label className="text-xs">Year (optional)</Label>
+            <Input
+              value={t.year || ''}
+              maxLength={4}
+              onChange={(e) => update(idx, 'year', e.target.value)}
+              placeholder="2024"
+            />
+          </div>
+        </div>
+      ))}
+
+      {testimonials.length === 0 && (
+        <p className="text-sm text-slate-400 text-center py-4">No testimonials yet. Add up to 5.</p>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
 // Main ProfileEditor
 // =============================================================================
 export default function ProfileEditor({ school, onSave, isSaving }) {
@@ -273,10 +401,14 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
   const [autoSaved, setAutoSaved] = useState(false);
   const [verifiedFields, setVerifiedFields] = useState(school?.verifiedFields || {});
   const [openTiers, setOpenTiers] = useState({ tier1: true, tier2: false, tier3: false, tier4: false });
+  const [testimonials, setTestimonials] = useState([]);
 
   useEffect(() => {
     setFormData(school);
     setVerifiedFields(school?.verifiedFields || {});
+    if (school?.id) {
+      base44.entities.Testimonial.filter({ school_id: school.id }).then(setTestimonials).catch(() => {});
+    }
   }, [school]);
 
   const handleChange = (field, value) => {
