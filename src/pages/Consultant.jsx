@@ -331,7 +331,8 @@ export default function Consultant() {
       // Fetch ChatSession
       console.log('[RESTORE] Attempting to fetch ChatSession with ID:', sessionIdParam);
       const chatSession = await base44.entities.ChatSession.get(sessionIdParam);
-      console.log('[RESTORE] ChatSession fetched:', chatSession ? 'Success' : 'Not found', chatSession);
+      console.log('[RESTORE] ChatSession fetched:', chatSession ? 'Success' : 'Not found');
+      console.log('[RESTORE] Full sessionData:', JSON.stringify(chatSession, null, 2));
       
       if (!chatSession) {
         console.error('[RESTORE] ChatSession not found with ID:', sessionIdParam);
