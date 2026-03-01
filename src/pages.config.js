@@ -52,7 +52,6 @@ import Admin from './pages/Admin';
 import AdminFeedback from './pages/AdminFeedback';
 import BlogPost from './pages/BlogPost';
 import ClaimSchool from './pages/ClaimSchool';
-import Consultant from './pages/Consultant';
 import Contact from './pages/Contact';
 import Dashboard from './pages/Dashboard';
 import Feedback from './pages/Feedback';
@@ -64,7 +63,6 @@ import ParentDashboard from './pages/ParentDashboard';
 import Portal from './pages/Portal';
 import Pricing from './pages/Pricing';
 import Privacy from './pages/Privacy';
-import SchoolAdmin from './pages/SchoolAdmin';
 import SchoolAdminDashboard from './pages/SchoolAdminDashboard';
 import SchoolDirectory from './pages/SchoolDirectory';
 import SchoolProfile from './pages/SchoolProfile';
@@ -73,6 +71,8 @@ import SharedShortlistView from './pages/SharedShortlistView';
 import SubmitSchool from './pages/SubmitSchool';
 import Terms from './pages/Terms';
 import stateMachineConfig from './pages/stateMachineConfig';
+import SchoolAdmin from './pages/SchoolAdmin';
+import Consultant from './pages/Consultant';
 import __Layout from './Layout.jsx';
 
 
@@ -82,7 +82,6 @@ export const PAGES = {
     "AdminFeedback": AdminFeedback,
     "BlogPost": BlogPost,
     "ClaimSchool": ClaimSchool,
-    "Consultant": Consultant,
     "Contact": Contact,
     "Dashboard": Dashboard,
     "Feedback": Feedback,
@@ -94,7 +93,6 @@ export const PAGES = {
     "Portal": Portal,
     "Pricing": Pricing,
     "Privacy": Privacy,
-    "SchoolAdmin": SchoolAdmin,
     "SchoolAdminDashboard": SchoolAdminDashboard,
     "SchoolDirectory": SchoolDirectory,
     "SchoolProfile": SchoolProfile,
@@ -103,6 +101,8 @@ export const PAGES = {
     "SubmitSchool": SubmitSchool,
     "Terms": Terms,
     "stateMachineConfig": stateMachineConfig,
+    "SchoolAdmin": SchoolAdmin,
+    "Consultant": Consultant,
 }
 
 export const pagesConfig = {
