@@ -87,6 +87,8 @@ const ChatPanel = forwardRef(function ChatPanel({
 
   // Response chips logic
   const shouldShowChips = (() => {
+    // Never show chips if brief is already confirmed (DOUBLE-BRIEF FIX)
+    if (briefStatus === BRIEF_STATUS.CONFIRMED) return false;
     const lastAIMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
     const isBriefMessage = lastAIMessage?.content && (
       lastAIMessage.content.includes("Does that capture") ||
@@ -96,7 +98,7 @@ const ChatPanel = forwardRef(function ChatPanel({
     );
     return showResponseChips ||
       (currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus)) ||
-      isBriefMessage;
+      (isBriefMessage && currentState === STATES.BRIEF);
   })();
 
   const isBriefChipState = currentState === STATES.BRIEF &&
