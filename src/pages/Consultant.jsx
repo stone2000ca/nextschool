@@ -877,7 +877,7 @@ export default function Consultant() {
 
       // KI-52: Brief content validator — swap thin LLM brief for programmatic fallback
       // DOUBLE-BRIEF FIX: Only apply when the RESPONSE state is also BRIEF (not when transitioning to RESULTS)
-      let aiMessageContent = response.data?.message;
+      let aiMessageContent = response.data?.message || 'Here are your school matches based on your preferences.';
       if (response.data?.state === STATES.BRIEF) {
         const latestProfile = response.data?.familyProfile || familyProfile;
         if (!validateBriefContent(aiMessageContent)) {
