@@ -205,14 +205,10 @@ export default function Consultant() {
     setCurrentView(stateToView(conversationState));
   }, [currentConversation?.conversationContext?.state, selectedSchool, currentView]);
   
-  const isIntakePhase = !isRestoringSessionRef.current && (
-                        schools.length === 0 && 
-                        currentView !== 'schools' && 
-                        currentView !== 'detail' && 
-                        currentView !== 'comparison' && 
-                        currentView !== 'comparison-table' &&
-                        ![STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState)
-                      );
+  // ARCHITECTURAL FIX: Single source of truth for layout - eliminates race condition
+  // When schools.length > 0, show split layout (schools grid + chat panel)
+  // When schools.length === 0, show single-column layout (chat only)
+  const showSchoolGrid = schools.length > 0;
 
   // School filtering/sorting via extracted hook
   const {
