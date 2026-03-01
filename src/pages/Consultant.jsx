@@ -387,6 +387,10 @@ export default function Consultant() {
         console.error('RESTORE searchSchools error:', err);
       }
 
+      // DIAGNOSTIC TEST - hardcoded test school
+      setSchools([{name:'Test School',id:'test1',city:'Toronto',tuition:25000}]);
+      console.log('RESTORE DIAGNOSTIC: hardcoded test school set');
+
       // Fetch and restore ChatHistory messages and context
       let chatHistory = null;
       if (chatSession.chatHistoryId) {
