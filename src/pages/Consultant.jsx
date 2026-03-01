@@ -372,21 +372,21 @@ export default function Consultant() {
       let restoredSchools = [];
       if (chatSession.matchedSchools) {
         try {
-          console.log('[RESTORE] Re-running search with profile data - location:', chatSession.locationArea, 'grade:', chatSession.childGrade, 'budget:', chatSession.maxTuition);
-          
-          const searchResponse = await base44.functions.invoke('searchSchools', {
-            city: chatSession.locationArea,
+          const searchParams = {
+            region: chatSession.locationArea,
             minGrade: chatSession.childGrade,
             maxTuition: chatSession.maxTuition,
             limit: 20
-          });
+          };
+          console.log('[RESTORE] Calling searchSchools with params:', JSON.stringify(searchParams));
+          
+          const searchResponse = await base44.functions.invoke('searchSchools', searchParams);
           
           const validSchools = searchResponse.data || [];
-          console.log('[RESTORE] searchSchools returned', validSchools.length, 'schools');
-          
-          if (validSchools.length > 0) {
-            console.log('[RESTORE] First school:', validSchools[0].name);
-          }
+          console.log('[RESTORE] searchSchools response:', JSON.stringify({
+            schoolCount: validSchools.length,
+            firstSchool: validSchools.length > 0 ? validSchools[0].name : null
+          }));
           
           setSchools(validSchools);
           restoredSchools = validSchools;
