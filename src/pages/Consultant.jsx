@@ -22,6 +22,7 @@ import { getTuitionBand, buildPriorityChecks } from '@/components/schools/School
 import { validateBriefContent, generateProgrammaticBrief } from '../components/utils/briefUtils';
 import { buildTiers } from '../components/utils/tierEngine';
 import { useUserLocation } from '../components/hooks/useUserLocation';
+import { useMessageHandler } from '../components/hooks/useMessageHandler';
 import { getShortlistNudge } from '../components/utils/shortlistNudges';
 import { extractAndSaveMemories } from '../components/utils/memoryManager';
 import { restoreSessionFromParam } from '@/components/chat/SessionRestorer';
