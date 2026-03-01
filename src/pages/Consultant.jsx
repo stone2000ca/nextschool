@@ -754,10 +754,10 @@ export default function Consultant() {
       // CRITICAL FIX: Merge backend's full context (including extractedEntities) with frontend state
       const updatedContext = { 
         ...(currentConversation?.conversationContext || {}), 
-        ...(response.data.conversationContext || {}),
-        state: response.data.state,
+        ...(response.data?.conversationContext || {}),
+        state: response.data?.state,
         briefStatus: newBriefStatus,
-        schools: response.data.schools || [],
+        schools: response.data?.schools || [],
         conversationId: currentConversation?.id || null
       };
       
