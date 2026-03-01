@@ -745,7 +745,7 @@ export default function Consultant() {
       }
 
       // CRITICAL: Update briefStatus from response immediately
-      const newBriefStatus = response.data.briefStatus || null;
+      const newBriefStatus = response.data?.briefStatus || null;
       if (newBriefStatus) {
         setBriefStatus(newBriefStatus);
         console.log('[BRIEF STATUS] Updated to:', newBriefStatus);
