@@ -155,24 +155,6 @@ export default function Consultant() {
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  
-  // Helper to map conversation state to view
-  const stateToView = (state) => {
-    if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(state)) return 'chat';
-    if (state === STATES.RESULTS) return 'schools';
-    if (state === STATES.DEEP_DIVE) return 'detail';
-    return 'chat';
-  };
-
-  // Helper to track session events
-  const trackEvent = (eventType, metadata = {}) => {
-    base44.functions.invoke('trackSessionEvent', {
-      eventType,
-      consultantName: selectedConsultant,
-      sessionId,
-      ...metadata
-    }).catch(err => console.error('Failed to track:', err));
-  };
 
   // Determine UI phase based on state and schools
   const currentState = currentConversation?.conversationContext?.state || STATES.WELCOME;
