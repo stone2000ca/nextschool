@@ -440,10 +440,10 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
 
   const isAI = (field) => school?.aiEnrichedFields?.includes(field) && !verifiedFields[field];
 
-  const weightedScore = calcWeightedScore(formData, testimonials.length);
+  const weightedScore = calcWeightedScore(formData, testimonialCount);
 
   // Tier 1 completeness for warning banner
-  const tier1Filled = countFilled(formData, TIERS[0].fields, testimonials.length);
+  const tier1Filled = countFilled(formData, TIERS[0].fields, testimonialCount);
   const tier1Total = TIERS[0].fields.length;
   const showTier1Warning = tier1Filled < tier1Total;
 
