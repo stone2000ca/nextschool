@@ -6,10 +6,11 @@ import { ArrowRight, Calendar, MoreVertical, Archive } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 
-export default function ChatSessionCard({ session, onSessionArchived }) {
+export default function ChatSessionCard({ session, onSessionArchived, isPaid }) {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleContinue = () => {
     // Navigate to Consultant page with session ID in URL params
@@ -28,6 +29,20 @@ export default function ChatSessionCard({ session, onSessionArchived }) {
       console.error('Failed to archive session:', err);
     } finally {
       setIsArchiving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await base44.entities.ChatSession.update(session.id, { status: 'deleted', isActive: false });
+      if (onSessionArchived) {
+        onSessionArchived();
+      }
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
