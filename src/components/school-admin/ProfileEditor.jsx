@@ -92,7 +92,7 @@ const TIERS = [
     label: 'Tier 4 — Media',
     color: 'indigo',
     weight: 0.05,
-    motivational: 'Photos drive clicks. A header photo alone can double profile views.',
+    motivational: "Visual content helps families connect with your school's story.",
     fields: ['logoUrl', 'headerPhotoUrl', 'photoGallery'],
   },
 ];
