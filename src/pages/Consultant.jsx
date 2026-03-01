@@ -403,8 +403,13 @@ export default function Consultant() {
       try {
         // Try to parse matchedSchools JSON string
         let schoolIds = [];
+        const matchedSchoolsRaw = chatSession.matchedSchools;
+        console.log('[RESTORE] matchedSchools raw value:', matchedSchoolsRaw);
+        console.log('[RESTORE] matchedSchools type:', typeof matchedSchoolsRaw);
+        
         try {
           schoolIds = JSON.parse(chatSession.matchedSchools || '[]');
+          console.log('[RESTORE] Successfully parsed matchedSchools:', JSON.stringify(schoolIds));
         } catch (parseErr) {
           console.error('[RESTORE] Failed to parse matchedSchools JSON:', parseErr);
           schoolIds = [];
@@ -429,10 +434,16 @@ export default function Consultant() {
             limit: 20
           };
           
-          console.log('[RESTORE] Calling searchSchools with params:', JSON.stringify(searchParams));
+          console.log('[RESTORE] searchSchools params:', JSON.stringify(searchParams));
           const searchResponse = await base44.functions.invoke('searchSchools', searchParams);
+          console.log('[RESTORE] searchSchools response:', searchResponse);
+          console.log('[RESTORE] searchSchools response.data type:', typeof searchResponse.data);
+          console.log('[RESTORE] searchSchools response.data length:', searchResponse.data?.length);
           restoredSchools = searchResponse.data || [];
-          console.log('[RESTORE] searchSchools returned', restoredSchools.length, 'schools');
+          console.log('[RESTORE] setSchools will be called with', restoredSchools.length, 'schools');
+          if (restoredSchools.length > 0) {
+            console.log('[RESTORE] First school:', restoredSchools[0].name);
+          }
         }
       } catch (e) {
         console.error('[RESTORE] Failed to restore schools:', e);
