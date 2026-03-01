@@ -711,7 +711,7 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
               {tier1Total - tier1Filled} required field{tier1Total - tier1Filled !== 1 ? 's' : ''} still missing
             </p>
             <p className="text-xs text-red-600 mt-0.5">
-              Complete all Tier 1 fields to ensure your school appears in family searches. You can still save your progress.
+              Complete all Tier 1 fields to save and publish your profile.
             </p>
           </div>
         </div>
