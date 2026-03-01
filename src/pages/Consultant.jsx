@@ -39,6 +39,7 @@ const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help f
 export default function Consultant() {
   const [searchParams] = useSearchParams();
   const sessionIdParam = searchParams.get('sessionId');
+  const sessionParamProcessedRef = useRef(false);
   
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
