@@ -1249,7 +1249,7 @@ Extract:
           if (selectedSchool?.id && conversationFamilyProfile?.id) {
             try {
               const existingAnalyses = await base44.entities.SchoolAnalysis.filter({
-                userId: conversationFamilyProfile?.created_by || userId,
+                userId: conversationFamilyProfile?.userId || userId,
                 schoolId: selectedSchool.id
               });
 
