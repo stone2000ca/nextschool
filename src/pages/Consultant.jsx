@@ -701,7 +701,7 @@ export default function Consultant() {
     if (msgs.length === 0) {
       const greeting = {
         role: 'assistant',
-        content: "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?",
+        content: DEFAULT_GREETING,
         timestamp: new Date().toISOString()
       };
       setMessages([greeting]);
