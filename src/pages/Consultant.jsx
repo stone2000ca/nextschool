@@ -343,6 +343,7 @@ export default function Consultant() {
         setSessionRestored(true);
         return;
       }
+      alert('PAST CHAT SESSION FETCH');
       
       console.log('[RESTORE] ChatSession data:', JSON.stringify({
         consultantSelected: chatSession.consultantSelected,
