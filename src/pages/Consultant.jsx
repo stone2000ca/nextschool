@@ -1968,6 +1968,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
       {showLoginGate && (
         <LoginGateModal
           consultantName={selectedConsultant}
+          childName={familyProfile?.childName || 'your child'}
           onClose={() => setShowLoginGate(false)}
         />
       )}
