@@ -368,6 +368,9 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
           {school.curriculumType && (
             <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{school.curriculumType}</span>
           )}
+          {school.genderPolicy && (
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{school.genderPolicy}</span>
+          )}
         </div>
 
         {/* Matching criteria — always visible */}
