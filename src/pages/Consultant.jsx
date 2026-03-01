@@ -24,7 +24,7 @@ import LoginGateModal from '@/components/dialogs/LoginGateModal';
 import FamilyBriefPanel from '@/components/chat/FamilyBriefPanel';
 import ChatPanel from '@/components/chat/ChatPanel';
 import ProgressBar from '@/components/ui/progress-bar';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import Navbar from '@/components/navigation/Navbar';
 import { useSchoolFiltering } from '@/hooks/useSchoolFiltering';
@@ -33,9 +33,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
 
 export default function Consultant() {
+  const [searchParams] = useSearchParams();
+  const sessionIdParam = searchParams.get('sessionId');
+  
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sessionRestored, setSessionRestored] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
   const [showResponseChips, setShowResponseChips] = useState(false);
@@ -286,18 +290,87 @@ export default function Consultant() {
     }).catch(err => console.error('Failed to track session:', err));
   }, [sessionId]);
 
+  // WC5: Session loading from URL param
+  useEffect(() => {
+    if (sessionIdParam && !sessionRestored && isAuthenticated && user) {
+      restoreSessionFromParam();
+    }
+  }, [sessionIdParam, isAuthenticated, user?.id, sessionRestored]);
+
   // Load family profile for Brief panel and restore guest session after login
   useEffect(() => {
     if (user?.id && currentConversation?.id) {
       loadFamilyProfile();
     }
     // Restore guest session when user becomes authenticated
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !sessionIdParam) {
       handleRestoreGuestSession();
     }
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, sessionIdParam]);
 
 
+
+  const restoreSessionFromParam = async () => {
+    if (!sessionIdParam) return;
+    
+    try {
+      // Fetch ChatSession
+      const chatSession = await base44.entities.ChatSession.get(sessionIdParam);
+      if (!chatSession) {
+        console.error('ChatSession not found:', sessionIdParam);
+        setSessionRestored(true);
+        return;
+      }
+
+      // Restore consultant selection
+      if (chatSession.consultantSelected) {
+        setSelectedConsultant(chatSession.consultantSelected);
+      }
+
+      // Fetch and restore ChatHistory messages
+      if (chatSession.chatHistoryId) {
+        const chatHistory = await base44.entities.ChatHistory.get(chatSession.chatHistoryId);
+        if (chatHistory?.messages) {
+          setMessages(chatHistory.messages);
+        }
+      }
+
+      // Fetch and restore FamilyProfile
+      if (chatSession.familyProfileId) {
+        const profile = await base44.entities.FamilyProfile.get(chatSession.familyProfileId);
+        if (profile) {
+          setFamilyProfile(profile);
+          setOnboardingPhase(profile.onboardingPhase || STATES.DISCOVERY);
+        }
+      }
+
+      // Determine onboardingPhase based on session state
+      const phase = chatSession.matchedSchools ? STATES.RESULTS : STATES.DISCOVERY;
+      setOnboardingPhase(phase);
+
+      // Set currentConversation
+      if (chatSession.chatHistoryId) {
+        const chatHistory = await base44.entities.ChatHistory.get(chatSession.chatHistoryId);
+        if (chatHistory) {
+          setCurrentConversation(chatHistory);
+        }
+      }
+
+      // Add welcome-back message
+      const childName = chatSession.childName || 'your child';
+      const welcomeMsg = {
+        role: 'assistant',
+        content: `Welcome back! I see we were exploring schools for ${childName}. Want to pick up where we left off or update anything?`,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, welcomeMsg]);
+
+      setSessionRestored(true);
+    } catch (error) {
+      console.error('Failed to restore session:', error);
+      setSessionRestored(true);
+    }
+  };
 
   const loadFamilyProfile = async () => {
     if (!user?.id || !currentConversation?.id) return;
