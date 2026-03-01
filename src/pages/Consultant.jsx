@@ -384,6 +384,8 @@ export default function Consultant() {
     } catch (error) {
       console.error('Failed to restore session:', error);
       setSessionRestored(true);
+    } finally {
+      setRestoringSession(false);
     }
   };
 
