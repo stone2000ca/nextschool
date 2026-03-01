@@ -562,7 +562,7 @@ export default function Consultant() {
     const isDeepDiveWithSchool = conversationState === STATES.DEEP_DIVE && selectedSchool !== null;
     
     if (!isDeepDiveWithSchool) {
-      setCurrentView(stateToView(conversationState));
+      setCurrentView(mapStateToView(conversationState));
     }
     setSchools(convo.conversationContext?.schools || []);
     // BUG-DD-001 FIX: Only clear selectedSchool if NOT in DEEP_DIVE state
@@ -793,7 +793,7 @@ export default function Consultant() {
       if (!isViewingSchoolDetail && response.data.state) {
         // Only update view if NOT viewing a school detail
         // CRITICAL: Do NOT call setSelectedSchool(null) here - it defeats the single source of truth
-        setCurrentView(stateToView(response.data.state));
+        setCurrentView(mapStateToView(response.data.state));
       } else if (isViewingSchoolDetail) {
         console.log('[BUG-DD-001] Maintaining detail view - school selected:', selectedSchool?.name);
         // Keep view locked to detail as long as selectedSchool is set
