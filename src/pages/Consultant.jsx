@@ -517,18 +517,28 @@ export default function Consultant() {
       setCurrentView('schools');
       setOnboardingPhase(STATES.RESULTS);
       
-      // Set currentConversation with RESULTS state in context
+      // Set currentConversation with RESULTS state in context — MUST include schools to prevent selectConversation from clearing them
       if (chatHistory) {
         const restoredContext = {
           ...(chatHistory.conversationContext || {}),
           state: STATES.RESULTS,
+          schools: restoredSchools  // CRITICAL: Persist schools in context so selectConversation doesn't clear them
+        };
+        const restoredConversation = {
+          ...chatHistory,
+          conversationContext: restoredContext
+        };
+        setCurrentConversation(restoredConversation);
+        console.log('[RESTORE] setCurrentConversation with state: RESULTS, schools:', restoredSchools.length, 'context.schools:', restoredContext.schools?.length);
+      } else {
+        // No chatHistory — create minimal conversation object with schools in context
+        const restoredContext = {
+          state: STATES.RESULTS,
           schools: restoredSchools
         };
         setCurrentConversation({
-          ...chatHistory,
           conversationContext: restoredContext
         });
-        console.log('[RESTORE] setCurrentConversation with state: RESULTS, schools:', restoredSchools.length);
       }
 
       // Also explicitly set schools state to ensure grid renders
