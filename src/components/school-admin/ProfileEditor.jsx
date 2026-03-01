@@ -35,7 +35,7 @@ const TIERS = [
     label: 'Tier 3 — Enrichment',
     color: 'teal',
     weight: 0.15,
-    motivational: 'Stand out with program details. These help parents picture their child's life here.',
+    motivational: "Stand out with program details. These help parents picture their child's life here.",
     fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations'],
   },
   {
