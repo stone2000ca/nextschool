@@ -1014,9 +1014,12 @@ export default function Consultant() {
             profileName
           });
           
-          // Update URL with sessionId
-          const newUrl = createPageUrl(`Consultant?sessionId=${chatSession.id}`);
-          window.history.replaceState({}, document.title, newUrl);
+          // Update URL with entity id (not sessionToken)
+          if (chatSession?.id) {
+            const newUrl = createPageUrl(`Consultant?sessionId=${chatSession.id}`);
+            window.history.replaceState({}, document.title, newUrl);
+            console.log('[SESSION] Created ChatSession with id:', chatSession.id);
+          }
         } catch (sessionError) {
           console.error('Failed to create ChatSession:', sessionError);
         }
