@@ -1711,6 +1711,8 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
       }
 
       if (currentState === STATES.DEEP_DIVE) {
+        responseData = await handleDeepDive(base44, selectedSchoolId, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, userId, returningUserContextBlock, flags);
+
         // E13a: Handle debrief mode if flagged
         if (flags?.DEBRIEF_MODE) {
           try {
