@@ -781,6 +781,13 @@ export default function Consultant() {
       // Only update if a new one is returned; only clear when leaving DEEP_DIVE state entirely
       if (response.data?.deepDiveAnalysis) {
         setDeepDiveAnalysis(response.data.deepDiveAnalysis);
+      } else if (response.data?.state === 'DEEP_DIVE' && response.data?.deepDiveAnalysis === null && artifactCache && selectedSchool?.id) {
+        // WC6: Hydrate from cache if no new analysis in DEEP_DIVE state
+        const cacheKey = `${selectedSchool.id}_deep_dive_analysis`;
+        if (artifactCache[cacheKey]) {
+          console.log('[WC6] Hydrating deepDiveAnalysis from cache');
+          setDeepDiveAnalysis(artifactCache[cacheKey]);
+        }
       } else if (response.data?.state !== 'DEEP_DIVE') {
         setDeepDiveAnalysis(null);
       }
@@ -789,6 +796,13 @@ export default function Consultant() {
       // Visit Prep Kit: same — only set when returned, only clear when leaving DEEP_DIVE
       if (response.data?.visitPrepKit) {
         setVisitPrepKit(response.data.visitPrepKit);
+      } else if (response.data?.state === 'DEEP_DIVE' && response.data?.visitPrepKit === null && artifactCache && selectedSchool?.id) {
+        // WC6: Hydrate from cache if no new visit prep kit in DEEP_DIVE state
+        const cacheKey = `${selectedSchool.id}_visit_prep`;
+        if (artifactCache[cacheKey]) {
+          console.log('[WC6] Hydrating visitPrepKit from cache');
+          setVisitPrepKit(artifactCache[cacheKey]);
+        }
       } else if (response.data?.state !== 'DEEP_DIVE') {
         setVisitPrepKit(null);
       }
