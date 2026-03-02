@@ -278,7 +278,7 @@ function FlexButton({ rowId, state, onToggle, totalActive }) {
 // =============================================================================
 // T-RES-004: SchoolCard with collapsed / expanded states
 // =============================================================================
-export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0, accentColor = "#0D9488", familyProfile = null, priorityOverrides = {}, onPriorityToggle = null }) {
+export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0, accentColor = "#0D9488", familyProfile = null, priorityOverrides = {}, onPriorityToggle = null, isVisited = false }) {
   function formatGrade(grade) {
     if (grade === null || grade === undefined) return '';
     const num = Number(grade);
