@@ -1307,6 +1307,7 @@ Generate the DEEPDIVE card for this family-school match.`;
     };
     console.log('[DEEPDIVE] Generated visitPrepKit with', generatedVisitPrepKit.visitQuestions.length, 'questions');
   }
+  console.log('[DEEPDIVE] deepDiveAnalysis populated:', !!deepDiveAnalysis, 'visitPrepKit populated:', !!generatedVisitPrepKit);
 
   console.log('[DEEPDIVE] Returning aiMessage length:', sanitizedMessage?.length);
   return {
