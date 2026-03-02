@@ -836,6 +836,17 @@ Format as a markdown bullet list with one field per line. Start the child field 
       }
     }
 
+    // FIX 3: For Liam, strip any LLM-generated closing question and append canonical phrase
+    // so shouldShowChips string matching always works reliably.
+    if (consultantName === 'Liam') {
+      briefMessageText = briefMessageText
+        .replace(/\n*Does that look right\??.*$/i, '')
+        .replace(/\n*Anything to change\??.*$/i, '')
+        .replace(/\n*Does that capture it\??.*$/i, '')
+        .replace(/\n*Anything to adjust\??.*$/i, '')
+        .trimEnd();
+      briefMessageText += '\n\nDoes that look right? Anything to change?';
+    }
     briefMessage = briefMessageText;
   } catch (e) {
     console.error('[ERROR] All BRIEF generation failed:', e.message);
