@@ -151,9 +151,9 @@ function resolveTransition(params) {
 
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
-  const hasLocation = !!(profileData?.location);
-  const hasGrade = profileData?.gradeLevel !== null && profileData?.gradeLevel !== undefined;
-  const hasBudget = !!(profileData?.budget);
+  const hasLocation = !!(profileData?.locationArea);
+  const hasGrade = profileData?.childGrade !== null && profileData?.childGrade !== undefined;
+  const hasBudget = !!(profileData?.maxTuition);
   const prioritiesCount = profileData?.priorities?.length || 0;
   
   let sufficiency = 'THIN';
