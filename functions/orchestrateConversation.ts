@@ -715,7 +715,6 @@ async function handleBrief(base44, message, conversationFamilyProfile, context, 
     };
   } else if (updatedBriefStatus === BRIEF_STATUS.EDITING && !isInitialAdjustRequest) {
     updatedBriefStatus = BRIEF_STATUS.GENERATING;
-    context.briefStatus = updatedBriefStatus;
   }
   
   if (context.extractedEntities) {
