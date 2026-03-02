@@ -122,6 +122,39 @@ Return JSON with array of insights (each 1-2 sentences highlighting key differen
       })))
     };
 
+    // Persist to GeneratedArtifact (non-blocking)
+    if (familyProfileId) {
+      try {
+        const artifactKey = [...schoolIds].sort().join('_');
+        const existing = await base44.entities.GeneratedArtifact.filter({
+          familyProfileId,
+          artifactType: 'comparison'
+        });
+        const found = existing?.find(a => a.artifactKey === artifactKey);
+
+        const artifactData = {
+          familyProfileId,
+          artifactType: 'comparison',
+          artifactKey,
+          content: {
+            comparisonMatrix,
+            insights: comparison.insights
+          },
+          generatedAt: new Date().toISOString()
+        };
+
+        if (found) {
+          await base44.entities.GeneratedArtifact.update(found.id, artifactData);
+          console.log('[COMPARISON] GeneratedArtifact updated:', found.id);
+        } else {
+          const created = await base44.entities.GeneratedArtifact.create(artifactData);
+          console.log('[COMPARISON] GeneratedArtifact created:', created.id);
+        }
+      } catch (persistError) {
+        console.error('[COMPARISON] GeneratedArtifact persistence failed (non-blocking):', persistError.message);
+      }
+    }
+
     return Response.json({ ...comparison, comparisonMatrix });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
