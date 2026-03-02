@@ -1462,6 +1462,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
             <ComparisonView
               schools={comparisonData}
               familyProfile={familyProfile}
+              comparisonMatrix={comparisonMatrix}
               onBack={() => {
                 setComparisonData(null);
                 setCurrentView('schools');
