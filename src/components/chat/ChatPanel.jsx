@@ -44,6 +44,7 @@ const ChatPanel = forwardRef(function ChatPanel({
   familyProfile = null,
   showNewMessageIndicator = false,
   onScrollDownClick = null,
+  deepDiveAnalysis = null,
   // Slots
   heroContent = null,
   // Variant: 'intake' (light feedback) or 'sidebar' (dark feedback)
