@@ -344,9 +344,36 @@ export default function Consultant() {
 
       if (profiles.length > 0) {
         setFamilyProfile(profiles[0]);
+        // WC6: Load previous artifacts after family profile succeeds
+        await loadPreviousArtifacts(currentConversation.id);
       }
     } catch (error) {
       console.error('Failed to load family profile:', error);
+    }
+  };
+
+  const loadPreviousArtifacts = async (conversationId) => {
+    if (!conversationId) return;
+    
+    try {
+      const artifacts = await base44.entities.GeneratedArtifact.filter({
+        conversationId
+      });
+      
+      // Build indexed map keyed by schoolId_artifactType
+      const map = {};
+      for (const artifact of artifacts) {
+        const schoolIds = artifact.schoolIds || [];
+        for (const schoolId of schoolIds) {
+          const key = `${schoolId}_${artifact.artifactType}`;
+          map[key] = artifact.content;
+        }
+      }
+      
+      setArtifactCache(map);
+      console.log('[WC6] Artifact cache loaded:', Object.keys(map).length, 'entries');
+    } catch (error) {
+      console.error('[WC6] Failed to load artifacts:', error);
     }
   };
 
