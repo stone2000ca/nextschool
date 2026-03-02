@@ -99,14 +99,6 @@ export default function SchoolSearchProfile({
         familyProfile: editData,
       });
 
-      // Regenerate AI narrative
-      if (matchResult.data?.success) {
-        await base44.functions.invoke('generateProfileNarrative', {
-          sessionId: session.id,
-          familyProfile: editData,
-        }).catch(err => console.error('Narrative regeneration failed:', err));
-      }
-
       setIsEditMode(false);
       if (onArchive) onArchive(); // Trigger refresh
     } catch (err) {
