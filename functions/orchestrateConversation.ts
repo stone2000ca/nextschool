@@ -366,6 +366,12 @@ CRITICAL: If the user explicitly negates or removes a previously stated preferen
 
 LOCATION SPECIFICITY (BUG-LOC-003): For locationArea, always use the most specific location the user mentioned — city name, NOT province or state. Examples: "Montreal" not "Quebec", "Vancouver" not "British Columbia", "Calgary" not "Alberta". If the user says a region alias like "GTA" or "Greater Toronto Area", preserve that exact term as-is.
 
+PRIORITY vs INTEREST CLASSIFICATION:
+- "priorities" = what the PARENT requires from the SCHOOL (e.g., STEM focus, structured environment, strong math program, small class sizes, French immersion, outdoor education, strong arts program, IB/AP curriculum, learning support)
+- "interests" = what the CHILD personally enjoys as hobbies/activities (e.g., plays piano, loves soccer, enjoys reading, does karate)
+- When ambiguous, default to "priorities" — parents describing school criteria are expressing priorities, not hobbies.
+- CRITICAL: Items like 'STEM', 'robotics', 'coding', 'math competitions', 'structured environment' are PRIORITIES (school requirements), NOT interests.
+
 CRITICAL: If the user confirms the brief or says something like "that looks right", "show me schools", "yes", "confirmed", "let's see", "go ahead", set intentSignal to 'confirm-brief'.
 CRITICAL: If the user requests a Visit Prep Kit or tour preparation — phrases like "yes prepare my visit kit", "prepare the kit", "yes make it", "visit prep", "tour preparation", "prepare that", "yes please" (in context of a visit kit offer) — set intentSignal to 'visit_prep_request'.`;
 
@@ -396,8 +402,8 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
               gender: { type: ['string', 'null'] },
               schoolGenderPreference: { type: ['string', 'null'] },
               schoolGenderExclusions: { type: 'array', items: { type: 'string' } },
-              priorities: { type: 'array', items: { type: 'string' } },
-              interests: { type: 'array', items: { type: 'string' } },
+              priorities: { type: 'array', items: { type: 'string' }, description: 'What the parent requires from the school - academic programs, environment, support services' },
+              interests: { type: 'array', items: { type: 'string' }, description: 'What the child personally enjoys as hobbies or extracurricular activities' },
               dealbreakers: { type: 'array', items: { type: 'string' } },
               remove_priorities: { type: 'array', items: { type: 'string' } },
               remove_interests: { type: 'array', items: { type: 'string' } },
