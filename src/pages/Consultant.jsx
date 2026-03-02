@@ -150,6 +150,9 @@ export default function Consultant() {
   // DEEPDIVE analysis card data
   const [deepDiveAnalysis, setDeepDiveAnalysis] = useState(null);
 
+  // E11b: Comparison artifact matrix
+  const [comparisonMatrix, setComparisonMatrix] = useState(null);
+
   // Visit Prep Kit data
   const [visitPrepKit, setVisitPrepKit] = useState(null);
 
