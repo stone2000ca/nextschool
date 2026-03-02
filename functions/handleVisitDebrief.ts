@@ -93,13 +93,9 @@ JACKIE TONE: Warm, empathetic, encouraging. Acknowledge their feelings and exper
 
 LIAM TONE: Direct, analytical, practical. Acknowledge their observations factually before asking next question. Compare to expectations and data. Focus on fit assessment.`;
 
-    const debriefUserPrompt = `Family just visited ${schoolName}. They said: "${processMessage}"
+    const debriefUserPrompt = `Family just said: "${processMessage}"
 
-Prior visit prep included these focus areas: ${priorVisitQuestions.slice(0, 3).map(q => typeof q === 'string' ? q : q.question).join('; ') || 'None'}
-
-Trade-offs we flagged before: ${priorTradeOffs.slice(0, 2).map(t => t.dimension).join(', ') || 'None'}
-
-Help them process this visit experience. Ask 1-2 follow-up questions that help them evaluate fit.`;
+${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, validate their insights, and summarize what you heard.' : `Ask them: "${nextQuestion}"\n\nBe natural — don't sound robotic.`}`;
 
     let debriefMessage = "Tell me about your visit experience.";
     try {
