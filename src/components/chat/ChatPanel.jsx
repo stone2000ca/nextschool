@@ -9,6 +9,7 @@ import TypingIndicator from '@/components/chat/TypingIndicator';
 import DeepDiveConfirmation from '@/components/dialogs/DeepDiveConfirmation';
 import SchoolAnalysisCard from '@/components/chat/SchoolAnalysisCard';
 import VisitPrepCard from '@/components/chat/VisitPrepCard';
+import FitReEvaluationCard from '@/components/chat/FitReEvaluationCard';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 
