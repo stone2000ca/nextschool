@@ -291,6 +291,7 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
     } : {};
 
     const conversationSummary = conversationHistory?.slice(-5)
+      .filter(m => m?.content)
       .map(m => `${m.role === 'user' ? 'Parent' : 'AI'}: ${m.content}`)
       .join('\n') || '';
 
