@@ -750,6 +750,13 @@ export default function Consultant() {
         setDeepDiveAnalysis(null);
       }
 
+      // Visit Prep Kit
+      if (response.data?.visitPrepKit) {
+        setVisitPrepKit(response.data.visitPrepKit);
+      } else if (response.data?.state !== 'DEEP_DIVE') {
+        setVisitPrepKit(null);
+      }
+
       // Store extractedEntities from response for FamilyBrief fallback display
       if (response.data?.extractedEntities) {
         setExtractedEntitiesData(response.data?.extractedEntities);
