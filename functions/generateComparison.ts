@@ -105,7 +105,24 @@ Return JSON with array of insights (each 1-2 sentences highlighting key differen
 
     comparison.insights = insights.insights;
 
-    return Response.json(comparison);
+    // Build family-personalized comparisonMatrix
+    const priorities = familyProfile?.priorities || [];
+    const dealbreakers = familyProfile?.dealbreakers || [];
+    const prioritySet = new Set(priorities.map(p => p.toLowerCase()));
+
+    const comparisonMatrix = {
+      schools: comparison.schools,
+      dimensions: comparison.categories.flatMap(cat => cat.rows.map(row => ({
+        category: cat.name,
+        label: row.label,
+        values: row.values,
+        relevance: prioritySet.has(row.label.toLowerCase()) ? 'priority'
+          : dealbreakers?.some(d => row.label.toLowerCase().includes(d.toLowerCase())) ? 'dealbreaker'
+          : 'neutral'
+      })))
+    };
+
+    return Response.json({ ...comparison, comparisonMatrix });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
