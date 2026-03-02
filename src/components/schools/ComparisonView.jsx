@@ -201,6 +201,45 @@ export default function ComparisonView({ schools, familyProfile, comparisonMatri
           </thead>
 
           <tbody>
+            {/* AI Comparison Matrix — rendered first if available */}
+            {comparisonMatrix?.dimensions?.length > 0 && (() => {
+              const sorted = [...comparisonMatrix.dimensions].sort((a, b) => {
+                const order = { priority: 0, dealbreaker: 1, neutral: 2 };
+                return (order[a.relevance] ?? 2) - (order[b.relevance] ?? 2);
+              });
+              return (
+                <>
+                  <tr key="_matrix-heading">
+                    <td colSpan={colCount + 1} className="bg-slate-800 px-4 py-2 border-b border-slate-700">
+                      <span className="text-xs font-bold text-white uppercase tracking-wide">AI Comparison Matrix</span>
+                    </td>
+                  </tr>
+                  {sorted.map((dim, i) => {
+                    const styles = RELEVANCE_STYLES[dim.relevance] || RELEVANCE_STYLES.neutral;
+                    return (
+                      <tr key={`_matrix_${i}`} className={`border-b border-slate-100 ${styles.bg}`}>
+                        <td className={`px-4 py-2.5 text-xs font-medium text-slate-700 sticky left-0 z-[1] align-middle ${styles.bg} ${styles.border}`}>
+                          <div className="flex flex-col gap-1">
+                            <span>{dim.label}</span>
+                            {dim.relevance !== 'neutral' && (
+                              <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize w-fit ${styles.badge}`}>
+                                {dim.relevance}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        {schools.map((school, si) => (
+                          <td key={school.id} className={`px-4 py-2.5 text-xs text-slate-700 border-l border-l-slate-100 align-middle`}>
+                            {dim.values?.[si] ?? <span className="text-slate-300 italic">—</span>}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </>
+              );
+            })()}
+
             {SECTIONS.map(section => {
               // Special case: priorities section
               if (section.key === '_priorities') {
