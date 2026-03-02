@@ -334,6 +334,13 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
             {greenCount}/{totalChecks}
           </div>
         )}
+        {/* Visited badge */}
+        {isVisited && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 bg-teal-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
+            <Check className="h-3 w-3" />
+            Visited
+          </div>
+        )}
       </div>
 
       {/* Collapsed content — always visible */}
