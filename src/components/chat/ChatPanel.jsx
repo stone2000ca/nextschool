@@ -181,10 +181,10 @@ const ChatPanel = forwardRef(function ChatPanel({
           const isLastAssistant =
             msg.role === 'assistant' &&
             index === messages.map(m => m.role).lastIndexOf('assistant');
-          const showAnalysis =
-            isLastAssistant &&
-            currentState === STATES.DEEP_DIVE &&
-            deepDiveAnalysis != null;
+
+          // Anchor cards to the message that generated them (FIX 2)
+          const msgAnalysis = msg.deepDiveAnalysis || null;
+          const msgVisitPrepKit = msg.visitPrepKit || null;
 
           return (
             <div key={index}>
@@ -195,15 +195,15 @@ const ChatPanel = forwardRef(function ChatPanel({
                 consultantName={selectedConsultant}
                 onViewSchoolProfile={handleViewSchoolProfile}
               />
-              {showAnalysis && !isTyping && (
-                <SchoolAnalysisCard analysis={deepDiveAnalysis} />
+              {msgAnalysis && currentState === STATES.DEEP_DIVE && !isTyping && (
+                <SchoolAnalysisCard analysis={msgAnalysis} />
               )}
-              {isLastAssistant && visitPrepKit && !isTyping && (
+              {msgVisitPrepKit && currentState === STATES.DEEP_DIVE && !isTyping && (
                 <VisitPrepCard
-                  schoolName={visitPrepKit.schoolName}
-                  visitQuestions={visitPrepKit.visitQuestions}
-                  observations={visitPrepKit.observations}
-                  redFlags={visitPrepKit.redFlags}
+                  schoolName={msgVisitPrepKit.schoolName}
+                  visitQuestions={msgVisitPrepKit.visitQuestions}
+                  observations={msgVisitPrepKit.observations}
+                  redFlags={msgVisitPrepKit.redFlags}
                 />
               )}
             </div>
