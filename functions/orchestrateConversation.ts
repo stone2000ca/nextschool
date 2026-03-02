@@ -1768,6 +1768,36 @@ RULES:
               redFlags: kitData.redFlags || []
             };
 
+            // NON-FATAL: Persist visitPrepKit to GeneratedArtifact
+            try {
+              const artifactTitle = 'Visit Prep: ' + schoolName;
+              const artifactContent = visitPrepKit;
+              const existingArtifacts = await base44.entities.GeneratedArtifact.filter({
+                userId,
+                artifactType: 'visit_prep'
+              });
+              const existing = existingArtifacts?.find(a => a.schoolIds?.includes(selectedSchoolId));
+              if (existing) {
+                await base44.entities.GeneratedArtifact.update(existing.id, { title: artifactTitle, content: artifactContent });
+                console.log('[E11a] GeneratedArtifact updated:', existing.id);
+              } else {
+                const created = await base44.entities.GeneratedArtifact.create({
+                  userId,
+                  conversationId,
+                  schoolIds: [selectedSchoolId],
+                  artifactType: 'visit_prep',
+                  title: artifactTitle,
+                  content: artifactContent,
+                  isShared: false,
+                  pdfUrl: null,
+                  shareToken: null
+                });
+                console.log('[E11a] GeneratedArtifact created:', created.id);
+              }
+            } catch (artifactError) {
+              console.error('[E11a] GeneratedArtifact upsert failed (non-fatal):', artifactError.message);
+            }
+
             return Response.json({
               message: kitData.intro || `Here's your personalized Visit Prep Kit for ${schoolName}.`,
               state: STATES.DEEP_DIVE,
