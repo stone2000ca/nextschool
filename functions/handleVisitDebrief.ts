@@ -165,6 +165,117 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
       }
     }
 
+    // E13a-WC3: Fit re-evaluation after debrief complete (non-blocking)
+    if (isDebriefComplete && deepDiveAnalysis && context.userId) {
+      try {
+        console.log('[E13a-WC3] Debrief complete — initiating fit re-evaluation');
+        
+        // Load the visit_debrief artifact to get all Q&A pairs
+        const debriefArtifacts = await base44.entities.GeneratedArtifact.filter({
+          conversationId: context.conversationId,
+          schoolId: selectedSchoolId,
+          artifactType: 'visit_debrief'
+        });
+        const debriefArtifact = debriefArtifacts?.[0];
+        
+        if (!debriefArtifact?.content?.qaPairs || debriefArtifact.content.qaPairs.length === 0) {
+          console.log('[E13a-WC3] No Q&A pairs found, skipping re-evaluation');
+        } else {
+          const originalAnalysis = deepDiveAnalysis.content || {};
+          const qaPairs = debriefArtifact.content.qaPairs;
+          const priorities = conversationFamilyProfile?.priorities || [];
+          
+          // Build Q&A summary for prompt
+          const qaContext = qaPairs.map((qa, idx) => `Q${idx + 1}: ${qa.question}\nA${idx + 1}: ${qa.answer}`).join('\n\n');
+          
+          const reevalSystemPrompt = `You are a school fit analyst. Given original school analysis and post-visit debrief responses, re-evaluate whether the school remains a good fit.
+
+CRITICAL: Return ONLY valid JSON. Do NOT include any markdown code blocks, explanations, or text outside the JSON.`;
+
+          const reevalUserPrompt = `ORIGINAL ANALYSIS:
+- Fit Label: ${originalAnalysis.fitLabel || 'unknown'}
+- Trade-offs: ${(originalAnalysis.tradeOffs || []).map(t => `${t.dimension}: ${t.concern || 'neutral'}`).join('; ') || 'none'}
+- Strengths: ${(originalAnalysis.strengths || []).join(', ') || 'none noted'}
+
+FAMILY PRIORITIES: ${priorities.join(', ') || 'not specified'}
+
+POST-VISIT DEBRIEF Q&A:
+${qaContext}
+
+Based on what the family shared during their visit, provide a fit re-evaluation. Return JSON: { updatedFitLabel (enum: "strong_match", "good_match", "worth_exploring"), fitDirection (enum: "improved", "declined", "unchanged"), revisedStrengths (array of strings), revisedConcerns (array of strings), visitVerdict (string, 1-2 sentences) }`;
+
+          let reevalResult = null;
+          try {
+            reevalResult = await callOpenRouter({
+              systemPrompt: reevalSystemPrompt,
+              userPrompt: reevalUserPrompt,
+              maxTokens: 600,
+              temperature: 0.5,
+              responseSchema: {
+                name: 'fit_reevaluation',
+                schema: {
+                  type: 'object',
+                  properties: {
+                    updatedFitLabel: { type: 'string', enum: ['strong_match', 'good_match', 'worth_exploring'] },
+                    fitDirection: { type: 'string', enum: ['improved', 'declined', 'unchanged'] },
+                    revisedStrengths: { type: 'array', items: { type: 'string' } },
+                    revisedConcerns: { type: 'array', items: { type: 'string' } },
+                    visitVerdict: { type: 'string' }
+                  },
+                  required: ['updatedFitLabel', 'fitDirection', 'revisedStrengths', 'revisedConcerns', 'visitVerdict'],
+                  additionalProperties: false
+                }
+              }
+            });
+          } catch (openrouterError) {
+            console.log('[E13a-WC3] OpenRouter failed, trying InvokeLLM fallback');
+            try {
+              const fallbackResult = await base44.integrations.Core.InvokeLLM({
+                prompt: reevalSystemPrompt + '\n\n' + reevalUserPrompt
+              });
+              if (typeof fallbackResult === 'string') {
+                reevalResult = JSON.parse(fallbackResult);
+              } else {
+                reevalResult = fallbackResult;
+              }
+            } catch (fallbackError) {
+              console.error('[E13a-WC3] Both fit re-evaluation methods failed:', fallbackError.message);
+              reevalResult = null;
+            }
+          }
+
+          // Persist fit re-evaluation as new artifact (non-blocking)
+          if (reevalResult) {
+            try {
+              const fitReevalContent = {
+                ...reevalResult,
+                originalFitLabel: originalAnalysis.fitLabel || 'unknown',
+                debriefTimestamp: new Date().toISOString()
+              };
+
+              await base44.entities.GeneratedArtifact.create({
+                userId: context.userId,
+                conversationId: context.conversationId,
+                schoolId: selectedSchoolId,
+                artifactType: 'fit_reevaluation',
+                title: 'Fit Re-evaluation - ' + schoolName,
+                content: fitReevalContent,
+                status: 'ready',
+                isShared: false,
+                pdfUrl: null,
+                shareToken: null
+              });
+              console.log('[E13a-WC3] Fit re-evaluation artifact created');
+            } catch (createError) {
+              console.error('[E13a-WC3] Failed to persist fit re-evaluation (non-blocking):', createError.message);
+            }
+          }
+        }
+      } catch (reevalError) {
+        console.error('[E13a-WC3] Fit re-evaluation process failed (non-blocking):', reevalError.message);
+      }
+    }
+
     return {
       message: debriefMessage,
       deepDiveMode: 'debrief',
