@@ -831,16 +831,17 @@ Format as a numbered list. Start the first item with "${briefChildDisplayName}:"
 
   if (updatedBriefStatus === BRIEF_STATUS.GENERATING) {
     updatedBriefStatus = BRIEF_STATUS.PENDING_REVIEW;
-    context.briefStatus = updatedBriefStatus;
     console.log('[BRIEF GENERATED] Set briefStatus to pending_review');
   }
+
+  const updatedCtx = { ...context, briefStatus: updatedBriefStatus };
 
   return {
     message: briefMessage,
     state: STATES.BRIEF,
     briefStatus: updatedBriefStatus,
     familyProfile: conversationFamilyProfile,
-    conversationContext: context,
+    conversationContext: updatedCtx,
     schools: []
   };
 }
