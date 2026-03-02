@@ -320,7 +320,7 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
     const cleanLocation = (loc) => {
       if (!loc) return null;
       // Strip common non-geographic words that might be appended by LLM or regex
-      const nonGeographicKeywords = /\b(budget|tuition|price|cost|afford|pay|spend|priority|priorities|interest|looking|need|want)\b/gi;
+      const nonGeographicKeywords = /\b(budget|tuition|price|cost|afford|pay|spend|priority|priorities|interest|looking|need|want|IB|AP|STEM|IGCSE|Montessori|Waldorf|Reggio)\b/gi;
       let cleaned = loc.replace(nonGeographicKeywords, '').replace(/\s,/, ',').trim();
       // Remove trailing commas and collapse multiple spaces
       cleaned = cleaned.replace(/,+$/, '').replace(/\s\s+/g, ' ').trim();
