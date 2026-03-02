@@ -33,10 +33,9 @@ export default function SchoolAnalysisCard({ analysis }) {
 
   const fitConfig = fitLabel ? FIT_CONFIG[fitLabel] : null;
 
-  // Filter trade-offs that have at least one non-null value
-  const validTradeOffs = Array.isArray(tradeOffs)
-    ? tradeOffs.filter(t => t && (t.strength || t.concern))
-    : [];
+  // Deduplicate by dimension, then filter trade-offs that have at least one non-null value
+  const uniqueTradeOffs = tradeOffs?.filter((t, i, arr) => arr.findIndex(x => x.dimension === t.dimension) === i) || [];
+  const validTradeOffs = uniqueTradeOffs.filter(t => t && (t.strength || t.concern));
 
   const validDataGaps = Array.isArray(dataGaps) && dataGaps.length > 0 ? dataGaps : null;
 
