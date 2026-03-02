@@ -668,7 +668,7 @@ export default function Consultant() {
       if (isAuthenticated && user) {
         try {
           const notes = await base44.entities.Notes.filter({ userId: user.id });
-          userNotes = notes.map(n => n.content);
+          userNotes = notes.filter(n => n?.content).map(n => n.content);
           
           shortlistedSchools = shortlistData.map(s => s.name);
         } catch (e) {
