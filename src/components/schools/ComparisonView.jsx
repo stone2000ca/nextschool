@@ -210,6 +210,9 @@ export default function ComparisonView({ schools, familyProfile, comparisonMatri
                 const order = { priority: 0, dealbreaker: 1, neutral: 2 };
                 return (order[a.relevance] ?? 2) - (order[b.relevance] ?? 2);
               });
+              const visibleCount = isPremium ? sorted.length : 2;
+              const hiddenCount = sorted.length - visibleCount;
+              
               return (
                 <>
                   <tr key="_matrix-heading">
@@ -219,8 +222,9 @@ export default function ComparisonView({ schools, familyProfile, comparisonMatri
                   </tr>
                   {sorted.map((dim, i) => {
                     const styles = RELEVANCE_STYLES[dim.relevance] || RELEVANCE_STYLES.neutral;
+                    const isHidden = !isPremium && i >= visibleCount;
                     return (
-                      <tr key={`_matrix_${i}`} className={`border-b border-slate-100 ${styles.bg}`}>
+                      <tr key={`_matrix_${i}`} className={`border-b border-slate-100 relative ${styles.bg} ${isHidden ? 'blur-sm pointer-events-none' : ''}`}>
                         <td className={`px-4 py-2.5 text-xs font-medium text-slate-700 sticky left-0 z-[1] align-middle ${styles.bg} ${styles.border}`}>
                           <div className="flex flex-col gap-1">
                             <span>{dim.label}</span>
@@ -239,6 +243,22 @@ export default function ComparisonView({ schools, familyProfile, comparisonMatri
                       </tr>
                     );
                   })}
+                  {!isPremium && hiddenCount > 0 && (
+                    <tr key="_matrix-overlay">
+                      <td colSpan={colCount + 1} className="relative h-24 bg-amber-50/80 border-t-2 border-amber-200">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                          <Lock className="h-5 w-5 text-amber-600" />
+                          <span className="text-sm font-semibold text-amber-900">Unlock your full comparison</span>
+                          <Button 
+                            onClick={onUpgrade}
+                            className="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1 h-auto"
+                          >
+                            Get Full Access
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                 </>
               );
             })()}
