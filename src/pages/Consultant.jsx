@@ -165,6 +165,9 @@ export default function Consultant() {
   // WC6: Store restored session data for returning user context
   const [restoredSessionData, setRestoredSessionData] = useState(null);
   
+  // WC6: Artifact cache indexed by schoolId_artifactType (e.g., '123_visit_prep')
+  const [artifactCache, setArtifactCache] = useState(null);
+  
   // Progressive loading states
   const [loadingStage, setLoadingStage] = useState(0);
   const loadingStages = [
