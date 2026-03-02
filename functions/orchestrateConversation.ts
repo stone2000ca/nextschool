@@ -1707,6 +1707,21 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
       }
 
       if (currentState === STATES.DEEP_DIVE) {
+        // E13a: Handle debrief mode if flagged
+        if (flags?.DEBRIEF_MODE) {
+          try {
+            const artifacts = await base44.asServiceRole.entities.GeneratedArtifact.filter({ userId, schoolIds: { $in: [selectedSchoolId] } });
+            const school = (await base44.entities.School.filter({ id: selectedSchoolId }))?.[0];
+            if (school && artifacts?.[0]) {
+              const pq = artifacts[0].content?.visitQuestions || [];
+              const dsp = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}You are ${consultantName}. Family just visited ${school.name} and said: "${processMessage}". Help them synthesize. Ask 1-2 follow-up questions. ${consultantName === 'Jackie' ? 'Warm, empathetic.' : 'Direct, practical.'}`;
+              let dm = 'Tell me about your visit.';
+              try { dm = await callOpenRouter({ systemPrompt: dsp, userPrompt: `Prior focus: ${pq.slice(0, 2).map(q => typeof q === 'string' ? q : q.question).join('; ')}`, maxTokens: 500, temperature: 0.7 }) || dm; } catch { try { dm = (await base44.integrations.Core.InvokeLLM({ prompt: dsp }))?.response || dm; } catch {} }
+              return Response.json({ message: dm, state: currentState, briefStatus, schools: currentSchools || [], familyProfile: conversationFamilyProfile, conversationContext: context, extractedEntities: extractionResult?.extractedEntities || {}, deepDiveMode: 'debrief' });
+            }
+          } catch (e) { console.error('[E13a] Debrief failed:', e.message); }
+        }
+
         // E11a: Handle Visit Prep Kit request before routing to standard DEEPDIVE
         if (intentSignal === 'visit_prep_request' && selectedSchoolId) {
           try {
