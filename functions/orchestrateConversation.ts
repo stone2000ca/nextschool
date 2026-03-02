@@ -422,9 +422,12 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     } catch (openrouterError) {
       console.error('[EXTRACT ERROR] OpenRouter failed:', openrouterError.message);
       try {
-        const fallbackResult = await base44.integrations.Core.InvokeLLM({
+        let fallbackResult = await base44.integrations.Core.InvokeLLM({
           prompt: `Extract data from: "${message}". Return JSON with intentSignal and briefDelta.`
         });
+        if (typeof fallbackResult === 'string') {
+          try { fallbackResult = JSON.parse(fallbackResult); } catch { fallbackResult = {}; }
+        }
         result = fallbackResult || {};
         intentSignal = result?.intentSignal || 'continue';
       } catch (fallbackError) {
