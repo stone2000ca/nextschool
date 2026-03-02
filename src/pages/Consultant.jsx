@@ -156,6 +156,9 @@ export default function Consultant() {
   // Visit Prep Kit data
   const [visitPrepKit, setVisitPrepKit] = useState(null);
 
+  // Fit Re-Evaluation data
+  const [fitReEvaluation, setFitReEvaluation] = useState(null);
+
   // T047: Auto-refresh animation trigger
   const [schoolsAnimKey, setSchoolsAnimKey] = useState(0);
 
