@@ -569,6 +569,7 @@ async function handleDiscovery(base44, message, conversationFamilyProfile, conte
   const history = conversationHistory || [];
   const recentMessages = history.slice(-10);
   const conversationSummary = recentMessages
+    .filter(msg => msg?.content)
     .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
     .join('\n');
 
