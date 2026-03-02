@@ -743,14 +743,15 @@ export default function Consultant() {
       }
 
       // DEEPDIVE: Store structured analysis card data
+      // Only update if a new one is returned; only clear when leaving DEEP_DIVE state entirely
       if (response.data?.deepDiveAnalysis) {
         setDeepDiveAnalysis(response.data.deepDiveAnalysis);
       } else if (response.data?.state !== 'DEEP_DIVE') {
-        // Clear analysis when leaving DEEPDIVE state
         setDeepDiveAnalysis(null);
       }
+      // do NOT clear deepDiveAnalysis when state stays DEEP_DIVE but no new analysis returned
 
-      // Visit Prep Kit
+      // Visit Prep Kit: same — only set when returned, only clear when leaving DEEP_DIVE
       if (response.data?.visitPrepKit) {
         setVisitPrepKit(response.data.visitPrepKit);
       } else if (response.data?.state !== 'DEEP_DIVE') {
