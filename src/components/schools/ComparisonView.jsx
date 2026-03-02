@@ -302,36 +302,60 @@ export default function ComparisonView({ schools, familyProfile, comparisonMatri
                 );
               }
 
-              // Filter rows that have at least one non-null value across schools
-              const visibleRows = section.rows.filter(row =>
-                schools.some(s => getCellValue(row, s) != null)
-              );
-              if (visibleRows.length === 0) return null;
+              // Check if section is free
+              const isFreeSection = FREE_SECTIONS.includes(section.key) || FREE_SECTIONS.includes(section.title);
+              const showFullSection = isPremium || isFreeSection;
 
-              return (
-                <>
-                  <tr key={`${section.title}-heading`}>
-                    <td colSpan={colCount + 1} className="bg-slate-100 px-4 py-2 border-b border-slate-200">
-                      <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">{section.title}</span>
-                    </td>
-                  </tr>
-                  {visibleRows.map((row, i) => (
-                    <tr key={row.id} className={`border-b border-slate-100 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'} hover:bg-slate-50/80`}>
-                      <td className="px-4 py-2.5 text-xs font-medium text-slate-500 sticky left-0 bg-inherit z-[1] align-middle">
-                        {row.label}
-                      </td>
-                      {schools.map(school => {
-                        const val = getCellValue(row, school);
-                        return (
-                          <td key={school.id} className="px-4 py-2.5 text-xs text-slate-700 border-l border-l-slate-100 align-middle">
-                            {val ?? <span className="text-slate-300 italic">—</span>}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </>
-              );
+              // Filter rows that have at least one non-null value across schools
+               const allVisibleRows = section.rows.filter(row =>
+                 schools.some(s => getCellValue(row, s) != null)
+               );
+               if (allVisibleRows.length === 0) return null;
+
+               const freeRowCount = showFullSection ? allVisibleRows.length : 3;
+               const visibleRows = allVisibleRows.slice(0, freeRowCount);
+               const hiddenRowCount = allVisibleRows.length - freeRowCount;
+
+               return (
+                 <>
+                   <tr key={`${section.title}-heading`}>
+                     <td colSpan={colCount + 1} className="bg-slate-100 px-4 py-2 border-b border-slate-200">
+                       <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">{section.title}</span>
+                     </td>
+                   </tr>
+                   {visibleRows.map((row, i) => (
+                     <tr key={row.id} className={`border-b border-slate-100 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'} hover:bg-slate-50/80`}>
+                       <td className="px-4 py-2.5 text-xs font-medium text-slate-500 sticky left-0 bg-inherit z-[1] align-middle">
+                         {row.label}
+                       </td>
+                       {schools.map(school => {
+                         const val = getCellValue(row, school);
+                         return (
+                           <td key={school.id} className="px-4 py-2.5 text-xs text-slate-700 border-l border-l-slate-100 align-middle">
+                             {val ?? <span className="text-slate-300 italic">—</span>}
+                           </td>
+                         );
+                       })}
+                     </tr>
+                   ))}
+                   {!showFullSection && hiddenRowCount > 0 && (
+                     <tr key={`${section.title}-overlay`}>
+                       <td colSpan={colCount + 1} className="relative h-20 bg-amber-50/80 border-t-2 border-amber-200">
+                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                           <Lock className="h-4 w-4 text-amber-600" />
+                           <span className="text-xs font-semibold text-amber-900">Unlock {hiddenRowCount} more rows</span>
+                           <Button 
+                             onClick={onUpgrade}
+                             className="bg-amber-600 hover:bg-amber-700 text-white text-xs px-2 py-0.5 h-auto"
+                           >
+                             Get Full Access
+                           </Button>
+                         </div>
+                       </td>
+                     </tr>
+                   )}
+                 </>
+               );
             })}
           </tbody>
         </table>
