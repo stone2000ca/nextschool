@@ -900,62 +900,57 @@ export default function Consultant() {
 
       const finalMessages = [...updatedMessages, aiMessage];
       setMessages(finalMessages);
-      
       setIsTyping(false);
 
-       // Deduct 1 token and persist to database (skip for premium)
-       if (isAuthenticated && user && !isPremium) {
-         const newTokenBalance = Math.max(0, tokenBalance - 1);
-         setTokenBalance(newTokenBalance);
-         await base44.auth.updateMe({ tokenBalance: newTokenBalance });
-       }
+      // Non-fatal bookkeeping — runs after user-facing response is delivered
+      // Errors here are logged but never shown to the user
+      (async () => {
+        try {
+          // Deduct 1 token and persist to database (skip for premium)
+          if (isAuthenticated && user && !isPremium) {
+            const newTokenBalance = Math.max(0, tokenBalance - 1);
+            setTokenBalance(newTokenBalance);
+            await base44.auth.updateMe({ tokenBalance: newTokenBalance });
+          }
 
-       // Save AI memories with deduplication and filtering
-       if (isAuthenticated && user) {
-         await extractAndSaveMemories(messageText, response.data.message, user, base44);
-       }
+          // Save AI memories with deduplication and filtering
+          if (isAuthenticated && user) {
+            await extractAndSaveMemories(messageText, response.data?.message || '', user, base44);
+          }
 
-       // Update conversation if authenticated
-       if (isAuthenticated && currentConversation && currentConversation.id) {
-         await base44.entities.ChatHistory.update(currentConversation.id, {
-           messages: finalMessages,
-           conversationContext: updatedContext
-         });
+          // Update conversation if authenticated
+          if (isAuthenticated && currentConversation && currentConversation.id) {
+            await base44.entities.ChatHistory.update(currentConversation.id, {
+              messages: finalMessages,
+              conversationContext: updatedContext
+            });
 
-         // Count user messages to determine when to generate title
-         const userMessageCount = finalMessages.filter(m => m.role === 'user').length;
-         
-         // Generate title after first user message
-         if (userMessageCount === 1 && currentConversation.title === 'New Conversation') {
-           try {
-             const titleResult = await base44.functions.invoke('generateConversationTitle', {
-               conversationId: currentConversation.id
-             });
-             
-             // Update the conversation in state with new title
-             if (titleResult.data?.title) {
-               const updatedConvo = { ...currentConversation, title: titleResult.data.title };
-               setCurrentConversation(updatedConvo);
-               
-               // Reload conversations to refresh sidebar
-               await loadConversations(user.id);
-             }
-           } catch (titleError) {
-             console.error('Failed to generate title:', titleError);
-           }
-         }
+            // Count user messages to determine when to generate title
+            const userMessageCount = finalMessages.filter(m => m.role === 'user').length;
 
-         // Trigger summarization if more than 5 messages
-         if (finalMessages.filter(m => m.role === 'user').length % 5 === 0) {
-           try {
-             await base44.functions.invoke('summarizeConversation', {
-               conversationId: currentConversation.id
-             });
-           } catch (summarizeError) {
-             console.error('Failed to summarize conversation:', summarizeError);
-           }
-         }
-       }
+            // Generate title after first user message
+            if (userMessageCount === 1 && currentConversation.title === 'New Conversation') {
+              const titleResult = await base44.functions.invoke('generateConversationTitle', {
+                conversationId: currentConversation.id
+              });
+              if (titleResult.data?.title) {
+                setCurrentConversation(prev => ({ ...prev, title: titleResult.data.title }));
+                await loadConversations(user.id);
+              }
+            }
+
+            // Trigger summarization every 5 user messages
+            if (userMessageCount % 5 === 0) {
+              await base44.functions.invoke('summarizeConversation', {
+                conversationId: currentConversation.id
+              });
+            }
+          }
+        } catch (err) {
+          console.error('[BOOKKEEPING] Non-fatal error:', err);
+        }
+      })();
+
     } catch (error) {
        console.error('Error sending message:', error);
        setIsTyping(false);
