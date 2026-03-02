@@ -13,26 +13,72 @@ async function handleVisitDebrief(base44, selectedSchoolId, processMessage, conv
   try {
     console.log('[E13a] Debrief mode active for school:', selectedSchoolId);
     
-    // Load prior analysis from GeneratedArtifacts
-    const artifacts = await base44.entities.GeneratedArtifact.filter({ 
-      conversationId: context.conversationId,
-      schoolId: selectedSchoolId,
-      artifactType: 'visit_prep'
-    });
+    // Load school and prior analysis
+    const [schoolResults, artifacts] = await Promise.all([
+      base44.entities.School.filter({ id: selectedSchoolId }),
+      base44.entities.GeneratedArtifact.filter({ 
+        conversationId: context.conversationId,
+        schoolId: selectedSchoolId,
+        artifactType: 'visit_prep'
+      })
+    ]);
+    const school = schoolResults?.[0];
     const priorAnalysis = artifacts?.[0];
     
-    // Load the school for context
-    const schoolResults = await base44.entities.School.filter({ id: selectedSchoolId });
-    const school = schoolResults?.[0];
-    
-    if (!school) {
-      return null;
-    }
+    if (!school) return null;
     
     const schoolName = school.name;
     const childName = conversationFamilyProfile?.childName || 'your child';
     const priorVisitQuestions = priorAnalysis?.content?.visitQuestions || [];
     const priorTradeOffs = priorAnalysis?.content?.tradeOffs || [];
+    
+    // WC9: Initialize or refresh debrief question queue if switching schools
+    const isNewDebrief = context.debriefSchoolId !== selectedSchoolId;
+    let debriefQuestionQueue = context.debriefQuestionQueue || [];
+    let debriefQuestionsAsked = context.debriefQuestionsAsked || [];
+    
+    if (isNewDebrief || debriefQuestionQueue.length === 0) {
+      console.log('[E13a] Generating debrief question queue');
+      debriefQuestionQueue = [];
+      debriefQuestionsAsked = [];
+      
+      // Slot 0: Persona-generated opener
+      const openerQ = consultantName === 'Jackie'
+        ? 'How did it feel walking through the halls and seeing the spaces? What emotions came up?'
+        : 'Did anything surprise you compared to what they advertise on their website or what you expected?';
+      debriefQuestionQueue.push(openerQ);
+      
+      // Slots 1-2: Pull from VisitPrepKit or generate from priorities
+      if (priorVisitQuestions.length > 0) {
+        const q1 = typeof priorVisitQuestions[0] === 'string' ? priorVisitQuestions[0] : priorVisitQuestions[0]?.question;
+        const q2 = priorVisitQuestions.length > 1 ? (typeof priorVisitQuestions[1] === 'string' ? priorVisitQuestions[1] : priorVisitQuestions[1]?.question) : null;
+        if (q1) debriefQuestionQueue.push(q1);
+        if (q2) debriefQuestionQueue.push(q2);
+      } else {
+        const priorities = conversationFamilyProfile?.priorities || [];
+        if (priorities.length > 0) {
+          debriefQuestionQueue.push(`How did they handle ${priorities[0]}? Did you see that reflected in the school?`);
+        }
+        if (priorities.length > 1) {
+          debriefQuestionQueue.push(`What was your impression of their approach to ${priorities[1]}?`);
+        }
+      }
+      
+      // Ensure we always have 3 questions
+      while (debriefQuestionQueue.length < 3) {
+        debriefQuestionQueue.push('What was your overall impression?');
+      }
+    }
+    
+    // Pop next question if queue isn't empty
+    let nextQuestion = '';
+    if (debriefQuestionQueue.length > 0) {
+      nextQuestion = debriefQuestionQueue.shift();
+      debriefQuestionsAsked.push(nextQuestion);
+    }
+    
+    const isDebriefComplete = debriefQuestionQueue.length === 0 && debriefQuestionsAsked.length >= 3;
+    const debriefQuestionsContext = `${nextQuestion ? `Next focus: "${nextQuestion}"` : 'Wrap up naturally — you've asked your key questions.'}\n\nQuestions asked so far: ${debriefQuestionsAsked.length}/3`;
     
     // Build debrief prompt
     const debriefSystemPrompt = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}You are ${consultantName}, an education consultant. The family just returned from visiting ${schoolName}. 
