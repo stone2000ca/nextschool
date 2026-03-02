@@ -76,7 +76,8 @@ Help them process this visit experience. Ask 1-2 follow-up questions that help t
 
     return {
       message: debriefMessage,
-      deepDiveMode: 'debrief'
+      deepDiveMode: 'debrief',
+      visitPrepKit: priorAnalysis?.content || null
     };
   } catch (e) {
     console.error('[E13a] Debrief handling failed:', e.message);
