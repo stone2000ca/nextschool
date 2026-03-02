@@ -120,7 +120,12 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
     return {
       message: debriefMessage,
       deepDiveMode: 'debrief',
-      visitPrepKit: priorAnalysis?.content || null
+      visitPrepKit: priorAnalysis?.content || null,
+      updatedContext: {
+        debriefQuestionQueue,
+        debriefQuestionsAsked,
+        debriefSchoolId: selectedSchoolId
+      }
     };
   } catch (e) {
     console.error('[E13a] Debrief handling failed:', e.message);
