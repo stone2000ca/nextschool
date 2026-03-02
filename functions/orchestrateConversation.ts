@@ -179,6 +179,19 @@ function resolveTransition(params) {
   // BUG-FLOW-001 HARD GUARD: RESULTS and DEEPDIVE can NEVER regress to BRIEF or DISCOVERY.
   const inResultsOrDeepDive = currentState === STATES.RESULTS || currentState === STATES.DEEP_DIVE;
   if (inResultsOrDeepDive) {
+    // E13a: Visit debrief detection — if user mentions visiting/touring a school
+    const DEBRIEF_RE = /\b(visited|toured|went to|saw the campus|open house|got back from|checked out|walked through)\b/i;
+    if (DEBRIEF_RE.test(userMessage || '') || intentSignal === 'visit_debrief') {
+      console.log('[E13a] Visit debrief detected');
+      return { 
+        nextState: STATES.DEEP_DIVE, 
+        sufficiency, 
+        flags: { ...flags, DEBRIEF_MODE: true }, 
+        transitionReason: 'visit_debrief',
+        deepDiveMode: 'debrief'
+      };
+    }
+    
     if (selectedSchoolId && selectedSchoolId !== previousSchoolId) {
       return { nextState: STATES.DEEP_DIVE, sufficiency, flags, transitionReason: 'school_selected' };
     }
