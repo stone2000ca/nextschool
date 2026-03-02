@@ -921,7 +921,9 @@ export default function Consultant() {
       const aiMessage = {
         role: 'assistant',
         content: aiMessageContent,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        deepDiveAnalysis: response.data?.deepDiveAnalysis || null,
+        visitPrepKit: response.data?.visitPrepKit || null,
       };
 
       const finalMessages = [...updatedMessages, aiMessage];
