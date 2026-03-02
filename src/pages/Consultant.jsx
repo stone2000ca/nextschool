@@ -1028,6 +1028,20 @@ export default function Consultant() {
   const handleOpenComparison = async (comparedSchools) => {
     setComparisonData(comparedSchools);
     setCurrentView('comparison');
+
+    // E11b: Fetch family-personalized comparisonMatrix from backend (non-blocking)
+    try {
+      const schoolIds = comparedSchools.map(s => s.id).filter(Boolean);
+      const result = await base44.functions.invoke('generateComparison', {
+        schoolIds,
+        familyProfileId: familyProfile?.id || null
+      });
+      if (result.data?.comparisonMatrix) {
+        setComparisonMatrix(result.data.comparisonMatrix);
+      }
+    } catch (e) {
+      console.warn('[E11b] generateComparison failed (non-blocking):', e.message);
+    }
     // Update conversationContext so chat AI knows which schools are being compared
     const updatedContext = {
       ...(currentConversation?.conversationContext || {}),
