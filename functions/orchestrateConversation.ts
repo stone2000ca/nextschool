@@ -817,35 +817,48 @@ FAMILY DATA:
 Format as a markdown bullet list with one field per line. Start the child field with "${briefChildDisplayName}:".`;
 
     let briefMessageText = "Let me summarize what you've shared.";
-    const briefSysPrompt = consultantName === 'Jackie' ? jackieBriefSystemPrompt : liamBriefSystemPrompt;
-    const briefUsrPrompt = consultantName === 'Jackie' ? jackieBriefUserPrompt : liamBriefUserPrompt;
-    try {
-      const briefResult = await callOpenRouter({
-        systemPrompt: briefSysPrompt,
-        userPrompt: briefUsrPrompt,
-        maxTokens: 800,
-        temperature: 0.5
-      });
-      briefMessageText = briefResult || "Let me summarize what you've shared.";
-    } catch (openrouterError) {
-      try {
-        const briefResult = await base44.integrations.Core.InvokeLLM({ prompt: briefSysPrompt + '\n\n' + briefUsrPrompt });
-        briefMessageText = briefResult?.response || briefResult || "Let me summarize what you've shared.";
-      } catch (fallbackError) {
-        console.error('[ERROR] InvokeLLM BRIEF fallback failed:', fallbackError.message);
-      }
-    }
 
-    // FIX 3: For Liam, strip any LLM-generated closing question and append canonical phrase
-    // so shouldShowChips string matching always works reliably.
     if (consultantName === 'Liam') {
-      briefMessageText = briefMessageText
-        .replace(/\n*Does that look right\??.*$/i, '')
-        .replace(/\n*Anything to change\??.*$/i, '')
-        .replace(/\n*Does that capture it\??.*$/i, '')
-        .replace(/\n*Anything to adjust\??.*$/i, '')
-        .trimEnd();
-      briefMessageText += '\n\nDoes that look right? Anything to change?';
+      // DETERMINISTIC brief for Liam — LLM ignores markdown formatting, so build it ourselves
+      const briefLines = ["Here's what I've put together so far:\n"];
+      const childLabel = conversationFamilyProfile?.gender === 'male'
+        ? 'Your son'
+        : conversationFamilyProfile?.gender === 'female'
+        ? 'Your daughter'
+        : 'Your child';
+      const childDisplay = childName ? childName : childLabel;
+      if (childName || childGrade !== null && childGrade !== undefined) {
+        briefLines.push(`- **Child:** ${childDisplay}${childGrade !== null && childGrade !== undefined ? ', Grade ' + childGrade : ''}`);
+      }
+      if (locationArea) briefLines.push(`- **Location:** ${locationArea}`);
+      if (maxTuition) {
+        const budgetStr = maxTuition === 'unlimited' ? 'Flexible' : `Up to $${Number(maxTuition).toLocaleString()}`;
+        briefLines.push(`- **Budget:** ${budgetStr}`);
+      }
+      if (priorities?.length > 0) briefLines.push(`- **Priorities:** ${priorities.join(', ')}`);
+      if (interests?.length > 0) briefLines.push(`- **Interests:** ${interests.join(', ')}`);
+      if (dealbreakers?.length > 0) briefLines.push(`- **Dealbreakers:** ${dealbreakers.join(', ')}`);
+      briefLines.push("\nDoes that look right? Anything to change?");
+      briefMessageText = briefLines.join('\n');
+      console.log('[BRIEF] Liam brief built deterministically');
+    } else {
+      // Jackie: LLM-generated
+      try {
+        const briefResult = await callOpenRouter({
+          systemPrompt: jackieBriefSystemPrompt,
+          userPrompt: jackieBriefUserPrompt,
+          maxTokens: 800,
+          temperature: 0.5
+        });
+        briefMessageText = briefResult || "Let me summarize what you've shared.";
+      } catch (openrouterError) {
+        try {
+          const briefResult = await base44.integrations.Core.InvokeLLM({ prompt: jackieBriefSystemPrompt + '\n\n' + jackieBriefUserPrompt });
+          briefMessageText = briefResult?.response || briefResult || "Let me summarize what you've shared.";
+        } catch (fallbackError) {
+          console.error('[ERROR] InvokeLLM BRIEF fallback failed:', fallbackError.message);
+        }
+      }
     }
     briefMessage = briefMessageText;
   } catch (e) {
