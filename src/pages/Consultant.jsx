@@ -989,6 +989,7 @@ export default function Consultant() {
         timestamp: new Date().toISOString(),
         deepDiveAnalysis: response.data?.deepDiveAnalysis || null,
         visitPrepKit: response.data?.visitPrepKit || null,
+        fitReEvaluation: response.data?.fitReEvaluation || null,
       };
 
       const finalMessages = [...updatedMessages, aiMessage];
