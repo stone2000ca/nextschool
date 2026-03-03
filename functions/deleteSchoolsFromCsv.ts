@@ -1,5 +1,5 @@
 // Function: deleteSchoolsFromCsv
-// Purpose: Reads a CSV file containing school IDs and removes matching School records from database
+// Purpose: Reads a CSV file containing school slugs and removes matching School records from database
 // Entities: School
 // Last Modified: 2026-03-03
 // Dependencies: Papa Parse
