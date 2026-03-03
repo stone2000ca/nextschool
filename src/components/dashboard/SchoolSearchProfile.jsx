@@ -287,13 +287,27 @@ export default function SchoolSearchProfile({
             </p>
           </div>
 
-          {/* ACTION */}
-          <div className="p-3 mt-auto pt-4" onClick={(e) => e.stopPropagation()}>
+          {/* ACTION ROW */}
+          <div className="p-3 mt-auto pt-4 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={handleViewMatches}
-              className="w-full bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+              className="flex-1 bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium py-2 rounded-lg transition-colors"
             >
               View Matches
+            </button>
+            <button
+              onClick={() => setIsEditMode(true)}
+              title="Edit Profile"
+              className="w-9 h-9 flex items-center justify-center border border-white/10 rounded-lg bg-transparent text-white/50 hover:bg-white/10 hover:text-white transition-colors flex-shrink-0"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => isPaid ? handleShare() : setShowShareUpgrade(true)}
+              title="Share Profile"
+              className="w-9 h-9 flex items-center justify-center border border-white/10 rounded-lg bg-transparent text-white/50 hover:bg-white/10 hover:text-white transition-colors flex-shrink-0"
+            >
+              <Share2 className="w-4 h-4" />
             </button>
           </div>
         </>
