@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
     const BRIEF_STATUS = { GENERATING: 'generating', PENDING_REVIEW: 'pending_review', EDITING: 'editing', CONFIRMED: 'confirmed' };
 
-    let msgLower = message.toLowerCase();
+    let msgLower = (message || '').toLowerCase();
     let updatedBriefStatus = briefStatus;
     let briefMessage;
 

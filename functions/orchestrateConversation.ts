@@ -864,13 +864,6 @@ Deno.serve(async (req) => {
 
       console.log(`[STATE] ${currentState} | briefStatus: ${briefStatus} | sufficiency: ${context.dataSufficiency} | reason: ${context.transitionReason}`);
 
-      // BUG 1 FIX: Create timeout dynamically AFTER state is set
-      const isFirstResults = previousState === STATES.BRIEF && briefStatus === 'confirmed';
-      const isDeepDive = currentState === STATES.DEEP_DIVE;
-      const actualTimeoutMs = (isFirstResults || isDeepDive) ? 45000 : 25000;
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), actualTimeoutMs));
-      (globalThis as any).__currentTimeoutPromise = timeoutPromise;
-
       let responseData;
 
       if (currentState === STATES.DISCOVERY) {
@@ -880,26 +873,42 @@ Deno.serve(async (req) => {
       }
 
       if (currentState === STATES.BRIEF) {
-        const briefResult = await base44.asServiceRole.functions.invoke('handleBrief', {
-          message: processMessage,
-          conversationFamilyProfile,
-          context,
-          conversationHistory,
-          consultantName,
-          briefStatus,
-          flags,
-          returningUserContextBlock
-        });
-        responseData = briefResult.data;
-        if (responseData.briefStatus) {
-          context.briefStatus = responseData.briefStatus;
+        try {
+          const briefResult = await base44.asServiceRole.functions.invoke('handleBrief', {
+            message: processMessage,
+            conversationFamilyProfile,
+            context,
+            conversationHistory,
+            consultantName,
+            briefStatus,
+            flags,
+            returningUserContextBlock
+          });
+          responseData = briefResult.data;
+          if (responseData.briefStatus) {
+            context.briefStatus = responseData.briefStatus;
+          }
+          if (responseData.conversationContext?.briefStatus) {
+            context.briefStatus = responseData.conversationContext.briefStatus;
+          }
+          responseData.conversationContext = { ...context, ...responseData.conversationContext };
+          responseData.extractedEntities = extractionResult?.extractedEntities || {};
+          return Response.json(responseData);
+        } catch (briefError) {
+          console.error('[BRIEF] Invocation failed:', briefError.message);
+          const fallbackMessage = consultantName === 'Jackie'
+            ? "I'm having trouble putting that together right now. Let me try again — could you tell me a bit more about what you're looking for?"
+            : "Hit a snag processing your brief. Can you give me a bit more detail on what you're looking for?";
+          return Response.json({
+            message: fallbackMessage,
+            state: STATES.BRIEF,
+            briefStatus: 'generating',
+            familyProfile: conversationFamilyProfile,
+            conversationContext: context,
+            extractedEntities: extractionResult?.extractedEntities || {},
+            schools: []
+          });
         }
-        if (responseData.conversationContext?.briefStatus) {
-          context.briefStatus = responseData.conversationContext.briefStatus;
-        }
-        responseData.conversationContext = { ...context, ...responseData.conversationContext };
-        responseData.extractedEntities = extractionResult?.extractedEntities || {};
-        return Response.json(responseData);
       }
 
       if (currentState === STATES.RESULTS) {
@@ -1016,9 +1025,10 @@ Deno.serve(async (req) => {
   };
 
   try {
-    return await Promise.race([processRequest(), (globalThis as any).__currentTimeoutPromise || new Promise(() => {})]);
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject({ error: 'Request timeout', status: 408 }), 45000));
+    return await Promise.race([processRequest(), timeoutPromise]);
   } catch (error) {
-    if (error.message === 'TIMEOUT') {
+    if (error.status === 408) {
       return Response.json({ error: 'Request timeout', status: 408 }, { status: 408 });
     }
     return Response.json({ error: 'Something went wrong. Please try again.', status: 500 }, { status: 500 });
