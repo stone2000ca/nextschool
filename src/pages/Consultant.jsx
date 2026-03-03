@@ -1219,9 +1219,15 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
       
       if (isRemoving) {
         updatedShortlist = currentShortlist.filter(id => id !== schoolId);
+        // Optimistic update: remove immediately from UI
+        setShortlistData(prev => prev.filter(s => s.id !== schoolId));
       } else {
         updatedShortlist = [...currentShortlist, schoolId];
         trackEvent('shortlisted', { metadata: { schoolName: school?.name } });
+        // Optimistic update: add immediately to UI
+        if (school) {
+          setShortlistData(prev => [...prev, school]);
+        }
       }
       
       await base44.auth.updateMe({ shortlist: updatedShortlist });
