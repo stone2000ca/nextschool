@@ -176,160 +176,44 @@ export default function SchoolSearchProfile({
   const bestMatchSchool = matchedSchools[0];
 
   return (
-    <div className="bg-gradient-to-br from-[#1E1E2E] to-[#2A2A3D] border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-all duration-200 hover:shadow-xl group">
-
-      {!isEditMode ? (
-        /* Horizontal card layout */
-        <div className="flex flex-col md:flex-row">
-
-          {/* LEFT: Avatar + Name + Badge */}
-          <div className="flex md:flex-col items-center md:items-center justify-between md:justify-center gap-3 p-5 md:w-44 md:border-r border-b md:border-b-0 border-white/10 bg-white/5 flex-shrink-0">
-            <div className="flex md:flex-col items-center gap-3 md:gap-2 md:text-center">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center font-bold text-white text-lg flex-shrink-0">
-                {initial}
-              </div>
-              <div className="md:text-center">
-                <h2 className="text-base font-bold text-white leading-tight">
-                  {session.childName || 'Student'}
-                </h2>
-                {session.childGrade != null && (
-                  <p className="text-xs text-white/60 mt-0.5">Grade {session.childGrade}</p>
-                )}
-              </div>
+    <div className="bg-gradient-to-br from-[#1E1E2E] to-[#2A2A3D] border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-all duration-200 hover:shadow-xl flex flex-col group">
+      {/* Header */}
+      <div className="p-5 border-b border-white/10 bg-white/5">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-start gap-3">
+            {/* Avatar */}
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center font-bold text-white text-lg flex-shrink-0">
+              {initial}
             </div>
-            <div className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusColor}`}>
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                {session.childName || 'Student'}
+              </h2>
+              {session.childGrade != null && (
+                <p className="text-sm text-white/60">Grade {session.childGrade}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Status + Menu */}
+          <div className="flex items-center gap-2">
+            <div className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusColor}`}>
               {isActive ? 'Active' : 'Archived'}
             </div>
-          </div>
-
-          {/* MIDDLE: Priorities + Details + Stats */}
-          <div className="flex-1 p-5 min-w-0">
-            {/* Priority chips */}
-            {priorities.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {priorities.slice(0, 5).map((priority, idx) => {
-                  const IconComponent = PRIORITY_ICONS[priority] || Zap;
-                  return (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-white/10 border border-white/20 rounded-full"
-                    >
-                      <IconComponent className="w-3 h-3 text-teal-400" />
-                      <span className="text-xs font-medium text-white/80">{priority}</span>
-                    </div>
-                  );
-                })}
-                {priorities.length > 5 && (
-                  <div className="flex items-center px-2.5 py-1 text-xs text-white/50">
-                    +{priorities.length - 5} more
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Details row */}
-            <div className="flex flex-wrap gap-x-5 gap-y-2 mb-4">
-              {session.locationArea && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
-                  <span className="text-sm text-white/80">{session.locationArea}</span>
-                </div>
-              )}
-              {session.maxTuition && (
-                <div className="flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
-                  <span className="text-sm text-white/80">{budgetRange}/yr</span>
-                </div>
-              )}
-              {session.commuteToleranceMinutes && (
-                <div className="flex items-center gap-1.5">
-                  <Navigation className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
-                  <span className="text-sm text-white/80">{session.commuteToleranceMinutes} min commute</span>
-                </div>
-              )}
-              {session.learningDifferences && session.learningDifferences.length > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
-                  <span className="text-sm text-white/80">{session.learningDifferences[0]}</span>
-                </div>
-              )}
-              {session.boardingPreference && (
-                <div className="flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
-                  <span className="text-sm text-white/80 capitalize">{session.boardingPreference.replace(/_/g, ' ')}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Stats row */}
-            <div className="flex items-center gap-6">
-              <div>
-                <p className="text-xs text-white/50">Matched</p>
-                <p className="text-xl font-bold text-teal-400">{matchedCount}</p>
-              </div>
-              <div>
-                <p className="text-xs text-white/50">Shortlisted</p>
-                <p className="text-xl font-bold text-teal-400">{session.shortlistedCount || 0}</p>
-              </div>
-              {bestMatchSchool && typeof bestMatchSchool === 'object' && bestMatchSchool.name && (
-                <div className="ml-2 pl-4 border-l border-white/10">
-                  <p className="text-xs text-white/50">Top Match</p>
-                  <p className="text-sm font-semibold text-teal-300">{bestMatchSchool.name}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT: Action buttons */}
-          <div className="flex md:flex-col gap-2 p-4 md:w-44 md:border-l border-t md:border-t-0 border-white/10 justify-end md:justify-center flex-shrink-0">
-            <Button
-              onClick={handleViewMatches}
-              className="flex-1 md:flex-none bg-teal-600 hover:bg-teal-700 text-white gap-2 text-sm"
-            >
-              <Eye className="w-4 h-4" />
-              <span className="hidden sm:inline">View Matches</span>
-            </Button>
-            <Button
-              onClick={() => setIsEditMode(true)}
-              variant="secondary"
-              className="flex-1 md:flex-none gap-2 text-sm"
-            >
-              <Edit className="w-4 h-4" />
-              <span className="hidden sm:inline">Edit</span>
-            </Button>
-            {isPaid ? (
-              <Button
-                onClick={handleShare}
-                variant="secondary"
-                className="flex-1 md:flex-none gap-2 text-sm"
-              >
-                <Share2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Share</span>
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setShowShareUpgrade(true)}
-                variant="secondary"
-                className="flex-1 md:flex-none gap-2 text-sm"
-              >
-                <Share2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Share</span>
-              </Button>
-            )}
             {isActive && (
               <div className="relative">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors w-full md:w-auto flex items-center justify-center"
+                  className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
                 >
                   <MoreVertical className="w-4 h-4 text-white/60" />
                 </button>
                 {showMenu && (
-                  <div className="absolute right-0 bottom-full mb-1 md:bottom-auto md:top-full md:mt-1 bg-[#1E1E2E] border border-white/20 rounded-lg shadow-lg z-10">
+                  <div className="absolute right-0 mt-1 bg-[#1E1E2E] border border-white/20 rounded-lg shadow-lg z-10">
                     <button
                       onClick={handleArchive}
                       disabled={isArchiving}
-                      className="w-full px-4 py-2 flex items-center gap-2 text-sm text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      className="w-full px-4 py-2 flex items-center gap-2 text-sm text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Archive className="w-4 h-4" />
                       {isArchiving ? 'Archiving...' : 'Archive'}
@@ -339,6 +223,171 @@ export default function SchoolSearchProfile({
               </div>
             )}
           </div>
+        </div>
+
+        {/* Priority Tags */}
+        {priorities.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {priorities.slice(0, 4).map((priority, idx) => {
+              const IconComponent = PRIORITY_ICONS[priority] || Zap;
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 border border-white/20 rounded-full"
+                >
+                  <IconComponent className="w-3.5 h-3.5 text-teal-400" />
+                  <span className="text-xs font-medium text-white/80">{priority}</span>
+                </div>
+              );
+            })}
+            {priorities.length > 4 && (
+              <div className="flex items-center px-3 py-1.5 text-xs text-white/50">
+                +{priorities.length - 4} more
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Key Data Grid */}
+      <div className="p-5 border-b border-white/10 grid grid-cols-2 gap-3">
+        {/* Location */}
+        {session.locationArea && (
+          <div className="flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-white/60">Location</p>
+              <p className="text-sm font-medium text-white/90">{session.locationArea}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Budget */}
+        {session.maxTuition && (
+          <div className="flex items-start gap-2">
+            <DollarSign className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-white/60">Budget</p>
+              <p className="text-sm font-medium text-white/90">{budgetRange}/year</p>
+            </div>
+          </div>
+        )}
+
+        {/* Grade */}
+        {session.childGrade != null && (
+          <div className="flex items-start gap-2">
+            <Calendar className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-white/60">Grade</p>
+              <p className="text-sm font-medium text-white/90">Grade {session.childGrade}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Commute Preference */}
+        {session.commuteToleranceMinutes && (
+          <div className="flex items-start gap-2">
+            <Navigation className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-white/60">Commute</p>
+              <p className="text-sm font-medium text-white/90">{session.commuteToleranceMinutes} min</p>
+            </div>
+          </div>
+        )}
+
+        {/* Special Needs */}
+        {session.learningDifferences && session.learningDifferences.length > 0 && (
+          <div className="flex items-start gap-2">
+            <Zap className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-white/60">Special Needs</p>
+              <p className="text-sm font-medium text-white/90">
+                {session.learningDifferences[0]}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Boarding Preference */}
+        {session.boardingPreference && (
+          <div className="flex items-start gap-2">
+            <Globe className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-white/60">Boarding</p>
+              <p className="text-sm font-medium text-white/90 capitalize">
+                {session.boardingPreference.replace(/_/g, ' ')}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* AI Narrative */}
+      {session.aiNarrative && (
+        <div className="p-5 border-b border-white/10">
+          <p className="text-sm text-white/75 leading-relaxed">
+            {session.aiNarrative}
+          </p>
+        </div>
+      )}
+
+      {/* Match Summary */}
+      <div className="p-5 border-b border-white/10 bg-white/5">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-white/60">Schools Matched</span>
+            <span className="text-lg font-bold text-teal-400">{matchedCount}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-white/60">Shortlisted</span>
+            <span className="text-lg font-bold text-teal-400">{session.shortlistedCount || 0}</span>
+          </div>
+          {bestMatchSchool && typeof bestMatchSchool === 'object' && bestMatchSchool.name && (
+            <div className="pt-2 border-t border-white/10">
+              <p className="text-xs text-white/50 mb-1">Best Match</p>
+              <p className="text-sm font-semibold text-teal-300">{bestMatchSchool.name}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action Bar or Edit Mode */}
+      {!isEditMode ? (
+        <div className="p-4 flex gap-2 flex-wrap">
+          <Button
+            onClick={handleViewMatches}
+            className="flex-1 bg-teal-600 hover:bg-teal-700 text-white gap-2 text-sm"
+          >
+            <Eye className="w-4 h-4" />
+            View Matches
+          </Button>
+          <Button
+            onClick={() => setIsEditMode(true)}
+            variant="secondary"
+            className="flex-1 gap-2 text-sm"
+          >
+            <Edit className="w-4 h-4" />
+            Edit Profile
+          </Button>
+          {isPaid ? (
+            <Button
+              onClick={handleShare}
+              variant="secondary"
+              className="flex-1 gap-2 text-sm"
+            >
+              <Share2 className="w-4 h-4" />
+              Share Profile
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setShowShareUpgrade(true)}
+              variant="secondary"
+              className="flex-1 gap-2 text-sm"
+            >
+              <Share2 className="w-4 h-4" />
+              Share Profile
+            </Button>
+          )}
         </div>
       ) : (
         /* Edit Mode */
