@@ -174,62 +174,43 @@ export default function SharedProfile() {
           </div>
         </div>
 
-        {/* Match Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
-          <div className="bg-[#2A2A3D] rounded-xl p-6 border border-white/10">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#E8E8ED]/60">Schools Matched</span>
-              <span className="text-3xl font-bold text-teal-400">{schools.length}</span>
-            </div>
-          </div>
-          <div className="bg-[#2A2A3D] rounded-xl p-6 border border-white/10">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#E8E8ED]/60">Shortlisted</span>
-              <span className="text-3xl font-bold text-teal-400">{shortlistedSchools.length}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Top Matched Schools */}
-        {schools.length > 0 && (
+        {/* Shortlisted Schools */}
+        {shortlistedSchools.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">Top Matched Schools</h2>
-            <div className="space-y-4">
-              {schools.map((school, idx) => (
-                <div key={school.id} className="bg-[#2A2A3D] border border-white/10 rounded-lg p-6 hover:border-teal-400/50 transition-colors">
-                  <div className="flex items-start gap-4">
-                    <div className="flex items-center justify-center w-12 h-12 bg-teal-500/20 rounded-lg font-bold text-teal-300 flex-shrink-0">
-                      {idx + 1}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-1">{school.name}</h3>
-                      <p className="text-sm text-[#E8E8ED]/70">
-                        {school.city}{school.provinceState ? `, ${school.provinceState}` : ''}
-                      </p>
-                      {school.highlights && school.highlights.length > 0 && (
-                        <p className="text-sm text-[#E8E8ED]/60 mt-2">{school.highlights[0]}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <Bookmark className="w-6 h-6 text-teal-400" />
+              Your Shortlist
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {shortlistedSchools.map((school) => (
+                <SchoolCard
+                  key={school.id}
+                  school={school}
+                  isShortlisted={true}
+                  onViewDetails={() => {}}
+                  onToggleShortlist={() => {}}
+                />
               ))}
             </div>
           </div>
         )}
 
-        {/* Shortlisted Schools */}
-        {shortlistedSchools.length > 0 && (
+        {/* Top Matched Schools */}
+        {schools.filter(s => !shortlistedSchools.some(sl => sl.id === s.id)).length > 0 && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">Shortlisted Schools</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {shortlistedSchools.map((school) => (
-                <div key={school.id} className="bg-[#2A2A3D] border border-white/10 rounded-lg p-4">
-                  <h3 className="font-semibold text-white">{school.name}</h3>
-                  <p className="text-sm text-[#E8E8ED]/70">
-                    {school.city}{school.provinceState ? `, ${school.provinceState}` : ''}
-                  </p>
-                </div>
-              ))}
+            <h2 className="text-2xl font-bold text-white mb-6">Top Matches</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {schools
+                .filter(s => !shortlistedSchools.some(sl => sl.id === s.id))
+                .map((school) => (
+                  <SchoolCard
+                    key={school.id}
+                    school={school}
+                    isShortlisted={false}
+                    onViewDetails={() => {}}
+                    onToggleShortlist={() => {}}
+                  />
+                ))}
             </div>
           </div>
         )}
