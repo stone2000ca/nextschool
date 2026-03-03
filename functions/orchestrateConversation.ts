@@ -817,12 +817,6 @@ Deno.serve(async (req) => {
       briefStatus = resolveResult.briefStatus || context.briefStatus || null;
       const { flags } = resolveResult;
 
-      // Update dynamic timeout for first results transition
-      isFirstResults = context.previousState === STATES.BRIEF && briefStatus === 'confirmed';
-      if (isFirstResults) {
-        TIMEOUT_MS = 45000;
-      }
-      
       console.log('[ORCH] resolveTransition:', { nextState: currentState, intentSignal, sufficiency: resolveResult.sufficiency });
       
       // GIBBERISH DETECTION: Catch nonsensical input before routing to handlers
