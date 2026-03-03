@@ -80,13 +80,13 @@ Deno.serve(async (req) => {
         campusFeel: row.campusFeel?.trim() || undefined,
         founded: row.founded ? parseInt(row.founded) : undefined,
         curriculumType: row.curriculumType?.trim() || undefined,
-        curriculum: row.curriculum ? JSON.parse(row.curriculum) : [],
-        specializations: row.specializations ? JSON.parse(row.specializations) : [],
-        artsPrograms: row.artsPrograms ? JSON.parse(row.artsPrograms) : [],
-        sportsPrograms: row.sportsPrograms ? JSON.parse(row.sportsPrograms) : [],
-        clubs: row.clubs ? JSON.parse(row.clubs) : [],
-        languages: row.languages ? JSON.parse(row.languages) : [],
-        specialEdPrograms: row.specialEdPrograms ? JSON.parse(row.specialEdPrograms) : [],
+        curriculum: (row.curriculum && row.curriculum.trim() !== '') ? JSON.parse(row.curriculum) : [],
+        specializations: (row.specializations && row.specializations.trim() !== '') ? JSON.parse(row.specializations) : [],
+        artsPrograms: (row.artsPrograms && row.artsPrograms.trim() !== '') ? JSON.parse(row.artsPrograms) : [],
+        sportsPrograms: (row.sportsPrograms && row.sportsPrograms.trim() !== '') ? JSON.parse(row.sportsPrograms) : [],
+        clubs: (row.clubs && row.clubs.trim() !== '') ? JSON.parse(row.clubs) : [],
+        languages: (row.languages && row.languages.trim() !== '') ? JSON.parse(row.languages) : [],
+        specialEdPrograms: (row.specialEdPrograms && row.specialEdPrograms.trim() !== '') ? JSON.parse(row.specialEdPrograms) : [],
         tuition: row.tuition ? parseInt(row.tuition) : undefined,
         dayTuition: row.dayTuition ? parseInt(row.dayTuition) : undefined,
         boardingTuition: row.boardingTuition ? parseInt(row.boardingTuition) : undefined,
@@ -100,16 +100,16 @@ Deno.serve(async (req) => {
         missionStatement: row.missionStatement?.trim() || undefined,
         description: row.description?.trim() || undefined,
         teachingPhilosophy: row.teachingPhilosophy?.trim() || undefined,
-        values: row.values ? JSON.parse(row.values) : [],
-        highlights: row.highlights ? JSON.parse(row.highlights) : [],
+        values: (row.values && row.values.trim() !== '') ? JSON.parse(row.values) : [],
+        highlights: (row.highlights && row.highlights.trim() !== '') ? JSON.parse(row.highlights) : [],
         communityVibe: row.communityVibe?.trim() || undefined,
         parentInvolvement: row.parentInvolvement?.trim() || undefined,
         diversityStatement: row.diversityStatement?.trim() || undefined,
         safetyPolicies: row.safetyPolicies?.trim() || undefined,
         applicationDeadline: row.applicationDeadline?.trim() || undefined,
-        admissionRequirements: row.admissionRequirements ? JSON.parse(row.admissionRequirements) : [],
+        admissionRequirements: (row.admissionRequirements && row.admissionRequirements.trim() !== '') ? JSON.parse(row.admissionRequirements) : [],
         entranceRequirements: row.entranceRequirements?.trim() || undefined,
-        openHouseDates: row.openHouseDates ? JSON.parse(row.openHouseDates) : [],
+        openHouseDates: (row.openHouseDates && row.openHouseDates.trim() !== '') ? JSON.parse(row.openHouseDates) : [],
         universityPlacements: row.universityPlacements?.trim() || undefined,
         website: row.website?.trim() || undefined,
         phone: row.phone?.trim() || undefined,
@@ -117,11 +117,11 @@ Deno.serve(async (req) => {
         logoUrl: row.logoUrl?.trim() || undefined,
         headerPhotoUrl: row.headerPhotoUrl?.trim() || undefined,
         heroImage: row.heroImage?.trim() || undefined,
-        photoGallery: row.photoGallery ? JSON.parse(row.photoGallery) : [],
-        videos: row.videos ? JSON.parse(row.videos) : [],
+        photoGallery: (row.photoGallery && row.photoGallery.trim() !== '') ? JSON.parse(row.photoGallery) : [],
+        videos: (row.videos && row.videos.trim() !== '') ? JSON.parse(row.videos) : [],
         virtualTourUrl: row.virtualTourUrl?.trim() || undefined,
-        facilities: row.facilities ? JSON.parse(row.facilities) : [],
-        accreditations: row.accreditations ? JSON.parse(row.accreditations) : [],
+        facilities: (row.facilities && row.facilities.trim() !== '') ? JSON.parse(row.facilities) : [],
+        accreditations: (row.accreditations && row.accreditations.trim() !== '') ? JSON.parse(row.accreditations) : [],
         transportationOptions: row.transportationOptions?.trim() || undefined,
         beforeAfterCare: row.beforeAfterCare?.trim() || undefined,
         campusSize: row.campusSize?.trim() || undefined,
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
         dataSource: row.dataSource?.trim() || undefined,
         governmentId: row.governmentId?.trim() || undefined,
         importBatchId: row.importBatchId?.trim() || 'enriched_v4_clean_feb2026',
-        aiEnrichedFields: row.aiEnrichedFields ? JSON.parse(row.aiEnrichedFields) : [],
+        aiEnrichedFields: (row.aiEnrichedFields && row.aiEnrichedFields.trim() !== '') ? JSON.parse(row.aiEnrichedFields) : [],
         completenessScore: row.completenessScore ? parseFloat(row.completenessScore) : undefined,
         source: row.source?.trim() || undefined,
         adminUserId: row.adminUserId?.trim() || undefined,
@@ -178,21 +178,39 @@ Deno.serve(async (req) => {
         // Throttle requests to avoid rate limits (200ms between each)
         await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Try to find existing school by slug or id
+        // Try to find existing school by id or slug
         let existing = null;
-        if (school.id) {
+        if (school.id && school.id.trim() !== '') {
           const results = await base44.entities.School.filter({ id: school.id });
           existing = results.length > 0 ? results[0] : null;
-        } else if (school.slug) {
+        } 
+        
+        if (!existing && school.slug && school.slug.trim() !== '') {
           const results = await base44.entities.School.filter({ slug: school.slug });
           existing = results.length > 0 ? results[0] : null;
         }
 
         if (existing) {
-          await retryWithBackoff(() => base44.entities.School.update(existing.id, school));
+          // Remove id and system fields from update payload
+          const updatePayload = { ...school };
+          delete updatePayload.id;
+          delete updatePayload.created_date;
+          delete updatePayload.updated_date;
+          delete updatePayload.created_by;
+          delete updatePayload.created_by_id;
+          
+          await retryWithBackoff(() => base44.entities.School.update(existing.id, updatePayload));
           updated++;
         } else {
-          await retryWithBackoff(() => base44.entities.School.create(school));
+          // Remove id and system fields from create payload
+          const createPayload = { ...school };
+          delete createPayload.id;
+          delete createPayload.created_date;
+          delete createPayload.updated_date;
+          delete createPayload.created_by;
+          delete createPayload.created_by_id;
+          
+          await retryWithBackoff(() => base44.entities.School.create(createPayload));
           created++;
         }
       } catch (e) {
