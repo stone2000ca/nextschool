@@ -4,8 +4,8 @@
 // Last Modified: 2026-03-03
 // Dependencies: Papa Parse
 
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import Papa from 'npm:papaparse@5.4.1';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import Papa from 'npm:papaparse';
 
 Deno.serve(async (req) => {
   try {
