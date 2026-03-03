@@ -128,9 +128,14 @@ Deno.serve(async (req) => {
         subscriptionTier: row.subscriptionTier?.trim() || 'free',
         dataSource: row.dataSource?.trim() || undefined,
         governmentId: row.governmentId?.trim() || undefined,
-        importBatchId: 'enriched_v4_clean_feb2026',
+        importBatchId: row.importBatchId?.trim() || 'enriched_v4_clean_feb2026',
         aiEnrichedFields: row.aiEnrichedFields ? JSON.parse(row.aiEnrichedFields) : [],
-        completenessScore: row.completenessScore ? parseInt(row.completenessScore) : undefined
+        completenessScore: row.completenessScore ? parseFloat(row.completenessScore) : undefined,
+        source: row.source?.trim() || undefined,
+        adminUserId: row.adminUserId?.trim() || undefined,
+        lastEnriched: row.lastEnriched?.trim() || undefined,
+        is_sample: row.is_sample === 'True' || row.is_sample === 'true',
+        verifiedFields: row.verifiedFields?.trim() || undefined
       };
 
       // Remove undefined values
