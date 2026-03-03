@@ -32,7 +32,7 @@ export default function Navbar({ variant = "default" }) {
       <header className="border-b bg-white/80 backdrop-blur-sm">
         <div className="px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
           <Link to={createPageUrl('Home')} className="flex items-center gap-2">
-            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/cfcb6f29d_logo_NextSchool_full_white.png" alt="NextSchool" className="h-8" />
+            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/c65068e60_logo_NextSchool_full.png" alt="NextSchool" className="h-8" />
           </Link>
           {isAuthenticated && user ? (
             <div className="flex items-center gap-1">
