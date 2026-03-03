@@ -1009,7 +1009,7 @@ Deno.serve(async (req) => {
   };
 
   try {
-    return await processRequest();
+    return await Promise.race([processRequest(), (globalThis as any).__currentTimeoutPromise || new Promise(() => {})]);
   } catch (error) {
     if (error.message === 'TIMEOUT') {
       return Response.json({ error: 'Request timeout', status: 408 }, { status: 408 });
