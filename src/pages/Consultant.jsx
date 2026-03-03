@@ -1756,6 +1756,41 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog open={archiveConfirmOpen} onOpenChange={setArchiveConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Profile Limit Reached</AlertDialogTitle>
+            <AlertDialogDescription>
+              {conversations.length > 0 && (
+                <>
+                  You've reached your profile limit for your <strong>{user?.subscriptionPlan || 'free'}</strong> plan. Would you like to archive <strong>"{conversations.sort((a, b) => new Date(a.created_date) - new Date(b.created_date))[0]?.title || 'oldest profile'}"</strong> to create a new one?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                setArchiveConfirmOpen(false);
+                setPendingNewConversation(false);
+                // Route to dashboard
+                window.location.href = createPageUrl('Dashboard');
+              }}
+              variant="outline"
+            >
+              No, View Dashboard
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleArchiveOldestConversation}
+              className="bg-teal-600 hover:bg-teal-700"
+            >
+              Yes, Archive & Create New
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Conversation Limit Reached Dialog */}
       <AlertDialog open={limitReachedOpen} onOpenChange={setLimitReachedOpen}>
         <AlertDialogContent>
