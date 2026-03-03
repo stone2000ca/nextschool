@@ -32,7 +32,60 @@ const PRIORITY_ICONS = {
   'Languages': Globe,
 };
 
-const AVAILABLE_PRIORITIES = ['Arts', 'Academics', 'Nurturing', 'STEM', 'Sports', 'Music', 'Languages'];
+function ChipInput({ chips, onChange, placeholder }) {
+  const [inputValue, setInputValue] = useState('');
+
+  const addChip = (value) => {
+    const trimmed = value.trim();
+    if (trimmed && !chips.includes(trimmed)) {
+      onChange([...chips, trimmed]);
+    }
+    setInputValue('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addChip(inputValue);
+    } else if (e.key === 'Backspace' && inputValue === '' && chips.length > 0) {
+      onChange(chips.slice(0, -1));
+    }
+  };
+
+  const handleChange = (e) => {
+    const val = e.target.value;
+    if (val.endsWith(',')) {
+      addChip(val.slice(0, -1));
+    } else {
+      setInputValue(val);
+    }
+  };
+
+  return (
+    <div className="w-full min-h-[42px] flex flex-wrap gap-1.5 px-2 py-1.5 bg-white/10 border border-white/20 rounded focus-within:border-teal-500/50 transition-colors">
+      {chips.map((chip, idx) => (
+        <span key={idx} className="flex items-center gap-1 bg-teal-900/50 text-teal-300 rounded-full px-3 py-1 text-sm">
+          {chip}
+          <button
+            type="button"
+            onClick={() => onChange(chips.filter((_, i) => i !== idx))}
+            className="ml-0.5 hover:text-white transition-colors"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      ))}
+      <input
+        type="text"
+        value={inputValue}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        placeholder={chips.length === 0 ? placeholder : ''}
+        className="flex-1 min-w-[120px] bg-transparent text-white text-sm outline-none placeholder:text-white/40"
+      />
+    </div>
+  );
+}
 
 export default function SchoolSearchProfile({
   session,
