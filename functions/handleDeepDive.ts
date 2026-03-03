@@ -327,9 +327,9 @@ Generate the DEEPDIVE card for this family-school match.`;
     }
     const finalMessage = sanitizedMessage + followUpPrompt;
 
-    console.log('[DEEPDIVE] Returning aiMessage length:', sanitizedMessage?.length);
+    console.log('[DEEPDIVE] Returning aiMessage length:', finalMessage?.length);
     return Response.json({
-      message: sanitizedMessage,
+      message: finalMessage,
       state: currentState,
       briefStatus: briefStatus,
       schools: currentSchools || [],
