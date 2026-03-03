@@ -858,6 +858,12 @@ Deno.serve(async (req) => {
 
       console.log(`[STATE] ${currentState} | briefStatus: ${briefStatus} | sufficiency: ${context.dataSufficiency} | reason: ${context.transitionReason}`);
 
+      // BUG 1 FIX: Create timeout dynamically AFTER state is set
+      const isFirstResults = previousState === STATES.BRIEF && briefStatus === 'confirmed';
+      const actualTimeoutMs = isFirstResults ? 45000 : 25000;
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), actualTimeoutMs));
+      (globalThis as any).__currentTimeoutPromise = timeoutPromise;
+
       let responseData;
 
       if (currentState === STATES.DISCOVERY) {
