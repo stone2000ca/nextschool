@@ -49,15 +49,15 @@ const ChatInput = forwardRef(({ onSend, disabled, tokenBalance, isPremium }, ref
       </div>
 
       <form onSubmit={handleSubmit} className="flex gap-2 items-stretch">
-        <Textarea
-          ref={textareaRef}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Tell me about your child and what you're looking for..."
-          className="min-h-[44px] max-h-[120px] resize-none bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-teal-400 focus:ring-teal-400"
-          disabled={disabled}
-        />
+         <Textarea
+           ref={textareaRef}
+           value={message}
+           onChange={(e) => setMessage(e.target.value)}
+           onKeyDown={handleKeyDown}
+           placeholder="Tell me about your child and what you're looking for..."
+           className="min-h-[44px] max-h-[120px] resize-none bg-teal-900/40 border-teal-700/50 text-white placeholder:text-white/50 focus:border-teal-400 focus:ring-teal-400"
+           disabled={disabled}
+         />
         <Button 
           type="submit" 
           disabled={disabled || !message.trim()}
