@@ -84,19 +84,26 @@ export default function SchoolSearchProfile({
   const handleSaveEdits = async () => {
     setIsSaving(true);
     try {
-      // Update ChatSession with new profile data
-      await base44.entities.ChatSession.update(session.id, {
-        childGrade: editData.childGrade,
-        maxTuition: editData.maxTuition,
-        locationArea: editData.locationArea,
+      // Update ONLY the editable session fields — never touch familyBrief or FamilyProfile
+      const sessionUpdate = {
+        childGrade: editData.childGrade ?? null,
+        maxTuition: editData.maxTuition ?? null,
+        locationArea: editData.locationArea ?? null,
         priorities: editData.priorities,
         learningDifferences: editData.learningDifferences,
-      });
+      };
+      await base44.entities.ChatSession.update(session.id, sessionUpdate);
 
-      // Re-run school matching
-      const matchResult = await base44.functions.invoke('matchSchoolsForProfile', {
+      // Re-run school matching using the edited fields only
+      await base44.functions.invoke('matchSchoolsForProfile', {
         sessionId: session.id,
-        familyProfile: editData,
+        familyProfile: {
+          childGrade: editData.childGrade,
+          maxTuition: editData.maxTuition,
+          locationArea: editData.locationArea,
+          priorities: editData.priorities,
+          learningDifferences: editData.learningDifferences,
+        },
       });
 
       setIsEditMode(false);
