@@ -977,6 +977,17 @@ Deno.serve(async (req) => {
       }
 
       if (currentState === STATES.DEEP_DIVE) {
+        // E13a: Check if debrief mode is set BEFORE falling through to handleDeepDive
+        if (resolveResult.deepDiveMode === 'debrief' || resolveResult.flags?.DEBRIEF_MODE) {
+          console.log('[E13a] Routing DEEP_DIVE to inlined handleVisitDebrief');
+          const debriefResult = await handleVisitDebrief(base44, selectedSchoolId, processMessage, conversationFamilyProfile, context, consultantName, returningUserContextBlock, callOpenRouter);
+          if (debriefResult) {
+            if (debriefResult.updatedContext) Object.assign(context, debriefResult.updatedContext);
+            return Response.json({ message: debriefResult.message, state: STATES.DEEP_DIVE, briefStatus, deepDiveMode: debriefResult.deepDiveMode, visitPrepKit: debriefResult.visitPrepKit, fitReEvaluation: debriefResult.fitReEvaluation || null, familyProfile: conversationFamilyProfile, conversationContext: context, extractedEntities: extractionResult?.extractedEntities || {}, schools: currentSchools || [] });
+          }
+          console.log('[E13a] handleVisitDebrief returned null, falling through');
+        }
+
         const deepDiveResult = await base44.asServiceRole.functions.invoke('handleDeepDive', {
           selectedSchoolId,
           message: processMessage,
