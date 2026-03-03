@@ -330,7 +330,9 @@ YOU ARE LIAM - Senior education strategist, 10+ years in private school placemen
 // MAIN: Deno.serve — orchestrateConversation
 // =============================================================================
 Deno.serve(async (req) => {
-  const TIMEOUT_MS = 25000;
+  // Dynamic timeout: increase to 45s for first results, 25s otherwise
+  let isFirstResults = false;
+  let TIMEOUT_MS = 25000;
   
   const timeoutPromise = new Promise((_, reject) => 
     setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_MS)
@@ -533,6 +535,12 @@ Deno.serve(async (req) => {
       currentState = resolveResult.nextState;
       briefStatus = resolveResult.briefStatus || context.briefStatus || null;
       const { flags } = resolveResult;
+
+      // Update dynamic timeout for first results transition
+      isFirstResults = context.previousState === STATES.BRIEF && briefStatus === 'confirmed';
+      if (isFirstResults) {
+        TIMEOUT_MS = 45000;
+      }
       
       console.log('[ORCH] resolveTransition:', { nextState: currentState, intentSignal, sufficiency: resolveResult.sufficiency });
       
@@ -638,6 +646,23 @@ Deno.serve(async (req) => {
           responseData = deepDiveResult.data;
           responseData.extractedEntities = extractionResult?.extractedEntities || {};
           return Response.json(responseData);
+        }
+
+        // WC10: Fire-and-forget narrative generation (non-blocking)
+        if (context.previousState === STATES.BRIEF && briefStatus === 'confirmed') {
+          (async () => {
+            try {
+              await base44.asServiceRole.functions.invoke('generateProfileNarrative', {
+                conversationFamilyProfile,
+                conversationHistory,
+                consultantName,
+                conversationId
+              });
+              console.log('[WC10] Narrative generated (non-blocking)');
+            } catch (e) {
+              console.error('[WC10] Narrative failed (non-blocking):', e.message);
+            }
+          })();
         }
 
         const autoRefresh = context.autoRefreshed === true;
