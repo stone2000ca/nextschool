@@ -139,12 +139,12 @@ function resolveTransition(params) {
   }
   
   // DETERMINISTIC BRIEF CONFIRMATION CHECK - overrides LLM intent classification
-  const confirmPhrases = new Set(['that looks right', 'show me schools', 'looks good', 'looks right', 'confirmed', 'yes', 'yep', 'yeah', 'yes please']);
+  const confirmPhrases = new Set(['that looks right', 'show me schools', 'looks good', 'looks right', 'confirmed', 'yes', 'yep', 'yeah', 'yes please', 'that looks right - show me schools']);
   const msgNormalized = (userMessage || '').toLowerCase().trim();
-  const isConfirmed = Array.from(confirmPhrases).some(p => msgNormalized === p || msgNormalized === p.trim());
+  const isConfirmed = Array.from(confirmPhrases).some(p => msgNormalized === p || msgNormalized.startsWith(p));
   if (currentState === STATES.BRIEF && params.briefStatus === 'pending_review' && isConfirmed) {
     flags.USER_INTENT_OVERRIDE = true;
-    console.log('[DETERMINISTIC] Brief confirmed by exact match:', userMessage, 'briefStatus was:', params.briefStatus);
+    console.log('[DETERMINISTIC] Brief confirmed by match:', userMessage, 'briefStatus was:', params.briefStatus);
     return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'brief_confirmed_deterministic', briefStatus: 'confirmed' };
   }
   
