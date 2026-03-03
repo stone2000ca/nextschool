@@ -455,11 +455,11 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
           </Button>
           <Button
             size="sm"
-            className={`text-xs px-2 transition-all ${isShortlisted ? 'bg-red-800/70 hover:bg-red-800/90 border-red-700/50 text-white' : 'border border-slate-200 bg-white hover:bg-red-50 text-slate-500 hover:text-red-700'}`}
+            className={`text-xs px-2 transition-all ${isShortlisted ? 'bg-red-50 border border-red-200 text-red-600' : 'border border-slate-200 bg-white hover:bg-red-50 text-slate-500 hover:text-red-700'}`}
             onClick={(e) => { e.stopPropagation(); onToggleShortlist(school.id); }}
             aria-label={isShortlisted ? `Remove ${school.name} from shortlist` : `Add ${school.name} to shortlist`}
           >
-            <Heart className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-white text-white' : ''}`} />
+            <Heart className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-red-500 text-red-500' : ''}`} />
           </Button>
         </div>
       </div>
