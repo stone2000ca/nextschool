@@ -283,22 +283,24 @@ YOU ARE LIAM - Senior education strategist, 10+ years in private school placemen
 
   let discoveryMessageRaw = 'Tell me more about your child.';
   try {
-    const aiResponse = await callOpenRouter({
-      systemPrompt: personaInstructions,
-      userPrompt: discoveryUserPrompt,
-      maxTokens: 500,
-      temperature: 0.7
+    const fastResponse = await base44.integrations.Core.InvokeLLM({ 
+      prompt: personaInstructions + '\n\nRecent chat:\n' + conversationSummary + '\n\nParent: "' + message + '"\n\nRespond as ' + consultantName + '. ONE question max. No filler.'
     });
-    discoveryMessageRaw = aiResponse || 'Tell me more about your child.';
-    console.log('[OPENROUTER] DISCOVERY response');
-  } catch (openrouterError) {
-    console.log('[OPENROUTER FALLBACK] DISCOVERY falling back to InvokeLLM');
+    discoveryMessageRaw = fastResponse?.response || fastResponse || 'Tell me more about your child.';
+    console.log('[DISCOVERY] Response via InvokeLLM (fast path)');
+  } catch (invokeLLMError) {
+    console.log('[DISCOVERY] InvokeLLM failed, falling back to OpenRouter');
     try {
-      const responsePrompt = `${personaInstructions}\n\nRecent chat:\n${conversationSummary}\n\nParent: "${message}"\n\nRespond as ${consultantName}. ONE question max.`;
-      const fallbackResponse = await base44.integrations.Core.InvokeLLM({ prompt: responsePrompt });
-      discoveryMessageRaw = fallbackResponse?.response || fallbackResponse || 'Tell me more about your child.';
-    } catch (fallbackError) {
-      console.error('[FALLBACK ERROR] DISCOVERY response failed:', fallbackError.message);
+      const aiResponse = await callOpenRouter({
+        systemPrompt: personaInstructions,
+        userPrompt: discoveryUserPrompt,
+        maxTokens: 500,
+        temperature: 0.7
+      });
+      discoveryMessageRaw = aiResponse || 'Tell me more about your child.';
+      console.log('[DISCOVERY] Response via OpenRouter (fallback)');
+    } catch (openrouterError) {
+      console.error('[DISCOVERY] Both LLM providers failed');
     }
   }
   
