@@ -303,7 +303,7 @@ export default function SchoolSearchProfile({
               <Edit2 className="w-4 h-4" />
             </button>
             <button
-              onClick={() => isPaid ? handleShare() : setShowShareUpgrade(true)}
+              onClick={(e) => { e.stopPropagation(); isPaid ? handleShare() : setShowShareUpgrade(true); }}
               title="Share Profile"
               className="w-9 h-9 flex items-center justify-center border border-white/10 rounded-lg bg-transparent text-white/50 hover:bg-white/10 hover:text-white transition-colors flex-shrink-0"
             >
