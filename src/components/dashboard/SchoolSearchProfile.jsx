@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
 import { CheckCircle, Copy } from 'lucide-react';
 import {
-  Zap,
   Edit2,
   Share2,
   Archive,
