@@ -221,51 +221,27 @@ export default function SchoolSearchProfile({
 
   return (
     <div
-      className="group w-[240px] min-w-[240px] max-w-[240px] bg-[#2A2A3E] border border-white/5 rounded-xl flex flex-col hover:shadow-lg hover:border-teal-500/20 transition-all duration-200 overflow-hidden cursor-pointer"
+      className="relative w-[240px] min-w-[240px] max-w-[240px] bg-[#2A2A3E] border border-white/5 rounded-xl flex flex-col hover:shadow-lg hover:border-teal-500/20 transition-all duration-200 overflow-hidden cursor-pointer"
       onClick={!isEditMode ? handleViewMatches : undefined}
     >
       {!isEditMode ? (
         <>
+          {/* Archive icon — top right */}
+          <button
+            onClick={(e) => { e.stopPropagation(); handleArchive(); }}
+            disabled={isArchiving}
+            title="Archive Profile"
+            className="absolute top-2.5 right-2.5 text-white/30 hover:text-white/70 transition-colors disabled:opacity-30 z-10"
+          >
+            <Archive className="w-4 h-4" />
+          </button>
+
           {/* HEADER */}
-          <div className="p-3 pb-0 flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
-                {initial}
-              </div>
-              <span className="font-semibold text-white text-sm truncate">{session.childName || 'Student'}</span>
+          <div className="p-3 pb-0 flex items-center gap-2 min-w-0 pr-8">
+            <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+              {initial}
             </div>
-            {/* Three-dot menu */}
-            <div className="relative flex-shrink-0" ref={menuRef} onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                className="p-1 rounded-lg hover:bg-white/10 transition-colors opacity-0 group-hover:opacity-100"
-              >
-                <MoreVertical className="w-4 h-4 text-white/60" />
-              </button>
-              {showMenu && (
-                <div className="absolute right-0 top-7 bg-[#1E1E2E] border border-white/20 rounded-lg shadow-xl z-20 w-40 py-1">
-                  <button
-                    onClick={() => { setIsEditMode(true); setShowMenu(false); }}
-                    className="w-full px-3 py-2 flex items-center gap-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
-                  >
-                    <Edit className="w-3.5 h-3.5" /> Edit Profile
-                  </button>
-                  <button
-                    onClick={() => { isPaid ? handleShare() : setShowShareUpgrade(true); setShowMenu(false); }}
-                    className="w-full px-3 py-2 flex items-center gap-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
-                  >
-                    <Share2 className="w-3.5 h-3.5" /> Share
-                  </button>
-                  <button
-                    onClick={() => { handleArchive(); setShowMenu(false); }}
-                    disabled={isArchiving}
-                    className="w-full px-3 py-2 flex items-center gap-2 text-sm text-red-400 hover:bg-white/10 transition-colors disabled:opacity-50"
-                  >
-                    <Archive className="w-3.5 h-3.5" /> {isArchiving ? 'Archiving…' : 'Archive'}
-                  </button>
-                </div>
-              )}
-            </div>
+            <span className="font-semibold text-white text-sm truncate">{session.childName || 'Student'}</span>
           </div>
 
           {/* META */}
