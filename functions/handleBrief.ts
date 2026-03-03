@@ -265,7 +265,24 @@ Format as a markdown bullet list with one field per line. Start the child field 
         briefMessageText = briefLines.join('\n');
         console.log('[BRIEF] Liam brief built deterministically');
       } else {
-        // Jackie: LLM-generated
+        // Jackie: LLM-generated with programmatic fallback
+        const childLabel = conversationFamilyProfile?.gender === 'male'
+          ? 'Your son'
+          : conversationFamilyProfile?.gender === 'female'
+          ? 'Your daughter'
+          : 'Your child';
+        const childDisplay = childName ? childName : childLabel;
+        const programmaticFallback = [
+          "Here's what I'm hearing from you so far:\n",
+          childName || childGrade !== null && childGrade !== undefined ? `- **Child:** ${childDisplay}${childGrade !== null && childGrade !== undefined ? ', Grade ' + childGrade : ''}` : null,
+          locationArea ? `- **Location:** ${locationArea}` : null,
+          maxTuition ? `- **Budget:** ${maxTuition === 'unlimited' ? 'Flexible' : `Up to $${Number(maxTuition).toLocaleString()}`}` : null,
+          (priorities || []).length > 0 ? `- **Priorities:** ${(priorities || []).join(', ')}` : null,
+          (interests || []).length > 0 ? `- **Interests:** ${(interests || []).join(', ')}` : null,
+          (dealbreakers || []).length > 0 ? `- **Dealbreakers:** ${(dealbreakers || []).join(', ')}` : null,
+          "\nDoes that capture it? Anything to adjust?"
+        ].filter(line => line !== null).join('\n');
+        
         try {
           const briefResult = await callOpenRouter({
             systemPrompt: jackieBriefSystemPrompt,
@@ -273,14 +290,10 @@ Format as a markdown bullet list with one field per line. Start the child field 
             maxTokens: 800,
             temperature: 0.5
           });
-          briefMessageText = briefResult || "Let me summarize what you've shared.";
+          briefMessageText = briefResult || programmaticFallback;
         } catch (openrouterError) {
-          try {
-            const briefResult = await base44.integrations.Core.InvokeLLM({ prompt: jackieBriefSystemPrompt + '\n\n' + jackieBriefUserPrompt });
-            briefMessageText = briefResult?.response || briefResult || "Let me summarize what you've shared.";
-          } catch (fallbackError) {
-            console.error('[ERROR] InvokeLLM BRIEF fallback failed:', fallbackError.message);
-          }
+          console.log('[BRIEF] OpenRouter failed for Jackie, using programmatic fallback');
+          briefMessageText = programmaticFallback;
         }
       }
       briefMessage = briefMessageText;
