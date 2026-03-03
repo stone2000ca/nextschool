@@ -47,7 +47,13 @@ Deno.serve(async (req) => {
 
     // Transform CSV data to match School entity schema
     const schools = data.map((row) => {
-      const schoolData = {
+      // Handle 'id' field separately - only include if present and not empty
+      const schoolData = {};
+      if (row.id && row.id.trim()) {
+        schoolData.id = row.id.trim();
+      }
+      
+      Object.assign(schoolData, {
         name: row.name?.trim(),
         slug: row.slug?.trim(),
         address: row.address?.trim() || undefined,
