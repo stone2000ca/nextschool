@@ -176,44 +176,48 @@ export default function SchoolSearchProfile({
   const bestMatchSchool = matchedSchools[0];
 
   return (
-    <div className="bg-gradient-to-br from-[#1E1E2E] to-[#2A2A3D] border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-all duration-200 hover:shadow-xl flex flex-col group">
-      {/* Header */}
-      <div className="p-5 border-b border-white/10 bg-white/5">
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="flex items-start gap-3">
-            {/* Avatar */}
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center font-bold text-white text-lg flex-shrink-0">
-              {initial}
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">
-                {session.childName || 'Student'}
-              </h2>
+    <div className="bg-[#2A2A3D] border border-white/10 border-l-4 border-l-teal-500 rounded-xl overflow-hidden hover:border-white/20 hover:border-l-teal-400 transition-all duration-200 hover:shadow-xl group">
+      {/* Compact Card — non-edit mode */}
+      {!isEditMode ? (
+        <div className="p-4">
+          {/* TOP ROW: Name + Grade + Status dot */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-bold text-white truncate">{session.childName || 'Student'}</span>
               {session.childGrade != null && (
-                <p className="text-sm text-white/60">Grade {session.childGrade}</p>
+                <span className="text-sm text-white/50 flex-shrink-0">· Grade {session.childGrade}</span>
               )}
             </div>
-          </div>
-
-          {/* Status + Menu */}
-          <div className="flex items-center gap-2">
-            <div className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusColor}`}>
-              {isActive ? 'Active' : 'Archived'}
-            </div>
-            {isActive && (
+            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+              <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-teal-400' : 'bg-slate-500'}`} />
+              {/* Three-dot menu */}
               <div className="relative">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
-                  className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
                 >
-                  <MoreVertical className="w-4 h-4 text-white/60" />
+                  <MoreVertical className="w-4 h-4 text-white/50" />
                 </button>
                 {showMenu && (
-                  <div className="absolute right-0 mt-1 bg-[#1E1E2E] border border-white/20 rounded-lg shadow-lg z-10">
+                  <div className="absolute right-0 mt-1 bg-[#1E1E2E] border border-white/20 rounded-lg shadow-lg z-10 w-40">
+                    <button
+                      onClick={() => { setIsEditMode(true); setShowMenu(false); }}
+                      className="w-full px-4 py-2 flex items-center gap-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit Profile
+                    </button>
+                    <button
+                      onClick={isPaid ? handleShare : () => { setShowShareUpgrade(true); setShowMenu(false); }}
+                      className="w-full px-4 py-2 flex items-center gap-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      Share Profile
+                    </button>
                     <button
                       onClick={handleArchive}
                       disabled={isArchiving}
-                      className="w-full px-4 py-2 flex items-center gap-2 text-sm text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-2 flex items-center gap-2 text-sm text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
                     >
                       <Archive className="w-4 h-4" />
                       {isArchiving ? 'Archiving...' : 'Archive'}
@@ -221,173 +225,47 @@ export default function SchoolSearchProfile({
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
 
-        {/* Priority Tags */}
-        {priorities.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {priorities.slice(0, 4).map((priority, idx) => {
-              const IconComponent = PRIORITY_ICONS[priority] || Zap;
-              return (
-                <div
-                  key={idx}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 border border-white/20 rounded-full"
-                >
-                  <IconComponent className="w-3.5 h-3.5 text-teal-400" />
-                  <span className="text-xs font-medium text-white/80">{priority}</span>
+          {/* MIDDLE: Priority chips */}
+          {priorities.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {priorities.slice(0, 3).map((priority, idx) => {
+                const IconComponent = PRIORITY_ICONS[priority] || Zap;
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-1 px-2 py-1 bg-teal-500/10 border border-teal-500/30 rounded-full"
+                  >
+                    <IconComponent className="w-3 h-3 text-teal-400" />
+                    <span className="text-xs text-white/80">{priority}</span>
+                  </div>
+                );
+              })}
+              {priorities.length > 3 && (
+                <div className="flex items-center px-2 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-white/50">
+                  +{priorities.length - 3} more
                 </div>
-              );
-            })}
-            {priorities.length > 4 && (
-              <div className="flex items-center px-3 py-1.5 text-xs text-white/50">
-                +{priorities.length - 4} more
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Key Data Grid */}
-      <div className="p-5 border-b border-white/10 grid grid-cols-2 gap-3">
-        {/* Location */}
-        {session.locationArea && (
-          <div className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-white/60">Location</p>
-              <p className="text-sm font-medium text-white/90">{session.locationArea}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Budget */}
-        {session.maxTuition && (
-          <div className="flex items-start gap-2">
-            <DollarSign className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-white/60">Budget</p>
-              <p className="text-sm font-medium text-white/90">{budgetRange}/year</p>
-            </div>
-          </div>
-        )}
-
-        {/* Grade */}
-        {session.childGrade != null && (
-          <div className="flex items-start gap-2">
-            <Calendar className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-white/60">Grade</p>
-              <p className="text-sm font-medium text-white/90">Grade {session.childGrade}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Commute Preference */}
-        {session.commuteToleranceMinutes && (
-          <div className="flex items-start gap-2">
-            <Navigation className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-white/60">Commute</p>
-              <p className="text-sm font-medium text-white/90">{session.commuteToleranceMinutes} min</p>
-            </div>
-          </div>
-        )}
-
-        {/* Special Needs */}
-        {session.learningDifferences && session.learningDifferences.length > 0 && (
-          <div className="flex items-start gap-2">
-            <Zap className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-white/60">Special Needs</p>
-              <p className="text-sm font-medium text-white/90">
-                {session.learningDifferences[0]}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Boarding Preference */}
-        {session.boardingPreference && (
-          <div className="flex items-start gap-2">
-            <Globe className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-white/60">Boarding</p>
-              <p className="text-sm font-medium text-white/90 capitalize">
-                {session.boardingPreference.replace(/_/g, ' ')}
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* AI Narrative */}
-      {session.aiNarrative && (
-        <div className="p-5 border-b border-white/10">
-          <p className="text-sm text-white/75 leading-relaxed">
-            {session.aiNarrative}
-          </p>
-        </div>
-      )}
-
-      {/* Match Summary */}
-      <div className="p-5 border-b border-white/10 bg-white/5">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-white/60">Schools Matched</span>
-            <span className="text-lg font-bold text-teal-400">{matchedCount}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-white/60">Shortlisted</span>
-            <span className="text-lg font-bold text-teal-400">{session.shortlistedCount || 0}</span>
-          </div>
-          {bestMatchSchool && typeof bestMatchSchool === 'object' && bestMatchSchool.name && (
-            <div className="pt-2 border-t border-white/10">
-              <p className="text-xs text-white/50 mb-1">Best Match</p>
-              <p className="text-sm font-semibold text-teal-300">{bestMatchSchool.name}</p>
+              )}
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Action Bar or Edit Mode */}
-      {!isEditMode ? (
-        <div className="p-4 flex gap-2 flex-wrap">
-          <Button
-            onClick={handleViewMatches}
-            className="flex-1 bg-teal-600 hover:bg-teal-700 text-white gap-2 text-sm"
-          >
-            <Eye className="w-4 h-4" />
-            View Matches
-          </Button>
-          <Button
-            onClick={() => setIsEditMode(true)}
-            variant="secondary"
-            className="flex-1 gap-2 text-sm"
-          >
-            <Edit className="w-4 h-4" />
-            Edit Profile
-          </Button>
-          {isPaid ? (
+          {/* BOTTOM ROW: Stats + View Matches button */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm text-white/60">
+              <span className="text-teal-400 font-semibold">{matchedCount}</span> matched
+              {' · '}
+              <span className="text-teal-400 font-semibold">{session.shortlistedCount || 0}</span> shortlisted
+            </span>
             <Button
-              onClick={handleShare}
-              variant="secondary"
-              className="flex-1 gap-2 text-sm"
+              onClick={handleViewMatches}
+              className="bg-teal-600 hover:bg-teal-700 text-white gap-1.5 text-sm px-3 py-1.5 h-auto flex-shrink-0"
             >
-              <Share2 className="w-4 h-4" />
-              Share Profile
+              <Eye className="w-3.5 h-3.5" />
+              View Matches
             </Button>
-          ) : (
-            <Button
-              onClick={() => setShowShareUpgrade(true)}
-              variant="secondary"
-              className="flex-1 gap-2 text-sm"
-            >
-              <Share2 className="w-4 h-4" />
-              Share Profile
-            </Button>
-          )}
+          </div>
         </div>
       ) : (
         /* Edit Mode */
