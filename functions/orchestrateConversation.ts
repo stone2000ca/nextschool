@@ -16,7 +16,7 @@ async function callOpenRouter(options) {
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
   messages.push({ role: 'user', content: userPrompt });
   
-  const body = {
+  const body: any = {
     models: ['google/gemini-2.5-flash', 'openai/gpt-4.1-mini', 'google/gemini-2.5-flash-lite'],
     messages,
     max_tokens: maxTokens,
@@ -331,13 +331,13 @@ async function handleBrief(base44, message, conversationFamilyProfile, context, 
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
   const BRIEF_STATUS = { GENERATING: 'generating', PENDING_REVIEW: 'pending_review', EDITING: 'editing', CONFIRMED: 'confirmed' };
 
-  const msgLower = message.toLowerCase();
+  let msgLower = message.toLowerCase();
   let updatedBriefStatus = briefStatus;
   let briefMessage;
-
-  const isInitialAdjustRequest = /\b(change|adjust|edit|actually|wait|hold on|no|not right|different|let me|redo)\b/i.test(msgLower) &&
+  
+  const isInitialAdjustRequest = /\b(change|adjust|edit|actually|wait|hold on|no|not right|different|let me|redo)\b/i.test(msgLower) && 
                                   !/budget|grade|location|school|curriculum|priority/i.test(msgLower);
-
+  
   if (updatedBriefStatus === BRIEF_STATUS.EDITING && isInitialAdjustRequest) {
     const adjustSystemPrompt = consultantName === 'Jackie'
       ? `You are Jackie, a warm and encouraging education consultant. The parent wants to adjust something in their brief. Ask them a warm, open-ended question about what they'd like to change. Max 50 words.`
@@ -357,7 +357,7 @@ async function handleBrief(base44, message, conversationFamilyProfile, context, 
         console.error('[FALLBACK ERROR] BRIEF adjustment failed:', fallbackError.message);
       }
     }
-
+    
     return {
       message: adjustMessage,
       state: STATES.BRIEF,
@@ -369,43 +369,43 @@ async function handleBrief(base44, message, conversationFamilyProfile, context, 
   } else if (updatedBriefStatus === BRIEF_STATUS.EDITING && !isInitialAdjustRequest) {
     updatedBriefStatus = BRIEF_STATUS.GENERATING;
   }
-
+  
   if (context.extractedEntities) {
     for (const [key, value] of Object.entries(context.extractedEntities)) {
       if (value !== null && value !== undefined) {
-        if (conversationFamilyProfile[key] === null || conversationFamilyProfile[key] === undefined ||
+        if (conversationFamilyProfile[key] === null || conversationFamilyProfile[key] === undefined || 
             (Array.isArray(conversationFamilyProfile[key]) && conversationFamilyProfile[key].length === 0)) {
           conversationFamilyProfile[key] = value;
         }
       }
     }
   }
-
+  
   try {
-    const { childName, childGrade, locationArea, interests, priorities, dealbreakers } = conversationFamilyProfile;
-    // BUG-ENT-005 FIX: Check context.extractedEntities for maxTuition if not in FamilyProfile
-    let maxTuition = conversationFamilyProfile.maxTuition;
-    if ((!maxTuition || maxTuition === null || maxTuition === undefined) && context.extractedEntities?.maxTuition) {
-      maxTuition = context.extractedEntities.maxTuition;
-      console.log('[BRIEF] Using extracted maxTuition:', maxTuition);
-    }
-    const interestsStr = Array.isArray(interests) && interests.length > 0 ? interests.join(', ') : '';
-    const prioritiesStr = priorities?.length > 0 ? priorities.join(', ') : '';
-    const dealbreakersStr = dealbreakers?.length > 0 ? dealbreakers.join(', ') : '';
+     const { childName, childGrade, locationArea, interests, priorities, dealbreakers } = conversationFamilyProfile;
+     // BUG-ENT-005 FIX: Check context.extractedEntities for maxTuition if not in FamilyProfile
+     let maxTuition = conversationFamilyProfile.maxTuition;
+     if ((!maxTuition || maxTuition === null || maxTuition === undefined) && context.extractedEntities?.maxTuition) {
+       maxTuition = context.extractedEntities.maxTuition;
+       console.log('[BRIEF] Using extracted maxTuition:', maxTuition);
+     }
+     const interestsStr = Array.isArray(interests) && interests.length > 0 ? interests.join(', ') : '';
+     const prioritiesStr = priorities?.length > 0 ? priorities.join(', ') : '';
+     const dealbreakersStr = dealbreakers?.length > 0 ? dealbreakers.join(', ') : '';
 
-    let budgetDisplay = '(not specified)';
-    if (maxTuition === 'unlimited') {
-      budgetDisplay = 'Budget is flexible';
-    } else if (maxTuition && typeof maxTuition === 'number') {
-      budgetDisplay = `$${maxTuition.toLocaleString()}/year`;
-    }
+     let budgetDisplay = '(not specified)';
+     if (maxTuition === 'unlimited') {
+       budgetDisplay = 'Budget is flexible';
+     } else if (maxTuition && typeof maxTuition === 'number') {
+       budgetDisplay = `$${maxTuition.toLocaleString()}/year`;
+     }
 
     const briefChildGenderLabel = conversationFamilyProfile?.gender === 'male'
       ? 'Your son'
       : conversationFamilyProfile?.gender === 'female'
       ? 'Your daughter'
       : 'Your child';
-    const briefChildDisplayName = childName ? childName : briefChildGenderLabel;
+    let briefChildDisplayName = childName ? childName : briefChildGenderLabel;
 
     const jackieBriefSystemPrompt = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}[STATE: BRIEF] You are Jackie, a warm and experienced education consultant. Generate a brief summary of what the family has shared. Use ONLY what was explicitly stated by the parent.
 
@@ -439,6 +439,29 @@ Format:
   ${dealbreakersStr ? '6. Dealbreakers: ' + dealbreakersStr : ''}
 - End with: "Does that capture it? Anything to adjust?"`;
 
+    const liamBriefSystemPrompt = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}[STATE: BRIEF] You are Liam, a direct and strategic education consultant. Generate a brief summary of what the family has shared. Use ONLY what was explicitly stated by the parent.
+
+FORMATTING RULES — CRITICAL:
+- Start with one short direct sentence (e.g. "Here's what I've got so far:")
+- Then format each field as a markdown bullet list using "- " prefix, one field per line
+- Use **bold** for field labels. Example: "- **Child:** Emma, Grade 7"
+- End with: "Does that look right? Anything to change?"
+
+YOU ARE LIAM — direct, strategic, no fluff.`;
+
+    const liamBriefUserPrompt = `Generate the family brief summary.
+
+FAMILY DATA:
+- CHILD: ${briefChildDisplayName}
+- GRADE: ${childGrade !== null && childGrade !== undefined ? 'Grade ' + childGrade : '(not specified)'}
+- LOCATION: ${locationArea || '(not specified)'}
+- BUDGET: ${budgetDisplay}
+- PRIORITIES: ${prioritiesStr || '(not specified)'}
+- INTERESTS: ${interestsStr || '(not specified)'}
+- DEALBREAKERS: ${dealbreakersStr || '(not specified)'}
+
+Format as a markdown bullet list with one field per line. Start the child field with "${briefChildDisplayName}:".`;
+
     let briefMessageText = "Let me summarize what you've shared.";
 
     if (consultantName === 'Liam') {
@@ -450,7 +473,7 @@ Format:
         ? 'Your daughter'
         : 'Your child';
       const childDisplay = childName ? childName : childLabel;
-      if (childName || (childGrade !== null && childGrade !== undefined)) {
+      if (childName || childGrade !== null && childGrade !== undefined) {
         briefLines.push(`- **Child:** ${childDisplay}${childGrade !== null && childGrade !== undefined ? ', Grade ' + childGrade : ''}`);
       }
       if (locationArea) briefLines.push(`- **Location:** ${locationArea}`);
