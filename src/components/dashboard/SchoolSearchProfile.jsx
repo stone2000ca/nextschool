@@ -22,7 +22,6 @@ import {
   Music,
   Trophy,
   Globe,
-  MoreVertical,
   Plus,
   X,
 } from 'lucide-react';
@@ -47,7 +46,6 @@ export default function SchoolSearchProfile({
   isPaid = false,
 }) {
   const navigate = useNavigate();
-  const [showMenu, setShowMenu] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
