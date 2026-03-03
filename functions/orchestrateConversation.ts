@@ -915,26 +915,16 @@ Deno.serve(async (req) => {
           }
         }
 
-        // E13a: Check if debrief mode is set — if so, route to handleDeepDive with debrief flag
+        // E13a: Check if debrief mode is set — if so, route to inlined handleVisitDebrief
         if (resolveResult.deepDiveMode === 'debrief') {
-          const deepDiveResult = await base44.asServiceRole.functions.invoke('handleDeepDive', {
-            selectedSchoolId,
-            message: processMessage,
-            conversationFamilyProfile,
-            context,
-            conversationHistory,
-            consultantName,
-            currentState,
-            briefStatus,
-            currentSchools,
-            userId,
-            returningUserContextBlock,
-            flags: resolveResult.flags,
-            conversationId
-          });
-          responseData = deepDiveResult.data;
-          responseData.extractedEntities = extractionResult?.extractedEntities || {};
-          return Response.json(responseData);
+          console.log('[E13a] Routing RESULTS->DEBRIEF to inlined handleVisitDebrief');
+          const debriefResult = await handleVisitDebrief(base44, selectedSchoolId, processMessage, conversationFamilyProfile, context, consultantName, returningUserContextBlock, callOpenRouter);
+          if (debriefResult) {
+            if (debriefResult.updatedContext) Object.assign(context, debriefResult.updatedContext);
+            context.state = STATES.DEEP_DIVE;
+            return Response.json({ message: debriefResult.message, state: STATES.DEEP_DIVE, briefStatus, deepDiveMode: debriefResult.deepDiveMode, visitPrepKit: debriefResult.visitPrepKit, fitReEvaluation: debriefResult.fitReEvaluation || null, familyProfile: conversationFamilyProfile, conversationContext: context, extractedEntities: extractionResult?.extractedEntities || {}, schools: currentSchools || [] });
+          }
+          console.log('[E13a] handleVisitDebrief returned null, falling through to handleResults');
         }
 
         // WC10: Fire-and-forget narrative generation (non-blocking)
