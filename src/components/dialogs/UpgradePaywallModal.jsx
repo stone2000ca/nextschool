@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Zap, Share2, Grid3x3, Bell, Sparkles } from 'lucide-react';
+import { X, Share2, Grid3x3, Bell, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { base44 } from '@/api/base44Client';
