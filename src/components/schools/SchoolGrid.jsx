@@ -275,7 +275,7 @@ export default function SchoolGrid({
           </div>
         )}
 
-        {/* Tier 2: Also Worth Exploring */}
+        {/* Tier 2: Also Worth Exploring — only shown if has schools */}
         {displayedT2.length > 0 && (
           <div className="mb-6">
             <div className="mb-3">
