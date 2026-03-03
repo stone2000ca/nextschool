@@ -1672,6 +1672,7 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
           currentState={currentState}
           activePanel={activePanel}
           onTogglePanel={(panel) => setActivePanel(p => p === panel ? null : panel)}
+          shortlistCount={shortlistData.length}
         />
 
         {/* RIGHT CHAT PANEL */}
