@@ -1475,19 +1475,20 @@ Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for t
           </div>
 
           {/* T046: Right rail + sliding panel — intake phase */}
-          {activePanel === 'brief' && (
-            <FamilyBrief
-              familyProfile={familyProfile}
-              consultantName={selectedConsultant}
-              onClose={() => setActivePanel(null)}
-              extractedEntities={extractedEntitiesData}
-            />
-          )}
-          <IconRail
-            currentState={currentState}
-            activePanel={activePanel}
-            onTogglePanel={(panel) => setActivePanel(p => p === panel ? null : panel)}
-          />
+           {activePanel === 'brief' && (
+             <FamilyBrief
+               familyProfile={familyProfile}
+               consultantName={selectedConsultant}
+               onClose={() => setActivePanel(null)}
+               extractedEntities={extractedEntitiesData}
+             />
+           )}
+           <IconRail
+             currentState={currentState}
+             activePanel={activePanel}
+             onTogglePanel={(panel) => setActivePanel(p => p === panel ? null : panel)}
+             shortlistCount={shortlistData.length}
+           />
         </div>
       ) : (
         /* RESULTS PHASE - Split Layout */
