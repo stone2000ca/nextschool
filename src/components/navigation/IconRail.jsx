@@ -88,7 +88,7 @@ export default function IconRail({ currentState, activePanel, onTogglePanel }) {
   );
 }
 
-function RailIcon({ icon: Icon, label, enabled, active, onClick, disabledTip }) {
+function RailIcon({ icon: Icon, label, enabled, active, onClick, disabledTip, shortlistCount }) {
   return (
     <div className="relative group">
       <button
@@ -106,6 +106,7 @@ function RailIcon({ icon: Icon, label, enabled, active, onClick, disabledTip }) 
           background: active ? 'rgba(255,255,255,0.15)' : 'transparent',
           color: active ? '#fff' : 'rgba(255,255,255,0.55)',
           transition: 'all 0.15s ease',
+          position: 'relative',
         }}
         onMouseEnter={e => {
           if (enabled && !active) e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
@@ -115,12 +116,20 @@ function RailIcon({ icon: Icon, label, enabled, active, onClick, disabledTip }) 
         }}
       >
         <Icon style={{ width: 17, height: 17 }} />
+        {shortlistCount > 0 && (
+          <span
+            className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-teal-500 rounded-full"
+          >
+            {shortlistCount}
+          </span>
+        )}
       </button>
       {/* Tooltip */}
       <div className="pointer-events-none absolute right-full mr-2 top-1/2 -translate-y-1/2 z-50
                       bg-[#2A2A3D] text-white text-xs px-2 py-1 rounded whitespace-nowrap
                       opacity-0 group-hover:opacity-100 transition-opacity border border-white/10 shadow-lg">
         {label}
+        {shortlistCount > 0 && <span className="text-teal-300"> ({shortlistCount})</span>}
         {!enabled && disabledTip && <span className="ml-1 text-white/40">({disabledTip})</span>}
       </div>
     </div>
