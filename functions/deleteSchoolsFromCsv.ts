@@ -37,7 +37,8 @@ Deno.serve(async (req) => {
     const result = Papa.parse(csvText, {
       header: true,
       dynamicTyping: false,
-      skipEmptyLines: true
+      skipEmptyLines: true,
+      delimiter: ','
     });
     
     if (result.errors.length > 0) {
