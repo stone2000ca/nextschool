@@ -317,12 +317,32 @@ Generate the DEEPDIVE card for this family-school match.`;
 
     // Add post-deep-dive follow-up prompt
     let followUpPrompt = '';
-    if (deepDiveAnalysis && selectedSchool) {
-      const childName = conversationFamilyProfile?.childName || 'your child';
-      if (consultantName === 'Jackie') {
-        followUpPrompt = `\n\n---\n\nSo, what's next? Would you like to **add ${selectedSchool.name} to your shortlist**, or would you prefer to **explore more schools** from the results?`;
+    const fitLabel = deepDiveAnalysis?.fitLabel || 'worth_exploring';
+    const childName = conversationFamilyProfile?.childName || 'your child';
+    const schoolName = selectedSchool?.name || 'this school';
+    const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
+    const alreadyShownFollowUp = context?.[deepDiveFollowUpKey] === true;
+
+    if (deepDiveAnalysis && selectedSchool && !alreadyShownFollowUp) {
+      if (!context) context = {};
+      context[deepDiveFollowUpKey] = true;
+
+      if (fitLabel === 'strong_match') {
+        followUpPrompt = consultantName === 'Jackie'
+          ? `\n\n---\n\nBased on everything we've discussed, ${schoolName} looks like a really strong fit for ${childName}. Have you thought about scheduling a visit? I can help you prepare questions to ask during your tour.`
+          : `\n\n---\n\n**Bottom line:** ${schoolName} is a strong fit for ${childName}. If you haven't visited yet, that's the next step. I can put together a Visit Prep Kit. Want me to do that?`;
+      } else if (fitLabel === 'good_match') {
+        followUpPrompt = consultantName === 'Jackie'
+          ? `\n\n---\n\n${schoolName} has a lot going for it. Would you like to **compare it side-by-side** with another school? Or if you're leaning toward it, I can help you **prepare for a visit**.`
+          : `\n\n---\n\n**Next move:** ${schoolName} is solid but not a slam dunk. **Compare it** against another school, or **prep for a visit**. Your call.`;
+      } else if (fitLabel === 'worth_exploring') {
+        followUpPrompt = consultantName === 'Jackie'
+          ? `\n\n---\n\n${schoolName} has some interesting strengths for ${childName}, though there are a few things worth weighing. Would you like to **compare it side-by-side** with another school on your list?`
+          : `\n\n---\n\nThere are some trade-offs here. Want to **compare ${schoolName} against another option**? That usually makes the decision clearer.`;
       } else {
-        followUpPrompt = `\n\n---\n\n**Next steps:** Add ${selectedSchool.name} to your shortlist, or explore other options?`;
+        followUpPrompt = consultantName === 'Jackie'
+          ? `\n\n---\n\nBased on what we've discussed, ${schoolName} might not be the strongest match for ${childName}'s needs. Want me to suggest some other schools that might align better with your priorities?`
+          : `\n\n---\n\n**Honest take:** ${schoolName} isn't the strongest match. I'd recommend looking at other options. Want me to pull up alternatives?`;
       }
     }
     const finalMessage = sanitizedMessage + followUpPrompt;
