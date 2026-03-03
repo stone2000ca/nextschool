@@ -436,6 +436,15 @@ ${consultantName === 'Jackie' ? 'YOU ARE JACKIE - Warm, empathetic, experienced.
     }
 
     const matchingSchools = deduplicated.slice(0, 20);
+    
+    // E17-002: CACHE WRITE — Store the results for future queries with same brief
+    context.cachedMatchResults = {
+      briefFingerprint,
+      schools: matchingSchools,
+      cachedAt: new Date().toISOString()
+    };
+    console.log('[E17-002] CACHE WRITE: Stored', matchingSchools.length, 'schools');
+    
     context.state = STATES.RESULTS;
 
     let aiMessage = '';
