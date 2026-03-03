@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Heart, Navigation, Check, AlertTriangle, X, Circle, Lock, Scale, EyeOff } from "lucide-react";
+import { MapPin, Heart, Navigation, Check, AlertTriangle, X, Circle, Lock, Scale, EyeOff, DollarSign } from "lucide-react";
 import { HeaderPhotoDisplay, LogoDisplay } from '@/components/schools/HeaderPhotoHelper';
 
 // =============================================================================
@@ -361,10 +361,15 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
               <Navigation className="h-3 w-3" />{school.distanceKm.toFixed(1)} km
             </span>
           )}
-          {tuitionBand.label
-            ? <span className="text-xl font-black tracking-[0.3em] text-slate-600 leading-none">{tuitionBand.label}</span>
-            : <span className="italic text-slate-400 text-xs">Contact school</span>
-          }
+          {tuitionBand.label ? (
+            <span className="inline-flex items-center gap-0.5">
+              {Array.from({ length: tuitionBand.label.length }).map((_, i) => (
+                <DollarSign key={i} className="h-3.5 w-3.5" style={{ color: '#B8860B' }} />
+              ))}
+            </span>
+          ) : (
+            <span className="italic text-slate-400 text-xs">Contact school</span>
+          )}
         </div>
 
         {/* Grades + curriculum chips */}
@@ -449,13 +454,12 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
             View Details
           </Button>
           <Button
-            variant={isShortlisted ? "default" : "outline"}
             size="sm"
-            className={`text-xs px-2 ${isShortlisted ? 'bg-slate-800 hover:bg-slate-700' : ''}`}
+            className={`text-xs px-2 transition-all ${isShortlisted ? 'bg-red-800/70 hover:bg-red-800/90 border-red-700/50 text-white' : 'border border-slate-200 bg-white hover:bg-red-50 text-slate-500 hover:text-red-700'}`}
             onClick={(e) => { e.stopPropagation(); onToggleShortlist(school.id); }}
             aria-label={isShortlisted ? `Remove ${school.name} from shortlist` : `Add ${school.name} to shortlist`}
           >
-            <Heart className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-current' : ''}`} />
+            <Heart className={`h-3.5 w-3.5 ${isShortlisted ? 'fill-white text-white' : ''}`} />
           </Button>
         </div>
       </div>
