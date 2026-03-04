@@ -153,10 +153,13 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-4">
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
             <TabsTrigger value="programs" className="text-xs sm:text-sm">Programs</TabsTrigger>
             <TabsTrigger value="admissions" className="text-xs sm:text-sm">Admissions</TabsTrigger>
+            <TabsTrigger value="events" className="text-xs sm:text-sm flex items-center gap-1">
+              Events{events.length > 0 && <span className="ml-0.5 bg-teal-600 text-white text-[10px] rounded-full px-1.5">{events.length}</span>}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
