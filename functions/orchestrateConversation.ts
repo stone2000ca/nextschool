@@ -120,12 +120,12 @@ function resolveTransition(params) {
       };
     }
     
-    if (selectedSchoolId && selectedSchoolId !== previousSchoolId) {
-      return { nextState: STATES.DEEP_DIVE, sufficiency, flags, transitionReason: 'school_selected' };
-    }
     if (currentState === STATES.RESULTS && intentSignal === 'edit-criteria') {
       console.log('[EDIT-CRITERIA] Allowing transition from RESULTS to BRIEF for edit-criteria');
       return { nextState: STATES.BRIEF, sufficiency, flags: { ...flags, USER_INTENT_OVERRIDE: true }, briefStatus: 'editing', transitionReason: 'edit_criteria_from_results' };
+    }
+    if (selectedSchoolId && selectedSchoolId !== previousSchoolId) {
+      return { nextState: STATES.DEEP_DIVE, sufficiency, flags, transitionReason: 'school_selected' };
     }
     console.log('[HARD GUARD] Blocked regression from', currentState, '— intentSignal was:', intentSignal);
     return { nextState: currentState, sufficiency, flags, transitionReason: 'hard_guard_results_deepdive' };
@@ -193,7 +193,7 @@ function resolveTransition(params) {
   }
   if (intentSignal === 'back-to-results') {
     flags.USER_INTENT_OVERRIDE = true;
-    return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'explicit_intent' };
+    return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'explicit_intent', clearSelectedSchool: true };
   }
   if (intentSignal === 'restart') {
     flags.USER_INTENT_OVERRIDE = true;
@@ -826,6 +826,11 @@ Deno.serve(async (req) => {
       currentState = resolveResult.nextState;
       briefStatus = resolveResult.briefStatus || context.briefStatus || null;
       const { flags } = resolveResult;
+
+      if (resolveResult.clearSelectedSchool) {
+        context.selectedSchoolId = null;
+        context.previousSchoolId = null;
+      }
 
       // BUG 2 FIX: Capture previousState BEFORE overwriting context.state
       const previousState = context.state || STATES.WELCOME;
