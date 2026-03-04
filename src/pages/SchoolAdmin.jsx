@@ -217,6 +217,11 @@ export default function SchoolAdmin() {
                           {item.lockLabel || 'Upgrade'}
                         </span>
                       )}
+                      {!item.locked && item.badge > 0 && (
+                        <span className="ml-auto text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-semibold">
+                          {item.badge}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
