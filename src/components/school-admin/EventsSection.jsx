@@ -354,9 +354,27 @@ function PremiumEventsManagement({ school }) {
                   <p className="text-sm text-slate-600 mt-1 line-clamp-2">{ev.description}</p>
                 )}
                 {ev.location && (
-                  <p className="text-xs text-slate-400 mt-1 flex items-center gap-1"><MapPin className="h-3 w-3" />{ev.location}</p>
-                )}
-              </div>
+                   <p className="text-xs text-slate-400 mt-1 flex items-center gap-1"><MapPin className="h-3 w-3" />{ev.location}</p>
+                 )}
+
+                 {/* E16a-016: Analytics counters */}
+                 {analytics[ev.id] && (
+                   <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
+                     <div className="flex items-center gap-1">
+                       <Eye className="h-3 w-3" />
+                       <span>{analytics[ev.id].views} views</span>
+                     </div>
+                     <div className="flex items-center gap-1">
+                       <Mouse className="h-3 w-3" />
+                       <span>{analytics[ev.id].register_clicks} clicks</span>
+                     </div>
+                     <div className="flex items-center gap-1">
+                       <MessageSquare className="h-3 w-3" />
+                       <span>{analytics[ev.id].tour_requests} requests</span>
+                     </div>
+                   </div>
+                 )}
+                </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Button size="sm" variant="ghost" onClick={() => openEdit(ev)} className="text-slate-500 hover:text-slate-900">
                   <Pencil className="h-4 w-4" />
