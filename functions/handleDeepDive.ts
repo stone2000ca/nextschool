@@ -87,27 +87,6 @@ Deno.serve(async (req) => {
 
     const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
-    // BUG-DEBRIEF-INTENT-S49 FIX: Check flags?.DEBRIEF_MODE at TOP and route to handleVisitDebrief
-    if (flags?.DEBRIEF_MODE) {
-      console.log('[DEEP_DIVE] DEBRIEF_MODE flag set, invoking handleVisitDebrief');
-      try {
-        const debriefResult = await base44.asServiceRole.functions.invoke('handleVisitDebrief', {
-          selectedSchoolId,
-          message,
-          conversationFamilyProfile,
-          context,
-          consultantName,
-          returningUserContextBlock,
-          conversationId,
-          userId
-        });
-        return Response.json(debriefResult.data);
-      } catch (debriefError) {
-        console.error('[DEBRIEF] Routing failed:', debriefError.message);
-        // Fall through to standard deep dive
-      }
-    }
-
     console.log('[DEEPDIVE_START]', selectedSchoolId);
     let aiMessage = '';
     let selectedSchool = null;

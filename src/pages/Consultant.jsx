@@ -803,6 +803,7 @@ export default function Consultant() {
           address: userLocation.address
         } : null,
         selectedSchoolId: explicitSchoolId || selectedSchool?.id || null,
+        conversationId: currentConversation?.id || null,
         returningUserContext
       });
 
