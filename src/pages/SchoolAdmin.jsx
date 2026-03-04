@@ -133,6 +133,7 @@ export default function SchoolAdmin() {
     {
       label: 'Engagement',
       items: [
+        { id: 'events', label: 'Events & Open Houses', icon: CalendarDays, locked: school.subscriptionTier === 'free', lockLabel: 'Premium' },
         { id: 'inquiries', label: 'Inquiries', icon: Mail },
         { id: 'analytics', label: 'Analytics', icon: BarChart3, locked: school.subscriptionTier === 'free' },
       ],
