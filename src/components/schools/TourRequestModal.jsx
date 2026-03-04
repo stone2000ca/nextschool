@@ -74,6 +74,39 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
       specialRequests: form.specialRequests || undefined,
     });
 
+    // Fire-and-forget email notification to school admin
+    if (school.email) {
+      const gradeLabel = form.childGrade !== '' ? (() => {
+        const n = Number(form.childGrade);
+        if (n <= -2) return 'Pre-K'; if (n === -1) return 'JK'; if (n === 0) return 'K';
+        return `Grade ${n}`;
+      })() : null;
+
+      const emailBody = `
+<p>Hi,</p>
+<p>A parent has submitted a tour request for <strong>${school.name}</strong> via NextSchool.</p>
+<table style="border-collapse:collapse;width:100%;max-width:500px;font-family:sans-serif;font-size:14px;">
+  <tr><td style="padding:6px 12px 6px 0;color:#64748b;white-space:nowrap;">Parent Name</td><td style="padding:6px 0;font-weight:600;">${user.full_name || '—'}</td></tr>
+  <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Email</td><td style="padding:6px 0;">${user.email || '—'}</td></tr>
+  ${gradeLabel ? `<tr><td style="padding:6px 12px 6px 0;color:#64748b;">Child's Grade</td><td style="padding:6px 0;">${gradeLabel}</td></tr>` : ''}
+  <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Tour Type</td><td style="padding:6px 0;">${form.tourType === 'in_person' ? 'In-Person' : 'Virtual'}</td></tr>
+  ${preferredDate ? `<tr><td style="padding:6px 12px 6px 0;color:#64748b;">Preferred Date</td><td style="padding:6px 0;">${new Date(preferredDate).toLocaleString('en-CA')}</td></tr>` : ''}
+  ${preferredDateAlt ? `<tr><td style="padding:6px 12px 6px 0;color:#64748b;">Alternative Date</td><td style="padding:6px 0;">${new Date(preferredDateAlt).toLocaleString('en-CA')}</td></tr>` : ''}
+  ${form.specialRequests ? `<tr><td style="padding:6px 12px 6px 0;color:#64748b;vertical-align:top;">Special Requests</td><td style="padding:6px 0;">${form.specialRequests}</td></tr>` : ''}
+</table>
+<p style="margin-top:24px;">
+  <a href="https://nextschool.ca/SchoolAdmin" style="background:#0d9488;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View in School Portal → Inquiries</a>
+</p>
+<p style="color:#94a3b8;font-size:12px;margin-top:24px;">This notification was sent by NextSchool. Do not reply to this email — use the portal to manage your inquiries.</p>
+      `.trim();
+
+      base44.integrations.Core.SendEmail({
+        to: school.email,
+        subject: `New Tour Request from ${user.full_name || 'a parent'} — NextSchool`,
+        body: emailBody,
+      }).catch(() => {}); // non-blocking, silent failure
+    }
+
     setSending(false);
     setSuccess(true);
     setTimeout(() => onClose(), 2500);
