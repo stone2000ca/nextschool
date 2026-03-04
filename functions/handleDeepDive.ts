@@ -1,7 +1,7 @@
 // Function: handleDeepDive
 // Purpose: Handle deep-dive school analysis with visit prep generation and debrief mode routing
-// Entities: School, SchoolAnalysis, GeneratedArtifact
-// Last Modified: 2026-03-03
+// Entities: School, SchoolAnalysis, GeneratedArtifact, SchoolEvent
+// Last Modified: 2026-03-04
 // Dependencies: OpenRouter API, Base44 InvokeLLM fallback, handleVisitDebrief function
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
