@@ -393,7 +393,17 @@ export default function SchoolDetailPanel({
         isShortlisted={isShortlisted} 
         onToggleShortlist={onToggleShortlist}
         onCompare={onCompare}
+        isPremium={isPremium}
+        onRequestTour={() => setShowTourModal(true)}
       />
+
+      {showTourModal && (
+        <TourRequestModal
+          school={school}
+          onClose={() => setShowTourModal(false)}
+          upcomingEvents={[]}
+        />
+      )}
     </div>
   );
 }
