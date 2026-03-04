@@ -379,7 +379,19 @@ export default function SchoolProfile() {
                                <p className="text-sm text-slate-600 mb-3 line-clamp-2">{event.description}</p>
                              )}
                              {event.registrationUrl && (
-                               <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer">
+                               <a 
+                                 href={event.registrationUrl} 
+                                 target="_blank" 
+                                 rel="noopener noreferrer"
+                                 onClick={() => {
+                                   // E16a-016: Track Register click
+                                   base44.functions.invoke('trackSessionEvent', {
+                                     eventType: 'event_register_click',
+                                     sessionId,
+                                     metadata: { eventId: event.id, schoolId, eventType: event.eventType }
+                                   }).catch(err => console.error('Failed to track click:', err));
+                                 }}
+                               >
                                  <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white">
                                    Register
                                  </Button>
