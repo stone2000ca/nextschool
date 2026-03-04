@@ -210,6 +210,24 @@ For each school, identify 1-2 key trade-offs worth mentioning (e.g., "Higher cos
       }
       return updated;
     });
+
+    // E11b Phase 2: Persist comparison matrix as GeneratedArtifact (fire-and-forget)
+    if (result?.comparisonMatrix && familyProfile?.id) {
+      (async () => {
+        try {
+          const schoolIds = comparedSchools.map(s => s.id).filter(Boolean);
+          await base44.entities.GeneratedArtifact.create({
+            artifactType: 'comparison',
+            familyProfileId: familyProfile.id,
+            content: JSON.stringify({ matrix: result.comparisonMatrix, narrative: narrativeText }),
+            schoolIds,
+            createdAt: new Date().toISOString()
+          });
+        } catch (artifactError) {
+          console.warn('[E11b] Failed to persist comparison artifact (non-blocking):', artifactError.message);
+        }
+      })();
+    }
   } catch (e) {
     console.error('Comparison synthesis failed:', e);
     setMessages(prev => prev.filter(m => m.content !== '...'));
