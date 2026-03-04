@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { emailType, claimData, schoolData } = await req.json();
+    const { emailType, claimData, schoolData, test_mode = false, test_scenario = null } = await req.json();
 
     let subject, body;
     const baseStyles = `
