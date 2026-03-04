@@ -263,7 +263,24 @@ function PremiumEventsManagement({ school }) {
   const loadEvents = async () => {
     setLoading(true);
     const data = await base44.entities.SchoolEvent.filter({ schoolId: school.id });
-    setEvents(data.sort((a, b) => new Date(a.date) - new Date(b.date)));
+    const sorted = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+    setEvents(sorted);
+    
+    // Load analytics for all events
+    if (sorted.length > 0) {
+      try {
+        const result = await base44.functions.invoke('getEventAnalytics', {
+          schoolId: school.id,
+          eventIds: sorted.map(e => e.id)
+        });
+        if (result.data?.analytics) {
+          setAnalytics(result.data.analytics);
+        }
+      } catch (err) {
+        console.error('Failed to load analytics:', err);
+      }
+    }
+    
     setLoading(false);
   };
 
