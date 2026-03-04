@@ -302,6 +302,24 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
               </div>
             ) : (
               <div className="space-y-3">
+                {isPremium && (
+                  <Button
+                    onClick={() => setShowTourModal(true)}
+                    className="w-full bg-teal-600 hover:bg-teal-700 gap-2"
+                    size="sm"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                    Request a Tour
+                  </Button>
+                )}
+                {!isPremium && school.email && (
+                  <a href={`mailto:${school.email}`} className="block w-full">
+                    <Button variant="outline" className="w-full gap-2 text-sm" size="sm">
+                      <Mail className="h-4 w-4" />
+                      Contact School Directly
+                    </Button>
+                  </a>
+                )}
                 {events.map(ev => (
                   <div key={ev.id} className="border border-slate-200 rounded-xl p-4 space-y-2">
                     <div className="flex items-start justify-between gap-2">
