@@ -9,6 +9,7 @@ import { handleNarrateComparison as narrateComparison } from '@/components/chat/
 const searchSchools = (params) => base44.functions.invoke('searchSchools', params);
 import { Button } from "@/components/ui/button";
 import { Plus, Heart, FileText, Sparkles, Trash2, Star, ClipboardList } from "lucide-react";
+import { toast } from "sonner"; // E16a-019
 import IconRail from '@/components/navigation/IconRail';
 import FamilyBrief from '@/components/chat/FamilyBrief';
 import WelcomeState from '@/components/schools/WelcomeState';
@@ -330,6 +331,36 @@ export default function Consultant() {
     schemaScript.innerHTML = JSON.stringify(schemaData);
 
     checkAuth();
+
+    // E16a-019: Check localStorage for upcoming event reminders
+    try {
+      const stored = localStorage.getItem('ns_event_reminders');
+      if (stored) {
+        const reminders = JSON.parse(stored);
+        const now = new Date();
+        const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        
+        const upcoming = reminders.filter(reminder => {
+          const eventDate = new Date(reminder.eventDate);
+          return eventDate > now && eventDate <= sevenDaysFromNow;
+        });
+
+        // Auto-clean expired reminders (eventDate < now)
+        const valid = reminders.filter(r => new Date(r.eventDate) >= now);
+        if (valid.length !== reminders.length) {
+          localStorage.setItem('ns_event_reminders', JSON.stringify(valid));
+        }
+
+        // Show toast if upcoming reminders exist
+        if (upcoming.length > 0) {
+          const eventNames = upcoming.slice(0, 3).map(u => `${u.schoolName} — ${u.eventTitle}`).join(', ');
+          const moreText = upcoming.length > 3 ? ` +${upcoming.length - 3} more` : '';
+          toast.info(`You have ${upcoming.length} upcoming event(s)!\n${eventNames}${moreText}`);
+        }
+      }
+    } catch (err) {
+      console.error('[E16a-019] Failed to check reminders:', err);
+    }
 
     // Track session start
     base44.functions.invoke('trackSessionEvent', {
