@@ -24,6 +24,8 @@ export default function SchoolDirectory() {
   const [displayedCount, setDisplayedCount] = useState(20);
   const [user, setUser] = useState(null);
   const [sessionId] = useState(Math.random().toString(36).substring(2, 11));
+  // E16a-018: Has Upcoming Events filter
+  const [hasEventsFilter, setHasEventsFilter] = useState(false);
   const SCHOOLS_PER_PAGE = 20;
   
   // Dynamically extract provinces/states from schools filtered by country
