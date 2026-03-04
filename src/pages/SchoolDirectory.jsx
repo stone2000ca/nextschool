@@ -385,14 +385,21 @@ export default function SchoolDirectory() {
                   >
                     <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
                       {/* Header Photo */}
-                       <div className="h-32 sm:h-40 relative overflow-hidden">
-                         <HeaderPhotoDisplay 
-                           headerPhotoUrl={school.headerPhotoUrl}
-                           heroImage={school.heroImage}
-                           schoolName={school.name}
-                           height="h-32 sm:h-40"
-                         />
-                       </div>
+                      <div className="h-32 sm:h-40 relative overflow-hidden">
+                        <HeaderPhotoDisplay 
+                          headerPhotoUrl={school.headerPhotoUrl}
+                          heroImage={school.heroImage}
+                          schoolName={school.name}
+                          height="h-32 sm:h-40"
+                        />
+                        {/* E16b-005: Has Upcoming Events badge */}
+                        {schoolsWithEvents.has(school.id) && (
+                          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-amber-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
+                            <CalendarDays className="h-3 w-3" />
+                            Events
+                          </div>
+                        )}
+                      </div>
 
                       <div className="p-3 sm:p-4">
                         {/* Logo and Name */}
