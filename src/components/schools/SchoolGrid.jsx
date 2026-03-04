@@ -354,6 +354,7 @@ export default function SchoolGrid({
                 accentColor={accentColor}
                 priorityOverrides={priorityOverrides}
                 onPriorityToggle={onPriorityToggle}
+                visitedSchoolIds={visitedSchoolIds}
               />
             )}
           </div>
