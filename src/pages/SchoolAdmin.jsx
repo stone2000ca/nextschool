@@ -39,18 +39,30 @@ export default function SchoolAdmin() {
       // Look up SchoolAdmin records for this user (new userId field)
       const adminRecords = await base44.entities.SchoolAdmin.filter({ userId: userData.id, isActive: true });
 
+      let resolvedSchool = null;
       if (adminRecords && adminRecords.length > 0) {
         // Load the first associated school (multi-school selector can come later)
         const schoolData = await base44.entities.School.filter({ id: adminRecords[0].schoolId });
         if (schoolData && schoolData.length > 0) {
-          setSchool(schoolData[0]);
+          resolvedSchool = schoolData[0];
+          setSchool(resolvedSchool);
         }
       } else {
         // Fallback: legacy adminUserId field on School
         const schools = await base44.entities.School.filter({ adminUserId: userData.id });
         if (schools && schools.length > 0) {
-          setSchool(schools[0]);
+          resolvedSchool = schools[0];
+          setSchool(resolvedSchool);
         }
+      }
+
+      // Load new tour request count for badge
+      if (resolvedSchool) {
+        try {
+          const inquiries = await base44.entities.SchoolInquiry.filter({ schoolId: resolvedSchool.id, inquiryType: 'tour_request' });
+          const newCount = inquiries.filter(i => !i.tourStatus || i.tourStatus === 'new').length;
+          setNewInquiryCount(newCount);
+        } catch (e) { /* non-blocking */ }
       }
     } catch (error) {
       console.error('Failed to load school data:', error);
