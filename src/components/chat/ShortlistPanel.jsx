@@ -30,6 +30,40 @@ function StatusDot({ status }) {
 }
 
 export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool, familyProfile }) {
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [eventsLoaded, setEventsLoaded] = useState(false);
+
+  useEffect(() => {
+    async function fetchEvents() {
+      if (shortlist.length === 0) {
+        setUpcomingEvents([]);
+        setEventsLoaded(true);
+        return;
+      }
+      setEventsLoaded(false);
+      const today = new Date().toISOString();
+      try {
+        const results = await Promise.all(
+          shortlist.map(school =>
+            base44.entities.SchoolEvent.filter({ schoolId: school.id, isActive: true })
+              .then(evs => evs
+                .filter(e => e.date && e.date >= today)
+                .map(e => ({ ...e, schoolName: school.name }))
+              )
+          )
+        );
+        const merged = results.flat().sort((a, b) => new Date(a.date) - new Date(b.date));
+        setUpcomingEvents(merged);
+      } catch (err) {
+        console.error('[ShortlistPanel] Failed to fetch events:', err);
+        setUpcomingEvents([]);
+      } finally {
+        setEventsLoaded(true);
+      }
+    }
+    fetchEvents();
+  }, [shortlist.map(s => s.id).join(',')]);
+
   return (
     <div className="h-full flex flex-col" style={{ background: '#1E1E30', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
       {/* Header */}
