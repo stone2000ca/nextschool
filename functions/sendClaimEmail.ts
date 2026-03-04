@@ -186,14 +186,49 @@ Deno.serve(async (req) => {
     }
 
     // Send email
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      from_name: 'NextSchool',
-      to: claimData.claimantEmail,
-      subject,
-      body
-    });
+    try {
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        from_name: 'NextSchool',
+        to: claimData.claimantEmail,
+        subject,
+        body
+      });
 
-    return Response.json({ success: true });
+      // WC4: Log email as sent
+      try {
+        await base44.asServiceRole.entities.EmailLog.create({
+          type: emailType === 'CLAIM_EXPIRED' ? 'claim_expiry' : 'claim_verification',
+          to: claimData.claimantEmail,
+          fromName: 'NextSchool',
+          subject,
+          schoolId: schoolData.id,
+          claimStatus: schoolData.claimStatus,
+          status: 'sent',
+        });
+      } catch (logErr) {
+        console.error('Failed to log email:', logErr);
+      }
+
+      return Response.json({ success: true });
+    } catch (emailErr) {
+      // WC4: Log email as failed
+      try {
+        await base44.asServiceRole.entities.EmailLog.create({
+          type: emailType === 'CLAIM_EXPIRED' ? 'claim_expiry' : 'claim_verification',
+          to: claimData.claimantEmail,
+          fromName: 'NextSchool',
+          subject,
+          schoolId: schoolData.id,
+          claimStatus: schoolData.claimStatus,
+          status: 'failed',
+          errorMessage: emailErr.message,
+        });
+      } catch (logErr) {
+        console.error('Failed to log email error:', logErr);
+      }
+
+      throw emailErr;
+    }
   } catch (error) {
     console.error('Email send failed:', error);
     return Response.json({ error: error.message }, { status: 500 });
