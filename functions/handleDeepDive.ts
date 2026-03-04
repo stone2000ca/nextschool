@@ -170,15 +170,21 @@ ${consultantName === 'Jackie'
 
 Write naturally in conversational prose about why this school fits the family. Cover the student-school alignment, any trade-offs or concerns, and the cost reality. Speak like a consultant would—no headers, labels, or formatting markers. Just natural, helpful conversation. End your response with a brief, clear sentence summarizing whether this school is a strong fit for this family and the primary reason why or why not, based on what they shared in their brief.`;
 
+    const eventsBlock = upcomingEvents.length > 0
+      ? `\n\nUPCOMING EVENTS AT THIS SCHOOL:\n` + upcomingEvents.map(e =>
+          `- ${e.title} (${e.eventType?.replace('_', ' ')}) on ${new Date(e.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}${e.isConfirmed ? '' : ' [unconfirmed]'}`
+        ).join('\n')
+      : '';
+
     const deepDiveUserPrompt = `FAMILY BRIEF:
 - Child: ${childDisplayName}
 - Budget: ${resolvedMaxTuition ? '$' + resolvedMaxTuition : 'Not specified'}
 - Priorities: ${resolvedPriorities?.join(', ') || 'Not specified'}
 
 SCHOOL DATA:
-${JSON.stringify(compressedSchoolData, null, 2)}
+${JSON.stringify(compressedSchoolData, null, 2)}${eventsBlock}
 
-Generate the DEEPDIVE card for this family-school match.`;
+Generate the DEEPDIVE card for this family-school match.${upcomingEvents.length > 0 ? ' If relevant, briefly mention any upcoming open houses or tours as a natural next step.' : ''}`;
 
     console.log('[DEEPDIVE] Attempting AI-generated card');
 
