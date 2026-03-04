@@ -182,6 +182,7 @@ export default function SchoolGrid({
   onPriorityToggle = null,
   onNarrateComparison = null,
   onOpenComparison = null,
+  visitedSchoolIds = new Set(),
 }) {
   // Guard: ensure schools is always an array
   if (!schools || !Array.isArray(schools)) {
@@ -244,6 +245,7 @@ export default function SchoolGrid({
       accentColor,
       priorityOverrides,
       onPriorityToggle,
+      isVisited: visitedSchoolIds.has(school.id),
     });
 
     return (
