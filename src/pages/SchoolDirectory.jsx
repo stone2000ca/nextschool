@@ -362,6 +362,25 @@ export default function SchoolDirectory() {
           </select>
         </div>
 
+        {/* E16a-018: Has Upcoming Events filter */}
+        <div className="flex items-center gap-3 p-3 border rounded-lg bg-white">
+          <input
+            type="checkbox"
+            id="hasEventsCheckbox"
+            checked={hasEventsFilter}
+            onChange={(e) => {
+              setHasEventsFilter(e.target.checked);
+              setDisplayedCount(20);
+            }}
+            className="h-4 w-4 text-teal-600 border-slate-300 rounded focus:ring-2 focus:ring-teal-400 cursor-pointer"
+            aria-label="Filter schools by upcoming events"
+          />
+          <label htmlFor="hasEventsCheckbox" className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
+            <CalendarDays className="h-4 w-4 text-amber-500" />
+            Has Upcoming Events
+          </label>
+        </div>
+
         {/* Results count */}
         <div className="text-sm text-slate-600 mb-6">
           Showing {displayedSchools.length} of {filteredSchools.length} schools
