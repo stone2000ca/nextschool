@@ -174,7 +174,7 @@ export default function SchoolDirectory() {
 
   const filteredSchools = allSchools.filter(school => {
     const matchesSearch = school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         school.city.toLowerCase().includes(searchTerm.toLowerCase());
+                          school.city.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCountry = filterCountry === 'all' || (
       (filterCountry === 'Canada' && school.country === 'Canada') ||
       (filterCountry === 'US' && school.country === 'United States') ||
@@ -188,7 +188,9 @@ export default function SchoolDirectory() {
     const matchesGrade = filterGrade === 'all' || (school.gradesServed && school.gradesServed.includes(filterGrade.charAt(0)));
     const matchesTuition = filterTuition === 'all' || matchesTuitionRange(school.tuition, filterTuition);
     const matchesCurriculum = filterCurriculum === 'all' || (school.curriculum && school.curriculum.some(c => c === filterCurriculum)) || school.curriculumType === filterCurriculum;
-    return matchesSearch && matchesCountry && matchesProvince && matchesGrade && matchesTuition && matchesCurriculum;
+    // E16a-018: Filter by upcoming events
+    const matchesEvents = !hasEventsFilter || schoolsWithEvents.has(school.id);
+    return matchesSearch && matchesCountry && matchesProvince && matchesGrade && matchesTuition && matchesCurriculum && matchesEvents;
   });
 
   const matchesTuitionRange = (tuition, range) => {
