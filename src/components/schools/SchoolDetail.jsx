@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { X, Heart, MapPin, Users, DollarSign, Award, Mail, Phone, Globe2, ExternalLink, CalendarDays } from "lucide-react";
 import { createPageUrl } from "../../utils";
 import ContactSchoolModal from './ContactSchoolModal';
+import TourRequestModal from './TourRequestModal';
 import { HeaderPhotoDisplay, LogoDisplay, isClearbitUrl } from './HeaderPhotoHelper';
 
 import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, formatEventDate } from '@/components/utils/eventConstants';

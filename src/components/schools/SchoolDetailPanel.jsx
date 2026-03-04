@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, ExternalLink, CheckCircle, Check, X } from "lucide-react";
+import { ArrowLeft, Heart, ExternalLink, CheckCircle, Check, X, CalendarDays, Mail } from "lucide-react";
+import TourRequestModal from './TourRequestModal';
 
 function gradeLabel(grade) {
   if (grade === null || grade === undefined) return '?';
