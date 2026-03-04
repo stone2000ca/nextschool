@@ -1,6 +1,9 @@
-import { X, Heart, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { X, Heart, ExternalLink, CalendarDays } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { buildPriorityChecks } from '@/components/schools/SchoolCard';
+import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, formatEventDate } from '@/components/utils/eventConstants';
 
 function formatGrade(grade) {
   if (grade === null || grade === undefined) return '';
