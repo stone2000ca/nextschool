@@ -71,6 +71,8 @@ export async function sendSchoolEmail({
         conversationId,
         claimStatus,
         status: 'blocked_unclaimed',
+        is_test: false,
+        test_scenario: null,
       });
     } catch (err) {
       console.error('Failed to log blocked email:', err);
