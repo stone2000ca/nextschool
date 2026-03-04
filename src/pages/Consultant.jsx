@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import School from '@/entities/School';
 import { STATES, BRIEF_STATUS } from './stateMachineConfig';
 import { restoreGuestSession } from '@/components/chat/SessionRestorer';
+import { handleNarrateComparison as narrateComparison } from '@/components/chat/handleNarrateComparison';
 
 // Import searchSchools function
 const searchSchools = (params) => base44.functions.invoke('searchSchools', params);
@@ -1178,77 +1179,17 @@ export default function Consultant() {
     handleNarrateComparison(comparedSchools);
   };
 
-  // T-SL-005: AI-narrated comparison synthesis
+  // T-SL-005 + E11b: AI-narrated comparison synthesis with structured matrix
   const handleNarrateComparison = async (comparedSchools) => {
-    const isJackie = selectedConsultant === 'Jackie';
-    const persona = isJackie
-      ? 'You are Jackie, a warm and empathetic private school consultant. Speak naturally, like a trusted advisor.'
-      : 'You are Liam, a direct and analytical private school consultant. Speak concisely and clearly.';
-
-    const briefSummary = familyProfile ? [
-      familyProfile.priorities?.length ? `Priorities: ${familyProfile.priorities.join(', ')}` : '',
-      familyProfile.maxTuition ? `Budget: up to $${familyProfile.maxTuition.toLocaleString()}` : '',
-      familyProfile.locationArea ? `Location: ${familyProfile.locationArea}` : '',
-      familyProfile.learningDifferences?.length ? `Learning needs: ${familyProfile.learningDifferences.join(', ')}` : '',
-      familyProfile.boardingPreference ? `Boarding preference: ${familyProfile.boardingPreference}` : '',
-    ].filter(Boolean).join('. ') : '';
-
-    const schoolSummaries = comparedSchools.map(s => {
-      const tuition = s.dayTuition ?? s.tuition;
-      return [
-        `School: ${s.name}`,
-        s.city ? `City: ${s.city}` : '',
-        s.distanceKm != null ? `Distance: ${s.distanceKm.toFixed(1)} km` : '',
-        tuition ? `Tuition: $${tuition.toLocaleString()} ${s.currency || ''}` : '',
-        s.curriculumType ? `Curriculum: ${s.curriculumType}` : '',
-        s.genderPolicy ? `Gender: ${s.genderPolicy}` : '',
-        s.boardingAvailable != null ? `Boarding: ${s.boardingAvailable ? 'Yes' : 'No'}` : '',
-        s.avgClassSize ? `Avg class size: ${s.avgClassSize}` : '',
-        s.specializations?.length ? `Specializations: ${s.specializations.join(', ')}` : '',
-        s.highlights?.length ? `Highlights: ${s.highlights.slice(0, 2).join('; ')}` : '',
-      ].filter(Boolean).join(', ');
-    }).join('\n');
-
-    const prompt = `${persona}
-
-A parent is comparing these ${comparedSchools.length} schools:
-${schoolSummaries}
-
-Family brief context: ${briefSummary || 'Not provided'}
-
-Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for this specific family. 
-- Highlight the most meaningful differences
-- Call out tradeoffs relevant to their priorities/budget
-- End with a practical suggestion or question
-- Do NOT use bullet points. Write as flowing conversational prose.
-- Do NOT repeat the school names in a list. Weave them naturally into the narrative.`;
-
-    // Inject a loading placeholder first
-    const loadingMsg = {
-      role: 'assistant',
-      content: '...',
-      timestamp: new Date().toISOString(),
-      isNudge: true,
-    };
-    setMessages(prev => [...prev, loadingMsg]);
-
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({ prompt });
-      setMessages(prev => {
-        const updated = [...prev];
-        // Replace the last loading message with the real synthesis
-        for (let i = updated.length - 1; i >= 0; i--) {
-          if (updated[i].content === '...') {
-            updated[i] = { ...updated[i], content: result };
-            break;
-          }
-        }
-        return updated;
-      });
-    } catch (e) {
-      console.error('Comparison synthesis failed:', e);
-      setMessages(prev => prev.filter(m => m.content !== '...'));
-    }
+    await narrateComparison({
+      comparedSchools,
+      familyProfile,
+      visitedSchoolIds,
+      selectedConsultant,
+      setMessages,
+      setComparisonMatrix,
+      base44
+    });
   };
 
   // T-SL-004: Shortlist nudge — injects a consultant message for shortlist state changes
