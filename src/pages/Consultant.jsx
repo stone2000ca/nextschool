@@ -332,17 +332,18 @@ export default function Consultant() {
 
     checkAuth();
 
-    // E16a-019: Check localStorage for upcoming event reminders
+    // E16a-019: Check localStorage for upcoming event reminders within 48hrs
     try {
       const stored = localStorage.getItem('ns_event_reminders');
       if (stored) {
         const reminders = JSON.parse(stored);
         const now = new Date();
-        const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const fortyEightHoursFromNow = new Date(now.getTime() + 48 * 60 * 60 * 1000);
         
+        // Filter for reminders within 48hrs from now
         const upcoming = reminders.filter(reminder => {
           const eventDate = new Date(reminder.eventDate);
-          return eventDate > now && eventDate <= sevenDaysFromNow;
+          return eventDate > now && eventDate <= fortyEightHoursFromNow;
         });
 
         // Auto-clean expired reminders (eventDate < now)
@@ -351,12 +352,13 @@ export default function Consultant() {
           localStorage.setItem('ns_event_reminders', JSON.stringify(valid));
         }
 
-        // Show toast if upcoming reminders exist
-        if (upcoming.length > 0) {
-          const eventNames = upcoming.slice(0, 3).map(u => `${u.schoolName} — ${u.eventTitle}`).join(', ');
-          const moreText = upcoming.length > 3 ? ` +${upcoming.length - 3} more` : '';
-          toast.info(`You have ${upcoming.length} upcoming event(s)!\n${eventNames}${moreText}`);
-        }
+        // Show toast for each upcoming reminder
+        upcoming.forEach(reminder => {
+          const eventDate = new Date(reminder.eventDate);
+          const daysUntil = Math.ceil((eventDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+          const timeText = daysUntil === 0 ? 'tomorrow' : `in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
+          toast.info(`Reminder: ${reminder.schoolName} — ${reminder.eventTitle} is ${timeText}!`);
+        });
       }
     } catch (err) {
       console.error('[E16a-019] Failed to check reminders:', err);
