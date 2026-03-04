@@ -278,7 +278,7 @@ function FlexButton({ rowId, state, onToggle, totalActive }) {
 // =============================================================================
 // T-RES-004: SchoolCard with collapsed / expanded states
 // =============================================================================
-export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0, accentColor = "#0D9488", familyProfile = null, priorityOverrides = {}, onPriorityToggle = null, isVisited = false }) {
+export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0, accentColor = "#0D9488", familyProfile = null, priorityOverrides = {}, onPriorityToggle = null, isVisited = false, hasUpcomingEvent = false }) {
   function formatGrade(grade) {
     if (grade === null || grade === undefined) return '';
     const num = Number(grade);
@@ -339,6 +339,13 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
           <div className="absolute top-8 right-2 flex items-center gap-1 bg-teal-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
             <Check className="h-3 w-3" />
             Visited
+          </div>
+        )}
+        {/* E16b-005: Has Upcoming Events badge */}
+        {hasUpcomingEvent && (
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-amber-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
+            <CalendarDays className="h-3 w-3" />
+            Events
           </div>
         )}
       </div>
