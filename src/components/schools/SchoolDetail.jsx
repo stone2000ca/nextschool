@@ -8,9 +8,47 @@ import { createPageUrl } from "../../utils";
 import ContactSchoolModal from './ContactSchoolModal';
 import { HeaderPhotoDisplay, LogoDisplay, isClearbitUrl } from './HeaderPhotoHelper';
 
+const EVENT_TYPE_LABELS = {
+  open_house: 'Open House',
+  campus_tour: 'Campus Tour',
+  virtual_tour: 'Virtual Tour',
+  info_session: 'Info Session',
+  shadow_day: 'Shadow Day',
+};
+
+const EVENT_TYPE_COLORS = {
+  open_house: 'bg-teal-100 text-teal-700',
+  campus_tour: 'bg-blue-100 text-blue-700',
+  virtual_tour: 'bg-purple-100 text-purple-700',
+  info_session: 'bg-amber-100 text-amber-700',
+  shadow_day: 'bg-rose-100 text-rose-700',
+};
+
+function formatEventDate(dateStr) {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('en-CA', {
+    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+}
+
 export default function SchoolDetail({ school, onClose, onToggleShortlist, isShortlisted }) {
   const [showContactModal, setShowContactModal] = useState(false);
-  
+  const [events, setEvents] = useState([]);
+  const [eventsLoaded, setEventsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!school?.id) return;
+    base44.entities.SchoolEvent.filter({ schoolId: school.id, isActive: true })
+      .then(data => {
+        const upcoming = data
+          .filter(e => !e.date || new Date(e.date) >= new Date())
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+        setEvents(upcoming);
+      })
+      .catch(() => {})
+      .finally(() => setEventsLoaded(true));
+  }, [school?.id]);
+
   if (!school) return null;
 
   function formatGrade(grade) {
