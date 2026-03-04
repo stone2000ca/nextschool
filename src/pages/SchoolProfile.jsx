@@ -56,12 +56,22 @@ export default function SchoolProfile() {
       })
         .then(events => {
           const sorted = (events || []).sort((a, b) => new Date(a.date) - new Date(b.date));
-          setUpcomingEvents(sorted.slice(0, 3));
+          const topThree = sorted.slice(0, 3);
+          setUpcomingEvents(topThree);
+          
+          // E16a-016: Fire event_view SessionEvent for each event rendered
+          topThree.forEach(event => {
+            base44.functions.invoke('trackSessionEvent', {
+              eventType: 'event_view',
+              sessionId,
+              metadata: { eventId: event.id, schoolId, eventType: event.eventType }
+            }).catch(err => console.error('Failed to track event view:', err));
+          });
         })
         .catch(() => setUpcomingEvents([]))
         .finally(() => setLoadingEvents(false));
     }
-  }, [schoolId]);
+  }, [schoolId, sessionId]);
 
   useEffect(() => {
     if (!school) return;
