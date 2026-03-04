@@ -299,6 +299,62 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="events" className="mt-4">
+            {!eventsLoaded ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-5 w-5 border-4 border-teal-600 border-t-transparent rounded-full" />
+              </div>
+            ) : events.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">
+                <CalendarDays className="h-10 w-10 mx-auto mb-3 text-slate-300" />
+                <p className="font-medium text-sm">No upcoming events</p>
+                <p className="text-xs mt-1 text-slate-400">Check the school's website for the latest events.</p>
+                {school.website && (
+                  <a href={`https://${school.website}`} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm" className="mt-3 gap-1 text-xs">
+                      <ExternalLink className="h-3 w-3" /> Visit Website
+                    </Button>
+                  </a>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {events.map(ev => (
+                  <div key={ev.id} className="border border-slate-200 rounded-xl p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded ${EVENT_TYPE_COLORS[ev.eventType] || 'bg-slate-100 text-slate-600'}`}>
+                        {EVENT_TYPE_LABELS[ev.eventType] || ev.eventType}
+                      </span>
+                      {!ev.isConfirmed && (
+                        <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Unconfirmed</span>
+                      )}
+                    </div>
+                    <p className="font-semibold text-sm text-slate-900">{ev.title}</p>
+                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                      <CalendarDays className="h-3 w-3" />
+                      {formatEventDate(ev.date)}
+                      {ev.endDate ? ` – ${formatEventDate(ev.endDate)}` : ''}
+                    </p>
+                    {ev.description && (
+                      <p className="text-xs text-slate-600 line-clamp-2">{ev.description}</p>
+                    )}
+                    {(ev.registrationUrl || ev.virtualUrl) && (
+                      <a
+                        href={ev.registrationUrl || ev.virtualUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-teal-600 hover:underline"
+                      >
+                        {ev.registrationUrl ? 'Register' : 'Learn More'}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
 
