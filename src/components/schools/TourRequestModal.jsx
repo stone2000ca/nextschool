@@ -83,6 +83,13 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
       numberOfVisitors: Number(form.numberOfVisitors),
       childGrade: form.childGrade !== '' ? Number(form.childGrade) : undefined,
       specialRequests: form.specialRequests || undefined,
+      // E16c: Family context snapshot fields (only if profile exists)
+      ...(familyProfile && {
+        maxTuition: familyProfile.maxTuition || undefined,
+        prioritiesSnapshot: familyProfile.priorities ? JSON.stringify(familyProfile.priorities) : undefined,
+        boardingPreference: familyProfile.boardingPreference || undefined,
+        profileSnapshotAt: new Date().toISOString(),
+      }),
     });
 
     // Fire-and-forget email notification to school admin (only for claimed schools)
