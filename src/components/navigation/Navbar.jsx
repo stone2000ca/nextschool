@@ -21,7 +21,7 @@ export default function Navbar({ variant = "default" }) {
       if (authenticated) {
         const [userData, adminRecords] = await Promise.all([
           base44.auth.me(),
-          base44.entities.SchoolAdmin.filter({ userId: user?.id || '', isActive: true })
+          base44.entities.SchoolAdmin.filter({ userId: userData.id || '', isActive: true })
         ]);
         setUser(userData);
         if (adminRecords && adminRecords.length > 0) {
