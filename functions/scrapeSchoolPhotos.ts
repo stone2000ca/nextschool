@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
     }
 
     // Load school record
-    const schools = await base44.entities.School.filter({ id: schoolId });
+    const schools = await base44.asServiceRole.entities.School.filter({ id: schoolId });
     if (!schools || schools.length === 0) {
       return Response.json({ error: 'School not found' }, { status: 404 });
     }
