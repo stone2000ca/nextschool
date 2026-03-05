@@ -15,6 +15,7 @@ import DisputeForm from '@/components/claim/DisputeForm';
 export default function ClaimSchool() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
   const [schoolId, setSchoolId] = useState(new URLSearchParams(location.search).get('schoolId'));
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
