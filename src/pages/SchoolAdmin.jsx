@@ -187,6 +187,7 @@ export default function SchoolAdmin() {
       items: [
         { id: 'profile', label: 'Profile Editor', icon: Building2 },
         { id: 'media', label: 'Photos & Media', icon: Image },
+        { id: 'photo-review', label: 'Photo Review', icon: ImagePlus },
         { id: 'testimonials', label: 'Testimonials', icon: MessageSquareQuote },
       ],
     },
