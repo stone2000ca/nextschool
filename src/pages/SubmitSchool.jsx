@@ -73,12 +73,26 @@ export default function SubmitSchool() {
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // Pre-fill school name from Portal query param
+  // Auth gate + pre-fill
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get("name");
-    if (name) setForm(f => ({ ...f, name }));
+    const init = async () => {
+      const isAuth = await base44.auth.isAuthenticated();
+      if (!isAuth) {
+        base44.auth.redirectToLogin(createPageUrl('SubmitSchool'));
+        return;
+      }
+      const userData = await base44.auth.me();
+      setCurrentUser(userData);
+      setAuthLoading(false);
+
+      const params = new URLSearchParams(window.location.search);
+      const name = params.get("name");
+      if (name) setForm(f => ({ ...f, name }));
+    };
+    init();
   }, []);
 
   function set(field, value) {
@@ -121,7 +135,7 @@ export default function SubmitSchool() {
     // Submit
     setSubmitting(true);
     const slug = form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now();
-    await base44.entities.School.create({
+    const newSchool = await base44.entities.School.create({
       name: form.name.trim(),
       city: form.city.trim(),
       provinceState: form.provinceState.trim(),
@@ -136,9 +150,30 @@ export default function SubmitSchool() {
       claimStatus: "unclaimed",
       source: "school_submitted",
       verified: false,
+      userId: currentUser.id,
     });
+
+    // Create SchoolClaim record
+    await base44.entities.SchoolClaim.create({
+      schoolId: newSchool.id,
+      claimantEmail: form.email,
+      claimantName: form.name,
+      claimantRole: 'submitter',
+      status: 'pending',
+      userId: currentUser.id,
+      verificationMethod: 'email_domain',
+    });
+
     setSubmitting(false);
     setSubmitted(true);
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+      </div>
+    );
   }
 
   if (submitted) {
