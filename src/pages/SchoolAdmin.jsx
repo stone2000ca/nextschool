@@ -8,7 +8,6 @@ import ProfileEditor from '@/components/school-admin/ProfileEditor';
 import Analytics from '@/components/school-admin/Analytics';
 import Inquiries from '@/components/school-admin/Inquiries';
 import Subscription from '@/components/school-admin/Subscription';
-import CSVUpload from '@/components/school-admin/CSVUpload';
 import PhotosMediaSection from '@/components/school-admin/PhotosMediaSection';
 import TestimonialsSection from '@/components/school-admin/TestimonialsSection';
 import AccountSection from '@/components/school-admin/AccountSection';
