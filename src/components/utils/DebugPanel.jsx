@@ -65,6 +65,7 @@ export default function DebugPanel({ debugState }) {
             <TabsList className="mx-4 mt-2 self-start">
               <TabsTrigger value="state">State Inspector</TabsTrigger>
               <TabsTrigger value="entities" onClick={handleEntityTabSelect}>Entity Viewer</TabsTrigger>
+              <TabsTrigger value="llmlog" onClick={handleLlmLogTabSelect}>LLM Log</TabsTrigger>
             </TabsList>
 
             {/* Tab 1: State Inspector */}
