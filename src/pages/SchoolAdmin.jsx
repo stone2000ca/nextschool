@@ -76,6 +76,11 @@ export default function SchoolAdmin() {
           const diffs = await base44.entities.EnrichmentDiff.filter({ schoolId: resolvedSchool.id, status: 'pending' });
           setPendingDiffCount(diffs.length);
         } catch (e) { /* non-blocking */ }
+
+        try {
+          const photos = await base44.entities.PhotoCandidate.filter({ schoolId: resolvedSchool.id, status: 'pending' });
+          setPendingPhotoCount(photos.length);
+        } catch (e) { /* non-blocking */ }
       }
     } catch (error) {
       console.error('Failed to load school data:', error);
