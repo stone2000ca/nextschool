@@ -341,6 +341,9 @@ export default function SchoolAdmin() {
           {currentView === 'enrichment' && (
             <EnrichmentReviewSection school={school} />
           )}
+          {currentView === 'photo-review' && (
+            <PhotoReviewSection school={school} onUpdate={(field, value) => setSchool({ ...school, [field]: value })} />
+          )}
         </main>
       </div>
     </div>
