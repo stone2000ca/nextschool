@@ -98,7 +98,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'School not found' }, { status: 404 });
     }
     const school = schools[0];
-    const targetUrl = websiteUrl || school.website;
+    let targetUrl = websiteUrl || school.website;
+    if (targetUrl && !targetUrl.startsWith('http')) {
+      targetUrl = 'https://' + targetUrl;
+    }
 
     if (!targetUrl) {
       return Response.json({ success: false, error: 'No website URL' });
