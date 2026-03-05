@@ -826,6 +826,29 @@ Deno.serve(async (req) => {
       Object.assign(conversationFamilyProfile, extractionResult.updatedFamilyProfile);
       Object.assign(context, extractionResult.updatedContext);
 
+      // BUG-047-02: Persist extracted fields to DB immediately after merge
+      const extractedKeysForPersist = Object.keys(extractionResult?.extractedEntities || {}).filter(k =>
+        !['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers'].includes(k)
+      );
+      if (extractedKeysForPersist.length > 0 && conversationFamilyProfile?.id) {
+        const partialUpdate = {};
+        for (const key of extractedKeysForPersist) {
+          if (conversationFamilyProfile[key] !== undefined) {
+            partialUpdate[key] = conversationFamilyProfile[key];
+          }
+        }
+        if (Object.keys(partialUpdate).length > 0) {
+          (async () => {
+            try {
+              await base44.entities.FamilyProfile.update(conversationFamilyProfile.id, partialUpdate);
+              console.log('[BUG-047-02] FamilyProfile persisted:', Object.keys(partialUpdate));
+            } catch (e) {
+              console.error('[BUG-047-02] FamilyProfile persist failed (non-blocking):', e.message);
+            }
+          })();
+        }
+      }
+
       const tier1After = {
         childGrade: conversationFamilyProfile?.childGrade ?? null,
         locationArea: conversationFamilyProfile?.locationArea ?? null,
