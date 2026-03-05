@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 export default function Navbar({ variant = "default" }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSchoolAdmin, setIsSchoolAdmin] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -18,8 +19,14 @@ export default function Navbar({ variant = "default" }) {
       const authenticated = await base44.auth.isAuthenticated();
       setIsAuthenticated(authenticated);
       if (authenticated) {
-        const userData = await base44.auth.me();
+        const [userData, adminRecords] = await Promise.all([
+          base44.auth.me(),
+          base44.entities.SchoolAdmin.filter({ userId: user?.id || '', isActive: true })
+        ]);
         setUser(userData);
+        if (adminRecords && adminRecords.length > 0) {
+          setIsSchoolAdmin(true);
+        }
       }
     } catch (error) {
       console.error('Auth check failed:', error);
