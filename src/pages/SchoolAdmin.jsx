@@ -254,6 +254,12 @@ export default function SchoolAdmin() {
           {currentView === 'testimonials' && (
             <TestimonialsSection school={school} />
           )}
+          {currentView === 'admissions' && (
+            <div className="p-6 max-w-3xl mx-auto">
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Admissions</h2>
+              <AdmissionsSection school={school} onUpdate={(field, value) => setSchool({ ...school, [field]: value })} />
+            </div>
+          )}
           {currentView === 'events' && (
             <EventsSection school={school} />
           )}
