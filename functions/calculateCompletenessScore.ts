@@ -14,19 +14,19 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 const CRITICAL_FIELDS = [
   'name', 'description', 'dayTuition', 'lowestGrade', 'highestGrade',
-  'provinceState', 'country', 'genderPolicy', 'schoolType',
+  'provinceState', 'country', 'genderPolicy', 'schoolType', 'city', 'lat', 'lng',
 ];
 
 const HIGH_FIELDS = [
   'enrollment', 'avgClassSize', 'studentTeacherRatio', 'curriculumType',
-  'address', 'city', 'phone', 'email', 'website', 'missionStatement',
+  'address', 'phone', 'email', 'website', 'missionStatement',
   'headerPhotoUrl',
 ];
 
 // Fields that are system-managed, derived, or intentionally excluded from scoring
 const EXCLUDED_FIELDS = new Set([
   'id', 'created_date', 'updated_date', 'created_by', 'created_by_id',
-  'slug', 'lat', 'lng', 'status', 'verified', 'claimStatus',
+  'slug', 'status', 'verified', 'claimStatus',
   'membershipTier', 'subscriptionTier', 'completenessScore',
   'adminUserId', 'is_sample', 'source', 'dataSource', 'governmentId',
   'aiEnrichedFields', 'verifiedFields', 'lastEnriched', 'importBatchId',
@@ -39,16 +39,19 @@ const EXCLUDED_FIELDS = new Set([
 const CRITICAL_SET = new Set(CRITICAL_FIELDS);
 const HIGH_SET = new Set(HIGH_FIELDS);
 
-function isPopulated(value, fieldName) {
+const GRADE_FIELDS = new Set(['lowestGrade', 'highestGrade']);
+const PLACEHOLDER_STRINGS = new Set(['', 'n/a', 'not available', 'unknown', 'tbd']);
+
+function isFieldPopulated(value, fieldName) {
   if (value === null || value === undefined) return false;
-  // lowestGrade === 0 is valid (Kindergarten) — must check before falsy check
-  if (fieldName === 'lowestGrade' && value === 0) return true;
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed !== '' && trimmed !== 'N/A' && trimmed !== 'Not available';
+    return !PLACEHOLDER_STRINGS.has(value.trim().toLowerCase());
   }
-  // numbers, booleans: populated if not null/undefined
+  if (typeof value === 'number') {
+    if (GRADE_FIELDS.has(fieldName)) return true;
+    return value !== 0;
+  }
   return true;
 }
 
@@ -79,7 +82,7 @@ function calculateScore(school) {
     if (EXCLUDED_FIELDS.has(fieldName)) continue;
     const w = weightFor(fieldName);
     totalWeight += w;
-    if (isPopulated(school[fieldName], fieldName)) {
+    if (isFieldPopulated(school[fieldName], fieldName)) {
       earnedWeight += w;
     }
   }
