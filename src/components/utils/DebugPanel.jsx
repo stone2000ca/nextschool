@@ -8,6 +8,8 @@ export default function DebugPanel({ debugState }) {
   const [expanded, setExpanded] = useState(false);
   const [emailLogs, setEmailLogs] = useState(null);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [llmLogs, setLlmLogs] = useState(null);
+  const [loadingLlmLogs, setLoadingLlmLogs] = useState(false);
 
   const handleEntityTabSelect = async () => {
     if (emailLogs !== null) return; // already fetched
@@ -20,6 +22,23 @@ export default function DebugPanel({ debugState }) {
       setEmailLogs([]);
     } finally {
       setLoadingLogs(false);
+    }
+  };
+
+  const handleLlmLogTabSelect = async () => {
+    if (llmLogs !== null) return; // already fetched
+    setLoadingLlmLogs(true);
+    try {
+      const conversationId = debugState?.conversationContext?.conversationId;
+      const logs = conversationId
+        ? await base44.entities.LLMLog.filter({ conversation_id: conversationId }, '-created_date', 100)
+        : await base44.entities.LLMLog.list('-created_date', 50);
+      setLlmLogs(logs);
+    } catch (e) {
+      console.error('[WC7] Failed to fetch LLMLog:', e);
+      setLlmLogs([]);
+    } finally {
+      setLoadingLlmLogs(false);
     }
   };
 
