@@ -401,6 +401,22 @@ export default function ClaimSchool() {
     }
   };
 
+  const handleCancelClaim = async () => {
+    if (!showCancelConfirm) return;
+    setCancellingClaim(true);
+    try {
+      await base44.entities.SchoolClaim.update(existingClaim.id, { status: 'cancelled' });
+      if (existingClaim.status === 'pending_review') {
+        await base44.entities.School.update(existingClaim.schoolId, { claimStatus: null });
+      }
+      setExistingClaim(null);
+      setShowCancelConfirm(false);
+      setClaimSchoolName('');
+    } finally {
+      setCancellingClaim(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
