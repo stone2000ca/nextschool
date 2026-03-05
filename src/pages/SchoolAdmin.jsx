@@ -288,6 +288,9 @@ export default function SchoolAdmin() {
           {currentView === 'account' && (
             <AccountSection school={school} />
           )}
+          {currentView === 'enrichment' && (
+            <EnrichmentReviewSection school={school} />
+          )}
         </main>
       </div>
     </div>
