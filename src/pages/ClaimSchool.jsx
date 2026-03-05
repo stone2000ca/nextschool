@@ -178,6 +178,7 @@ export default function ClaimSchool() {
       // Create SchoolClaim record
       const claim = await base44.entities.SchoolClaim.create({
         schoolId,
+        userId: user?.id,
         claimantName: formData.name,
         claimantRole: formData.role,
         claimantEmail: formData.email,
