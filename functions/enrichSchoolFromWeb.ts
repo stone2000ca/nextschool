@@ -137,7 +137,8 @@ Deno.serve(async (req) => {
     console.log('[ENRICH] Calling Base44 InvokeLLM');
     const extracted = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
-      response_json_schema: buildResponseSchema().schema
+      response_json_schema: buildResponseSchema().schema,
+      model: 'gpt-5'
     });
 
     // Step 5: Compare and create EnrichmentDiff records
