@@ -346,12 +346,9 @@ export default function SchoolAdmin() {
             <Inquiries schoolId={school.id} />
           )}
           {currentView === 'analytics' && (
-            <Analytics school={school} />
-          )}
-          {currentView === 'csv' && (
-            <CSVUpload school={school} onUpdate={loadSchoolData} />
-          )}
-          {currentView === 'subscription' && (
+             <Analytics school={school} />
+           )}
+           {currentView === 'subscription' && (
             <Subscription school={school} onUpdate={loadSchoolData} />
           )}
           {currentView === 'account' && (
