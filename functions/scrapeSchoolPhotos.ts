@@ -10,7 +10,7 @@ const CRAWL_PATHS = ['', '/about', '/gallery', '/photos', '/campus', '/our-schoo
 
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-const SKIP_EXTENSIONS = /\.(svg|gif|ico|webp)(\?|$)/i;
+const SKIP_EXTENSIONS = /\.(svg|gif|ico)(\?|$)/i;
 const SKIP_PATTERNS = /\/(icon|logo|favicon|sprite|pixel|tracking|analytics|1x1|2x2)\b/i;
 const DATA_URI = /^data:/i;
 
