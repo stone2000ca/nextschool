@@ -37,7 +37,9 @@ function resolveUrl(src: string, base: string): string | null {
 
 // Normalise base URL (strip trailing slash, ensure https where ambiguous)
 function normaliseBase(url: string): string {
-  return url.replace(/\/+$/, '');
+  let u = url.replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  return u;
 }
 
 // Fetch page HTML with timeout and browser UA
