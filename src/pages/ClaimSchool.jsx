@@ -13,10 +13,20 @@ import { createPageUrl } from '../utils';
 import { debounce } from 'lodash';
 import DisputeForm from '@/components/claim/DisputeForm';
 
+const STATUS_LABELS = {
+  pending_email: 'Email Verification Pending',
+  pending_review: 'Under Review',
+  verified: 'Approved'
+};
+
 export default function ClaimSchool() {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [existingClaim, setExistingClaim] = useState(null);
+  const [claimSchoolName, setClaimSchoolName] = useState('');
+  const [cancellingClaim, setCancellingClaim] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [schoolId, setSchoolId] = useState(new URLSearchParams(location.search).get('schoolId'));
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
