@@ -1948,6 +1948,15 @@ export default function Consultant() {
       )}
 
       {/* T046: Panel rendered inline in layout, no overlay needed */}
+
+      {/* E18c-001: Debug panel */}
+      {isDebugMode && (
+        <DebugPanel debugState={{
+          familyProfile,
+          extractedEntities: extractedEntitiesData,
+          conversationContext: currentConversation?.conversationContext,
+        }} />
+      )}
     </div>
   );
 }
