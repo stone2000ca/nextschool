@@ -105,6 +105,32 @@ export default function SchoolAdmin() {
     }
   };
 
+  const handleAutoFill = async () => {
+    setIsEnriching(true);
+    setEnrichError(null);
+    try {
+      const [enrichResult, photoResult] = await Promise.allSettled([
+        base44.functions.invoke('enrichSchoolFromWeb', { schoolId: school.id }),
+        base44.functions.invoke('scrapeSchoolPhotos', { schoolId: school.id })
+      ]);
+      const enrichOk = enrichResult.status === 'fulfilled';
+      const photoOk = photoResult.status === 'fulfilled';
+      if (!enrichOk && !photoOk) {
+        setEnrichError('Website scan failed. Please check the website URL in your profile and try again.');
+        return;
+      }
+      try {
+        const diffs = await base44.entities.EnrichmentDiff.filter({ schoolId: school.id, status: 'pending' });
+        setPendingDiffCount(diffs.length);
+      } catch {}
+      setCurrentView('enrichment');
+    } catch (err) {
+      setEnrichError('Something went wrong. Please try again.');
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50">
