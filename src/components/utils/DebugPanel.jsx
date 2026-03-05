@@ -112,6 +112,46 @@ export default function DebugPanel({ debugState }) {
                 </div>
               )}
             </TabsContent>
+            {/* Tab 3: LLM Log */}
+            <TabsContent value="llmlog" className="flex-1 overflow-y-auto p-4">
+              {loadingLlmLogs ? (
+                <div className="flex items-center gap-2 text-amber-700 text-sm">
+                  <div className="animate-spin h-4 w-4 border-2 border-amber-600 border-t-transparent rounded-full" />
+                  Loading LLM logs...
+                </div>
+              ) : llmLogs === null ? (
+                <p className="text-xs text-amber-700">Click this tab to load LLMLog records for the current conversation.</p>
+              ) : llmLogs.length === 0 ? (
+                <p className="text-xs text-amber-700">No LLM calls logged for this conversation.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="text-xs w-full border-collapse">
+                    <thead>
+                      <tr className="bg-amber-200 text-amber-900">
+                        {['phase', 'model', 'status', 'latency_ms', 'tokens_in', 'tokens_out', 'prompt_summary', 'response_summary', 'timestamp'].map(col => (
+                          <th key={col} className="px-2 py-1 text-left border border-amber-300 font-mono whitespace-nowrap">{col}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {llmLogs.map(log => (
+                        <tr key={log.id} className="hover:bg-amber-100">
+                          <td className="px-2 py-1 border border-amber-200 font-mono">{log.phase}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono max-w-32 truncate">{log.model}</td>
+                          <td className={`px-2 py-1 border border-amber-200 font-mono font-bold ${log.status === 'success' ? 'text-green-700' : 'text-red-700'}`}>{log.status}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono text-right">{log.latency_ms}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono text-right">{log.token_count_in}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono text-right">{log.token_count_out}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono max-w-48 truncate" title={log.prompt_summary}>{(log.prompt_summary || '').substring(0, 100)}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono max-w-48 truncate" title={log.response_summary}>{(log.response_summary || '').substring(0, 100)}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono whitespace-nowrap">{log.created_date ? new Date(log.created_date).toLocaleString() : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
         </div>
       )}
