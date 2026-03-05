@@ -621,7 +621,7 @@ export default function ClaimSchool() {
         )}
 
         {/* Step 1: Intro */}
-        {!alreadyClaimed && step === 1 && (
+        {!existingClaim && !alreadyClaimed && step === 1 && (
           <Card className="p-8">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-slate-900 mb-4">Claim {school.name}</h1>
