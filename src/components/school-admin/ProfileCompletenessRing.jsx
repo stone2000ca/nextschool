@@ -8,28 +8,24 @@ const TIERS = [
     id: 'tier1',
     label: 'Required',
     color: '#ef4444',
-    weight: 50,
-    fields: ['name', 'city', 'provinceState', 'country', 'lowestGrade', 'highestGrade', 'genderPolicy', 'dayTuition', 'schoolType'],
+    fields: ['name', 'city', 'provinceState', 'country', 'lowestGrade', 'highestGrade', 'genderPolicy', 'dayTuition', 'schoolType', 'lat', 'lng'],
   },
   {
     id: 'tier2',
     label: 'Important',
     color: '#f59e0b',
-    weight: 30,
     fields: ['description', 'website', 'boardingAvailable', 'religiousAffiliation', 'languageOfInstruction', 'avgClassSize', 'studentTeacherRatio'],
   },
   {
     id: 'tier3',
     label: 'Enrichment',
     color: '#14b8a6',
-    weight: 15,
     fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculumType', 'accreditations'],
   },
   {
     id: 'tier4',
     label: 'Media',
     color: '#6366f1',
-    weight: 5,
     fields: ['logoUrl', 'headerPhotoUrl', 'photoGallery'],
   },
 ];
@@ -41,23 +37,8 @@ function isFilled(value) {
   return value !== null && value !== undefined;
 }
 
-function calcWeightedScore(school) {
-  if (!school) return 0;
-  let total = 0;
-  for (const tier of TIERS) {
-    const filled = tier.fields.filter(f => isFilled(school[f])).length;
-    const tierPct = filled / tier.fields.length; // 0–1
-    total += tierPct * tier.weight;              // contribution to 100
-  }
-  return Math.round(total);
-}
-
 export default function ProfileCompletenessRing({ school }) {
-  const [score, setScore] = useState(0);
-
-  useEffect(() => {
-    setScore(calcWeightedScore(school));
-  }, [school]);
+  const score = school?.completenessScore ?? 0;
 
   const circumference = 2 * Math.PI * 45;
   const offset = circumference - (score / 100) * circumference;
@@ -99,9 +80,9 @@ export default function ProfileCompletenessRing({ school }) {
           return (
             <div key={tier.id}>
               <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-600 font-medium">{tier.label}</span>
-                <span className="text-slate-500">{filled}/{total} · {tier.weight}% weight</span>
-              </div>
+                 <span className="text-slate-600 font-medium">{tier.label}</span>
+                 <span className="text-slate-500">{filled}/{total}</span>
+               </div>
               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
