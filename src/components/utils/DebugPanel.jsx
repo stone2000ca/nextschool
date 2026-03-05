@@ -1,5 +1,5 @@
-// E18c-001
-import { useState } from 'react';
+// E18c-001 / E18c-003
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
