@@ -24,6 +24,8 @@ export default function SchoolAdmin() {
   const [isSaving, setIsSaving] = useState(false);
   const [newInquiryCount, setNewInquiryCount] = useState(0);
   const [pendingDiffCount, setPendingDiffCount] = useState(0);
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichError, setEnrichError] = useState(null);
 
   useEffect(() => {
     loadSchoolData();
