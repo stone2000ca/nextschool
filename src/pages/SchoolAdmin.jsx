@@ -67,6 +67,11 @@ export default function SchoolAdmin() {
           const newCount = inquiries.filter(i => !i.tourStatus || i.tourStatus === 'new').length;
           setNewInquiryCount(newCount);
         } catch (e) { /* non-blocking */ }
+
+        try {
+          const diffs = await base44.entities.EnrichmentDiff.filter({ schoolId: resolvedSchool.id, status: 'pending' });
+          setPendingDiffCount(diffs.length);
+        } catch (e) { /* non-blocking */ }
       }
     } catch (error) {
       console.error('Failed to load school data:', error);
