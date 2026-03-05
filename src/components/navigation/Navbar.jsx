@@ -105,6 +105,14 @@ export default function Navbar({ variant = "default" }) {
                 Dashboard
               </Button>
             </Link>
+            {isSchoolAdmin && (
+              <Link to={createPageUrl('SchoolAdmin')}>
+                <Button variant="outline" className="gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Manage School
+                </Button>
+              </Link>
+            )}
             <Button
               variant="ghost"
               size="sm"
