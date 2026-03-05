@@ -15,6 +15,7 @@ import EventsSection from '@/components/school-admin/EventsSection';
 import ProfileCompletenessRing from '@/components/school-admin/ProfileCompletenessRing';
 import AdmissionsSection from '@/components/school-admin/AdmissionsSection';
 import EnrichmentReviewSection from '@/components/school-admin/EnrichmentReviewSection';
+import PhotoReviewSection from '@/components/school-admin/PhotoReviewSection';
 
 export default function SchoolAdmin() {
   const [user, setUser] = useState(null);
