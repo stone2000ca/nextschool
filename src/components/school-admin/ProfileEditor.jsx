@@ -274,6 +274,7 @@ function ImageUploadField({ label, field, hint, formData, onChange }) {
 // =============================================================================
 export default function ProfileEditor({ school, onSave, isSaving }) {
   const [formData, setFormData] = useState(school);
+  const [dirtyFields, setDirtyFields] = useState({});
   const [autoSaved, setAutoSaved] = useState(false);
   const [verifiedFields, setVerifiedFields] = useState(school?.verifiedFields || {});
   const [openTiers, setOpenTiers] = useState({ tier1: true, tier2: false, tier3: false, tier4: false });
@@ -281,6 +282,7 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
 
   useEffect(() => {
     setFormData(school);
+    setDirtyFields({});
     setVerifiedFields(school?.verifiedFields || {});
     if (school?.id) {
       base44.entities.Testimonial.filter({ school_id: school.id })
@@ -292,6 +294,7 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
   const handleChange = (field, value) => {
     const updatedVerified = verifiedFields[field] ? verifiedFields : { ...verifiedFields, [field]: true };
     setVerifiedFields(updatedVerified);
+    setDirtyFields(prev => ({ ...prev, [field]: value }));
     setFormData(prev => ({ ...prev, [field]: value, verifiedFields: updatedVerified }));
   };
 
@@ -303,7 +306,17 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
       setOpenTiers(prev => ({ ...prev, tier1: true }));
       return;
     }
-    await onSave(formData);
+    if (Object.keys(dirtyFields).length === 0) {
+      setAutoSaved(true);
+      setTimeout(() => setAutoSaved(false), 2000);
+      return;
+    }
+    const payload = { ...dirtyFields };
+    if (Object.keys(verifiedFields).length > 0) {
+      payload.verifiedFields = verifiedFields;
+    }
+    await onSave(payload);
+    setDirtyFields({});
     setAutoSaved(true);
     setTimeout(() => setAutoSaved(false), 2000);
   };
