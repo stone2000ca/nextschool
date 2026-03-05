@@ -318,11 +318,14 @@ export default function SchoolSearchProfile({
             <select
               value={editData.childGrade || ''}
               onChange={(e) => setEditData({ ...editData, childGrade: e.target.value ? parseInt(e.target.value) : null })}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm"
+              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm text-gray-900"
             >
               <option value="">Select Grade</option>
-              {[...Array(13)].map((_, i) => (
-                <option key={i} value={i}>{`Grade ${i}`}</option>
+              <option value="-2">PK (Pre-Kindergarten)</option>
+              <option value="-1">JK (Junior Kindergarten)</option>
+              <option value="0">SK (Senior Kindergarten)</option>
+              {[...Array(12)].map((_, i) => (
+                <option key={i + 1} value={i + 1}>{`Grade ${i + 1}`}</option>
               ))}
             </select>
           </div>
