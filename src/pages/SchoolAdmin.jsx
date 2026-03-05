@@ -79,7 +79,16 @@ export default function SchoolAdmin() {
     setIsSaving(true);
     try {
       await base44.entities.School.update(school.id, updatedData);
-      setSchool({ ...school, ...updatedData });
+      const updated = { ...school, ...updatedData };
+      setSchool(updated);
+      // Post-save: recalculate completeness score server-side (non-blocking)
+      base44.functions.invoke('calculateCompletenessScore', { schoolId: school.id })
+        .then(res => {
+          if (res?.data?.completenessScore != null) {
+            setSchool(s => ({ ...s, completenessScore: res.data.completenessScore }));
+          }
+        })
+        .catch(e => console.warn('completenessScore update failed:', e));
     } catch (error) {
       console.error('Failed to save school:', error);
     } finally {
