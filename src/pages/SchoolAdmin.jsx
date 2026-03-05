@@ -224,7 +224,7 @@ export default function SchoolAdmin() {
   ];
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       {/* Top Navigation */}
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-4">
@@ -266,9 +266,9 @@ export default function SchoolAdmin() {
         </div>
       )}
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex">
         {/* Sidebar Navigation */}
-        <aside className="w-64 bg-white border-r flex flex-col">
+        <aside className="w-64 bg-white border-r flex flex-col sticky top-0 h-screen overflow-y-auto">
           <nav className="p-4 space-y-1">
             {navGroups.map((group, groupIdx) => (
               <div key={group.label}>
@@ -322,7 +322,7 @@ export default function SchoolAdmin() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1">
           {currentView === 'profile' && (
             <ProfileEditor school={school} onSave={handleSaveSchool} isSaving={isSaving} />
           )}
