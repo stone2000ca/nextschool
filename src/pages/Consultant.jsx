@@ -38,6 +38,8 @@ import Navbar from '@/components/navigation/Navbar';
 import { useSchoolFiltering } from '@/hooks/useSchoolFiltering';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+const PLAN_NAMES = { FREE: 'free', BASIC: 'basic', PREMIUM: 'premium', PRO: 'pro', ENTERPRISE: 'enterprise' };
+
 const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
 
 const mapStateToView = (state) => {
@@ -465,21 +467,13 @@ export default function Consultant() {
   }, [isTyping]);
 
   const getPlanLimits = (plan) => {
-    const limits = {
-      free: { total: 100, dailyReplenishment: 3 },
-      pro: { total: 1000, dailyReplenishment: 33 },
-      enterprise: { total: 5000, dailyReplenishment: 166 }
-    };
-    return limits[plan] || limits.free;
+    if (plan === PLAN_NAMES.FREE) return { total: 100, dailyReplenishment: 3 };
+    return { total: 1000, dailyReplenishment: 33 };
   };
 
   const getConversationLimits = (plan) => {
-    const limits = {
-      free: 1,
-      pro: 10,
-      enterprise: 50
-    };
-    return limits[plan] || limits.free;
+    if (plan === PLAN_NAMES.FREE) return 1;
+    return 10;
   };
 
   const checkAuth = async () => {
@@ -513,7 +507,7 @@ export default function Consultant() {
         }
         
         setTokenBalance(newBalance);
-        setIsPremium(plan === 'pro' || plan === 'enterprise');
+        setIsPremium(plan !== PLAN_NAMES.FREE);
         await loadConversations(userData.id);
         await loadShortlist(userData);
       } else {
@@ -1858,13 +1852,7 @@ export default function Consultant() {
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-teal-500"></div>
                     <span className="text-sm text-slate-700">
-                      <strong>Pro Plan:</strong> 1,000 tokens, replenish 33/day
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                    <span className="text-sm text-slate-700">
-                      <strong>Enterprise Plan:</strong> 5,000 tokens, replenish 166/day
+                      <strong>Premium Plan:</strong> 1,000 tokens, replenish 33/day
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
