@@ -430,7 +430,7 @@ async function performSearch(req) {
     return { school, score };
   });
 
-  schools = scored.sort((a, b) => b.score - a.score).map(s => s.school);
+  schools = scored.sort((a, b) => b.score - a.score).map(s => { s.school._matchScore = s.score; return s.school; });
 
   if (finalLat && finalLng) {
     schools = schools.map(school => {
