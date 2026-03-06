@@ -354,8 +354,8 @@ export default function SchoolAdmin() {
             <EnrichmentReviewSection school={school} onCountChange={(count) => setPendingDiffCount(count)} />
           )}
           {currentView === 'photo-review' && (
-            <PhotoReviewSection school={school} onUpdate={(field, value) => setSchool({ ...school, [field]: value })} onCountChange={(count) => setPendingPhotoCount(count)}
-          )}
+            <PhotoReviewSection school={school} onUpdate={(field, value) => setSchool({ ...school, [field]: value })} onCountChange={(count) => setPendingPhotoCount(count)} />
+            )}
         </main>
       </div>
     </div>
