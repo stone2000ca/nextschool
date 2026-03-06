@@ -48,6 +48,7 @@ export default function ClaimSchool() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [codeExpiryTime, setCodeExpiryTime] = useState(null);
   const [alreadyClaimed, setAlreadyClaimed] = useState(null); // { domain: string } | null
   const [showDisputeForm, setShowDisputeForm] = useState(false);
 
