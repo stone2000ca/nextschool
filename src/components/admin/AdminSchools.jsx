@@ -56,7 +56,7 @@ export default function AdminSchools() {
     }
     setEnrichingSchoolId(schoolId);
     try {
-      const response = await base44.functions.invoke('enrichSchoolData', { schoolId });
+      const response = await base44.functions.invoke('enrichSchoolFromWeb', { schoolId });
       if (response.data.status === 'success') {
         toast.success(`School enriched (${response.data.count || 0} fields updated)`);
         loadSchools();
