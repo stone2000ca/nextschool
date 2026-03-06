@@ -590,6 +590,32 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* E22-S1: Delete All Confirmation Modal */}
+      {deleteAllTarget && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#2A2A3D] rounded-lg max-w-sm w-full p-6 border border-white/10">
+            <h2 className="text-lg font-semibold text-white mb-2">Delete all profiles?</h2>
+            <p className="text-white/60 text-sm mb-6">
+              Delete all {sessions.filter(s => s.status === deleteAllTarget).length} {deleteAllTarget} profiles? This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteAllTarget(null)}
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAll}
+                className="flex-1 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Delete All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* WC12: Upgrade Paywall Modal for Free Users */}
       <UpgradePaywallModal
         isOpen={showUpgradeModal}
