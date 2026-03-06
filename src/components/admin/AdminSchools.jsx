@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, CheckCircle2, XCircle, Edit, Archive, Sparkles, Loader2 } from 'lucide-react';
+import { Search, CheckCircle2, XCircle, Edit, Archive, Sparkles, Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminSchools() {
@@ -236,6 +237,13 @@ export default function AdminSchools() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => window.open(`/SchoolAdmin?schoolId=${school.id}`, '_blank')}
+                        title="Manage as this school"
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        <Building2 className="w-4 h-4 text-blue-600" />
+                      </button>
                       <Button
                         size="sm"
                         variant="outline"
