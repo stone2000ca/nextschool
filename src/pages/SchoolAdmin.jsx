@@ -243,19 +243,6 @@ export default function SchoolAdmin() {
         </div>
 
         <div className="flex items-center gap-3">
-          {school?.website?.trim() && (
-            <button
-              onClick={handleAutoFill}
-              disabled={isEnriching}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isEnriching ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Scanning website...</>
-              ) : (
-                <><Sparkles className="h-4 w-4" /> AI Auto-Fill</>
-              )}
-            </button>
-          )}
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${tierColors[school.subscriptionTier || 'free']}`}>
             {tierIcons[school.subscriptionTier || 'free']}
             <span className="uppercase">{school.subscriptionTier || 'free'}</span>
