@@ -205,8 +205,7 @@ Return arrays with EXACT parent words. Also capture what triggered the search an
       response_json_schema: schema
     });
 
-    // LATEST INFORMATION WINS: Overwrite all fields (including arrays) with extracted data
-    // Don't merge - new information replaces old information
+    // Return extracted data - caller handles accumulative merge
     return result;
   } catch (error) {
     console.error('Extract phase data error:', error);
