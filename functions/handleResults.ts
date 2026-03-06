@@ -182,8 +182,6 @@ Deno.serve(async (req) => {
     let conversationFamilyProfile = rawProfile || {};
     let context = rawContext || {};
 
-    console.log('[DEBUG-P0] handleResults entry - locationArea:', conversationFamilyProfile?.locationArea, 'childGrade:', conversationFamilyProfile?.childGrade, 'profileKeys:', Object.keys(conversationFamilyProfile || {}));
-
     const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
     // =========================================================================
