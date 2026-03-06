@@ -342,8 +342,27 @@ Generate the DEEPDIVE card for this family-school match.`;
         })();
       }
     } catch (analysisError) {
-      console.error('[E10b] deepDiveAnalysis generation failed:', analysisError.message, 'Raw response:', rawAnalysisResponse);
-      if (rawAnalysisResponse && typeof rawAnalysisResponse === 'string') {
+      console.log('[E10b] InvokeLLM failed for analysis, falling back to callOpenRouter:', analysisError.message);
+      try {
+        const analysisResponse = await callOpenRouter({
+          systemPrompt: analysisSystemPrompt,
+          userPrompt: analysisUserPrompt,
+          maxTokens: 800,
+          temperature: 0.3,
+          responseSchema: { name: 'school_analysis', schema: analysisJsonSchema }
+        });
+        rawAnalysisResponse = analysisResponse;
+        if (typeof analysisResponse === 'string') {
+          const stripped = analysisResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+          deepDiveAnalysis = JSON.parse(stripped);
+        } else {
+          deepDiveAnalysis = analysisResponse;
+        }
+        console.log('[E10b] Structured analysis via callOpenRouter (fallback)');
+      } catch (fallbackAnalysisError) {
+        console.error('[E10b] Both analysis providers failed:', fallbackAnalysisError.message, 'Raw response:', rawAnalysisResponse);
+      }
+      if (!deepDiveAnalysis && rawAnalysisResponse && typeof rawAnalysisResponse === 'string') {
         try {
           const stripped = rawAnalysisResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
           deepDiveAnalysis = JSON.parse(stripped);
