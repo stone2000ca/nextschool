@@ -2,42 +2,92 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AdminClaims() {
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState(null);
 
   useEffect(() => {
     loadClaims();
   }, []);
 
   const loadClaims = async () => {
+    setLoading(true);
     try {
-      const unverifiedSchools = await base44.entities.School.filter({ verified: false });
-      setClaims(unverifiedSchools.filter(s => s.adminUserId));
+      // Primary query: status:'pending'
+      let rawClaims = await base44.entities.SchoolClaim.filter({ status: 'pending' });
+
+      // Fallback: fetch all and filter client-side for any pending-prefixed status
+      if (!rawClaims || rawClaims.length === 0) {
+        const all = await base44.entities.SchoolClaim.list();
+        rawClaims = all.filter(c => c.status && c.status.startsWith('pending'));
+      }
+
+      // Enrich each claim with school name/city and user email in parallel
+      const enriched = await Promise.all(
+        rawClaims.map(async (claim) => {
+          const [schools, users] = await Promise.all([
+            base44.entities.School.filter({ id: claim.schoolId }),
+            claim.userId ? base44.entities.User.filter({ id: claim.userId }) : Promise.resolve([]),
+          ]);
+          return {
+            ...claim,
+            _schoolName: schools[0]?.name || 'Unknown School',
+            _schoolCity: schools[0]?.city || '',
+            _schoolRegion: schools[0]?.region || '',
+            _userEmail: users[0]?.email || claim.claimantEmail || 'Unknown',
+          };
+        })
+      );
+
+      setClaims(enriched);
     } catch (error) {
       console.error('Failed to load claims:', error);
+      toast.error('Failed to load claims. Please refresh.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async (schoolId) => {
+  const handleApprove = async (claim) => {
+    setProcessingId(claim.id);
     try {
-      await base44.entities.School.update(schoolId, { verified: true });
-      setClaims(claims.filter(c => c.id !== schoolId));
+      await base44.entities.SchoolClaim.update(claim.id, { status: 'verified' });
+      await base44.entities.School.update(claim.schoolId, {
+        verified: true,
+        claimStatus: 'claimed',
+        membershipTier: 'basic',
+      });
+      await base44.entities.SchoolAdmin.create({
+        userId: claim.userId,
+        schoolId: claim.schoolId,
+        role: 'owner',
+        isActive: true,
+      });
+      setClaims(prev => prev.filter(c => c.id !== claim.id));
+      toast.success(`Claim approved for ${claim._schoolName}`);
     } catch (error) {
-      console.error('Failed to approve:', error);
+      console.error('Failed to approve claim:', error);
+      toast.error('Failed to approve claim. Please try again.');
+    } finally {
+      setProcessingId(null);
     }
   };
 
-  const handleReject = async (schoolId) => {
+  const handleReject = async (claim) => {
+    setProcessingId(claim.id);
     try {
-      await base44.entities.School.update(schoolId, { status: 'archived' });
-      setClaims(claims.filter(c => c.id !== schoolId));
+      await base44.entities.SchoolClaim.update(claim.id, { status: 'rejected' });
+      setClaims(prev => prev.filter(c => c.id !== claim.id));
+      toast.success(`Claim rejected for ${claim._schoolName}`);
     } catch (error) {
-      console.error('Failed to reject:', error);
+      console.error('Failed to reject claim:', error);
+      toast.error('Failed to reject claim. Please try again.');
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -53,55 +103,61 @@ export default function AdminClaims() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-900 mb-2">School Claims Queue</h2>
-        <p className="text-slate-600">Review and approve school verification requests</p>
+        <p className="text-slate-600">Review and approve school claim requests</p>
       </div>
 
       {claims.length === 0 ? (
         <Card className="p-12 text-center">
           <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-3" />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">All caught up!</h3>
-          <p className="text-slate-600">No pending school claims to review.</p>
+          <p className="text-slate-600">No pending claims to review.</p>
         </Card>
       ) : (
         <div className="space-y-4">
-          {claims.map((claim) => (
-            <Card key={claim.id} className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-slate-900">{claim.name}</h3>
-                    <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      Pending
-                    </span>
+          {claims.map((claim) => {
+            const isProcessing = processingId === claim.id;
+            return (
+              <Card key={claim.id} className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold text-slate-900 truncate">{claim._schoolName}</h3>
+                      <span className="shrink-0 px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {claim.status}
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-sm text-slate-600">
+                      <div><span className="font-medium">Location:</span> {[claim._schoolCity, claim._schoolRegion].filter(Boolean).join(', ') || 'N/A'}</div>
+                      <div><span className="font-medium">Claimant:</span> {claim.claimantName || 'N/A'} — {claim._userEmail}</div>
+                      <div><span className="font-medium">Role at school:</span> {claim.claimantRole || 'N/A'}</div>
+                      <div><span className="font-medium">Verification:</span> {claim.verificationMethod || 'N/A'}</div>
+                      <div><span className="font-medium">Submitted:</span> {new Date(claim.created_date).toLocaleDateString('en-CA')}</div>
+                    </div>
                   </div>
-                  <div className="space-y-1 text-sm text-slate-600">
-                    <div><span className="font-medium">Location:</span> {claim.city}, {claim.region}</div>
-                    <div><span className="font-medium">Claimed:</span> {new Date(claim.created_date).toLocaleDateString()}</div>
-                    <div><span className="font-medium">Website:</span> {claim.website || 'N/A'}</div>
-                    <div><span className="font-medium">Email:</span> {claim.email || 'N/A'}</div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      onClick={() => handleApprove(claim)}
+                      disabled={isProcessing}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                      Approve
+                    </Button>
+                    <Button
+                      onClick={() => handleReject(claim)}
+                      disabled={isProcessing}
+                      variant="outline"
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <XCircle className="h-4 w-4 mr-2" />}
+                      Reject
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-2 ml-4">
-                  <Button
-                    onClick={() => handleApprove(claim.id)}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Approve
-                  </Button>
-                  <Button
-                    onClick={() => handleReject(claim.id)}
-                    variant="outline"
-                    className="text-red-600 hover:bg-red-50"
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Reject
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
