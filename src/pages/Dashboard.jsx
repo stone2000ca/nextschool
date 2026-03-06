@@ -6,7 +6,7 @@ import Navbar from '@/components/navigation/Navbar';
 import ChatSessionCard from '@/components/dashboard/ChatSessionCard.jsx';
 import SchoolSearchProfile from '@/components/dashboard/SchoolSearchProfile.jsx';
 import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
-import { Plus, Settings, X, AlertCircle, Crown, CheckCircle } from 'lucide-react';
+import { Plus, Settings, X, AlertCircle, Crown, CheckCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
