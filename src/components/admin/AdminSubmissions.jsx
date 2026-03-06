@@ -10,9 +10,24 @@ export default function AdminSubmissions() {
 
   async function load() {
     setLoading(true);
-    const schools = await base44.entities.School.filter({ source: "school_submitted" });
-    const pending = schools.filter(s => s.status === "draft" || s.status === "pending_review");
-    setSubmissions(pending.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
+    // Fetch claims from both submission paths: 'pending' (SubmitSchool) and 'pending_review' (ClaimSchool)
+    const [claimsPending, claimsPendingReview] = await Promise.all([
+      base44.entities.SchoolClaim.filter({ status: "pending" }),
+      base44.entities.SchoolClaim.filter({ status: "pending_review" }),
+    ]);
+    const allClaims = [...claimsPending, ...claimsPendingReview];
+    const schoolIds = [...new Set(allClaims.map(c => c.schoolId).filter(Boolean))];
+
+    if (schoolIds.length === 0) {
+      setSubmissions([]);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch the actual school records for those IDs
+    const schoolResults = await Promise.all(schoolIds.map(id => base44.entities.School.filter({ id })));
+    const schools = schoolResults.flat().filter(s => s.status === "draft" || s.status === "active" || s.status === "pending_review");
+    setSubmissions(schools.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
     setLoading(false);
   }
 
