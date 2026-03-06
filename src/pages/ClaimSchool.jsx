@@ -186,19 +186,11 @@ export default function ClaimSchool() {
     setIsSubmitting(true);
     setEmailError('');
     try {
-      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
-
       // Determine verification method and initial status
-      let method = 'email_domain';
-      let status = 'pending_email';
+      const method = emailDomainMatch ? 'email_domain' : 'document_upload';
+      const status = emailDomainMatch ? 'pending_email' : 'pending_review';
 
-      if (!emailDomainMatch) {
-        method = 'document_upload';
-        status = 'pending_review';
-      }
-
-      // Create SchoolClaim record
+      // Create SchoolClaim record (no code stored client-side)
       const claim = await base44.entities.SchoolClaim.create({
         schoolId,
         userId: user?.id,
@@ -206,14 +198,12 @@ export default function ClaimSchool() {
         claimantRole: formData.role,
         claimantEmail: formData.email,
         verificationMethod: method,
-        verificationCode,
-        codeExpiresAt: expiresAt,
         status
       });
 
       setClaimId(claim.id);
 
-      // If domain matches, send verification code email
+      // If domain matches, server generates and sends the code
       if (emailDomainMatch) {
         setSendingEmail(true);
         try {
@@ -222,12 +212,11 @@ export default function ClaimSchool() {
             claimData: {
               claimantName: formData.name,
               claimantEmail: formData.email,
-              verificationCode,
-              codeExpiresAt: expiresAt
             },
             schoolData: {
               name: school.name,
-              id: schoolId
+              id: schoolId,
+              claimId: claim.id
             }
           });
           setStep(3);
@@ -238,7 +227,6 @@ export default function ClaimSchool() {
           setSendingEmail(false);
         }
       } else {
-        // If no match, go to document upload step
         setStep(3.5);
       }
     } catch (error) {
