@@ -68,6 +68,7 @@ Return a concise summary.`;
     // Archive old messages before truncating
     const existingArchive = conversation[0].archivedMessages || [];
     const archivedMessages = [...existingArchive, ...oldMessages];
+    if (archivedMessages.length > 500) archivedMessages.splice(0, archivedMessages.length - 500);
 
     // Update conversation to only keep recent messages + reference to summary
     await base44.asServiceRole.entities.ChatHistory.update(conversationId, {
