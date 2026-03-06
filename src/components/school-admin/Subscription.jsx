@@ -21,22 +21,24 @@ export default function Subscription({ school, onUpdate }) {
       ]
     },
     {
-      id: 'basic',
-      name: 'Basic',
+      id: 'growth',
+      name: 'Growth',
       price: 99,
       icon: Sparkles,
       features: [
         'Enhanced profile with video',
         'Unlimited photos',
         'Full analytics dashboard',
+        'Inquiry management',
+        'Events & Open Houses',
         'Priority search placement',
         'Email support'
       ],
       popular: false
     },
     {
-      id: 'premium',
-      name: 'Premium',
+      id: 'professional',
+      name: 'Professional',
       price: 249,
       icon: Crown,
       features: [

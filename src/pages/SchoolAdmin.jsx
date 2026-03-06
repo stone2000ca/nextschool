@@ -184,14 +184,29 @@ export default function SchoolAdmin() {
   const tierColors = {
     free: 'bg-slate-100 text-slate-700',
     basic: 'bg-blue-100 text-blue-700',
-    premium: 'bg-amber-100 text-amber-700'
+    growth: 'bg-blue-100 text-blue-700',
+    premium: 'bg-amber-100 text-amber-700',
+    professional: 'bg-amber-100 text-amber-700'
   };
 
   const tierIcons = {
     free: null,
     basic: <Sparkles className="h-3 w-3" />,
-    premium: <Crown className="h-3 w-3" />
+    growth: <Sparkles className="h-3 w-3" />,
+    premium: <Crown className="h-3 w-3" />,
+    professional: <Crown className="h-3 w-3" />
   };
+
+  const tierLabel = {
+    free: 'Free',
+    basic: 'Growth',
+    growth: 'Growth',
+    premium: 'Professional',
+    professional: 'Professional'
+  };
+
+  const tier = school.subscriptionTier || 'free';
+  const isFree = tier === 'free';
 
   const navGroups = [
     {
