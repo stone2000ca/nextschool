@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
       .map(m => `${m.role}: ${m.content}`)
       .join('\n');
 
-    const summaryPrompt = `Summarize this conversation concisely (max 100 words). Focus on key details: child's grade, location preferences, school criteria, and schools discussed.
+    const summaryPrompt = `Summarize this conversation concisely (max 300 words). Focus on key details: child's grade, location preferences, school criteria, and schools discussed.
 
 Conversation:
 ${messagesToSummarize}
@@ -65,10 +65,15 @@ Return a concise summary.`;
       });
     }
 
+    // Archive old messages before truncating
+    const existingArchive = conversation[0].archivedMessages || [];
+    const archivedMessages = [...existingArchive, ...oldMessages];
+
     // Update conversation to only keep recent messages + reference to summary
     await base44.asServiceRole.entities.ChatHistory.update(conversationId, {
       messages: recentMessages,
-      longTermSummary: summary.trim()
+      longTermSummary: summary.trim(),
+      archivedMessages
     });
 
     return Response.json({ 
