@@ -229,9 +229,9 @@ export default function SchoolAdmin() {
       label: 'Engagement',
       items: [
         { id: 'admissions', label: 'Admissions', icon: FileText },
-        { id: 'events', label: 'Events & Open Houses', icon: CalendarDays, locked: school.subscriptionTier === 'free', lockLabel: 'Premium' },
-        { id: 'inquiries', label: 'Inquiries', icon: Mail, badge: newInquiryCount },
-        { id: 'analytics', label: 'Analytics', icon: BarChart3, locked: school.subscriptionTier === 'free' },
+        { id: 'events', label: 'Events & Open Houses', icon: CalendarDays, locked: isFree, lockLabel: 'Growth' },
+        { id: 'inquiries', label: 'Inquiries', icon: Mail, badge: newInquiryCount, locked: isFree, lockLabel: 'Growth' },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3, locked: isFree, lockLabel: 'Growth' },
       ],
     },
     {
@@ -258,9 +258,9 @@ export default function SchoolAdmin() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${tierColors[school.subscriptionTier || 'free']}`}>
-            {tierIcons[school.subscriptionTier || 'free']}
-            <span className="uppercase">{school.subscriptionTier || 'free'}</span>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${tierColors[tier]}`}>
+            {tierIcons[tier]}
+            <span className="uppercase">{tierLabel[tier]}</span>
           </div>
 
         </div>
