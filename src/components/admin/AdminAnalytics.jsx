@@ -14,26 +14,52 @@ export default function AdminAnalytics() {
 
   const loadAnalytics = async () => {
     try {
-      const [users, conversations, transactions] = await Promise.all([
-        base44.entities.User.list('-created_date'),
-        base44.entities.ChatHistory.list('-created_date'),
-        base44.entities.TokenTransaction.list('-created_date', 100)
-      ]);
+      const users = await base44.entities.User.list('-created_date');
 
-      // Calculate weekly new users
+      let conversations = [];
+      try {
+        conversations = await base44.entities.ChatHistory.list('-created_date');
+      } catch (e) {
+        console.error('Failed to load ChatHistory:', e);
+      }
+
+      let transactions = [];
+      try {
+        transactions = await base44.entities.TokenTransaction.list('-created_date', 1000);
+      } catch (e) {
+        console.error('Failed to load TokenTransaction:', e);
+      }
+
       const weeklyUsers = calculateWeeklyData(users, 'created_date', 6);
-      
-      // Calculate daily conversations
       const dailyConversations = calculateDailyData(conversations, 'created_date', 7);
-      
-      // Calculate token usage
-      const tokenUsage = transactions.reduce((sum, t) => sum + t.tokensDeducted, 0);
+
+      // Calculate period-over-period token trend (30-day windows)
+      const now = new Date();
+      const currentStart = new Date(now);
+      currentStart.setDate(now.getDate() - 30);
+      const previousStart = new Date(currentStart);
+      previousStart.setDate(currentStart.getDate() - 30);
+
+      const currentTokens = transactions
+        .filter(t => new Date(t.created_date) >= currentStart)
+        .reduce((sum, t) => sum + t.tokensDeducted, 0);
+      const previousTokens = transactions
+        .filter(t => new Date(t.created_date) >= previousStart && new Date(t.created_date) < currentStart)
+        .reduce((sum, t) => sum + t.tokensDeducted, 0);
+
+      let tokenTrend = 'Insufficient data';
+      if (previousTokens > 0) {
+        const pct = ((currentTokens - previousTokens) / previousTokens) * 100;
+        tokenTrend = `${pct >= 0 ? '+' : ''}${pct.toFixed(0)}% from last period`;
+      } else if (currentTokens > 0) {
+        tokenTrend = 'New data (no previous period)';
+      }
 
       setAnalytics({
         weeklyUsers,
         dailyConversations,
-        tokenUsage,
-        totalRevenue: 24567 // Mock data
+        tokenUsage: currentTokens,
+        tokenTrend,
       });
     } catch (error) {
       console.error('Failed to load analytics:', error);
