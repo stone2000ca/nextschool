@@ -178,28 +178,14 @@ export default function AdminAnalytics() {
           </div>
         </Card>
 
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Revenue by Plan</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-600">Free</span>
-              <span className="text-sm font-medium">$0</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-600">Basic ($99/mo)</span>
-              <span className="text-sm font-medium">$4,950</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-600">Premium ($249/mo)</span>
-              <span className="text-sm font-medium">$19,617</span>
-            </div>
-            <div className="pt-3 border-t flex justify-between items-center">
-              <span className="font-semibold">Total Monthly</span>
-              <span className="text-xl font-bold text-teal-600">
-                ${analytics.totalRevenue.toLocaleString()}
-              </span>
-            </div>
-          </div>
+        <Card className="p-6 flex items-center justify-center">
+          <Alert className="bg-slate-50 border-slate-200">
+            <Info className="h-4 w-4 text-slate-500" />
+            <AlertTitle className="text-slate-700">Revenue Analytics</AlertTitle>
+            <AlertDescription className="text-slate-500">
+              Revenue tracking will be available once Stripe integration is complete.
+            </AlertDescription>
+          </Alert>
         </Card>
       </div>
     </div>
