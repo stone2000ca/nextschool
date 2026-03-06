@@ -1192,7 +1192,8 @@ export default function Consultant() {
       const schoolIds = comparedSchools.map(s => s.id).filter(Boolean);
       const result = await base44.functions.invoke('generateComparison', {
         schoolIds,
-        familyProfileId: familyProfile?.id || null
+        familyProfileId: familyProfile?.id || null,
+        userId: user?.id || null
       });
       if (result.data?.comparisonMatrix) {
         setComparisonMatrix(result.data.comparisonMatrix);

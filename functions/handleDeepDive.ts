@@ -1,7 +1,7 @@
 // Function: handleDeepDive
 // Purpose: Handle deep-dive school analysis with visit prep generation and debrief mode routing
-// Entities: School, SchoolAnalysis, GeneratedArtifact, SchoolEvent
-// Last Modified: 2026-03-04
+// Entities: School, SchoolAnalysis, GeneratedArtifact, SchoolEvent, User
+// Last Modified: 2026-03-06
 // Dependencies: OpenRouter API, Base44 InvokeLLM fallback, handleVisitDebrief function
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
@@ -84,6 +84,19 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { selectedSchoolId, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, userId, returningUserContextBlock, flags, conversationId } = await req.json();
+
+    // E24-S3-WC1: Resolve user tier for premium content gating
+    let isPremiumUser = false;
+    if (userId) {
+      try {
+        const userRecords = await base44.asServiceRole.entities.User.filter({ id: userId });
+        const userTier = userRecords?.[0]?.role || 'free';
+        isPremiumUser = ['premium', 'pro', 'enterprise'].includes(userTier);
+        console.log('[E24-S3-WC1] userId:', userId, 'tier:', userTier, 'isPremium:', isPremiumUser);
+      } catch (tierErr) {
+        console.warn('[E24-S3-WC1] Failed to fetch user tier (defaulting to free):', tierErr.message);
+      }
+    }
 
     const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
@@ -329,14 +342,32 @@ Generate the DEEPDIVE card for this family-school match.`;
       const derivedRedFlags = (deepDiveAnalysis.tradeOffs || [])
         .filter(t => t.concern)
         .map(t => `Watch for concerns around ${t.dimension}.`);
-      generatedVisitPrepKit = {
+
+      const fullVisitPrepKit = {
         schoolName,
         visitQuestions: (deepDiveAnalysis.visitQuestions || []).map(q => ({ question: q, priorityTag: 'medium' })),
         observations: derivedObservations,
         redFlags: derivedRedFlags,
-        intro: `Here's your personalized Visit Prep Kit for ${schoolName}.`
+        intro: `Here's your personalized Visit Prep Kit for ${schoolName}.`,
+        isLocked: false
       };
-      console.log('[DEEPDIVE] Generated visitPrepKit with', generatedVisitPrepKit.visitQuestions.length, 'questions');
+
+      // E24-S3-WC1: Gate premium content for non-premium users
+      if (!isPremiumUser) {
+        generatedVisitPrepKit = {
+          schoolName: fullVisitPrepKit.schoolName,
+          intro: fullVisitPrepKit.intro,
+          visitQuestions: fullVisitPrepKit.visitQuestions.slice(0, 2),
+          observations: null,
+          redFlags: null,
+          isLocked: true
+        };
+        console.log('[E24-S3-WC1] visitPrepKit gated for non-premium user');
+      } else {
+        generatedVisitPrepKit = fullVisitPrepKit;
+      }
+
+      console.log('[DEEPDIVE] Generated visitPrepKit with', generatedVisitPrepKit.visitQuestions.length, 'questions, isLocked:', generatedVisitPrepKit.isLocked);
     }
     console.log('[DEEPDIVE] deepDiveAnalysis populated:', !!deepDiveAnalysis, 'visitPrepKit populated:', !!generatedVisitPrepKit);
 

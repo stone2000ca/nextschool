@@ -1,12 +1,31 @@
+// Function: generateComparison
+// Purpose: Generate AI-powered school comparison matrix and insights, with premium content gating
+// Entities: School, FamilyProfile, GeneratedArtifact, User
+// Last Modified: 2026-03-06
+// Dependencies: Base44 InvokeLLM
+
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { schoolIds, familyProfileId } = await req.json();
+    const { schoolIds, familyProfileId, userId } = await req.json();
 
     if (!schoolIds || schoolIds.length < 2 || schoolIds.length > 3) {
       return Response.json({ error: 'Provide 2-3 school IDs' }, { status: 400 });
+    }
+
+    // E24-S3-WC1: Resolve user tier for premium content gating
+    let isPremiumUser = false;
+    if (userId) {
+      try {
+        const userRecords = await base44.asServiceRole.entities.User.filter({ id: userId });
+        const userTier = userRecords?.[0]?.role || 'free';
+        isPremiumUser = ['premium', 'pro', 'enterprise'].includes(userTier);
+        console.log('[E24-S3-WC1] userId:', userId, 'tier:', userTier, 'isPremium:', isPremiumUser);
+      } catch (tierErr) {
+        console.warn('[E24-S3-WC1] Failed to fetch user tier (defaulting to free):', tierErr.message);
+      }
     }
 
     // Fetch schools
@@ -104,8 +123,6 @@ Return JSON with array of insights (each 1-2 sentences highlighting key differen
       }
     });
 
-    comparison.insights = insights.insights;
-
     // Build family-personalized comparisonMatrix
     const priorities = familyProfile?.priorities || [];
     const dealbreakers = familyProfile?.dealbreakers || [];
@@ -123,6 +140,20 @@ Return JSON with array of insights (each 1-2 sentences highlighting key differen
       })))
     };
 
+    // E24-S3-WC1: Gate premium content for non-premium users
+    let finalInsights = insights.insights;
+    let isLocked = false;
+
+    if (!isPremiumUser) {
+      finalInsights = null;
+      // Strip relevance tags so priority/dealbreaker highlighting is premium-only
+      comparisonMatrix.dimensions = comparisonMatrix.dimensions.map(({ relevance, ...rest }) => rest);
+      isLocked = true;
+      console.log('[E24-S3-WC1] Comparison insights and relevance tags gated for non-premium user');
+    }
+
+    comparison.insights = finalInsights;
+
     // Persist to GeneratedArtifact (non-blocking)
     if (familyProfileId) {
       try {
@@ -139,7 +170,8 @@ Return JSON with array of insights (each 1-2 sentences highlighting key differen
           artifactKey,
           content: {
             comparisonMatrix,
-            insights: comparison.insights
+            insights: finalInsights,
+            isLocked
           },
           generatedAt: new Date().toISOString()
         };
@@ -156,7 +188,7 @@ Return JSON with array of insights (each 1-2 sentences highlighting key differen
       }
     }
 
-    return Response.json({ ...comparison, comparisonMatrix });
+    return Response.json({ ...comparison, comparisonMatrix, isLocked });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
