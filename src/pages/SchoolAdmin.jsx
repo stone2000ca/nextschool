@@ -195,11 +195,18 @@ export default function SchoolAdmin() {
 
   const navGroups = [
     {
+      label: 'AI Tools',
+      items: [
+        { id: 'auto-fill', label: 'AI Auto-Fill', icon: Sparkles, action: handleAutoFill, showLoading: isEnriching },
+        { id: 'enrichment', label: 'Enrichment Review', icon: FlaskConical, badge: pendingDiffCount },
+        { id: 'photo-review', label: 'Photo Review', icon: ImagePlus, badge: pendingPhotoCount },
+      ],
+    },
+    {
       label: 'Content',
       items: [
         { id: 'profile', label: 'Profile Editor', icon: Building2 },
         { id: 'media', label: 'Photos & Media', icon: Image },
-        ...(pendingPhotoCount > 0 ? [{ id: 'photo-review', label: 'Photo Review', icon: ImagePlus, badge: pendingPhotoCount }] : []),
         { id: 'testimonials', label: 'Testimonials', icon: MessageSquareQuote },
       ],
     },
@@ -215,7 +222,6 @@ export default function SchoolAdmin() {
     {
       label: 'Admin',
       items: [
-        ...(pendingDiffCount > 0 ? [{ id: 'enrichment', label: 'Enrichment Review', icon: FlaskConical, badge: pendingDiffCount }] : []),
         { id: 'subscription', label: 'Subscription', icon: CreditCard },
         { id: 'account', label: 'Account', icon: User },
       ],
