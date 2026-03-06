@@ -28,9 +28,15 @@ export default function AdminUsers() {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const q = searchTerm.toLowerCase();
+    const matchesSearch = !q ||
+      (user.email || '').toLowerCase().includes(q) ||
+      (user.full_name || '').toLowerCase().includes(q);
+    const matchesRole = roleFilter === 'all' || (user.role || 'user') === roleFilter;
+    const matchesPlan = planFilter === 'all' || (user.subscriptionPlan || 'free') === planFilter;
+    return matchesSearch && matchesRole && matchesPlan;
+  });
 
   if (loading) {
     return (
