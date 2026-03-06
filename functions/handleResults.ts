@@ -268,7 +268,6 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
     }
 
     console.log('[SEARCH] Running fresh school search in RESULTS state');
-    console.log('[SEARCH] conversationFamilyProfile:', JSON.stringify(conversationFamilyProfile, null, 2));
 
     // Validate that conversationFamilyProfile has minimum required data
     if (!conversationFamilyProfile || typeof conversationFamilyProfile !== 'object') {
