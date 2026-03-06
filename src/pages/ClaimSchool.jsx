@@ -208,7 +208,7 @@ export default function ClaimSchool() {
       if (emailDomainMatch) {
         setSendingEmail(true);
         try {
-          await base44.functions.invoke('sendClaimEmail', {
+          const emailRes = await base44.functions.invoke('sendClaimEmail', {
             emailType: 'VERIFICATION_CODE',
             claimData: {
               claimantName: formData.name,
@@ -220,6 +220,8 @@ export default function ClaimSchool() {
               claimId: claim.id
             }
           });
+          const expiresInMinutes = emailRes?.data?.expiresInMinutes ?? 15;
+          setCodeExpiryTime(new Date(Date.now() + expiresInMinutes * 60 * 1000));
           setStep(3);
         } catch (emailErr) {
           console.error('Email send failed:', emailErr);
