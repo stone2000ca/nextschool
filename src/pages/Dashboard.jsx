@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [showArchivedTab, setShowArchivedTab] = useState(false);
   const [reactivateError, setReactivateError] = useState(null);
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
+  const [deleteAllTarget, setDeleteAllTarget] = useState(null); // 'active' | 'archived'
 
   useEffect(() => {
     // WC15: Check for upgrade success param
