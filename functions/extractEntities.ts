@@ -41,18 +41,33 @@ async function callOpenRouter(options) {
   }
   
   console.log('[OPENROUTER] Calling with models:', body.models, 'maxTokens:', maxTokens);
-  
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://nextschool.ca',
-      'X-OpenRouter-Title': 'NextSchool'
-    },
-    body: JSON.stringify(body)
-  });
-  
+
+  const controller = new AbortController();
+  const TIMEOUT_MS = 15000;
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://nextschool.ca',
+        'X-OpenRouter-Title': 'NextSchool'
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error(`[TIMEOUT] callOpenRouter timed out after ${TIMEOUT_MS}ms in extractEntities.ts`);
+      throw new Error(`LLM request timed out after ${TIMEOUT_MS/1000}s`);
+    }
+    throw error;
+  }
+  clearTimeout(timeoutId);
+
   if (!response.ok) {
     const errorText = await response.text();
     console.error('[OPENROUTER] API error:', response.status, errorText);

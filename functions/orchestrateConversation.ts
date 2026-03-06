@@ -43,6 +43,10 @@ async function callOpenRouter(options) {
 
   const fullPromptStr = messages.map(m => `[${m.role}] ${m.content}`).join('\n');
 
+  const controller = new AbortController();
+  const TIMEOUT_MS = 15000;
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -52,9 +56,11 @@ async function callOpenRouter(options) {
         'HTTP-Referer': 'https://nextschool.ca',
         'X-OpenRouter-Title': 'NextSchool'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
     const latency_ms = Date.now() - startTime;
     
     if (!response.ok) {
