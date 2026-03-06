@@ -268,23 +268,25 @@ export default function SchoolAdmin() {
                 <p className="px-4 mb-1 text-xs font-semibold text-slate-400 uppercase tracking-wide">{group.label}</p>
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = currentView === item.id;
+                  const isAction = !!item.action;
+                  const isActive = !isAction && currentView === item.id;
+                  const handleClick = isAction ? item.action : () => setCurrentView(item.id);
                   return (
                     <button
                       key={item.id}
-                      onClick={() => (item.id === 'events' || !item.locked) && setCurrentView(item.id)}
-                      disabled={item.locked && item.id !== 'events'}
+                      onClick={() => !item.locked && !item.showLoading && handleClick()}
+                      disabled={(item.locked && item.id !== 'events') || item.showLoading}
                       className={`
                         w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
                         ${isActive
                           ? 'bg-teal-50 text-teal-700 border border-teal-200'
-                          : item.locked
+                          : item.locked || item.showLoading
                             ? 'text-slate-400 cursor-not-allowed'
                             : 'text-slate-700 hover:bg-slate-50'
                         }
                       `}
                     >
-                      <Icon className="h-5 w-5" />
+                      {item.showLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
                       <span>{item.label}</span>
                       {item.locked && (
                         <span className="ml-auto text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
