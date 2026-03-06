@@ -77,7 +77,7 @@ export default function Subscription({ school, onUpdate }) {
             <h3 className="text-lg font-semibold text-slate-900 mb-1">Current Plan</h3>
             <p className="text-2xl font-bold text-teal-700 capitalize">{currentPlan}</p>
           </div>
-          {currentPlan !== 'premium' && (
+          {currentPlan !== 'professional' && (
             <Button className="bg-amber-600 hover:bg-amber-700">
               Upgrade Now
             </Button>
