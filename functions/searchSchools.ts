@@ -136,10 +136,22 @@ async function performSearch(req) {
     console.log(`[T045] Using orchestrator-resolved coords: ${finalLat}, ${finalLng}`);
   }
 
-  // TODO: migrate to paginated/server-filtered query when school count exceeds 2000
-  const allSchools = await base44.entities.School.filter({}, '-created_date', 2000);
-  if (allSchools.length === 2000) {
-    console.warn('[searchSchools] WARNING: School count hit limit (2000). Results may be incomplete. TODO: migrate to paginated/server-filtered query.');
+  // TODO: migrate to paginated/server-filtered query when school count exceeds 1000
+  let allSchools = [];
+  try {
+    allSchools = await base44.entities.School.filter({}, '-created_date', 1000);
+    if (allSchools.length === 1000) {
+      console.warn('[searchSchools] WARNING: School count hit limit (1000). Results may be incomplete.');
+    }
+  } catch (filterError) {
+    console.error('[searchSchools] School.filter failed:', filterError.message);
+    return Response.json({
+      schools: [],
+      total: 0,
+      returned: 0,
+      edgeCaseMessage: 'School data could not be loaded. Please try again.',
+      error: 'db_fetch_failed'
+    });
   }
   let schools = allSchools.filter(s => s.status === 'active');
 
