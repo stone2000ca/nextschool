@@ -50,33 +50,47 @@ export default function AdminDisputes() {
 
   async function transferOwnership(dispute) {
     setActionMap(m => ({ ...m, [dispute.id]: "transferring" }));
+    setTransferError(null);
 
     // Find requester user account
     const users = await base44.entities.User.filter({ email: dispute.requester_email });
     if (!users[0]) {
-      alert("No user account found for " + dispute.requester_email + ". They must sign up first.");
+      setTransferError("No user account found for " + dispute.requester_email + ". They must sign up first.");
       setActionMap(m => ({ ...m, [dispute.id]: null }));
       return;
     }
     const newUserId = users[0].id;
 
-    // Deactivate existing owner records for this school
+    // Save existing owner IDs for rollback
     const existingAdmins = await base44.entities.SchoolAdmin.filter({ schoolId: dispute.school_id, role: "owner" });
-    await Promise.all(existingAdmins.map(a => base44.entities.SchoolAdmin.update(a.id, { isActive: false })));
+    const deactivatedOwnerIds = [];
 
-    // Create new owner SchoolAdmin record
-    await base44.entities.SchoolAdmin.create({
-      schoolId: dispute.school_id,
-      userId: newUserId,
-      role: "owner",
-      isActive: true,
-    });
+    try {
+      // Deactivate existing owner records for this school
+      await Promise.all(existingAdmins.map(async a => {
+        await base44.entities.SchoolAdmin.update(a.id, { isActive: false });
+        deactivatedOwnerIds.push(a.id);
+      }));
 
-    // Mark dispute approved
-    await base44.entities.DisputeRequest.update(dispute.id, { status: "approved" });
+      // Create new owner SchoolAdmin record
+      await base44.entities.SchoolAdmin.create({
+        schoolId: dispute.school_id,
+        userId: newUserId,
+        role: "owner",
+        isActive: true,
+      });
 
-    setEnriched(e => e.filter(x => x.id !== dispute.id));
-    setActionMap(m => ({ ...m, [dispute.id]: "done" }));
+      // Mark dispute approved
+      await base44.entities.DisputeRequest.update(dispute.id, { status: "approved" });
+
+      setEnriched(e => e.filter(x => x.id !== dispute.id));
+      setActionMap(m => ({ ...m, [dispute.id]: "done" }));
+    } catch (err) {
+      // Rollback: re-activate any owners that were deactivated
+      await Promise.all(deactivatedOwnerIds.map(id => base44.entities.SchoolAdmin.update(id, { isActive: true })));
+      setTransferError("Transfer failed: " + (err.message || "Unknown error") + ". Previous ownership has been restored.");
+      setActionMap(m => ({ ...m, [dispute.id]: null }));
+    }
   }
 
   async function reject(dispute) {
