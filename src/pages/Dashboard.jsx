@@ -226,8 +226,17 @@ export default function Dashboard() {
   };
 
   const handleSessionArchived = async () => {
-    // Refresh sessions when one is archived
     await checkAuthAndLoadSessions();
+  };
+
+  const handleDeleteAll = async () => {
+    const toDelete = sessions.filter(s => s.status === deleteAllTarget);
+    // Optimistic UI update
+    setSessions(prev => prev.filter(s => s.status !== deleteAllTarget));
+    setDeleteAllTarget(null);
+    await Promise.all(toDelete.map(s =>
+      base44.entities.ChatSession.update(s.id, { status: 'deleted', isActive: false })
+    ));
   };
 
   if (loading) {
