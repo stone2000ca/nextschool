@@ -37,14 +37,21 @@ export default function AdminSubmissions() {
     setActionMap(m => ({ ...m, [school.id]: "approving" }));
     // Fix 1+2: Set status, claimStatus, membershipTier together
     await base44.entities.School.update(school.id, { status: "active", claimStatus: "claimed", membershipTier: "basic" });
-    // Fix 3: Update existing SchoolClaim to verified (non-blocking)
+    // Update associated SchoolClaim to verified (checks both statuses)
+    let approvedClaim = null;
     try {
-      const claims = await base44.entities.SchoolClaim.filter({ schoolId: school.id, status: "pending_review" });
+      const [claimsPending, claimsPendingReview] = await Promise.all([
+        base44.entities.SchoolClaim.filter({ schoolId: school.id, status: "pending" }),
+        base44.entities.SchoolClaim.filter({ schoolId: school.id, status: "pending_review" }),
+      ]);
+      const claims = [...claimsPending, ...claimsPendingReview];
       if (claims.length > 0) {
-        await base44.entities.SchoolClaim.update(claims[0].id, { status: "verified", verifiedAt: new Date().toISOString() });
+        approvedClaim = claims[0];
+        await base44.entities.SchoolClaim.update(approvedClaim.id, { status: "verified", verifiedAt: new Date().toISOString() });
       }
     } catch (e) { /* non-blocking */ }
-    // Fix 4: Use school.userId directly — no User.list() lookup needed
+
+    // Create SchoolAdmin for submitter
     if (school.userId) {
       try {
         await base44.entities.SchoolAdmin.create({
@@ -55,6 +62,23 @@ export default function AdminSubmissions() {
         });
       } catch (_) { /* already exists or non-blocking */ }
     }
+
+    // Send approval email notification (non-blocking)
+    try {
+      if (approvedClaim) {
+        await base44.functions.invoke('sendClaimEmail', {
+          emailType: 'CLAIM_APPROVED',
+          claimData: {
+            claimantName: approvedClaim.claimantName || school.created_by || 'School Administrator',
+            claimantEmail: approvedClaim.claimantEmail || school.created_by,
+          },
+          schoolData: { id: school.id, name: school.name, claimStatus: 'claimed' },
+        });
+      }
+    } catch (e) {
+      console.log('[AdminSubmissions] approval email failed (non-blocking):', e.message);
+    }
+
     setSubmissions(s => s.filter(x => x.id !== school.id));
     setActionMap(m => ({ ...m, [school.id]: "done" }));
   }
