@@ -238,13 +238,19 @@ ${consultantName === 'Jackie'
   ? "JACKIE PERSONA: Warm, empathetic, supportive." 
   : "LIAM PERSONA: Direct, strategic, no-BS."}
 
-Write naturally in conversational prose about why this school fits the family. Cover the student-school alignment, any trade-offs or concerns, and the cost reality. Speak like a consultant would—no headers, labels, or formatting markers. Just natural, helpful conversation. End your response with a brief, clear sentence summarizing whether this school is a strong fit for this family and the primary reason why or why not, based on what they shared in their brief.
+Write naturally in conversational prose about why this school fits the family. Cover the student-school alignment (including how the school programs match the child interests, how the learning environment suits their personality and learning style, and whether the school can support any academic struggles or learning differences), any trade-offs or concerns, and the cost reality. Speak like a consultant would—no headers, labels, or formatting markers. Just natural, helpful conversation. End your response with a brief, clear sentence summarizing whether this school is a strong fit for this family and the primary reason why or why not, based on what they shared in their brief.
 ${area4Instructions}`;
 
     const deepDiveUserPrompt = `FAMILY BRIEF:
 - Child: ${childDisplayName}
 - Budget: ${resolvedMaxTuition ? '$' + resolvedMaxTuition : 'Not specified'}
 - Priorities: ${resolvedPriorities?.join(', ') || 'Not specified'}
+- Interests: ${conversationFamilyProfile?.interests?.join(', ') || 'Not specified'}
+- Academic Strengths: ${conversationFamilyProfile?.academicStrengths?.join(', ') || 'Not specified'}
+- Academic Struggles: ${conversationFamilyProfile?.academicStruggles?.join(', ') || 'Not specified'}
+- Learning Style: ${conversationFamilyProfile?.learningStyle || 'Not specified'}
+- Personality Traits: ${conversationFamilyProfile?.personalityTraits?.join(', ') || 'Not specified'}
+- Learning Differences: ${conversationFamilyProfile?.learningDifferences?.join(', ') || 'None noted'}
 
 SCHOOL DATA:
 ${JSON.stringify(compressedSchoolData, null, 2)}
@@ -279,7 +285,7 @@ Generate the DEEPDIVE card for this family-school match.`;
     try {
       const analysisResponse = await callOpenRouter({
         systemPrompt: `You are a school analysis engine. Given a consultant's analysis of a school for a specific family, extract structured data. Return ONLY valid JSON matching the schema.`,
-        userPrompt: `Consultant's analysis: ${aiMessage}\n\nSchool data: ${JSON.stringify(compressedSchoolData)}\n\nFamily profile: child=${childDisplayName}, budget=${resolvedMaxTuition}, priorities=${resolvedPriorities?.join(', ') || 'None'}\n\nIMPORTANT: Every school has trade-offs. You MUST return at least 3 items in tradeOffs[]. For each trade-off, include the dimension name, and either a strength (what this school does well for this family) or a concern (what might not fit), or both. Consider dimensions like: learning support, class size, arts/athletics programs, commute distance, budget fit, academic approach, campus facilities, community culture. If school data is missing for a dimension the family cares about, that itself is a trade-off with concern noting the data gap. Each dimension should appear only once in tradeOffs[]. Do not repeat dimensions. If a dimension has both a strength and a concern, include both in the same trade-off object.\n\nExtract: fitLabel (strong_match/good_match/worth_exploring), fitScore (0-100), tradeOffs (array with dimension, strength, concern, dataSource), dataGaps (array of field names with missing data relevant to this family), visitQuestions (array of 3-5 personalized questions for school visit), financialSummary (tuition, aidAvailable boolean, estimatedNetCost, budgetFit).`,
+        userPrompt: `Consultant's analysis: ${aiMessage}\n\nSchool data: ${JSON.stringify(compressedSchoolData)}\n\nFamily profile: child=${childDisplayName}, budget=${resolvedMaxTuition}, priorities=${resolvedPriorities?.join(', ') || 'None'}, interests=${conversationFamilyProfile?.interests?.join(', ') || 'None'}, academicStrengths=${conversationFamilyProfile?.academicStrengths?.join(', ') || 'None'}, learningStyle=${conversationFamilyProfile?.learningStyle || 'None'}, personalityTraits=${conversationFamilyProfile?.personalityTraits?.join(', ') || 'None'}\n\nIMPORTANT: Every school has trade-offs. You MUST return at least 3 items in tradeOffs[]. For each trade-off, include the dimension name, and either a strength (what this school does well for this family) or a concern (what might not fit), or both. Consider dimensions like: learning support, class size, arts/athletics programs, commute distance, budget fit, academic approach, campus facilities, community culture. If school data is missing for a dimension the family cares about, that itself is a trade-off with concern noting the data gap. Each dimension should appear only once in tradeOffs[]. Do not repeat dimensions. If a dimension has both a strength and a concern, include both in the same trade-off object.\n\nExtract: fitLabel (strong_match/good_match/worth_exploring), fitScore (0-100), tradeOffs (array with dimension, strength, concern, dataSource), dataGaps (array of field names with missing data relevant to this family), visitQuestions (array of 3-5 personalized questions for school visit), financialSummary (tuition, aidAvailable boolean, estimatedNetCost, budgetFit).`,
         maxTokens: 800,
         temperature: 0.3,
         responseSchema: {
