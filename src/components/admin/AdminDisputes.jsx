@@ -120,6 +120,16 @@ export default function AdminDisputes() {
         </Button>
       </div>
 
+      {transferError && (
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <span>{transferError}</span>
+          <button onClick={() => setTransferError(null)} className="ml-auto text-red-400 hover:text-red-600">
+            <XCircle className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {enriched.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-12 text-center">
           <Clock className="h-10 w-10 text-slate-300 mx-auto mb-3" />
