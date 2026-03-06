@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
-import { Building2, BarChart3, Mail, CreditCard, Upload, Crown, Sparkles, Image, ImagePlus, MessageSquareQuote, User, CalendarDays, FileText, FlaskConical, Loader2, ArrowLeft } from 'lucide-react';
+import { Building2, BarChart3, Mail, CreditCard, Upload, Crown, Sparkles, Image, ImagePlus, MessageSquareQuote, User, CalendarDays, FileText, FlaskConical, Loader2, ArrowLeft, Clock, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import ProfileEditor from '@/components/school-admin/ProfileEditor';
@@ -29,6 +29,8 @@ export default function SchoolAdmin() {
   const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichError, setEnrichError] = useState(null);
+  const [pendingClaim, setPendingClaim] = useState(null);
+  const [pendingSchool, setPendingSchool] = useState(null);
 
   useEffect(() => {
     loadSchoolData();
@@ -79,6 +81,21 @@ export default function SchoolAdmin() {
             }
           }
         }
+      }
+
+      // If no school found, check for pending/rejected SchoolClaim records
+      if (!resolvedSchool) {
+        try {
+          const claims = await base44.entities.SchoolClaim.filter({ userId: userData.id });
+          if (claims && claims.length > 0) {
+            const latest = claims.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
+            setPendingClaim(latest);
+            if (latest.schoolId) {
+              const schoolData = await base44.entities.School.filter({ id: latest.schoolId });
+              if (schoolData && schoolData.length > 0) setPendingSchool(schoolData[0]);
+            }
+          }
+        } catch (e) { /* non-blocking */ }
       }
 
       // Load new tour request count for badge
@@ -168,6 +185,37 @@ export default function SchoolAdmin() {
   }
 
   if (!school) {
+    if (pendingClaim && (pendingClaim.status === 'pending' || pendingClaim.status === 'pending_review')) {
+      return (
+        <div className="h-screen flex items-center justify-center bg-slate-50">
+          <div className="text-center max-w-md rounded-xl border border-blue-200 bg-blue-50 p-12">
+            <Clock className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-blue-900 mb-2">Submission Under Review</h2>
+            <p className="text-blue-700 text-sm">
+              Your submission for <span className="font-semibold">{pendingSchool?.name || 'your school'}</span> was received on{' '}
+              {new Date(pendingClaim.created_date).toLocaleDateString('en-CA')}.
+            </p>
+            <p className="text-blue-600 text-sm mt-2">We're reviewing your submission. You'll get access once approved.</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (pendingClaim && pendingClaim.status === 'rejected') {
+      return (
+        <div className="h-screen flex items-center justify-center bg-slate-50">
+          <div className="text-center max-w-md rounded-xl border border-red-200 bg-red-50 p-12">
+            <XCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-red-900 mb-2">Submission Not Approved</h2>
+            <p className="text-red-700 text-sm">
+              Your submission for <span className="font-semibold">{pendingSchool?.name || 'your school'}</span> was not approved.
+            </p>
+            <p className="text-red-600 text-sm mt-2">Please contact support for details.</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center max-w-md">
