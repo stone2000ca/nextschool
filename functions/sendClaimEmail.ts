@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
         console.error('Failed to log email:', logErr);
       }
 
-      return Response.json({ success: true });
+      return Response.json({ success: true, ...(emailType === 'VERIFICATION_CODE' && { expiresInMinutes: 15 }) });
     } catch (emailErr) {
       // WC4: Log email as failed
       try {
