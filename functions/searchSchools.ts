@@ -427,6 +427,35 @@ async function performSearch(req) {
       }
     }
     
+    // E28-S1: Interest-to-specialization alignment
+    if (familyProfile?.interests?.length > 0 && school.specializations?.length > 0) {
+      const interestLower = familyProfile.interests.map(i => i.toLowerCase());
+      const specLower = school.specializations.map(s => s.toLowerCase());
+      const interestMatches = interestLower.filter(interest =>
+        specLower.some(spec => spec.includes(interest) || interest.includes(spec))
+      ).length;
+      if (interestMatches > 0) score += interestMatches;
+    }
+
+    // E28-S1: Arts/sports interest alignment
+    if (familyProfile?.interests?.length > 0) {
+      const interestLower = familyProfile.interests.map(i => i.toLowerCase());
+      const schoolArts = (school.artsPrograms || []).map(a => a.toLowerCase());
+      const schoolSports = (school.sportsPrograms || []).map(s => s.toLowerCase());
+      const artMatches = interestLower.filter(i => schoolArts.some(a => a.includes(i) || i.includes(a))).length;
+      const sportMatches = interestLower.filter(i => schoolSports.some(s => s.includes(i) || i.includes(s))).length;
+      score += Math.min(artMatches + sportMatches, 3);
+    }
+
+    // E28-S1: Learning support scoring
+    if (familyProfile?.academicStruggles?.length > 0 || familyProfile?.learningDifferences?.length > 0) {
+      if (school.avgClassSize && school.avgClassSize <= 18) score += 1;
+      if (school.studentTeacherRatio && parseFloat(school.studentTeacherRatio) <= 10) score += 1;
+      const supportKeywords = ['learning support', 'special needs', 'differentiated', 'individualized', 'ld support', 'resource'];
+      const specLower = (school.specializations || []).map(s => s.toLowerCase());
+      if (supportKeywords.some(kw => specLower.some(s => s.includes(kw)))) score += 2;
+    }
+    
     return { school, score };
   });
 
@@ -506,6 +535,9 @@ async function performSearch(req) {
     schoolType: s.schoolType,
     headerPhotoUrl: s.headerPhotoUrl,
     logoUrl: s.logoUrl,
+    artsPrograms: s.artsPrograms?.slice(0, 5) || [],
+    sportsPrograms: s.sportsPrograms?.slice(0, 5) || [],
+    avgClassSize: s.avgClassSize || null,
     relaxedMatch: isRelaxedPass
   }));
 
