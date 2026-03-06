@@ -115,16 +115,39 @@ Deno.serve(async (req) => {
     }
 
     // Mode 2: batch backfill (admin only)
-    if (body.backfill === true) {
+    if (backfill === true) {
       if (user.role !== 'admin') {
         return Response.json({ error: 'Forbidden: Admin only' }, { status: 403 });
       }
       const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+      const errors = [];
+
+      // --- Paginated single-batch mode (caller controls pagination) ---
+      if (batchLimit != null) {
+        const startSkip = batchSkip || 0;
+        const batch = await base44.asServiceRole.entities.School.list(null, batchLimit, startSkip);
+        let processed = 0;
+
+        for (const school of batch || []) {
+          try {
+            const score = calculateScore(school);
+            await base44.asServiceRole.entities.School.update(school.id, { completenessScore: score });
+            processed++;
+          } catch (err) {
+            errors.push({ schoolId: school.id, error: err.message });
+          }
+          await delay(150);
+        }
+
+        const hasMore = (batch || []).length === batchLimit;
+        return Response.json({ processed, skipped: startSkip, hasMore, errors });
+      }
+
+      // --- Full backfill mode (original behavior: process all schools) ---
       const limit = 20;
       let skip = 0;
       let totalProcessed = 0;
       let totalUpdated = 0;
-      const errors = [];
 
       while (true) {
         const batch = await base44.asServiceRole.entities.School.list(null, limit, skip);
