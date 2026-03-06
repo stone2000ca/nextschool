@@ -1,7 +1,7 @@
 // Function: calculateCompletenessScore
 // Purpose: Calculate and persist a weighted profile completeness score (0-100) for one or more schools
 // Entities: School
-// Last Modified: 2026-03-05
+// Last Modified: 2026-03-06
 // Dependencies: none
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
