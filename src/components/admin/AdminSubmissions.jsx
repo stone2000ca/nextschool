@@ -86,6 +86,17 @@ export default function AdminSubmissions() {
   async function reject(school) {
     setActionMap(m => ({ ...m, [school.id]: "rejecting" }));
     await base44.entities.School.update(school.id, { status: "archived" });
+    // Also reject associated SchoolClaim (non-blocking)
+    try {
+      const [claimsPending, claimsPendingReview] = await Promise.all([
+        base44.entities.SchoolClaim.filter({ schoolId: school.id, status: "pending" }),
+        base44.entities.SchoolClaim.filter({ schoolId: school.id, status: "pending_review" }),
+      ]);
+      const claims = [...claimsPending, ...claimsPendingReview];
+      if (claims.length > 0) {
+        await base44.entities.SchoolClaim.update(claims[0].id, { status: "rejected" });
+      }
+    } catch (e) { /* non-blocking */ }
     setSubmissions(s => s.filter(x => x.id !== school.id));
     setActionMap(m => ({ ...m, [school.id]: "done" }));
   }
