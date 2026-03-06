@@ -269,46 +269,15 @@ export default function ClaimSchool() {
     setIsVerifying(true);
 
     try {
-      const claim = await base44.entities.SchoolClaim.get(claimId);
+      const result = await base44.functions.invoke('verifyClaimCode', { claimId, code: verificationCode });
+      const { success, error } = result.data;
 
-      if (verificationCode !== claim.verificationCode) {
-        setCodeError('Invalid code. Please try again.');
-        setIsVerifying(false);
+      if (!success) {
+        setCodeError(error || 'Invalid code. Please try again.');
         return;
       }
 
-      // Code is correct - verify the claim
-      const now = new Date();
-      const expiresAt = new Date(claim.codeExpiresAt);
-
-      if (now > expiresAt) {
-        setCodeError('Code has expired. Please start again.');
-        setIsVerifying(false);
-        return;
-      }
-
-      // Update claim to verified
-      await base44.entities.SchoolClaim.update(claimId, {
-        status: 'verified',
-        verifiedAt: new Date().toISOString()
-      });
-
-      // Create SchoolAdmin record
-      await base44.entities.SchoolAdmin.create({
-        schoolId,
-        userId: user?.id,
-        claimId,
-        role: 'owner',
-        isActive: true
-      });
-
-      // Update School claim status and membership tier
-      await base44.entities.School.update(schoolId, {
-        claimStatus: 'claimed',
-        membershipTier: 'basic'
-      });
-
-      // Send approval email
+      // Send approval email (best-effort)
       try {
         await base44.functions.invoke('sendClaimEmail', {
           emailType: 'CLAIM_APPROVED',
@@ -325,7 +294,6 @@ export default function ClaimSchool() {
         console.error('Approval email failed:', emailErr);
       }
 
-      // Go to success step
       setStep(4);
     } catch (error) {
       console.error('Verification failed:', error);
