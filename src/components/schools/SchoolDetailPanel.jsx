@@ -435,7 +435,7 @@ export default function SchoolDetailPanel({
 
   if (!school) return null;
 
-  const isPremium = school.membershipTier === 'premium';
+  const isPremium = school.schoolTier === 'pro';
   const matchScore = calculateMatchScore(school, familyProfile);
   const matchReasons = getMatchReasons(school, familyProfile);
 
