@@ -151,6 +151,16 @@ export default function SchoolSearchProfile({
 
       setIsEditMode(false);
       if (onArchive) onArchive(); // Trigger refresh
+
+      // E28-S5: Regenerate aiNarrative after profile edit (fire-and-forget)
+      (async () => {
+        try {
+          await base44.functions.invoke('generateProfileNarrative', { sessionId: session.id });
+          console.log('[E28-S5] aiNarrative regenerated after profile edit');
+        } catch (narrativeErr) {
+          console.warn('[E28-S5] Failed to regenerate narrative:', narrativeErr.message);
+        }
+      })();
     } catch (err) {
       console.error('Failed to save edits:', err);
     } finally {
