@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart, ExternalLink, CheckCircle, Check, X, CalendarDays, Mail, ClipboardList } from "lucide-react";
 import TourRequestModal from './TourRequestModal';
+import { base44 } from '@/api/base44Client';
 
 function gradeLabel(grade) {
   if (grade === null || grade === undefined) return '?';
@@ -432,6 +433,25 @@ export default function SchoolDetailPanel({
   actionPlan
 }) {
   const [showTourModal, setShowTourModal] = useState(false);
+  const [schoolEvents, setSchoolEvents] = useState([]);
+
+  useEffect(() => {
+    if (!school || !school.id) {
+      setSchoolEvents([]);
+      return;
+    }
+    let isMounted = true;
+    base44.entities.SchoolEvent.filter({ schoolId: school.id })
+      .then((data) => {
+        if (!isMounted) return;
+        setSchoolEvents(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setSchoolEvents([]);
+      });
+    return () => { isMounted = false; };
+  }, [school?.id]);
 
   if (!school) return null;
 
@@ -487,7 +507,7 @@ export default function SchoolDetailPanel({
         <TourRequestModal
           school={school}
           onClose={() => setShowTourModal(false)}
-          upcomingEvents={[]}
+          upcomingEvents={schoolEvents}
         />
       )}
     </div>
