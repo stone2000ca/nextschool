@@ -34,6 +34,20 @@ Deno.serve(async (req) => {
     // Fetch all existing memory records for this user
     const existingRecords = await base44.entities.UserMemory.filter({ userId: user.id });
 
+    // AC6: Backward compat — normalize legacy records missing category
+    for (const mem of existingRecords) {
+      if (!mem.category) {
+        try {
+          await base44.entities.UserMemory.update(mem.id, {
+            category: 'context',
+            confidence: 0.5,
+            source: 'legacy',
+            lastAccessed: mem.lastAccessed || new Date().toISOString()
+          });
+        } catch(e) {}
+      }
+    }
+
     // Enforce max cap — if at limit, skip creating new ones
     const currentCount = existingRecords.length;
     let created = 0;
