@@ -162,7 +162,7 @@ async function callOpenRouter(options) {
 // INLINED: resolveTransition
 // =============================================================================
 function resolveTransition(params) {
-  const { currentState, intentSignal, profileData, turnCount, briefEditCount, selectedSchoolId, previousSchoolId, userMessage, tier1CompletedTurn: storedTier1CompletedTurn } = params;
+  const { currentState, intentSignal, profileData, turnCount, briefEditCount, selectedSchoolId, previousSchoolId, userMessage, tier1CompletedTurn: storedTier1CompletedTurn, context } = params;
 
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
@@ -194,6 +194,20 @@ function resolveTransition(params) {
   // BUG-FLOW-001 HARD GUARD: RESULTS and DEEPDIVE can NEVER regress to BRIEF or DISCOVERY.
   const inResultsOrDeepDive = currentState === STATES.RESULTS || currentState === STATES.DEEP_DIVE;
   if (inResultsOrDeepDive) {
+    // E13a-FIX: Ongoing debrief detection
+    const hasActiveDebrief = context?.debriefSchoolId &&
+      (context?.debriefQuestionQueue?.length > 0 ||
+       (context?.debriefQuestionsAsked?.length > 0 &&
+        context?.debriefQuestionsAsked?.length < 3));
+    if (hasActiveDebrief) {
+      return {
+        nextState: STATES.DEEP_DIVE,
+        sufficiency,
+        flags: { ...flags, DEBRIEF_MODE: true },
+        transitionReason: 'debrief_ongoing',
+        deepDiveMode: 'debrief'
+      };
+    }
     // E13a: Visit debrief detection — if user mentions visiting/touring a school
     const DEBRIEF_RE = /\b(visited|toured|went to|saw the campus|open house|got back from|checked out|walked through)\b/i;
     if (DEBRIEF_RE.test(userMessage || '') || intentSignal === 'visit_debrief') {
@@ -998,7 +1012,8 @@ Deno.serve(async (req) => {
         selectedSchoolId,
         previousSchoolId,
         userMessage: processMessage,
-        tier1CompletedTurn: context.tier1CompletedTurn || null
+        tier1CompletedTurn: context.tier1CompletedTurn || null,
+        context
       });
       
       currentState = resolveResult.nextState;
