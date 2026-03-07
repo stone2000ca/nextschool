@@ -489,8 +489,12 @@ export default function Consultant() {
         setUser(userData);
         
         // Check daily token replenishment
-        const plan = userData.subscriptionPlan || 'free';
+        const plan = userData.subscriptionPlan || userData.tier || 'free';
         const limits = getPlanLimits(plan);
+        if (plan !== PLAN_NAMES.FREE) {
+          setTokenBalance(999999);
+          setIsPremium(true);
+        } else {
         const today = new Date().toISOString().split('T')[0];
         const renewalDate = userData.renewalDate ? userData.renewalDate.split('T')[0] : null;
         
@@ -510,7 +514,8 @@ export default function Consultant() {
         }
         
         setTokenBalance(newBalance);
-        setIsPremium(plan !== PLAN_NAMES.FREE);
+        setIsPremium(false);
+        }
         await loadConversations(userData.id);
         await loadShortlist(userData);
       } else {
