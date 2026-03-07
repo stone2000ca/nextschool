@@ -485,7 +485,17 @@ async function handleVisitDebrief(base44, selectedSchoolId, processMessage, conv
     let debriefQuestionQueue = context.debriefQuestionQueue || [];
     let debriefQuestionsAsked = context.debriefQuestionsAsked || [];
     
-    if (isNewDebrief || debriefQuestionQueue.length === 0) {
+    const alreadyComplete = !isNewDebrief && debriefQuestionQueue.length === 0 && debriefQuestionsAsked.length >= 3;
+    if (alreadyComplete) {
+      console.log('[E13a] Debrief already complete for this school, producing wrap-up');
+      return {
+        message: `Thank you for sharing your thoughts on ${school.name}. Your visit feedback has been noted and will help refine your school recommendations. Is there anything else you'd like to explore?`,
+        state: "DEEP_DIVE",
+        updatedContext: { debriefQuestionQueue: [], debriefQuestionsAsked, debriefSchoolId: selectedSchoolId }
+      };
+    }
+    
+    if (isNewDebrief || (debriefQuestionQueue.length === 0 && debriefQuestionsAsked.length === 0)) {
       console.log('[E13a] Generating debrief question queue');
       debriefQuestionQueue = [];
       debriefQuestionsAsked = [];
@@ -610,7 +620,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
 
     let reevalResult = null;
     // E13a-WC3: Fit re-evaluation after debrief complete (non-blocking)
-    if (isDebriefComplete && context.userId && context.conversationId) {
+    if (isDebriefComplete && context.userId) {
       try {
         console.log('[E13a-WC3] Debrief complete — initiating fit re-evaluation');
         
