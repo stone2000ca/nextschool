@@ -795,7 +795,7 @@ Based on what the family shared during their visit, provide a fit re-evaluation.
       }
     };
   } catch (e) {
-    console.error('[E13a] Debrief handling failed:', e.message);
+    console.error('[E13a-S94] Debrief handling failed:', e.message);
     return null;
   }
 }
