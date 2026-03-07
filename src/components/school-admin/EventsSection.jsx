@@ -365,7 +365,7 @@ function PremiumEventsManagement({ school }) {
 // ─── DEFAULT EXPORT ───────────────────────────────────────────────────────────
 
 export default function EventsSection({ school }) {
-  const isPremium = school.subscriptionTier === 'premium';
+  const isPremium = school.schoolTier === 'pro';
   return isPremium
     ? <PremiumEventsManagement school={school} />
     : <FreeTierTeaser school={school} />;
