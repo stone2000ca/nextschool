@@ -610,7 +610,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
 
     let reevalResult = null;
     // E13a-WC3: Fit re-evaluation after debrief complete (non-blocking)
-    if (isDebriefComplete && deepDiveAnalysis && context.userId && context.conversationId) {
+    if (isDebriefComplete && context.userId && context.conversationId) {
       try {
         console.log('[E13a-WC3] Debrief complete — initiating fit re-evaluation');
         
@@ -621,61 +621,55 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
           artifactType: 'visit_debrief'
         });
         const debriefArtifact = debriefArtifacts?.[0];
-        // Hoist reevalResult so it's in scope for return
+        // E29-006: Debrief VISITED status sync (awaited)
+        const journey = context.journeyId
+          ? (await base44.entities.FamilyJourney.filter({ id: context.journeyId }))?.[0]
+          : (await base44.entities.FamilyJourney.filter({ userId: context.userId }))?.[0];
+
+        if (journey) {
+          const nowIso = new Date().toISOString();
+          const currentPhase = journey.currentPhase;
+          const schoolJourneys = Array.isArray(journey.schoolJourneys) ? [...journey.schoolJourneys] : [];
+          let item = schoolJourneys.find((sj) => sj.schoolId === selectedSchoolId);
+
+          if (item) {
+            item.status = 'VISITED';
+            item.visitedAt = nowIso;
+            item.debriefCompletedAt = nowIso;
+            if (Array.isArray(debriefArtifacts) && debriefArtifacts[0]?.id) {
+              item.debriefArtifactId = debriefArtifacts[0].id;
+            }
+          } else {
+            schoolJourneys.push({
+              schoolId: selectedSchoolId,
+              schoolName: schoolName,
+              status: 'VISITED',
+              addedVia: 'DEBRIEF',
+              visitedAt: nowIso,
+              debriefCompletedAt: nowIso,
+              debriefArtifactId: Array.isArray(debriefArtifacts) && debriefArtifacts[0]?.id ? debriefArtifacts[0].id : undefined
+            });
+          }
+
+          // Phase auto-advance: if all TOURING items are now VISITED and phase is EXPERIENCE -> DECIDE
+          let nextPhase = null;
+          const hasTouring = schoolJourneys.some((sj) => sj.status === 'TOURING');
+          if (!hasTouring && currentPhase === 'EXPERIENCE') {
+            nextPhase = 'DECIDE';
+          }
+
+          const updatePayload = { schoolJourneys };
+          if (nextPhase) updatePayload.currentPhase = nextPhase;
+
+          await base44.entities.FamilyJourney.update(journey.id, updatePayload);
+          console.log('[E29-006] FamilyJourney debrief sync completed for school', selectedSchoolId);
+        }
 
         
         if (!debriefArtifact?.content?.qaPairs || debriefArtifact.content.qaPairs.length === 0) {
           console.log('[E13a-WC3] No Q&A pairs found, skipping re-evaluation');
-        } else {
-          // E29-006: sync debrief to FamilyJourney (fire-and-forget)
-          (async () => {
-           try {
-              const journey = context.journeyId
-                ? (await base44.entities.FamilyJourney.filter({ id: context.journeyId }))?.[0]
-                : (await base44.entities.FamilyJourney.filter({ userId: context.userId }))?.[0];
-
-              if (!journey) return;
-
-              const nowIso = new Date().toISOString();
-              const currentPhase = journey.currentPhase;
-              const schoolJourneys = Array.isArray(journey.schoolJourneys) ? [...journey.schoolJourneys] : [];
-              let item = schoolJourneys.find((sj) => sj.schoolId === selectedSchoolId);
-
-              if (item) {
-                item.status = 'VISITED';
-                item.visitedAt = nowIso;
-                item.debriefCompletedAt = nowIso;
-                if (Array.isArray(debriefArtifacts) && debriefArtifacts[0]?.id) {
-                  item.debriefArtifactId = debriefArtifacts[0].id;
-                }
-              } else {
-                schoolJourneys.push({
-                  schoolId: selectedSchoolId,
-                  schoolName: schoolName,
-                  status: 'VISITED',
-                  addedVia: 'DEBRIEF',
-                  visitedAt: nowIso,
-                  debriefCompletedAt: nowIso,
-                  debriefArtifactId: Array.isArray(debriefArtifacts) && debriefArtifacts[0]?.id ? debriefArtifacts[0].id : undefined
-                });
-              }
-
-              // Phase auto-advance: if all TOURING items are now VISITED and phase is EXPERIENCE -> DECIDE
-              let nextPhase = null;
-              const hasTouring = schoolJourneys.some((sj) => sj.status === 'TOURING');
-              if (!hasTouring && currentPhase === 'EXPERIENCE') {
-                nextPhase = 'DECIDE';
-              }
-
-              const updatePayload = { schoolJourneys };
-              if (nextPhase) updatePayload.currentPhase = nextPhase;
-
-              await base44.entities.FamilyJourney.update(journey.id, updatePayload);
-              console.log('[E29-006] FamilyJourney debrief sync completed for school', selectedSchoolId);
-            } catch (e) {
-              console.error('[E29-006] FamilyJourney debrief sync failed:', e?.message || e);
-            }
-          })();
+        } else if (deepDiveAnalysis) {
+          // E29-006: sync debrief to FamilyJourney — moved earlier (awaited)
 
            const originalAnalysis = deepDiveAnalysis.content || {};
           const qaPairs = debriefArtifact.content.qaPairs;
@@ -762,14 +756,12 @@ Based on what the family shared during their visit, provide a fit re-evaluation.
                 shareToken: null
               });
 
-              // E29-006: patch FamilyJourney with fit re-evaluation details (fire-and-forget)
-              (async () => {
-                try {
-                  const journey = context.journeyId
-                    ? (await base44.entities.FamilyJourney.filter({ id: context.journeyId }))?.[0]
-                    : (await base44.entities.FamilyJourney.filter({ userId: context.userId }))?.[0];
-                  if (!journey) return;
-
+              // E29-006: patch FamilyJourney with fit re-evaluation details (awaited)
+              try {
+                const journey = context.journeyId
+                  ? (await base44.entities.FamilyJourney.filter({ id: context.journeyId }))?.[0]
+                  : (await base44.entities.FamilyJourney.filter({ userId: context.userId }))?.[0];
+                if (journey) {
                   const schoolJourneys = Array.isArray(journey.schoolJourneys) ? [...journey.schoolJourneys] : [];
                   const item = schoolJourneys.find((sj) => sj.schoolId === selectedSchoolId);
                   if (item) {
@@ -779,13 +771,12 @@ Based on what the family shared during their visit, provide a fit re-evaluation.
                     item.revisedStrengths = reevalResult.revisedStrengths;
                     item.revisedConcerns = reevalResult.revisedConcerns;
                   }
-
                   await base44.entities.FamilyJourney.update(journey.id, { schoolJourneys });
                   console.log('[E29-006] FamilyJourney re-eval sync completed for school', selectedSchoolId);
-                } catch (e) {
-                  console.error('[E29-006] FamilyJourney re-eval sync failed:', e?.message || e);
                 }
-              })();
+              } catch (e) {
+                console.error('[E29-006] FamilyJourney re-eval sync failed:', e?.message || e);
+              }
 
               console.log('[E13a-WC3] Fit re-evaluation artifact created');
             } catch (createError) {
@@ -1180,6 +1171,7 @@ Deno.serve(async (req) => {
                 isStale: false,
                 isArchived: false
               });
+              context.journeyId = journey.id;
               await base44.asServiceRole.entities.ChatHistory.update(conversationId, { journeyId: journey.id });
               console.log('[E29] FamilyJourney created:', journey.id);
             } catch (e) {
