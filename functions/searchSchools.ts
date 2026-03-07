@@ -538,6 +538,8 @@ async function performSearch(req) {
     artsPrograms: s.artsPrograms?.slice(0, 5) || [],
     sportsPrograms: s.sportsPrograms?.slice(0, 5) || [],
     avgClassSize: s.avgClassSize || null,
+    schoolTier: s.schoolTier || null,
+    claimStatus: s.claimStatus || null,
     relaxedMatch: isRelaxedPass
   }));
 
