@@ -707,19 +707,33 @@ Deno.serve(async (req) => {
             ? 'You are Jackie, a warm and empathetic senior education consultant.'
             : 'You are Liam, a direct and analytical senior education strategist.';
 
-          const schoolsLine = journeyContext.schoolsSummary?.length > 0
-            ? `Schools being considered: ${journeyContext.schoolsSummary.map(s => `${s.schoolName} (${s.status})`).join(', ')}.`
+          const activeSchools = (journeyContext.schoolsSummary || []).filter(s => s.status !== 'removed');
+          const schoolsLine = activeSchools.length > 0
+            ? `Schools being considered: ${activeSchools.map(s => `${s.schoolName} (${s.status})`).join(', ')}.`
             : 'No schools shortlisted yet.';
+
+          // E29-011: Determine if nextAction references a now-dropped school
+          const droppedSchoolNames = (journeyContext.schoolsSummary || [])
+            .filter(s => s.status === 'removed')
+            .map(s => s.schoolName.toLowerCase());
+          const nextAction = journeyContext.nextAction || null;
+          const nextActionReferencesDropped = nextAction && droppedSchoolNames.some(name => nextAction.toLowerCase().includes(name));
+
+          let nextActionLine = '';
+          if (nextAction && !nextActionReferencesDropped) {
+            nextActionLine = `\n- Previously suggested next step: "${nextAction}" — if they haven't done this yet, mention it gently (e.g. "Last time we suggested you ${nextAction.toLowerCase()} — no rush if you haven't gotten to it yet."). If it seems completed based on school statuses, skip it.`;
+          } else if (nextActionReferencesDropped) {
+            nextActionLine = `\n- The previously suggested action referenced a school the family has since removed. Do NOT mention it. Instead, suggest a fresh next step based on their current shortlist.`;
+          }
 
           const welcomeBackPrompt = `${consultantPersona}
 
 The family is returning to continue their school search. Here is their journey context:
 - Current phase: ${journeyContext.currentPhase || 'MATCH'}
 - ${schoolsLine}
-- Next suggested action: ${journeyContext.nextAction || 'Continue exploring matches'}
-- Last session summary: ${journeyContext.lastSessionSummary || 'No summary available'}
+- Last session summary: ${journeyContext.lastSessionSummary || 'No summary available'}${nextActionLine}
 
-Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they left off, reference specific schools or phase if relevant, and invite them to continue. Be concise and personal. Do NOT ask multiple questions — end with one clear invitation.`;
+Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they left off, reference specific schools or the suggested next step if relevant, and invite them to continue. Be concise and personal. Do NOT ask multiple questions — end with one clear invitation.`;
 
           const greeting = await base44.integrations.Core.InvokeLLM({ prompt: welcomeBackPrompt });
           const greetingText = typeof greeting === 'string' ? greeting : (greeting?.response || greeting?.text || 'Welcome back! Ready to pick up where we left off?');
