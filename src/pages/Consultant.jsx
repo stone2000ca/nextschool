@@ -423,6 +423,38 @@ export default function Consultant() {
       handleRestoreGuestSession();
     }
 
+    // E29-007: Detect active journey on session start
+    ;(async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        if (!currentUser?.id) return;
+
+        const journeys = await base44.entities.FamilyJourney.filter({ userId: currentUser.id, isArchived: false });
+        if (journeys.length === 0) return;
+
+        // Most recent first
+        const journey = journeys.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
+
+        const schoolJourneys = await base44.entities.SchoolJourney.filter({ familyJourneyId: journey.id });
+
+        setActiveJourney({
+          journeyId: journey.id,
+          currentPhase: journey.currentPhase,
+          nextAction: journey.nextAction,
+          lastSessionSummary: journey.lastSessionSummary,
+          consultantId: journey.consultantId,
+          schoolsSummary: schoolJourneys.map(sj => ({
+            schoolId: sj.schoolId,
+            schoolName: sj.schoolName,
+            status: sj.status,
+          })),
+        });
+        console.log('[E29-007] Active journey detected:', journey.id);
+      } catch (e) {
+        console.error('[E29-007] Journey detection failed:', e.message);
+      }
+    })();
+
     // E29-012: Hydrate shortlistData from SchoolJourney entity on auth load
     ;(async () => {
       try {
