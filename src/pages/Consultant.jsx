@@ -927,6 +927,7 @@ export default function Consultant() {
 
       // E29-004: Sync shortlist to FamilyJourney
       ;(async () => {
+        console.log('[E29-004] sync starting, user:', user?.id, 'schoolId:', schoolId, 'isRemoving:', isRemoving);
         try {
           if (!user?.id) return;
 
