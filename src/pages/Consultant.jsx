@@ -1028,6 +1028,20 @@ export default function Consultant() {
               addedAt: new Date().toISOString(),
             });
           }
+
+          // E29-015: Phase auto-advancement MATCH → EVALUATE on first shortlist add
+          if (!isRemoving && familyJourney.currentPhase === 'MATCH') {
+            try {
+              const currentHistory = Array.isArray(familyJourney.phaseHistory) ? familyJourney.phaseHistory : [];
+              await base44.entities.FamilyJourney.update(familyJourney.id, {
+                currentPhase: 'EVALUATE',
+                phaseHistory: [...currentHistory, { phase: 'EVALUATE', enteredAt: new Date().toISOString() }],
+              });
+              console.log('[E29-015] FamilyJourney advanced MATCH → EVALUATE');
+            } catch (phaseErr) {
+              console.error('[E29-015] Phase advance MATCH→EVALUATE failed:', phaseErr?.message);
+            }
+          }
         } catch (e) {
           console.error('[E29-004] SchoolJourney sync failed:', e.message, e);
         }

@@ -659,6 +659,23 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
             });
           }
           console.log('[E29-006] SchoolJourney marked visited for', selectedSchoolId);
+
+          // E29-015: Phase auto-advancement → DECIDE if all non-removed schools are now visited
+          try {
+            const allSchoolJourneys = await base44.asServiceRole.entities.SchoolJourney.filter({ familyJourneyId: familyJourney.id });
+            const activeJourneys = allSchoolJourneys.filter(sj => sj.status !== 'removed');
+            const allVisited = activeJourneys.length > 0 && activeJourneys.every(sj => sj.status === 'visited');
+            if (allVisited && familyJourney.currentPhase !== 'DECIDE') {
+              const currentHistory = Array.isArray(familyJourney.phaseHistory) ? familyJourney.phaseHistory : [];
+              await base44.asServiceRole.entities.FamilyJourney.update(familyJourney.id, {
+                currentPhase: 'DECIDE',
+                phaseHistory: [...currentHistory, { phase: 'DECIDE', enteredAt: new Date().toISOString() }],
+              });
+              console.log('[E29-015] FamilyJourney advanced to DECIDE — all schools visited');
+            }
+          } catch (phaseErr) {
+            console.error('[E29-015] Phase advance to DECIDE failed:', phaseErr?.message);
+          }
         } catch (e) {
           console.error('[E29-006] SchoolJourney visited sync failed:', e?.message || e);
         }

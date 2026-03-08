@@ -127,6 +127,20 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
           });
         }
         console.log('[E29-005] SchoolJourney tour sync completed for', school.name);
+
+        // E29-015: Phase auto-advancement EVALUATE → EXPERIENCE on tour request
+        if (familyJourney.currentPhase === 'EVALUATE') {
+          try {
+            const currentHistory = Array.isArray(familyJourney.phaseHistory) ? familyJourney.phaseHistory : [];
+            await base44.entities.FamilyJourney.update(familyJourney.id, {
+              currentPhase: 'EXPERIENCE',
+              phaseHistory: [...currentHistory, { phase: 'EXPERIENCE', enteredAt: new Date().toISOString() }],
+            });
+            console.log('[E29-015] FamilyJourney advanced EVALUATE → EXPERIENCE');
+          } catch (phaseErr) {
+            console.error('[E29-015] Phase advance EVALUATE→EXPERIENCE failed:', phaseErr?.message);
+          }
+        }
       } catch (err) {
         console.error('[E29-005] SchoolJourney tour sync failed:', err?.message || err);
       }
