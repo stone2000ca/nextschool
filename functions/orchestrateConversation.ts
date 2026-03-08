@@ -164,7 +164,13 @@ async function callOpenRouter(options) {
 function resolveTransition(params) {
   const { currentState, intentSignal, profileData, turnCount, briefEditCount, selectedSchoolId, previousSchoolId, userMessage, tier1CompletedTurn: storedTier1CompletedTurn, context } = params;
 
-  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
+  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE', JOURNEY_RESUMPTION: 'JOURNEY_RESUMPTION' };
+
+  // Patch 3: Invalid state reset — prevents unknown states from bricking conversations
+  if (currentState && !Object.values(STATES).includes(currentState)) {
+    console.warn('[RESOLVE] Unknown state detected, resetting to DISCOVERY:', currentState);
+    currentState = STATES.DISCOVERY;
+  }
 
   const hasLocation = !!(profileData?.locationArea);
   const hasGrade = profileData?.childGrade !== null && profileData?.childGrade !== undefined;
@@ -230,6 +236,14 @@ function resolveTransition(params) {
     }
     console.log('[HARD GUARD] Blocked regression from', currentState, '— intentSignal was:', intentSignal);
     return { nextState: currentState, sufficiency, flags, transitionReason: 'hard_guard_results_deepdive' };
+  }
+
+  // Patch 2b: JOURNEY_RESUMPTION state handler
+  if (currentState === STATES.JOURNEY_RESUMPTION) {
+    if (intentSignal === 'restart' || intentSignal === 'edit-criteria') {
+      return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason: 'journey_resumption_restart' };
+    }
+    return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'journey_resumption_continue' };
   }
 
   if (currentState === STATES.WELCOME && turnCount > 0) {
@@ -784,7 +798,7 @@ Deno.serve(async (req) => {
       }
 
       // E29-008: Journey resumption — short-circuit for returning users with an active journey
-      if (journeyContext && (conversationHistory?.length ?? 0) <= 1) {
+      if (journeyContext?.journeyId && userId && (conversationHistory?.length ?? 0) <= 1) {
         try {
           const consultantPersona = (consultantName || 'Jackie') === 'Jackie'
             ? 'You are Jackie, a warm and empathetic senior education consultant.'
@@ -857,7 +871,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         hasUserLocation: !!userLocation
       });
       
-      const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
+      const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE', JOURNEY_RESUMPTION: 'JOURNEY_RESUMPTION' };
       
       let briefEditCount = context.briefEditCount || 0;
       const conversationId = context.conversationId;
