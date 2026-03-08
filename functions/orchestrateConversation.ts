@@ -399,24 +399,24 @@ async function handleDiscovery(base44, message, conversationFamilyProfile, conte
     ? `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}${stopIntentConstraint}[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
 ${knownSummary}
 ${tier1Guidance}
-Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
+Ask up to 2-3 related questions per turn to gather information efficiently. Group related questions naturally. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
 CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.
 CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.${briefOfferInstruction}
 YOU ARE JACKIE - Senior education consultant, 10+ years placing families in private schools. You're warm but efficient.`
     : `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}${stopIntentConstraint}[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
 ${knownSummary}
 ${tier1Guidance}
-Ask ONE focused question at a time. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
+Ask up to 2-3 related questions per turn to gather information efficiently. Group related questions naturally. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
 CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.
 CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.${briefOfferInstruction}
 YOU ARE LIAM - Senior education strategist, 10+ years in private school placement. You're direct and data-driven.`;
 
-  const discoveryUserPrompt = `Recent chat:\n${conversationSummary}\n\nParent: "${message}"\n\nRespond as ${consultantName}. ONE question max. No filler.`;
+  const discoveryUserPrompt = `Recent chat:\n${conversationSummary}\n\nParent: "${message}"\n\nRespond as ${consultantName}. 2-3 questions max. No filler.`;
 
   let discoveryMessageRaw = 'Tell me more about your child.';
   try {
     const fastResponse = await base44.integrations.Core.InvokeLLM({ 
-      prompt: personaInstructions + '\n\nRecent chat:\n' + conversationSummary + '\n\nParent: "' + message + '"\n\nRespond as ' + consultantName + '. ONE question max. No filler.',
+      prompt: personaInstructions + '\n\nRecent chat:\n' + conversationSummary + '\n\nParent: "' + message + '"\n\nRespond as ' + consultantName + '. 2-3 questions max. No filler.',
       model: 'gpt-5'
     });
     discoveryMessageRaw = fastResponse?.response || fastResponse || 'Tell me more about your child.';
