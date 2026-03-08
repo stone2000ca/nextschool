@@ -155,7 +155,9 @@ export async function handleNarrateComparison({
 
   const prompt = `${persona}
 
-A parent is comparing these ${comparedSchools.length} schools:
+**CRITICAL: You are comparing ONLY these ${comparedSchools.length} schools. Do NOT mention, suggest, or include any other schools.**
+
+Schools to compare (and ONLY these schools):
 ${schoolSummaries}
 
 Family brief context: ${briefSummary || 'Not provided'}
@@ -183,6 +185,8 @@ Standard dimensions context:
 - Budget Fit: Compare tuition to family's max budget
 - Commute: Evaluate distance against location preference
 - Class Size: Compare avgClassSize to typical preferences
+
+**CRITICAL: The comparisonMatrix.schools array MUST contain EXACTLY these ${comparedSchools.length} schools and no others. Use these school IDs: ${comparedSchools.map(s => s.id).join(', ')}**
 
 For each school, identify 1-2 key trade-offs worth mentioning (e.g., "Higher cost but stronger program").`;
 
