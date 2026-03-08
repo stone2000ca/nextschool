@@ -882,6 +882,7 @@ export default function Consultant() {
     hasAutoPopulatedShortlist,
     createPageUrl,
     activeJourney,
+    setActiveJourney,
   });
 
   const handleViewSchoolDetail = async (schoolId) => {

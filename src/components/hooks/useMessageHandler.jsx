@@ -52,6 +52,7 @@ export const useMessageHandler = ({
   hasAutoPopulatedShortlist,
   createPageUrl,
   activeJourney,
+  setActiveJourney,
 }, isPremiumParam = isPremium) => {
   const handleSendMessage = async (messageText, explicitSchoolId = null, displayText = null) => {
     // Track message sent
@@ -404,10 +405,10 @@ export const useMessageHandler = ({
             if (!user?.id) return;
             try {
               const existingJourneys = await base44.entities.FamilyJourney.filter({ userId: user.id });
-              const activeJourney = existingJourneys.filter(j => !j.isArchived);
-              if (activeJourney.length === 0) {
+              const activeJourneyList = existingJourneys.filter(j => !j.isArchived);
+              if (activeJourneyList.length === 0) {
                 const childName = profileForSession?.childName || 'My Child';
-                await base44.entities.FamilyJourney.create({
+                const newJourney = await base44.entities.FamilyJourney.create({
                   userId: user.id,
                   childName: childName,
                   profileLabel: childName + "'s School Search",
@@ -416,15 +417,25 @@ export const useMessageHandler = ({
                     { phase: 'UNDERSTAND', enteredAt: new Date().toISOString(), completedAt: new Date().toISOString() },
                     { phase: 'MATCH', enteredAt: new Date().toISOString() }
                   ]),
-                  familyProfileId: familyProfile?.id || '',
+                  familyProfileId: familyProfile?.id || null,
                   briefSnapshot: JSON.stringify(profileForSession || {}),
                   consultantId: selectedConsultant || 'jackie',
                   totalSessions: 1,
                   isArchived: false,
+                  lastActiveAt: new Date().toISOString(),
                 });
-                console.log('[E29-003] FamilyJourney created at Brief confirmation');
+                console.log('[E29-003] FamilyJourney created:', newJourney.id);
+                if (typeof setActiveJourney === 'function') {
+                  setActiveJourney(newJourney);
+                }
+                if (chatSession?.id && newJourney?.id) {
+                  base44.entities.ChatSession.update(chatSession.id, { journeyId: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
+                }
               } else {
-                console.log('[E29-003] Active FamilyJourney already exists, skipping creation');
+                console.log('[E29-003] Active FamilyJourney already exists, skipping creation. Journey ID:', activeJourneyList[0].id);
+                if (typeof setActiveJourney === 'function' && !activeJourney) {
+                  setActiveJourney(activeJourneyList[0]);
+                }
               }
             } catch (e) {
               console.error('[E29-003] FamilyJourney creation failed:', e.message);
