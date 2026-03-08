@@ -245,6 +245,17 @@ export const useMessageHandler = ({
         } else {
           setFitReEvaluation(response.data.fitReEvaluation);
         }
+      } else if (response.data?.state === 'DEEP_DIVE' && response.data?.fitReEvaluation === null && artifactCache && selectedSchool?.id) {
+        // WC6: Hydrate from cache if no new fit re-evaluation in DEEP_DIVE state
+        const cacheKey = `${selectedSchool.id}_fit_reevaluation`;
+        if (artifactCache[cacheKey]) {
+          console.log('[WC6] Hydrating fitReEvaluation from cache');
+          if (!isPremium) {
+            setFitReEvaluation({ __gated: true, schoolName: artifactCache[cacheKey].schoolName || selectedSchool?.name || '' });
+          } else {
+            setFitReEvaluation(artifactCache[cacheKey]);
+          }
+        }
       } else if (response.data?.state !== 'DEEP_DIVE') {
         setFitReEvaluation(null);
       }
