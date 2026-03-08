@@ -27,6 +27,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Only ENROLLED is implemented in v1
+    if (outcome !== 'ENROLLED') {
+      return Response.json(
+        { success: false, error: `Outcome '${outcome}' is not yet implemented. Only ENROLLED is supported in v1.`, code: 501 },
+        { status: 501 }
+      );
+    }
+
     // 2. Fetch FamilyJourney
     let journey = null;
     try {
