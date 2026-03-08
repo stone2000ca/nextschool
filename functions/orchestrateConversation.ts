@@ -366,13 +366,18 @@ async function handleDiscovery(base44, message, conversationFamilyProfile, conte
   const hasGender = !!conversationFamilyProfile?.gender;
 
   const knownFacts = [];
-  if (hasGrade) knownFacts.push(`grade ${conversationFamilyProfile.childGrade}`);
-  if (hasGender) knownFacts.push(`${conversationFamilyProfile.gender}`);
-  if (hasLocation) knownFacts.push(`location: ${conversationFamilyProfile.locationArea}`);
-  if (hasBudget) knownFacts.push(`budget: $${conversationFamilyProfile.maxTuition}`);
-  const knownSummary = knownFacts.length > 0
-    ? `\nALREADY COLLECTED (DO NOT ASK AGAIN): ${knownFacts.join(', ')}.`
-    : '';
+   if (hasGrade) knownFacts.push(`grade ${conversationFamilyProfile.childGrade}`);
+   if (hasGender) knownFacts.push(`${conversationFamilyProfile.gender}`);
+   if (hasLocation) knownFacts.push(`location: ${conversationFamilyProfile.locationArea}`);
+   if (hasBudget) knownFacts.push(`budget: $${conversationFamilyProfile.maxTuition}`);
+   if (conversationFamilyProfile?.interests?.length > 0) knownFacts.push(`interests: ${conversationFamilyProfile.interests.join(', ')}`);
+   if (conversationFamilyProfile?.priorities?.length > 0) knownFacts.push(`priorities: ${conversationFamilyProfile.priorities.join(', ')}`);
+   if (conversationFamilyProfile?.dealbreakers?.length > 0) knownFacts.push(`dealbreakers: ${conversationFamilyProfile.dealbreakers.join(', ')}`);
+   if (conversationFamilyProfile?.curriculumPreference?.length > 0) knownFacts.push(`curriculum: ${conversationFamilyProfile.curriculumPreference.join(', ')}`);
+   if (conversationFamilyProfile?.childName) knownFacts.push(`child name: ${conversationFamilyProfile.childName}`);
+   const knownSummary = knownFacts.length > 0
+     ? `\nALREADY COLLECTED (DO NOT ASK AGAIN): ${knownFacts.join(', ')}.`
+     : '';
 
   let tier1Guidance = '';
   if (!hasGrade && !hasGender) {
@@ -1132,7 +1137,8 @@ Object.assign(context, safeUpdatedContext);
       // GIBBERISH DETECTION: Catch nonsensical input before routing to handlers
       const normalizedMsg = (processMessage || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
       const vowels = normalizedMsg.match(/[aeiou]/g) || [];
-      const isGibberish = vowels.length === 0 && normalizedMsg.length > 2;
+      const looksLikeBudget = /^\d+[kK]?$/.test(normalizedMsg);
+      const isGibberish = vowels.length === 0 && normalizedMsg.length > 2 && !looksLikeBudget;
 
       if (isGibberish) {
         const nudgeMessage = consultantName === 'Jackie'
