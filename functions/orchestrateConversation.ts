@@ -684,6 +684,22 @@ Deno.serve(async (req) => {
         returningUserContextBlock = `RETURNING USER CONTEXT:\n- ${contextParts.join('\n- ')}\nThis is a returning user. Acknowledge their return naturally in your first response.`;
       }
 
+      // E29-009: Build journeyContextBlock and append to returningUserContextBlock
+      if (journeyContext) {
+        const jParts = [];
+        if (journeyContext.currentPhase) jParts.push(`Phase: ${journeyContext.currentPhase}`);
+        if (journeyContext.schoolsSummary?.length > 0) {
+          jParts.push(`Schools: ${journeyContext.schoolsSummary.map(s => `${s.schoolName} (${s.status})`).join(', ')}`);
+        }
+        if (journeyContext.lastSessionSummary) jParts.push(`Last session: ${journeyContext.lastSessionSummary}`);
+        if (journeyContext.nextAction) jParts.push(`Next action: ${journeyContext.nextAction}`);
+        let journeyContextBlock = `JOURNEY CONTEXT:\n- ${jParts.join('\n- ')}`;
+        if (journeyContextBlock.length > 500) journeyContextBlock = journeyContextBlock.substring(0, 500);
+        returningUserContextBlock = returningUserContextBlock
+          ? `${returningUserContextBlock}\n\n${journeyContextBlock}`
+          : journeyContextBlock;
+      }
+
       // E29-008: Journey resumption — short-circuit for returning users with an active journey
       if (journeyContext && (conversationHistory?.length ?? 0) <= 1) {
         try {
