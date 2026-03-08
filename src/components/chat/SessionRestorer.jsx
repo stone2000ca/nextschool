@@ -159,11 +159,15 @@ export async function restoreSessionFromParam(
         state: STATES.RESULTS,
         schools: restoredSchools
       };
-      // S97-WC3: Hydrate schools from matchedSchools on reload
-      if (Array.isArray(chatSession.matchedSchools) && chatSession.matchedSchools.length > 0) {
-        const restoredSchools = chatSession.matchedSchools;
-        restoredContext.schools = restoredSchools;
-        setSchools(restoredSchools);
+      // S97-WC3: Hydrate schools from matchedSchools on reload (parse JSON string and fetch full records)
+      let schoolIds = chatSession?.matchedSchools;
+      if (typeof schoolIds === 'string') {
+        try { schoolIds = JSON.parse(schoolIds); } catch (_) { schoolIds = []; }
+      }
+      if (Array.isArray(schoolIds) && schoolIds.length > 0) {
+        const fullSchools = await base44.entities.School.filter({ id: { $in: schoolIds } });
+        restoredContext.schools = fullSchools;
+        setSchools(fullSchools);
       }
       setCurrentConversation({
         conversationContext: restoredContext

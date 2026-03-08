@@ -388,10 +388,25 @@ export default function Consultant() {
 
   // Hydrate schools from restored conversationContext (after session restore or when context first arrives)
   useEffect(() => {
-    const restored = currentConversation?.conversationContext?.schools;
-    if (Array.isArray(restored) && restored.length > 0) {
-      setSchools(restored);
-    }
+    const hydrate = async () => {
+      let restored = currentConversation?.conversationContext?.schools;
+      if (!restored) return;
+      // If stored as JSON string, parse first
+      if (typeof restored === 'string') {
+        try { restored = JSON.parse(restored); } catch (_) { /* noop */ }
+      }
+      if (Array.isArray(restored) && restored.length > 0) {
+        // If array of IDs, fetch full School records
+        if (typeof restored[0] === 'string') {
+          const fullSchools = await base44.entities.School.filter({ id: { $in: restored } });
+          setSchools(fullSchools);
+        } else {
+          // Already full objects
+          setSchools(restored);
+        }
+      }
+    };
+    hydrate();
   }, [currentConversation?.conversationContext?.schools]);
 
   // Load family profile for Brief panel and restore guest session after login
