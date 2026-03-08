@@ -684,6 +684,46 @@ Deno.serve(async (req) => {
         returningUserContextBlock = `RETURNING USER CONTEXT:\n- ${contextParts.join('\n- ')}\nThis is a returning user. Acknowledge their return naturally in your first response.`;
       }
 
+      // E29-008: Journey resumption — short-circuit for returning users with an active journey
+      if (journeyContext && (conversationHistory?.length ?? 0) <= 1) {
+        try {
+          const consultantPersona = (consultantName || 'Jackie') === 'Jackie'
+            ? 'You are Jackie, a warm and empathetic senior education consultant.'
+            : 'You are Liam, a direct and analytical senior education strategist.';
+
+          const schoolsLine = journeyContext.schoolsSummary?.length > 0
+            ? `Schools being considered: ${journeyContext.schoolsSummary.map(s => `${s.schoolName} (${s.status})`).join(', ')}.`
+            : 'No schools shortlisted yet.';
+
+          const welcomeBackPrompt = `${consultantPersona}
+
+The family is returning to continue their school search. Here is their journey context:
+- Current phase: ${journeyContext.currentPhase || 'MATCH'}
+- ${schoolsLine}
+- Next suggested action: ${journeyContext.nextAction || 'Continue exploring matches'}
+- Last session summary: ${journeyContext.lastSessionSummary || 'No summary available'}
+
+Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they left off, reference specific schools or phase if relevant, and invite them to continue. Be concise and personal. Do NOT ask multiple questions — end with one clear invitation.`;
+
+          const greeting = await base44.integrations.Core.InvokeLLM({ prompt: welcomeBackPrompt });
+          const greetingText = typeof greeting === 'string' ? greeting : (greeting?.response || greeting?.text || 'Welcome back! Ready to pick up where we left off?');
+
+          console.log('[E29-008] Journey resumption short-circuit fired for journeyId:', journeyContext.journeyId);
+          return Response.json({
+            state: 'JOURNEY_RESUMPTION',
+            message: greetingText,
+            quickReplies: ["Let's keep going", "Update my Brief", "Start new search"],
+            journeyId: journeyContext.journeyId,
+            briefStatus: null,
+            schools: [],
+            familyProfile: null,
+            conversationContext: conversationContext || {}
+          });
+        } catch (e) {
+          console.warn('[E29-008] Journey resumption failed, falling through to normal flow:', e.message);
+        }
+      }
+
       // FIX-C: __CONFIRM_BRIEF__ sentinel goes directly to RESULTS state for immediate school display.
       let context = conversationContext || {};
       let processMessage = message;
