@@ -141,6 +141,59 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
             console.error('[E29-015] Phase advance EVALUATE→EXPERIENCE failed:', phaseErr?.message);
           }
         }
+
+        // E29-013: Generate tour prep brief and store on SchoolJourney
+        try {
+          // Get the SchoolJourney id we just upserted
+          const sjRecords = await base44.entities.SchoolJourney.filter({
+            familyJourneyId: familyJourney.id,
+            schoolId: school.id,
+          });
+          const sjId = sjRecords?.[0]?.id;
+          if (!sjId) throw new Error('SchoolJourney record not found after upsert');
+
+          // Load family profile for personalization
+          let fp = null;
+          try {
+            const fps = await base44.entities.FamilyProfile.filter({ userId: me.id });
+            fp = fps?.[0] || null;
+          } catch (_) {}
+
+          const priorities = fp?.priorities?.slice(0, 4).join(', ') || 'general fit, academics, community';
+          const childGrade = fp?.childGrade ?? form.childGrade ?? 'unknown';
+          const tourTypeLabel = form.tourType === 'in_person' ? 'in-person' : 'virtual';
+
+          const prepPrompt = `You are an education consultant preparing a family for a ${tourTypeLabel} tour at ${school.name}.
+
+Family priorities: ${priorities}
+Child's grade: ${childGrade}
+Tour date: ${preferredDate ? new Date(preferredDate).toLocaleDateString('en-CA') : 'TBD'}
+
+Generate a concise tour prep brief with exactly three sections (use these exact headings):
+## Questions to Ask
+List 4 specific, prioritized questions based on the family's priorities.
+
+## Things to Notice
+List 4 things to observe during the tour that relate to their priorities.
+
+## Logistics
+2-3 short practical tips for the tour day.
+
+Keep each point to one sentence. Be specific to ${school.name} if possible. No intro paragraph.`;
+
+          const prepResult = await base44.integrations.Core.InvokeLLM({ prompt: prepPrompt });
+          const prepText = typeof prepResult === 'string' ? prepResult : (prepResult?.response || prepResult?.text || '');
+
+          if (prepText) {
+            await base44.entities.SchoolJourney.update(sjId, {
+              tourPrepContent: prepText,
+              tourPrepSent: true,
+            });
+            console.log('[E29-013] Tour prep brief stored on SchoolJourney', sjId);
+          }
+        } catch (prepErr) {
+          console.error('[E29-013] Tour prep generation failed:', prepErr?.message);
+        }
       } catch (err) {
         console.error('[E29-005] SchoolJourney tour sync failed:', err?.message || err);
       }
