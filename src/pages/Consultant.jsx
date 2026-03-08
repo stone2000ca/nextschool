@@ -968,7 +968,7 @@ export default function Consultant() {
             } catch (e) { /* match data optional */ }
 
             const newItem = {
-              schoolId: schoolId,
+              schoolId: schoolForJourney?.id || schoolId,
               schoolName: schoolForJourney?.name || '',
               status: 'SHORTLISTED',
               addedAt: new Date().toISOString(),
