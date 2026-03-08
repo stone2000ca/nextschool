@@ -157,13 +157,13 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
     };
 
     let extractedLocation = null;
-    const locationMatch = message.match(/\b(?:in|near|around|from)\s+([A-Z][a-zA-Z]+(?:[\s-][A-Z][a-zA-Z]+)?(?:,\s*[A-Za-z]{2,})?)/);
+    const locationMatch = message.match(/\b(?:in|near|around|from)\s+([a-zA-Z]+(?:[\s-][a-zA-Z]+)?(?:,\s*[A-Za-z]{2,})?)/);
     if (locationMatch && locationMatch[1]) {
-      const NON_LOCATION_TERMS = /^(IB|AP|STEM|IGCSE|Montessori|Waldorf|Reggio|French|Catholic|January|February|March|April|May|June|July|August|September|October|November|December|Fall|Winter|Spring|Summer|Next|This|Early|Late)$/i;
-      if (!NON_LOCATION_TERMS.test(locationMatch[1].trim())) {
+      const hasCapitalizedWord = /\b[A-Z]/.test(locationMatch[1]);
+      if (!hasCapitalizedWord) {
+        console.log('[BUG-LOCATION-S46] Rejected: no capitalized word in location match:', locationMatch[1]);
+      } else if (!NON_LOCATION_TERMS.test(locationMatch[1].trim())) {
         extractedLocation = cleanLocation(locationMatch[1].trim());
-      } else {
-        console.log('[BUG-LOCATION-S46] Rejected non-location term:', locationMatch[1].trim());
       }
     }
 
@@ -202,6 +202,8 @@ CRITICAL: If the user mentions having VISITED, TOURED, or SEEN a school — phra
 LOCATION SPECIFICITY (BUG-LOC-003): For locationArea, always use the most specific location the user mentioned — city name, NOT province or state. Examples: "Montreal" not "Quebec", "Vancouver" not "British Columbia", "Calgary" not "Alberta". If the user says a region alias like "GTA" or "Greater Toronto Area", preserve that exact term as-is.
 
 LOCATION vs CURRICULUM: locationArea must ONLY contain geographic places. IB, AP, STEM, Montessori, Waldorf, Reggio, IGCSE, French immersion are curriculum types — put them in priorities, never locationArea.
+
+LOCATION vs ACADEMIC SUBJECTS: Academic subjects like English, Math, Science, Art, Music, History, Drama are NEVER locations. 'does well in English' means the subject, not a place. Only extract geographic places as locationArea.
 
 PRIORITY vs INTEREST CLASSIFICATION:
 - PRIORITIES = requirements the SCHOOL must meet (curriculum type, teaching style, class size, gender policy, religious affiliation, boarding, learning support, structured environment, boys-only, STEM focus, French immersion)
