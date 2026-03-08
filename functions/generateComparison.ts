@@ -42,6 +42,22 @@ Deno.serve(async (req) => {
       } catch (e) { console.warn('[COMPARISON] FamilyProfile fetch failed:', e.message); }
     }
 
+    // E29-016: Fetch active FamilyJourney for journey insights
+    let activeJourney = null;
+    let schoolJourneys = [];
+    if (userId) {
+      try {
+        const journeys = await base44.entities.FamilyJourney.filter({ userId });
+        activeJourney = journeys?.find(j => !j.isArchived) || null;
+        if (activeJourney?.schoolJourneys) {
+          schoolJourneys = Array.isArray(activeJourney.schoolJourneys) ? activeJourney.schoolJourneys : JSON.parse(activeJourney.schoolJourneys);
+        }
+        console.log('[E29-016] FamilyJourney fetched:', activeJourney?.id, 'schoolJourneys count:', schoolJourneys.length);
+      } catch (journeyErr) {
+        console.warn('[E29-016] FamilyJourney fetch failed:', journeyErr.message);
+      }
+    }
+
     // Build comparison structure
     const comparison = {
       schools: schools.map(s => ({
@@ -94,6 +110,59 @@ Deno.serve(async (req) => {
       ]
     };
 
+    // E29-016: Add Journey Insights category for premium users (only if journey data exists)
+    if (isPremiumUser && activeJourney && schoolJourneys.length > 0) {
+      const journeyRows = [
+        {
+          label: 'Post-Visit Fit',
+          values: schools.map(s => {
+            const sj = schoolJourneys.find(j => j.schoolId === s.id);
+            return sj?.postVisitFitLabel || 'Not yet visited';
+          })
+        },
+        {
+          label: 'Visit Verdict',
+          values: schools.map(s => {
+            const sj = schoolJourneys.find(j => j.schoolId === s.id);
+            return sj?.visitVerdict || 'Pending';
+          })
+        },
+        {
+          label: 'Fit Direction',
+          values: schools.map(s => {
+            const sj = schoolJourneys.find(j => j.schoolId === s.id);
+            return sj?.fitDirection || '-';
+          })
+        },
+        {
+          label: 'Key Strengths',
+          values: schools.map(s => {
+            const sj = schoolJourneys.find(j => j.schoolId === s.id);
+            return (sj?.revisedStrengths || []).join(', ') || 'TBD';
+          })
+        },
+        {
+          label: 'Open Concerns',
+          values: schools.map(s => {
+            const sj = schoolJourneys.find(j => j.schoolId === s.id);
+            return (sj?.revisedConcerns || []).join(', ') || 'None';
+          })
+        },
+        {
+          label: 'Status',
+          values: schools.map(s => {
+            const sj = schoolJourneys.find(j => j.schoolId === s.id);
+            return sj?.status || 'MATCHED';
+          })
+        }
+      ];
+      comparison.categories.push({
+        name: 'Journey Insights',
+        rows: journeyRows
+      });
+      console.log('[E29-016] Journey Insights category added for premium user');
+    }
+
     // Generate AI insights
     const insightsPrompt = `Compare these schools and provide 3-4 key insights for parents:
 
@@ -135,13 +204,24 @@ Return JSON with array of insights (each 1-2 sentences highlighting key differen
 
     const comparisonMatrix = {
       schools: comparison.schools,
-      dimensions: comparison.categories.flatMap(cat => cat.rows.map(row => ({
-        category: cat.name,
-        label: row.label,
-        values: row.values,
-        relevance: (() => { const label = row.label.toLowerCase(); const isP = [...prioritySet].some(p => label.includes(p) || p.includes(label) || label.split(' ').some(w => p.includes(w))); return isP ? 'priority' : null; })()
-          || (dealbreakers?.some(d => { const label = row.label.toLowerCase(); const db = d.toLowerCase(); return label.includes(db) || db.includes(label) || db.split(' ').some(w => w.length > 3 && label.includes(w)); }) ? 'dealbreaker' : 'neutral')
-      })))
+      dimensions: comparison.categories.flatMap(cat => {
+        // Journey Insights category doesn't get relevance scoring
+        if (cat.name === 'Journey Insights') {
+          return cat.rows.map(row => ({
+            category: cat.name,
+            label: row.label,
+            values: row.values
+          }));
+        }
+        // Other categories get relevance scoring
+        return cat.rows.map(row => ({
+          category: cat.name,
+          label: row.label,
+          values: row.values,
+          relevance: (() => { const label = row.label.toLowerCase(); const isP = [...prioritySet].some(p => label.includes(p) || p.includes(label) || label.split(' ').some(w => p.includes(w))); return isP ? 'priority' : null; })()
+            || (dealbreakers?.some(d => { const label = row.label.toLowerCase(); const db = d.toLowerCase(); return label.includes(db) || db.includes(label) || db.split(' ').some(w => w.length > 3 && label.includes(w)); }) ? 'dealbreaker' : 'neutral')
+        }));
+      })
     };
 
     // E24-S3-WC1: Gate premium content for non-premium users
@@ -192,7 +272,12 @@ Return JSON with array of insights (each 1-2 sentences highlighting key differen
       }
     }
 
-    return Response.json({ ...comparison, comparisonMatrix, isLocked });
+    return Response.json({ 
+      ...comparison, 
+      comparisonMatrix, 
+      isLocked,
+      journeyPhase: activeJourney?.currentPhase || null
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
