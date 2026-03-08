@@ -798,7 +798,7 @@ Deno.serve(async (req) => {
       }
 
       // E29-008: Journey resumption — short-circuit for returning users with an active journey
-      if (journeyContext?.journeyId && userId && (conversationHistory?.length ?? 0) <= 1) {
+      if (journeyContext?.journeyId && journeyContext?.isResuming === true && userId && (conversationHistory?.length ?? 0) <= 1) {
         try {
           const consultantPersona = (consultantName || 'Jackie') === 'Jackie'
             ? 'You are Jackie, a warm and empathetic senior education consultant.'

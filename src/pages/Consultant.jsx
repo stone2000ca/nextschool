@@ -443,6 +443,7 @@ export default function Consultant() {
           nextAction: journey.nextAction,
           lastSessionSummary: journey.lastSessionSummary,
           consultantId: journey.consultantId,
+          isResuming: false,
           schoolsSummary: schoolJourneys.map(sj => ({
             schoolId: sj.schoolId,
             schoolName: sj.schoolName,
