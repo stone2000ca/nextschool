@@ -990,6 +990,7 @@ export default function Consultant() {
           console.log('[E29-004] SchoolJourney synced:', schoolId, isRemoving ? 'REMOVED' : 'SHORTLISTED');
         } catch (e) {
           console.error('[E29-004] FamilyJourney sync failed:', e.message);
+          console.warn('[E29-004] FamilyJourney sync FAILED:', e.message, e);
         }
       })();
 
