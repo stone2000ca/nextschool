@@ -371,9 +371,11 @@ function lightweightExtract(message, existingProfile) {
   if (budgetMatch && !bridgeProfile.maxTuition) {
     const numStr = budgetMatch[1].replace(/,/g, '');
     const num = parseInt(numStr);
-    if (!isNaN(num) && num >= 5000 && num <= 500000) {
+    if (!isNaN(num)) {
       const amount = budgetMatch[2] ? num * 1000 : num;
-      bridgeProfile.maxTuition = amount;
+      if (amount >= 5000 && amount <= 500000) {
+        bridgeProfile.maxTuition = amount;
+      }
     }
   }
 
