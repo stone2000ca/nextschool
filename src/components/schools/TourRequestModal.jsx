@@ -94,52 +94,41 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
       }),
     });
 
-    // Fire-and-forget: sync FamilyJourney on tour request
-    (async () => {
+    // E29-005: Fire-and-forget — sync tour request to SchoolJourney entity
+    ;(async () => {
       try {
         const me = await base44.auth.me();
         if (!me?.id) return;
 
-        const journeys = await FamilyJourney.filter({ userId: me.id });
+        const journeys = await base44.entities.FamilyJourney.filter({ userId: me.id }, '-updated_date', 1);
         if (!journeys || journeys.length === 0) return;
+        const familyJourney = journeys[0];
 
-        const journey = journeys[0];
-        const schoolJourneys = Array.isArray(journey.schoolJourneys) ? [...journey.schoolJourneys] : [];
-        const existingIdx = schoolJourneys.findIndex(sj => sj.schoolId === school.id);
+        const existing = await base44.entities.SchoolJourney.filter({
+          familyJourneyId: familyJourney.id,
+          schoolId: school.id,
+        });
 
-        const tourDetails = {
-          tourRequestId: inquiry.id,
-          tourDate: preferredDate || null,
-          tourType: form.tourType || 'in_person',
-          tourStatus: 'REQUESTED',
-          requestedAt: new Date().toISOString()
-        };
-
-        if (existingIdx >= 0) {
-          const updated = { ...schoolJourneys[existingIdx], status: 'TOURING', tourDetails };
-          schoolJourneys[existingIdx] = updated;
+        if (existing && existing.length > 0) {
+          await base44.entities.SchoolJourney.update(existing[0].id, {
+            status: 'touring',
+            tourRequestId: inquiry?.id || null,
+            tourDate: preferredDate || null,
+          });
         } else {
-          schoolJourneys.push({
+          await base44.entities.SchoolJourney.create({
+            familyJourneyId: familyJourney.id,
             schoolId: school.id,
             schoolName: school.name,
-            status: 'TOURING',
-            addedVia: 'TOUR_REQUEST',
+            status: 'touring',
+            tourRequestId: inquiry?.id || null,
+            tourDate: preferredDate || null,
             addedAt: new Date().toISOString(),
-            tourDetails
           });
         }
-
-        const updateObj = { schoolJourneys };
-
-        if (journey.currentPhase === 'EVALUATE') {
-          const history = Array.isArray(journey.phaseHistory) ? journey.phaseHistory : [];
-          updateObj.currentPhase = 'EXPERIENCE';
-          updateObj.phaseHistory = [...history, { phase: 'EXPERIENCE', enteredAt: new Date().toISOString() }];
-        }
-
-        await FamilyJourney.update(journey.id, updateObj);
+        console.log('[E29-005] SchoolJourney tour sync completed for', school.name);
       } catch (err) {
-        console.error('[TourRequestModal] FamilyJourney sync failed (non-blocking):', err?.message || err);
+        console.error('[E29-005] SchoolJourney tour sync failed:', err?.message || err);
       }
     })();
 
