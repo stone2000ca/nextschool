@@ -120,6 +120,20 @@ Deno.serve(async (req) => {
 
     const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
+    // E30-S1: Check if user is trying to switch schools (back-to-results intent)
+    const backToResultsPattern = /\b(what about another|show me other|different school|go back|other options|other schools|what else|see other|back to results)\b/i;
+    if (backToResultsPattern.test(message)) {
+      console.log('[DEEPDIVE] Back-to-results intent detected, routing user to RESULTS');
+      return Response.json({
+        message: "I'd be happy to look at another school! You can click on any school card from your results to explore it, or ask me about a specific school by name.",
+        state: STATES.RESULTS,
+        briefStatus: briefStatus,
+        schools: currentSchools || [],
+        familyProfile: conversationFamilyProfile,
+        conversationContext: context
+      });
+    }
+
     console.log('[DEEPDIVE_START]', selectedSchoolId);
     let aiMessage = '';
     let selectedSchool = null;
