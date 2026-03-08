@@ -305,9 +305,15 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     if (effectiveLocation) {
       effectiveLocation = cleanLocation(effectiveLocation);
     }
-    if ((effectiveLocation === null || effectiveLocation === undefined) && extractedLocation !== null) {
+
+    // S97-WC4: If LLM returned an invalid location (e.g. 'Grade' from 'Grade 5'),
+    // but regex found a valid city/region, prefer the regex-extracted location.
+    const isInvalidLocation = !effectiveLocation || effectiveLocation.length < 3 || /^(grade|school|class|program|budget|tuition|montessori|french|immersion)\b/i.test(effectiveLocation);
+
+    if (isInvalidLocation && extractedLocation !== null) {
       effectiveLocation = extractedLocation;
     }
+
     if (effectiveLocation !== null && effectiveLocation !== undefined) {
       finalResult = { ...finalResult, locationArea: effectiveLocation };
     }
