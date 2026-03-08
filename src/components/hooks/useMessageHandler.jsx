@@ -375,14 +375,14 @@ export const useMessageHandler = ({
           const safeLocationArea = response.data?.extractedEntities?.locationArea || extractedEntitiesData?.locationArea || profileForSession?.locationArea;
 
           // E29-003: Auto-create FamilyJourney at Brief confirmation
-          ;(async () => {
-            if (!user?.id) return;
+          let journeyId = null;
+          if (user?.id) {
             try {
               const existingJourneys = await base44.entities.FamilyJourney.filter({ userId: user.id });
               const activeJourney = existingJourneys.filter(j => !j.isArchived);
               if (activeJourney.length === 0) {
                 const childName = profileForSession?.childName || 'My Child';
-                await base44.entities.FamilyJourney.create({
+                const newJourney = await base44.entities.FamilyJourney.create({
                   userId: user.id,
                   childName: childName,
                   profileLabel: childName + "'s School Search",
@@ -397,14 +397,16 @@ export const useMessageHandler = ({
                   totalSessions: 1,
                   isArchived: false,
                 });
+                journeyId = newJourney.id;
                 console.log('[E29-003] FamilyJourney created at Brief confirmation');
               } else {
+                journeyId = activeJourney[0].id;
                 console.log('[E29-003] Active FamilyJourney already exists, skipping creation');
               }
             } catch (e) {
               console.error('[E29-003] FamilyJourney creation failed:', e.message);
             }
-          })();
+          }
 
           const chatSession = await base44.entities.ChatSession.create({
             sessionToken: sessionId,
@@ -419,7 +421,8 @@ export const useMessageHandler = ({
             maxTuition: profileForSession?.maxTuition,
             priorities: profileForSession?.priorities,
             matchedSchools: JSON.stringify(matchedSchoolIds),
-            profileName
+            profileName,
+            journeyId,
           });
 
           // Update URL with entity id (not sessionToken)
