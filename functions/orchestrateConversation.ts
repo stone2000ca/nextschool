@@ -1072,29 +1072,27 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         gender: conversationFamilyProfile?.gender ?? null
       };
 
-      try {
-        console.log('[ORCH] Invoking extractEntities');
-        const extractResult = await base44.asServiceRole.functions.invoke('extractEntities', {
-          message: processMessage,
-          conversationFamilyProfile,
-          context,
-          conversationHistory
-        });
-        extractionResult = extractResult.data;
-        intentSignal = extractionResult.intentSignal || 'continue';
-        briefDelta = extractionResult.briefDelta;
-      } catch (extractError) {
-        console.error('[ORCH] extractEntities FAILED:', extractError?.message || extractError);
-        extractionResult = {
-          extractedEntities: {},
-          updatedFamilyProfile: conversationFamilyProfile,
-          updatedContext: context,
-          intentSignal: 'continue',
-          briefDelta: { additions: [], updates: [], removals: [] }
-        };
-        intentSignal = 'continue';
-        briefDelta = { additions: [], updates: [], removals: [] };
-      }
+      // FAST PATH: Synchronous lightweight extraction to unblock response
+      const { bridgeProfile, bridgeIntent } = lightweightExtract(processMessage, conversationFamilyProfile);
+      Object.assign(conversationFamilyProfile, bridgeProfile);
+      intentSignal = bridgeIntent;
+      briefDelta = { additions: [], updates: [], removals: [] };
+
+      // BACKGROUND: Fire-and-forget async LLM-based extraction
+      base44.asServiceRole.functions.invoke('extractEntities', {
+        message: processMessage,
+        conversationFamilyProfile,
+        context,
+        conversationHistory
+      }).catch(e => console.error('[ASYNC] extractEntities failed (non-blocking):', e.message));
+
+      extractionResult = {
+        extractedEntities: {},
+        updatedFamilyProfile: conversationFamilyProfile,
+        updatedContext: context,
+        intentSignal: intentSignal,
+        briefDelta: briefDelta
+      };
       
       Object.assign(conversationFamilyProfile, extractionResult.updatedFamilyProfile);
       // E29-009: Exclude debrief context fields from extractEntities merge to prevent overwrite
