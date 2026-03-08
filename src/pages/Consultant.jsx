@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import School from '@/entities/School';
+import SchoolJourney from '@/entities/SchoolJourney';
 import { STATES, BRIEF_STATUS } from './stateMachineConfig';
 import { restoreGuestSession } from '@/components/chat/SessionRestorer';
 import { handleNarrateComparison as narrateComparison } from '@/components/chat/handleNarrateComparison';
