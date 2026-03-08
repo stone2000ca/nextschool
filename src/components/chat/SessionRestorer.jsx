@@ -120,10 +120,14 @@ export async function restoreSessionFromParam(
         setFamilyProfile(restoredProfile);
       }
     } else {
+      // BUG-LOCATION-EXTRACT-S97 FIX: Prefer extractedEntities.locationArea from ChatHistory context
+      // over ChatSession.locationArea which may contain stale/invalid values (e.g. 'Grade')
+      const restoredLocationArea = chatHistory?.conversationContext?.extractedEntities?.locationArea || chatSession.locationArea;
+
       restoredProfile = {
         childName: chatSession.childName,
         childGrade: chatSession.childGrade,
-        locationArea: chatSession.locationArea,
+        locationArea: restoredLocationArea,
         maxTuition: chatSession.maxTuition,
         priorities: chatSession.priorities || [],
         learningDifferences: chatSession.learningDifferences || []

@@ -370,6 +370,10 @@ export const useMessageHandler = ({
             }
           }
 
+          // BUG-LOCATION-EXTRACT-S97 FIX: Prefer extractedEntities.locationArea over profileForSession
+          // to avoid stale/invalid values (e.g. 'Grade') stored on the profile before isInvalidLocation correction
+          const safeLocationArea = response.data?.extractedEntities?.locationArea || extractedEntitiesData?.locationArea || profileForSession?.locationArea;
+
           const chatSession = await base44.entities.ChatSession.create({
             sessionToken: sessionId,
             userId: user?.id,
@@ -379,7 +383,7 @@ export const useMessageHandler = ({
             consultantSelected: selectedConsultant,
             childName: profileForSession?.childName,
             childGrade: profileForSession?.childGrade,
-            locationArea: profileForSession?.locationArea,
+            locationArea: safeLocationArea,
             maxTuition: profileForSession?.maxTuition,
             priorities: profileForSession?.priorities,
             matchedSchools: JSON.stringify(matchedSchoolIds),
