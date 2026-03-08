@@ -186,7 +186,18 @@ export default function Dashboard() {
   };
 
   const handleDeleteArchivedSession = async (sessionToDelete) => {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      'This will permanently delete this search and all conversation history. Cannot be undone. Continue?'
+    );
+    if (!confirmed) return;
+
     try {
+      // Cascade delete: Remove associated ChatHistory
+      if (sessionToDelete.chatHistoryId) {
+        await base44.entities.ChatHistory.delete(sessionToDelete.chatHistoryId);
+      }
+      // Delete the session
       await base44.entities.ChatSession.update(sessionToDelete.id, { 
         status: 'deleted',
         isActive: false 
@@ -233,9 +244,13 @@ export default function Dashboard() {
     // Optimistic UI update
     setSessions(prev => prev.filter(s => s.status !== deleteAllTarget));
     setDeleteAllTarget(null);
-    await Promise.all(toDelete.map(s =>
-      base44.entities.ChatSession.update(s.id, { status: 'deleted', isActive: false })
-    ));
+    await Promise.all(toDelete.map(async (s) => {
+      // Cascade delete: Remove associated ChatHistory if archived
+      if (deleteAllTarget === 'archived' && s.chatHistoryId) {
+        await base44.entities.ChatHistory.delete(s.chatHistoryId);
+      }
+      return base44.entities.ChatSession.update(s.id, { status: 'deleted', isActive: false });
+    }));
   };
 
   if (loading) {
@@ -368,7 +383,7 @@ export default function Dashboard() {
                   className="flex items-center gap-1.5 text-sm text-red-400/70 hover:text-red-400 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  Delete All
+                  Archive All
                 </button>
               )}
               {showArchivedTab && sessions.filter(s => s.status === 'archived').length > 0 && (
@@ -593,9 +608,14 @@ export default function Dashboard() {
       {deleteAllTarget && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-[#2A2A3D] rounded-lg max-w-sm w-full p-6 border border-white/10">
-            <h2 className="text-lg font-semibold text-white mb-2">Delete all profiles?</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">
+              {deleteAllTarget === 'archived' ? 'Permanently delete all archived profiles?' : 'Archive all profiles?'}
+            </h2>
             <p className="text-white/60 text-sm mb-6">
-              Delete all {sessions.filter(s => s.status === deleteAllTarget).length} {deleteAllTarget} profiles? This cannot be undone.
+              {deleteAllTarget === 'archived'
+                ? `This will permanently delete all ${sessions.filter(s => s.status === deleteAllTarget).length} archived profiles and all associated conversation history. Cannot be undone. Continue?`
+                : `Archive all ${sessions.filter(s => s.status === deleteAllTarget).length} active profiles? This cannot be undone.`
+              }
             </p>
             <div className="flex gap-3">
               <button
@@ -608,7 +628,7 @@ export default function Dashboard() {
                 onClick={handleDeleteAll}
                 className="flex-1 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
               >
-                Delete All
+                {deleteAllTarget === 'archived' ? 'Permanently Delete' : 'Archive All'}
               </button>
             </div>
           </div>
