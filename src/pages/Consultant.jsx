@@ -968,9 +968,9 @@ export default function Consultant() {
             } catch (e) { /* match data optional */ }
 
             const newItem = {
-              schoolId: schoolForJourney?.id || schoolId,
-              schoolName: schoolForJourney?.name || '',
-              status: 'SHORTLISTED',
+              schoolId: 'TEST-ID-123',
+              schoolName: 'TEST-SCHOOL-NAME',
+              status: 'shortlisted',
               addedAt: new Date().toISOString(),
               ...matchData
             };
