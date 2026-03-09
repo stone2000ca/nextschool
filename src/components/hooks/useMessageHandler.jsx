@@ -189,9 +189,9 @@ export const useMessageHandler = ({
 
       console.log('[CARD DEBUG]', Object.keys(response.data || {}), response.data?.deepDiveAnalysis, response.data?.visitPrepKit);
 
-      // T043: Update familyProfile live from orchestration response
+      // T043: Update familyProfile live from orchestration response — merge to accumulate multi-turn data
       if (response.data?.familyProfile) {
-        setFamilyProfile(response.data.familyProfile);
+        setFamilyProfile(prev => ({ ...(prev || {}), ...response.data.familyProfile }));
       }
 
       // DEEPDIVE: Store structured analysis card data
