@@ -1397,7 +1397,7 @@ Object.assign(context, safeUpdatedContext);
         // E13a: Check if debrief mode is set BEFORE falling through to handleDeepDive
         if (resolveResult.deepDiveMode === 'debrief' || resolveResult.flags?.DEBRIEF_MODE) {
           console.log('[E13a] Routing DEEP_DIVE to inlined handleVisitDebrief');
-          const debriefResult = await handleVisitDebrief(base44, selectedSchoolId, processMessage, conversationFamilyProfile, context, consultantName, returningUserContextBlock, callOpenRouter);
+          const debriefResult = await handleVisitDebrief(base44, selectedSchoolId, processMessage, workingProfile, context, consultantName, returningUserContextBlock, callOpenRouter);
           if (debriefResult) {
             if (debriefResult.updatedContext) Object.assign(context, debriefResult.updatedContext);
             return Response.json({ 
@@ -1407,7 +1407,7 @@ Object.assign(context, safeUpdatedContext);
               deepDiveMode: debriefResult.deepDiveMode, 
               visitPrepKit: debriefResult.visitPrepKit, 
               fitReEvaluation: debriefResult.fitReEvaluation || null, 
-              familyProfile: conversationFamilyProfile, 
+              familyProfile: workingProfile, 
               conversationContext: context, 
               extractedEntities: extractionResult?.extractedEntities || {}, 
               schools: currentSchools || [] });
