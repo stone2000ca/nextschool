@@ -261,9 +261,9 @@ export const useMessageHandler = ({
         setFitReEvaluation(null);
       }
 
-      // Store extractedEntities from response for FamilyBrief fallback display
+      // Store extractedEntities from response for FamilyBrief fallback display — merge to accumulate multi-turn data
       if (response.data?.extractedEntities) {
-        setExtractedEntitiesData(response.data?.extractedEntities);
+        setExtractedEntitiesData(prev => ({ ...(prev || {}), ...response.data.extractedEntities }));
         console.log('[BUDGET FIX] Stored extractedEntities:', response.data.extractedEntities);
       }
 
