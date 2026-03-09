@@ -4,6 +4,7 @@
 // Last Modified: 2026-03-09
 // Dependencies: OpenRouter API, Base44 InvokeLLM fallback
 // WC-1: F11 FIX — strip non-schema keys before DB write to prevent Firestore rejection
+// WC-2: LLM model upgrade — MiniMax M2.5 as primary model in callOpenRouter waterfall
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
@@ -24,8 +25,8 @@ async function callOpenRouter(options) {
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
   messages.push({ role: 'user', content: userPrompt });
 
-  // Model waterfall: quality-first (Gemini Flash), cost fallback (GPT-4.1-mini), latency fallback (Flash Lite)
-  const models = ['google/gemini-2.5-flash', 'openai/gpt-4.1-mini', 'google/gemini-2.5-flash-lite'];
+  // Model waterfall: WC-2 upgrade — MiniMax M2.5 primary, GPT-4.1-mini fallback, Gemini Flash tertiary
+  const models = ['minimax/minimax-m2.5', 'openai/gpt-4.1-mini', 'google/gemini-2.5-flash'];
 
   const body = {
     models,
