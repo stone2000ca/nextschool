@@ -457,9 +457,9 @@ async function handleDiscovery(base44, message, conversationFamilyProfile, conte
   if (!hasBudget) missingFields.push('tuition budget');
 
   if (missingFields.length >= 3) {
-    tier1Guidance = `TIER 1 PRIORITY: We still need: ${missingFields.join(', ')}. Ask about 2-3 of these naturally in your next response. Example: 'Tell me about your child - what grade are they heading into, and what area of the city are you looking at?' Budget is always annual tuition. Do NOT ask to confirm if it is per year or per month. Accept the number as-is.`;
+    tier1Guidance = `TIER 1 PRIORITY: We still need: ${missingFields.join(', ')}. Ask about the two most important ones in your first response. After that, ask one at a time. Budget is always annual tuition. Do NOT ask to confirm if it is per year or per month. Accept the number as-is.`;
   } else if (missingFields.length === 2) {
-    tier1Guidance = `TIER 1 PRIORITY: We still need: ${missingFields.join(' and ')}. Ask about both naturally in one turn. Budget is always annual tuition. Accept the number as-is.`;
+    tier1Guidance = `TIER 1 PRIORITY: We still need: ${missingFields.join(' and ')}. If this is your first response, you may ask about both. Otherwise, pick the most important one. Budget is always annual tuition. Accept the number as-is.`;
   } else if (missingFields.length === 1) {
     tier1Guidance = `TIER 1 PRIORITY: We still need: ${missingFields[0]}. Work this in naturally.`;
   }
@@ -471,19 +471,21 @@ async function handleDiscovery(base44, message, conversationFamilyProfile, conte
     ? `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}${stopIntentConstraint}[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
 ${knownSummary}
 ${tier1Guidance}
-Ask up to 2-3 related questions per turn to gather information efficiently. Group related questions naturally. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
+On your FIRST response only, you may ask about two related things together (e.g., grade and location). After the first turn, ask exactly ONE question per turn. Never ask more than one question after the first turn. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. CRITICAL FORMAT RULE: Your response must be MAX 2 sentences. Be conversational and warm, not robotic.
 CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.
-CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.${briefOfferInstruction}
+CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.
+NEVER repeat a question verbatim that the user ignored or didn't answer. If they skip a question, either rephrase it completely or move on to the next priority. Never make the conversation feel like a form.${briefOfferInstruction}
 YOU ARE JACKIE - Senior education consultant, 10+ years placing families in private schools. You're warm but efficient.`
     : `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}${stopIntentConstraint}[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
 ${knownSummary}
 ${tier1Guidance}
-Ask up to 2-3 related questions per turn to gather information efficiently. Group related questions naturally. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. Max 150 words.
+On your FIRST response only, you may ask about two related things together (e.g., grade and location). After the first turn, ask exactly ONE question per turn. Never ask more than one question after the first turn. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. CRITICAL FORMAT RULE: Your response must be MAX 2 sentences. Be conversational and warm, not robotic.
 CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.
-CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.${briefOfferInstruction}
+CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.
+NEVER repeat a question verbatim that the user ignored or didn't answer. If they skip a question, either rephrase it completely or move on to the next priority. Never make the conversation feel like a form.${briefOfferInstruction}
 YOU ARE LIAM - Senior education strategist, 10+ years in private school placement. You're direct and data-driven.`;
 
-  const discoveryUserPrompt = `Recent chat:\n${conversationSummary}\n\nParent: "${message}"\n\nRespond as ${consultantName}. 2-3 questions max. No filler.`;
+  const discoveryUserPrompt = `Recent chat:\n${conversationSummary}\n\nParent: "${message}"\n\nRespond as ${consultantName}. 1 question (2 allowed on first turn only). No filler.`;
 
   let discoveryMessageRaw = 'Tell me more about your child.';
   try {
