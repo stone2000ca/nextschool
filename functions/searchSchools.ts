@@ -1,8 +1,9 @@
 // Function: searchSchools
 // Purpose: Search and rank schools based on family profile and location filters
 // Entities: School, SearchLog
-// Last Modified: 2026-02-26
+// Last Modified: 2026-03-09
 // Dependencies: OpenRouter API (via orchestrateConversation)
+// S112-WC1: F7 P0 Fix - Religious & gender filters now enforced in relaxed fallback pass
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
@@ -28,6 +29,65 @@ Deno.serve(async (req) => {
 
 function toTitleCase(str) {
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function applyReligiousFilter(school, familyProfile, payload) {
+  const dealbreakers = payload?.dealbreakers || familyProfile?.dealbreakers || [];
+  const hasReligiousDealbreaker = Array.isArray(dealbreakers) && dealbreakers.some(d =>
+    typeof d === 'string' && (
+      d.toLowerCase().includes('religious') ||
+      d.toLowerCase().includes('religion') ||
+      d.toLowerCase().includes('no religious') ||
+      d.toLowerCase().includes('secular only') ||
+      d.toLowerCase().includes('non-religious')
+    )
+  );
+  if (hasReligiousDealbreaker) {
+    if (school.religiousAffiliation && school.religiousAffiliation !== 'None' && school.religiousAffiliation !== 'none' && school.religiousAffiliation !== 'Non-denominational' && school.religiousAffiliation !== 'Secular') {
+      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation (${school.religiousAffiliation})`);
+      return false;
+    }
+    const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'saint', 'st.', 'st ', 'holy', 'sacred', 'blessed'];
+    const schoolNameLower = school.name?.toLowerCase() || '';
+    if (religiousKeywords.some(keyword => schoolNameLower.includes(keyword))) {
+      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: name contains religious keyword`);
+      return false;
+    }
+  }
+  return true;
+}
+
+function applyGenderFilter(school, familyProfile) {
+  const gp = school.genderPolicy || null;
+  if (gp === null) return true;
+  const exclusions = familyProfile?.schoolGenderExclusions || [];
+  if (Array.isArray(exclusions) && exclusions.length > 0) {
+    const gpLower = gp.toLowerCase();
+    const excluded = exclusions.some(ex => {
+      const exL = ex.toLowerCase();
+      if (exL === 'all-girls') return gpLower === 'all-girls';
+      if (exL === 'all-boys') return gpLower === 'all-boys';
+      if (exL === 'co-ed') return gpLower === 'co-ed' || gpLower === 'co-ed with single-gender classes';
+      return false;
+    });
+    if (excluded) { console.log(`[GENDER] Excluded (exclusion) ${school.name}: genderPolicy="${gp}"`); return false; }
+  }
+  const genderPref = familyProfile?.schoolGenderPreference || null;
+  if (genderPref) {
+    const gpLower = gp.toLowerCase();
+    const prefLower = genderPref.toLowerCase();
+    let matches = false;
+    if (prefLower === 'all-girls') matches = gpLower === 'all-girls';
+    else if (prefLower === 'all-boys') matches = gpLower === 'all-boys';
+    else if (prefLower === 'co-ed') matches = gpLower === 'co-ed' || gpLower === 'co-ed with single-gender classes';
+    if (!matches) { console.log(`[GENDER] Excluded (pref=${genderPref}) ${school.name}: genderPolicy="${gp}"`); return false; }
+  }
+  if (!genderPref) {
+    const childGender = familyProfile?.childGender || null;
+    if (childGender === 'male' && gp === 'All-Girls') return false;
+    if (childGender === 'female' && gp === 'All-Boys') return false;
+  }
+  return true;
 }
 
 async function performSearch(req) {
@@ -249,97 +309,8 @@ async function performSearch(req) {
       }
     }
     
-    const dealbreakers = payload.dealbreakers || familyProfile?.dealbreakers || [];
-    const hasReligiousDealbreaker = Array.isArray(dealbreakers) && dealbreakers.some(d => 
-      typeof d === 'string' && (
-        d.toLowerCase().includes('religious') || 
-        d.toLowerCase().includes('religion') ||
-        d.toLowerCase().includes('no religious') ||
-        d.toLowerCase().includes('secular only') ||
-        d.toLowerCase().includes('non-religious')
-      )
-    );
-    if (hasReligiousDealbreaker) {
-      if (school.religiousAffiliation && 
-          school.religiousAffiliation !== 'None' && 
-          school.religiousAffiliation !== 'none' &&
-          school.religiousAffiliation !== 'Non-denominational' && 
-          school.religiousAffiliation !== 'Secular') {
-        console.log(`[RELIGIOUS FILTER] ✗ Excluded ${school.name}: religious affiliation (${school.religiousAffiliation})`);
-        return false;
-      }
-      
-      const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'saint', 'st.', 'st ', 'holy', 'sacred', 'blessed'];
-      const schoolNameLower = school.name?.toLowerCase() || '';
-      const hasReligiousKeyword = religiousKeywords.some(keyword => schoolNameLower.includes(keyword));
-      
-      if (hasReligiousKeyword) {
-        console.log(`[RELIGIOUS FILTER] ✗ Excluded ${school.name}: name contains religious keyword`);
-        return false;
-      }
-    }
-    
-    // ── GENDER WATERFALL FILTER ────────────────────────────────────────────────
-    // Priority order:
-    // 1. schoolGenderExclusions  → hard-exclude those genderPolicy types
-    // 2. schoolGenderPreference  → return ONLY schools with that genderPolicy
-    // 3. childGender only        → inclusive: son=All-Boys+Co-ed, daughter=All-Girls+Co-ed
-    // 4. nothing known           → no filter
-    // Rule: null genderPolicy = 'unknown' → always INCLUDED (don't penalise missing data)
-    // ──────────────────────────────────────────────────────────────────────────
-    const gp = school.genderPolicy || null; // null = unknown, pass through all gender filters
-
-    // Step 1: Hard exclusions
-    const exclusions = familyProfile?.schoolGenderExclusions || [];
-    if (gp !== null && Array.isArray(exclusions) && exclusions.length > 0) {
-      const gpLower = gp.toLowerCase();
-      const excluded = exclusions.some(ex => {
-        const exL = ex.toLowerCase();
-        if (exL === 'all-girls') return gpLower === 'all-girls';
-        if (exL === 'all-boys') return gpLower === 'all-boys';
-        if (exL === 'co-ed') return gpLower === 'co-ed' || gpLower === 'co-ed with single-gender classes';
-        return false;
-      });
-      if (excluded) {
-        console.log(`[GENDER] ✗ Excluded (exclusion list) ${school.name}: genderPolicy="${gp}"`);
-        return false;
-      }
-    }
-
-    // Step 2: Explicit preference — ONLY matching schools (nulls pass through)
-    const genderPref = familyProfile?.schoolGenderPreference || null;
-    if (gp !== null && genderPref) {
-      const gpLower = gp.toLowerCase();
-      const prefLower = genderPref.toLowerCase();
-      let matches = false;
-      if (prefLower === 'all-girls') matches = gpLower === 'all-girls';
-      else if (prefLower === 'all-boys') matches = gpLower === 'all-boys';
-      else if (prefLower === 'co-ed') matches = gpLower === 'co-ed' || gpLower === 'co-ed with single-gender classes';
-      if (!matches) {
-        console.log(`[GENDER] ✗ Excluded (explicit pref=${genderPref}) ${school.name}: genderPolicy="${gp}"`);
-        return false;
-      }
-    }
-
-    // Step 3: Implicit from childGender — inclusive filter (nulls pass through)
-    if (gp !== null && !genderPref) {
-      const childGender = familyProfile?.childGender || null;
-      if (childGender === 'male') {
-        // Sons: show All-Boys and Co-ed; exclude All-Girls
-        if (gp === 'All-Girls') {
-          console.log(`[GENDER] ✗ Excluded (son, implicit) ${school.name}: All-Girls`);
-          return false;
-        }
-      } else if (childGender === 'female') {
-        // Daughters: show All-Girls and Co-ed; exclude All-Boys
-        if (gp === 'All-Boys') {
-          console.log(`[GENDER] ✗ Excluded (daughter, implicit) ${school.name}: All-Boys`);
-          return false;
-        }
-      }
-      // Step 4: childGender unknown → no filter
-    }
-    // ── END GENDER WATERFALL ──────────────────────────────────────────────────
+    if (!applyReligiousFilter(school, familyProfile, payload)) return false;
+    if (!applyGenderFilter(school, familyProfile)) return false;
     
     if (familyProfile?.commuteToleranceMinutes && school.distanceKm) {
       const estimatedCommute = school.distanceKm * 2;
@@ -373,6 +344,9 @@ async function performSearch(req) {
           }
         }
       }
+      // S112-WC1: Safety-critical filters ALWAYS enforced in relaxed pass
+      if (!applyReligiousFilter(school, familyProfile, payload)) return false;
+      if (!applyGenderFilter(school, familyProfile)) return false;
       return true;
     });
     isRelaxedPass = true;
