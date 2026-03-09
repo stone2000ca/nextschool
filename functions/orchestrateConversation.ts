@@ -345,12 +345,12 @@ function resolveTransition(params) {
 // LIGHTWEIGHT REGEX EXTRACTION — zero LLM calls, <5ms execution
 // =============================================================================
 function lightweightExtract(message, existingProfile) {
-  const bridgeProfile = { ...existingProfile };
+  const bridgeProfile = {};
   let bridgeIntent = 'continue';
 
   // Grade extraction: "grade 9", "going into grade 9", "9th grade", "kindergarten", "JK", "SK"
   const gradeMatch = message.match(/(?:going\s+)?(?:into\s+)?(?:grade|gr\.?)\s+([0-9]+|pk|jk|sk|k|kindergarten|junior|senior)/i);
-  if (gradeMatch && !bridgeProfile.childGrade) {
+  if (gradeMatch) {
     const gradeStr = gradeMatch[1].toLowerCase();
     const gradeMap = { 'pk': -2, 'jk': -1, 'sk': 0, 'k': 0, 'kindergarten': 0, 'junior': 11, 'senior': 12 };
     const grade = gradeMap[gradeStr] !== undefined ? gradeMap[gradeStr] : parseInt(gradeStr);
@@ -359,7 +359,7 @@ function lightweightExtract(message, existingProfile) {
 
   // Location extraction: "in Boston", "near Toronto", "live in midtown Toronto", "around Vancouver"
   const locMatch = message.match(/(?:live\s+)?(?:in|near|around|from)\s+([a-zA-Z\s]+?)(?:\s+(?:area|region|city|province|state)|\.|\s*$|,)/i);
-  if (locMatch && !bridgeProfile.locationArea) {
+  if (locMatch) {
     const loc = locMatch[1].trim();
     if (loc.length > 2 && /[A-Z]/.test(loc)) {
       bridgeProfile.locationArea = loc;
@@ -368,32 +368,31 @@ function lightweightExtract(message, existingProfile) {
 
   // Budget extraction: "30k", "$30k", "$30,000", "around 30k", "budget is 30k"
   // Require either $ prefix OR k/K suffix to avoid matching bare numbers like "grade 9"
-  if (!bridgeProfile.maxTuition) {
-    const budgetMatches = message.matchAll(/(\$)\s*(\d{1,3}(?:,\d{3})*|\d+)\s*([kK])?|(\d{1,3}(?:,\d{3})*|\d+)\s*([kK])/g);
-    for (const match of budgetMatches) {
-      let numStr, hasKilo;
-      if (match[1]) {
-        // Dollar-prefixed pattern
-        numStr = match[2];
-        hasKilo = !!match[3];
-      } else {
-        // k/K-suffixed pattern
-        numStr = match[4];
-        hasKilo = !!match[5];
-      }
-      const num = parseInt(numStr.replace(/,/g, ''));
-      if (!isNaN(num)) {
-        const amount = hasKilo ? num * 1000 : num;
-        if (amount >= 5000 && amount <= 500000) {
-          bridgeProfile.maxTuition = amount;
-          break;
-        }
+  const budgetMatches = message.matchAll(/(\$)\s*(\d{1,3}(?:,\d{3})*|\d+)\s*([kK])?|(\d{1,3}(?:,\d{3})*|\d+)\s*([kK])/g);
+  for (const match of budgetMatches) {
+    let numStr, hasKilo;
+    if (match[1]) {
+      // Dollar-prefixed pattern
+      numStr = match[2];
+      hasKilo = !!match[3];
+    } else {
+      // k/K-suffixed pattern
+      numStr = match[4];
+      hasKilo = !!match[5];
+    }
+    const num = parseInt(numStr.replace(/,/g, ''));
+    if (!isNaN(num)) {
+      const amount = hasKilo ? num * 1000 : num;
+      if (amount >= 5000 && amount <= 500000) {
+        bridgeProfile.maxTuition = amount;
+        break;
       }
     }
   }
 
   // Gender extraction: "son", "daughter", "boy", "girl"
-  if (!bridgeProfile.childGender) {
+  // Only extract if not already known in existing profile
+  if (!existingProfile?.childGender) {
     if (/\b(son|boy|he|him|his)\b/i.test(message)) bridgeProfile.childGender = 'male';
     else if (/\b(daughter|girl|she|her)\b/i.test(message)) bridgeProfile.childGender = 'female';
   }
