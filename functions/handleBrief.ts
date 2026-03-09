@@ -221,6 +221,8 @@ Deno.serve(async (req) => {
 
       const jackieBriefSystemPrompt = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}[STATE: BRIEF] You are Jackie, a warm and experienced education consultant. Generate a brief summary of what the family has shared. Use ONLY what was explicitly stated by the parent.
 
+FIELD DISPLAY RULES: Include all non-empty fields from the profile. Omit any field that has no data. Never display "(not specified)" or "(none)" — if a field is empty, skip it entirely.
+
     CRITICAL RULES:
     - Start with a warm, natural conversational sentence (1-2 sentences) acknowledging the family's situation before the numbered summary.
     - Do NOT invent personality traits, motivations, or character descriptions that were not explicitly stated by the parent.
@@ -243,9 +245,9 @@ FAMILY DATA:
 Format:
 - Open with a warm 1-2 sentence intro
 - Then a numbered list:
-  1. ${briefChildDisplayName}: ${childGrade !== null && childGrade !== undefined ? 'Grade ' + childGrade : '(not specified)'}
-  2. Location: ${locationArea || '(not specified)'}
-  3. Budget: ${budgetDisplay}
+  ${childGrade !== null && childGrade !== undefined ? '1. ' + briefChildDisplayName + ': Grade ' + childGrade : ''}
+  ${locationArea ? '2. Location: ' + locationArea : ''}
+  ${budgetDisplay !== '(not specified)' ? '3. Budget: ' + budgetDisplay : ''}
   ${prioritiesStr ? '4. Top priorities: ' + prioritiesStr : ''}
   ${interestsStr ? '5. Interests: ' + interestsStr : ''}
   ${dealbreakersStr ? '6. Dealbreakers: ' + dealbreakersStr : ''}
