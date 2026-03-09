@@ -349,6 +349,28 @@ function resolveTransition(params) {
 
 
 // =============================================================================
+// S113-WC2: mergeProfile — safe field merge that never overwrites arrays with empty
+// =============================================================================
+function mergeProfile(base, incoming) {
+  const merged = { ...base };
+  for (const [key, value] of Object.entries(incoming)) {
+    if (value === null || value === undefined) continue;
+    const existing = merged[key];
+    if (Array.isArray(value)) {
+      if (Array.isArray(existing) && existing.length > 0) {
+        if (value.length === 0) continue;
+        merged[key] = [...new Set([...existing, ...value])];
+      } else {
+        merged[key] = value;
+      }
+    } else {
+      if (value !== '') merged[key] = value;
+    }
+  }
+  return merged;
+}
+
+// =============================================================================
 // LIGHTWEIGHT REGEX EXTRACTION — zero LLM calls, <5ms execution
 // =============================================================================
 function lightweightExtract(message, existingProfile) {
@@ -1179,7 +1201,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
       // For-loop patches any DB nulls that accumulated already knew.
       const { bridgeProfile, bridgeIntent } = lightweightExtract(processMessage, conversationFamilyProfile);
       const accumulatedProfile = context.accumulatedFamilyProfile || {};
-      const workingProfile = { ...accumulatedProfile, ...conversationFamilyProfile, ...bridgeProfile };
+      const workingProfile = mergeProfile(mergeProfile(accumulatedProfile, conversationFamilyProfile), bridgeProfile);
       for (const [key, val] of Object.entries(workingProfile)) {
         if (val === null || val === undefined) {
           if (accumulatedProfile[key] != null) workingProfile[key] = accumulatedProfile[key];
@@ -1299,9 +1321,9 @@ Object.assign(context, safeUpdatedContext);
           });
           const extractData = extractRes?.data || {};
           if (extractData.updatedFamilyProfile) {
-            Object.assign(conversationFamilyProfile, extractData.updatedFamilyProfile);
-            Object.assign(workingProfile, extractData.updatedFamilyProfile);
-            context.accumulatedFamilyProfile = { ...context.accumulatedFamilyProfile, ...extractData.updatedFamilyProfile };
+            Object.assign(conversationFamilyProfile, mergeProfile(conversationFamilyProfile, extractData.updatedFamilyProfile));
+            Object.assign(workingProfile, mergeProfile(workingProfile, extractData.updatedFamilyProfile));
+            context.accumulatedFamilyProfile = mergeProfile(context.accumulatedFamilyProfile, extractData.updatedFamilyProfile);
           }
           if (extractData.extractedEntities) {
             extractionResult.extractedEntities = extractData.extractedEntities;
@@ -1414,7 +1436,7 @@ Object.assign(context, safeUpdatedContext);
           try {
             const finalProfile = await base44.entities.FamilyProfile.filter({ id: conversationFamilyProfile.id });
             if (finalProfile.length > 0) {
-              conversationFamilyProfile = finalProfile[0];
+              conversationFamilyProfile = mergeProfile(conversationFamilyProfile, finalProfile[0]);
               console.log('[RESULTS] Refreshed FamilyProfile from DB:', conversationFamilyProfile.id);
             }
           } catch (e) {
