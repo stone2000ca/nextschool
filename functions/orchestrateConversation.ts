@@ -1237,8 +1237,9 @@ Object.assign(context, safeUpdatedContext);
       let responseData;
 
       if (currentState === STATES.DISCOVERY) {
-        responseData = await handleDiscovery(base44, processMessage, conversationFamilyProfile, context, conversationHistory, consultantName, currentSchools, flags, returningUserContextBlock);
-        responseData.extractedEntities = extractionResult?.extractedEntities || {};
+        responseData = await handleDiscovery(base44, processMessage, workingProfile, context, conversationHistory, consultantName, currentSchools, flags, returningUserContextBlock);
+        responseData.familyProfile = workingProfile;
+        responseData.extractedEntities = workingProfile;
         return Response.json(responseData);
       }
 
