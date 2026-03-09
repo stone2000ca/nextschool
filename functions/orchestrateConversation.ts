@@ -1,5 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
+// Function: orchestrateConversation
+// Purpose: Route chat messages through state machine (WELCOME→DISCOVERY→BRIEF→RESULTS→DEEP_DIVE)
+// Entities: FamilyProfile, ChatHistory, FamilyJourney, SchoolJourney, GeneratedArtifact, LLMLog
+// Last Modified: 2026-03-09
+// Dependencies: OpenRouter API, extractEntities, handleBrief, handleResults, handleDeepDive, processDebriefCompletion
+// WC-2: LLM model upgrade — MiniMax M2.5 as primary model in callOpenRouter waterfall
+
 // =============================================================================
 // INLINED: callOpenRouter
 // E18c-002: LLM call logging — writes LLMLog entity for every call (fire-and-forget)
