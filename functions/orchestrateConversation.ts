@@ -1371,7 +1371,7 @@ Object.assign(context, safeUpdatedContext);
         const autoRefresh = context.autoRefreshed === true;
         const resultsResult = await base44.asServiceRole.functions.invoke('handleResults', {
           message: processMessage,
-          conversationFamilyProfile,
+          conversationFamilyProfile: workingProfile,
           context,
           conversationHistory,
           consultantName,
