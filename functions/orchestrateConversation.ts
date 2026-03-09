@@ -1209,6 +1209,14 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
       for (const [key, val] of Object.entries(workingProfile)) {
         if (val === null || val === undefined) {
           if (accumulatedProfile[key] != null) workingProfile[key] = accumulatedProfile[key];
+
+              // S114-WC1: Preserve dealbreakers from bridge extraction - merge chain may lose them
+    if (bridgeProfile?.dealbreakers && Array.isArray(bridgeProfile.dealbreakers) && bridgeProfile.dealbreakers.length > 0) {
+      workingProfile.dealbreakers = bridgeProfile.dealbreakers;
+    }
+    if (bridgeProfile?.schoolGenderExclusions && Array.isArray(bridgeProfile.schoolGenderExclusions) && bridgeProfile.schoolGenderExclusions.length > 0) {
+      workingProfile.schoolGenderExclusions = bridgeProfile.schoolGenderExclusions;
+    }
         }
       }
       context.accumulatedFamilyProfile = workingProfile;
