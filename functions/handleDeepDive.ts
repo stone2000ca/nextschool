@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
           const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
           const isPremiumSchool = selectedSchool.schoolTier === 'growth' || selectedSchool.schoolTier === 'pro';
           return Response.json({
-            message: rec.content,
+            message: extractConciseSummary(rec.content),
             state: currentState,
             briefStatus,
             schools: currentSchools || [],
