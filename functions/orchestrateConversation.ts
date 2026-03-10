@@ -391,9 +391,9 @@ function lightweightExtract(message, existingProfile) {
   const locMatch = message.match(/(?:live\s+)?(?:in|near|around|from)\s+([a-zA-Z\s]+?)(?:\s+(?:area|region|city|province|state)|\.|\s*$|,)/i);
   if (locMatch) {
     const loc = locMatch[1].trim();
-    if (loc.length > 2 && /[A-Z]/.test(loc)) {
-      bridgeProfile.locationArea = loc;
-    }
+    const NON_GEO = /\b(IB|AP|STEM|IGCSE|Montessori|Waldorf|Reggio|French|Programs?|Immersion|Curriculum|English|Math|Science|Art|Music|Drama)\b/gi;
+    const cleanedLoc = loc.replace(NON_GEO, '').replace(/\s+/g, ' ').trim();
+    if (cleanedLoc.length > 2 && /[A-Z]/.test(cleanedLoc)) { bridgeProfile.locationArea = cleanedLoc; }
   }
   // S113-WC1: Secondary fallback — bare city name or known Canadian region (no preposition required)
   if (!bridgeProfile.locationArea) {
@@ -429,7 +429,8 @@ function lightweightExtract(message, existingProfile) {
   }
 
   // Gender extraction
-  if (!existingProfile?.childGender) {
+  const strongGenderKw = /\b(son|daughter)\b/i.test(message);
+  if (strongGenderKw || !existingProfile?.childGender) {
     if (/\b(son|boy|he|him|his)\b/i.test(message)) bridgeProfile.childGender = 'male';
     else if (/\b(daughter|girl|she|her)\b/i.test(message)) bridgeProfile.childGender = 'female';
   }
@@ -494,6 +495,17 @@ function lightweightExtract(message, existingProfile) {
   }
   while ((iMatch = interestListPattern.exec(message)) !== null) {
     const items = iMatch[1].split(/\s*,\s*|\s+and\s+/);
+    items.forEach(item => {
+      const trimmed = item.trim().toLowerCase();
+      if (new RegExp(`^(?:${INTEREST_KEYWORDS})$`).test(trimmed)) {
+        foundInterests.add(trimmed);
+      }
+    });
+  }
+  const interestCommaPattern = new RegExp(`\\b(?:loves?|likes?|enjoys?|interested\\s+in|passionate\\s+about|into)\\s+(.+?)(?:[.!?]|$)`, 'gi');
+  let cMatch;
+  while ((cMatch = interestCommaPattern.exec(message)) !== null) {
+    const items = cMatch[1].split(/\s*,\s*|\s+and\s+/);
     items.forEach(item => {
       const trimmed = item.trim().toLowerCase();
       if (new RegExp(`^(?:${INTEREST_KEYWORDS})$`).test(trimmed)) {
