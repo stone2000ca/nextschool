@@ -378,7 +378,6 @@ Generate the DEEPDIVE card for this family-school match.`;
       }
     }
 
-    const aiMessageRaw = aiMessage; // E30-001: snapshot before sanitization
     const sanitizedMessage = aiMessage
       .split('\n')
       .filter(line => {
@@ -390,7 +389,6 @@ Generate the DEEPDIVE card for this family-school match.`;
 
     // Generate visitPrepKit from deepDiveAnalysis for immediate card rendering
     let generatedVisitPrepKit = null;
-    let fullVisitPrepKit = null; // E30-002: hoisted for batch persist
     if (deepDiveAnalysis && selectedSchool) {
       const schoolName = selectedSchool.name;
       const derivedObservations = (deepDiveAnalysis.dataGaps || []).map(gap => `Observe how the school addresses: ${gap}`);
@@ -398,7 +396,7 @@ Generate the DEEPDIVE card for this family-school match.`;
         .filter(t => t.concern)
         .map(t => `Watch for concerns around ${t.dimension}.`);
 
-      fullVisitPrepKit = {
+      const fullVisitPrepKit = {
         schoolName,
         visitQuestions: (deepDiveAnalysis.visitQuestions || []).map(q => ({ question: q, priorityTag: 'medium' })),
         observations: derivedObservations,
@@ -455,39 +453,23 @@ Generate the DEEPDIVE card for this family-school match.`;
         fitSummary: deepDiveAnalysis.fitLabel
       };
 
-      // E30: Batch persist all 3 GeneratedArtifact types (fire-and-forget)
+      // Persist as GeneratedArtifact (fire-and-forget)
       (async () => {
-        const generatedAt = new Date().toISOString();
-
-        const upsert = async (artifactType, fields) => {
-          const existing = await base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType });
-          if (existing && existing.length > 0) {
-            await base44.entities.GeneratedArtifact.update(existing[0].id, { ...fields, generatedAt });
-            console.log(`[E30] ${artifactType} updated:`, existing[0].id);
-          } else {
-            const created = await base44.entities.GeneratedArtifact.create({
-              userId, schoolId: selectedSchoolId,
-              conversationId: conversationId || '',
-              artifactType,
-              schoolName: selectedSchool.name,
-              generatedAt,
-              status: 'active',
-              ...fields
-            });
-            console.log(`[E30] ${artifactType} created:`, created.id);
-          }
-        };
-
-        const writes = [
-          upsert('action_plan', { content: JSON.stringify(generatedActionPlan), isLocked: !isPremiumUser }),
-          ...(aiMessageRaw ? [upsert('deep_dive_recommendation', { content: aiMessageRaw })] : []),
-          ...(fullVisitPrepKit ? [upsert('visit_prep_kit', { content: JSON.stringify(fullVisitPrepKit), isLocked: false })] : [])
-        ];
-
-        const results = await Promise.allSettled(writes);
-        results.forEach((r, i) => {
-          if (r.status === 'rejected') console.warn(`[E30] Write ${i} failed:`, r.reason?.message);
-        });
+        try {
+          await base44.entities.GeneratedArtifact.create({
+            userId: userId,
+            schoolId: selectedSchoolId,
+            conversationId: conversationId || '',
+            artifactType: 'action_plan',
+            schoolName: selectedSchool.name,
+            content: JSON.stringify(generatedActionPlan),
+            isLocked: !isPremiumUser,
+            generatedAt: new Date().toISOString(),
+            status: 'active'
+          });
+        } catch (apErr) {
+          console.warn('[E28-S3] Action plan persist failed:', apErr.message);
+        }
       })();
     }
 
