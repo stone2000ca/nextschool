@@ -136,6 +136,13 @@ export default function Consultant() {
   const handleDossierExpandChange = (isExpanding) =>
     setExpandedCardCount(prev => isExpanding ? prev + 1 : Math.max(0, prev - 1));
 
+  // E30-008: Track pending deep-dive school IDs (CTA spinner state)
+  const [pendingDeepDiveSchoolIds, setPendingDeepDiveSchoolIds] = useState(new Set());
+  const handleDeepDiveFromDossier = (school) => {
+    setPendingDeepDiveSchoolIds(prev => new Set([...prev, school.id]));
+    handleConfirmDeepDive(school);
+  };
+
   // BRIEF→RESULTS transition animation
   const [isTransitioning, setIsTransitioning] = useState(false);
   const prevIsIntakePhaseRef = useRef(true);
