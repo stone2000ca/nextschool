@@ -160,6 +160,73 @@ function VisitPrepContent({ data, isPremiumUser }) {
   );
 }
 
+function ReEvalContent({ data, isPremiumUser }) {
+  const fitConfig     = data.updatedFitLabel  ? FIT_BADGE[data.updatedFitLabel]  : null;
+  const prevFitConfig = data.previousFitLabel ? FIT_BADGE[data.previousFitLabel] : null;
+
+  const delta = data.scoreDelta;
+  const deltaDisplay = (delta === 0 || delta == null)
+    ? { text: 'No change', color: '#94a3b8' }
+    : delta > 0
+      ? { text: `+${delta}`, color: '#22c55e' }
+      : { text: `${delta}`,  color: '#f87171' };
+
+  const narrative  = data.narrative || '';
+  const sentences  = narrative.match(/[^.!?]+[.!?]+/g) || (narrative ? [narrative] : []);
+  const freePart   = sentences.slice(0, 2).join(' ');
+  const hasLocked  = !isPremiumUser && sentences.length > 2;
+
+  let timeAgo = '';
+  if (data.generatedAt) {
+    const diffMs   = Date.now() - new Date(data.generatedAt).getTime();
+    const diffDays  = Math.floor(diffMs / 86400000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffMins  = Math.floor(diffMs / 60000);
+    if      (diffDays  > 0) timeAgo = `Generated ${diffDays} day${diffDays  > 1 ? 's' : ''} ago`;
+    else if (diffHours > 0) timeAgo = `Generated ${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    else if (diffMins  > 0) timeAgo = `Generated ${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    else                    timeAgo = 'Just generated';
+  }
+
+  return (
+    <div className="space-y-2">
+      {fitConfig && (
+        <span style={{ background: fitConfig.bg, color: '#fff', fontSize: 11, borderRadius: 4, padding: '1px 6px', fontWeight: 500, display: 'inline-block' }}>
+          {fitConfig.label}
+        </span>
+      )}
+
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs font-semibold" style={{ color: deltaDisplay.color }}>
+          {deltaDisplay.text}
+        </span>
+        {delta !== 0 && delta != null && prevFitConfig && (
+          <span className="text-xs text-slate-500">from {prevFitConfig.label}</span>
+        )}
+      </div>
+
+      {narrative && (
+        <div>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            {isPremiumUser ? narrative : freePart}
+          </p>
+          {hasLocked && (
+            <div
+              className="flex items-center gap-2 mt-2 px-2 py-1.5 rounded"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <Lock className="w-3 h-3 text-amber-400 flex-shrink-0" />
+              <span className="text-[11px] text-slate-400">Unlock full re-evaluation analysis</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {timeAgo && <p className="text-[10px] text-slate-500">{timeAgo}</p>}
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function SchoolDossierCard({
@@ -184,6 +251,7 @@ export default function SchoolDossierCard({
   const [aiRecOpen,     setAiRecOpen]     = useState(true);
   const [tradeOffsOpen, setTradeOffsOpen] = useState(true);
   const [visitPrepOpen, setVisitPrepOpen] = useState(true);
+  const [reEvalOpen,    setReEvalOpen]    = useState(true);
 
   const checks    = familyProfile ? buildPriorityChecks(school, familyProfile).slice(0, 4) : [];
   const tuition   = school.dayTuition ?? school.tuition;
@@ -206,7 +274,9 @@ export default function SchoolDossierCard({
     }
   }
 
-  const hasExpandedContent = aiRecContent || tradeOffs || visitPrepData;
+  const fitReEvaluation = artifactCache?.[`${school.id}_fit_reevaluation`] || null;
+
+  const hasExpandedContent = aiRecContent || tradeOffs || visitPrepData || fitReEvaluation;
   // Empty state: no analysis record AND no artifact content for this school
   const hasAnalysisData = !!analysis || !!hasExpandedContent;
 
@@ -342,6 +412,12 @@ export default function SchoolDossierCard({
           {visitPrepData && (
             <AccordionSection title="Visit Prep" isOpen={visitPrepOpen} onToggle={() => setVisitPrepOpen(v => !v)}>
               <VisitPrepContent data={visitPrepData} isPremiumUser={isPremiumUser} />
+            </AccordionSection>
+          )}
+
+          {fitReEvaluation && (
+            <AccordionSection title="Post-Visit Re-Evaluation" isOpen={reEvalOpen} onToggle={() => setReEvalOpen(v => !v)}>
+              <ReEvalContent data={fitReEvaluation} isPremiumUser={isPremiumUser} />
             </AccordionSection>
           )}
         </div>
