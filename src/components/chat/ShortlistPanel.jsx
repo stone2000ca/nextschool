@@ -1,40 +1,10 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { X, Heart, ExternalLink, CalendarDays, ChevronDown, Bell, BellRing } from 'lucide-react';
+import { Heart, CalendarDays, ChevronDown, Bell, BellRing } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { buildPriorityChecks } from '@/components/schools/SchoolCard';
 import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, formatEventDate } from '@/components/utils/eventConstants';
 import ApplicationTimeline from '@/components/schools/ApplicationTimeline';
-
-function formatGrade(grade) {
-  if (grade === null || grade === undefined) return '';
-  const num = Number(grade);
-  if (num <= -2) return 'PK';
-  if (num === -1) return 'JK';
-  if (num === 0) return 'K';
-  return String(num);
-}
-
-function formatGradeRange(lo, hi) {
-  const from = formatGrade(lo);
-  const to = formatGrade(hi);
-  if (!from && !to) return '';
-  if (!from) return to;
-  if (!to) return from;
-  return `${from}–${to}`;
-}
-
-function StatusDot({ status }) {
-  if (status === 'match') return <span className="inline-block w-2 h-2 rounded-full bg-teal-400 flex-shrink-0" />;
-  if (status === 'mismatch') return <span className="inline-block w-2 h-2 rounded-full bg-rose-400 flex-shrink-0" />;
-  return <span className="inline-block w-2 h-2 rounded-full bg-slate-500 flex-shrink-0" />;
-}
-
-const FIT_BADGE = {
-  strong_match: { bg: '#22c55e', label: 'Strong Match' },
-  good_match: { bg: '#14b8a6', label: 'Good Match' },
-  worth_exploring: { bg: '#64748b', label: 'Worth Exploring' },
-};
+import SchoolDossierCard from '@/components/chat/SchoolDossierCard';
 
 export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool, familyProfile, schoolAnalyses, artifactCache }) {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
