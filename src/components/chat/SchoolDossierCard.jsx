@@ -161,7 +161,7 @@ function VisitPrepContent({ data, isPremiumUser }) {
 }
 
 function ReEvalContent({ data, isPremiumUser }) {
-  const fitConfig     = data.updatedFitLabel  ? FIT_BADGE[data.updatedFitLabel]  : null;
+  const fitConfig     = data.fitLabel  ? FIT_BADGE[data.fitLabel]  : null;
   const prevFitConfig = data.previousFitLabel ? FIT_BADGE[data.previousFitLabel] : null;
 
   const delta = data.scoreDelta;
