@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { X, ExternalLink, ChevronDown } from 'lucide-react';
+import { X, ExternalLink, ChevronDown, Lock, Sparkles } from 'lucide-react';
 import { buildPriorityChecks } from '@/components/schools/SchoolCard';
 
-// ── Helpers (moved from ShortlistPanel) ──────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatGrade(grade) {
   if (grade === null || grade === undefined) return '';
@@ -55,63 +55,129 @@ function AccordionSection({ title, isOpen, onToggle, children }) {
   );
 }
 
-function VisitPrepContent({ data }) {
+function LockedTeaser() {
+  return (
+    <div
+      className="flex items-center gap-2 mt-2 px-2 py-1.5 rounded"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+    >
+      <Lock className="w-3 h-3 text-amber-400 flex-shrink-0" />
+      <span className="text-[11px] text-slate-400">Upgrade to see full prep kit</span>
+    </div>
+  );
+}
+
+function VisitPrepContent({ data, isPremiumUser }) {
+  // Array format (flat list)
   if (Array.isArray(data)) {
+    const freeItems   = data.slice(0, 2);
+    const lockedItems = data.slice(2);
     return (
-      <ul className="space-y-1">
-        {data.map((item, i) => (
-          <li key={i} className="text-xs text-slate-400 flex items-start gap-1.5">
-            <span className="mt-0.5 flex-shrink-0 text-slate-500">•</span>
-            <span>{typeof item === 'string' ? item : item.text || item.question || JSON.stringify(item)}</span>
-          </li>
-        ))}
-      </ul>
+      <div>
+        <ul className="space-y-1">
+          {freeItems.map((item, i) => (
+            <li key={i} className="text-xs text-slate-400 flex items-start gap-1.5">
+              <span className="mt-0.5 flex-shrink-0 text-slate-500">•</span>
+              <span>{typeof item === 'string' ? item : item.text || item.question || JSON.stringify(item)}</span>
+            </li>
+          ))}
+        </ul>
+        {!isPremiumUser && lockedItems.length > 0 && <LockedTeaser />}
+        {isPremiumUser && lockedItems.length > 0 && (
+          <ul className="space-y-1 mt-1">
+            {lockedItems.map((item, i) => (
+              <li key={i} className="text-xs text-slate-400 flex items-start gap-1.5">
+                <span className="mt-0.5 flex-shrink-0 text-slate-500">•</span>
+                <span>{typeof item === 'string' ? item : item.text || item.question || JSON.stringify(item)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     );
   }
 
-  const sections = [
-    { key: 'questions',       label: 'Questions to Ask' },
-    { key: 'thingsToNotice',  label: 'Things to Notice' },
-    { key: 'logisticalTips',  label: 'Logistics' },
-  ];
+  // Object format with named sections
+  const questions      = data.questions || [];
+  const freeQuestions  = questions.slice(0, 2);
+  const extraQuestions = questions.slice(2);
+  const hasLockedContent = !isPremiumUser && (
+    extraQuestions.length > 0 ||
+    (data.thingsToNotice?.length > 0) ||
+    (data.logisticalTips?.length > 0)
+  );
 
   return (
     <div className="space-y-2">
-      {sections.map(({ key, label }) => {
-        const items = data[key];
-        if (!items?.length) return null;
-        return (
-          <div key={key}>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">{label}</p>
+      {freeQuestions.length > 0 && (
+        <div>
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Questions to Ask</p>
+          <ul className="space-y-0.5">
+            {freeQuestions.map((item, i) => (
+              <li key={i} className="text-xs text-slate-400 flex items-start gap-1.5">
+                <span className="mt-0.5 flex-shrink-0 text-slate-500">•</span>
+                <span>{typeof item === 'string' ? item : item.text || JSON.stringify(item)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {hasLockedContent && <LockedTeaser />}
+
+      {isPremiumUser && (
+        <>
+          {extraQuestions.length > 0 && (
             <ul className="space-y-0.5">
-              {items.map((item, i) => (
+              {extraQuestions.map((item, i) => (
                 <li key={i} className="text-xs text-slate-400 flex items-start gap-1.5">
                   <span className="mt-0.5 flex-shrink-0 text-slate-500">•</span>
                   <span>{typeof item === 'string' ? item : item.text || JSON.stringify(item)}</span>
                 </li>
               ))}
             </ul>
-          </div>
-        );
-      })}
+          )}
+          {[{ key: 'thingsToNotice', label: 'Things to Notice' }, { key: 'logisticalTips', label: 'Logistics' }].map(({ key, label }) => {
+            const items = data[key];
+            if (!items?.length) return null;
+            return (
+              <div key={key}>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">{label}</p>
+                <ul className="space-y-0.5">
+                  {items.map((item, i) => (
+                    <li key={i} className="text-xs text-slate-400 flex items-start gap-1.5">
+                      <span className="mt-0.5 flex-shrink-0 text-slate-500">•</span>
+                      <span>{typeof item === 'string' ? item : item.text || JSON.stringify(item)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function SchoolDossierCard({ school, familyProfile, schoolAnalyses, artifactCache, onRemove, onViewSchool }) {
-  const [isExpanded,    setIsExpanded]    = useState(false);
-  const [aiRecOpen,     setAiRecOpen]     = useState(true);
-  const [tradeOffsOpen, setTradeOffsOpen] = useState(true);
-  const [visitPrepOpen, setVisitPrepOpen] = useState(true);
+export default function SchoolDossierCard({
+  school, familyProfile, schoolAnalyses, artifactCache,
+  onRemove, onViewSchool,
+  consultantName, onSendMessage, isPremiumUser,
+}) {
+  const [isExpanded,        setIsExpanded]        = useState(false);
+  const [aiRecOpen,         setAiRecOpen]         = useState(true);
+  const [tradeOffsOpen,     setTradeOffsOpen]     = useState(true);
+  const [visitPrepOpen,     setVisitPrepOpen]     = useState(true);
+  const [isAnalyzingSchool, setIsAnalyzingSchool] = useState(false);
 
-  const checks   = familyProfile ? buildPriorityChecks(school, familyProfile).slice(0, 4) : [];
-  const tuition  = school.dayTuition ?? school.tuition;
-  const analysis = schoolAnalyses?.[school.id];
+  const checks    = familyProfile ? buildPriorityChecks(school, familyProfile).slice(0, 4) : [];
+  const tuition   = school.dayTuition ?? school.tuition;
+  const analysis  = schoolAnalyses?.[school.id];
   const fitConfig = analysis?.fitLabel ? FIT_BADGE[analysis.fitLabel] : null;
 
-  // Expanded section data
   const aiRecContent = artifactCache?.[`${school.id}_deep_dive_recommendation`] || null;
 
   const tradeOffs = Array.isArray(analysis?.tradeOffs) && analysis.tradeOffs.length > 0
@@ -129,6 +195,14 @@ export default function SchoolDossierCard({ school, familyProfile, schoolAnalyse
   }
 
   const hasExpandedContent = aiRecContent || tradeOffs || visitPrepData;
+  // Empty state: no analysis record AND no artifact content for this school
+  const hasAnalysisData = !!analysis || !!hasExpandedContent;
+
+  const handleAnalyzeCTA = () => {
+    if (!onSendMessage || isAnalyzingSchool) return;
+    setIsAnalyzingSchool(true);
+    onSendMessage(`Tell me more about ${school.name}`);
+  };
 
   return (
     <div
@@ -205,6 +279,21 @@ export default function SchoolDossierCard({ school, familyProfile, schoolAnalyse
         View Details
       </button>
 
+      {/* ── Empty state CTA: trigger analysis via chat ── */}
+      {!hasAnalysisData && onSendMessage && (
+        <button
+          onClick={handleAnalyzeCTA}
+          disabled={isAnalyzingSchool}
+          className="w-full flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded mt-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.3)', color: '#2dd4bf' }}
+        >
+          <Sparkles className="w-3 h-3 flex-shrink-0" />
+          {isAnalyzingSchool
+            ? `Analyzing ${school.name}…`
+            : `Ask ${consultantName || 'your consultant'} to analyze ${school.name}`}
+        </button>
+      )}
+
       {/* ── Expanded accordion sections ── */}
       {isExpanded && hasExpandedContent && (
         <div>
@@ -231,7 +320,7 @@ export default function SchoolDossierCard({ school, familyProfile, schoolAnalyse
 
           {visitPrepData && (
             <AccordionSection title="Visit Prep" isOpen={visitPrepOpen} onToggle={() => setVisitPrepOpen(v => !v)}>
-              <VisitPrepContent data={visitPrepData} />
+              <VisitPrepContent data={visitPrepData} isPremiumUser={isPremiumUser} />
             </AccordionSection>
           )}
         </div>
