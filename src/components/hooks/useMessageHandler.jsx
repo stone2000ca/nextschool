@@ -498,7 +498,7 @@ export const useMessageHandler = ({
         role: 'assistant',
         content: aiMessageContent,
         timestamp: new Date().toISOString(),
-        deepDiveAnalysis: response.data?.deepDiveAnalysis || null,
+        deepDiveAnalysis: response.data?.deepDiveAnalysis ? { ...response.data.deepDiveAnalysis, schoolId: selectedSchool?.id } : null,
         visitPrepKit: response.data?.visitPrepKit || null,
         fitReEvaluation: response.data?.fitReEvaluation || null,
       };
