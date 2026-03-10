@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { X, ExternalLink, ChevronDown, Lock, Sparkles } from 'lucide-react';
+import { X, ExternalLink, ChevronDown, Lock, Sparkles, Loader2 } from 'lucide-react';
 import { buildPriorityChecks } from '@/components/schools/SchoolCard';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -167,12 +167,12 @@ export default function SchoolDossierCard({
   onRemove, onViewSchool,
   consultantName, onSendMessage, isPremiumUser,
   onDossierExpandChange,
+  onConfirmDeepDive, pendingDeepDiveSchoolIds,
 }) {
-  const [isExpanded,        setIsExpanded]        = useState(false);
-  const [aiRecOpen,         setAiRecOpen]         = useState(true);
-  const [tradeOffsOpen,     setTradeOffsOpen]     = useState(true);
-  const [visitPrepOpen,     setVisitPrepOpen]     = useState(true);
-  const [isAnalyzingSchool, setIsAnalyzingSchool] = useState(false);
+  const [isExpanded,    setIsExpanded]    = useState(false);
+  const [aiRecOpen,     setAiRecOpen]     = useState(true);
+  const [tradeOffsOpen, setTradeOffsOpen] = useState(true);
+  const [visitPrepOpen, setVisitPrepOpen] = useState(true);
 
   const checks    = familyProfile ? buildPriorityChecks(school, familyProfile).slice(0, 4) : [];
   const tuition   = school.dayTuition ?? school.tuition;
@@ -199,10 +199,11 @@ export default function SchoolDossierCard({
   // Empty state: no analysis record AND no artifact content for this school
   const hasAnalysisData = !!analysis || !!hasExpandedContent;
 
+  const isPendingAnalysis = pendingDeepDiveSchoolIds?.has(school.id);
+
   const handleAnalyzeCTA = () => {
-    if (!onSendMessage || isAnalyzingSchool) return;
-    setIsAnalyzingSchool(true);
-    onSendMessage(`Tell me more about ${school.name}`);
+    if (!onConfirmDeepDive || isPendingAnalysis) return;
+    onConfirmDeepDive(school);
   };
 
   return (
@@ -284,19 +285,23 @@ export default function SchoolDossierCard({
         View Details
       </button>
 
-      {/* ── Empty state CTA: trigger analysis via chat ── */}
-      {!hasAnalysisData && onSendMessage && (
-        <button
-          onClick={handleAnalyzeCTA}
-          disabled={isAnalyzingSchool}
-          className="w-full flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded mt-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.3)', color: '#2dd4bf' }}
-        >
-          <Sparkles className="w-3 h-3 flex-shrink-0" />
-          {isAnalyzingSchool
-            ? `Analyzing ${school.name}…`
-            : `Ask ${consultantName || 'your consultant'} to analyze ${school.name}`}
-        </button>
+      {/* ── Empty state CTA / pending spinner ── */}
+      {!hasAnalysisData && (
+        isPendingAnalysis ? (
+          <div className="w-full flex items-center justify-center gap-1.5 text-xs py-1.5 mt-2 text-slate-400">
+            <Loader2 className="w-3 h-3 flex-shrink-0 animate-spin" />
+            Analyzing {school.name}…
+          </div>
+        ) : onConfirmDeepDive ? (
+          <button
+            onClick={handleAnalyzeCTA}
+            className="w-full flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded mt-2 transition-colors"
+            style={{ background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.3)', color: '#2dd4bf' }}
+          >
+            <Sparkles className="w-3 h-3 flex-shrink-0" />
+            Ask {consultantName || 'your consultant'} to analyze {school.name}
+          </button>
+        ) : null
       )}
 
       {/* ── Expanded accordion sections ── */}
