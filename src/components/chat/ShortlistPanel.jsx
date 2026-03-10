@@ -124,6 +124,9 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
                 artifactCache={artifactCache}
                 onRemove={onRemove}
                 onViewSchool={onViewSchool}
+                consultantName={consultantName}
+                onSendMessage={onSendMessage}
+                isPremiumUser={isPremiumUser}
               />
             ))}
           </div>
