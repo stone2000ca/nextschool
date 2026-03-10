@@ -5,6 +5,7 @@
 // Dependencies: OpenRouter API, Base44 InvokeLLM fallback, handleVisitDebrief function
 // WC-2: LLM model upgrade — MiniMax M2.5 as primary model in callOpenRouter waterfall
 // S115-WC2: E10b structured output parse fix
+// S115-WC3: E30 Sprint 2 cache read — early return from GeneratedArtifact cache
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
@@ -161,6 +162,57 @@ Deno.serve(async (req) => {
         familyProfile: conversationFamilyProfile,
         conversationContext: context
       });
+    }
+
+    // S115-WC3: E30 cache read — return early if all 3 artifacts exist with E30_V1
+    if (userId && selectedSchoolId) {
+      try {
+        const [cachedRec, cachedPrep, cachedPlan] = await Promise.all([
+          base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'deep_dive_recommendation' }),
+          base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'visit_prep_kit' }),
+          base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'action_plan' })
+        ]);
+        const rec = cachedRec?.[0];
+        const prep = cachedPrep?.[0];
+        const plan = cachedPlan?.[0];
+        const allCached = rec?.metadata?.version === 'E30_V1' && prep?.metadata?.version === 'E30_V1' && plan?.metadata?.version === 'E30_V1';
+        if (allCached) {
+          console.log('[E30] Cache hit — returning from GeneratedArtifact cache for school:', selectedSchoolId);
+          let cachedVisitPrepKit = null;
+          try {
+            const fullKit = typeof prep.content === 'string' ? JSON.parse(prep.content) : prep.content;
+            cachedVisitPrepKit = isPremiumUser ? fullKit : { schoolName: fullKit.schoolName, intro: fullKit.intro, visitQuestions: (fullKit.visitQuestions || []).slice(0, 2), observations: null, redFlags: null, isLocked: true };
+          } catch (e) { console.warn('[E30] Cache: visit_prep_kit parse failed:', e.message); }
+          let cachedActionPlan = null;
+          try {
+            cachedActionPlan = isPremiumUser ? (typeof plan.content === 'string' ? JSON.parse(plan.content) : plan.content) : null;
+          } catch (e) { console.warn('[E30] Cache: action_plan parse failed:', e.message); }
+          let cachedDeepDiveAnalysis = null;
+          try {
+            const analyses = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId });
+            if (analyses?.[0]) cachedDeepDiveAnalysis = analyses[0];
+          } catch (e) { console.warn('[E30] Cache: SchoolAnalysis fetch failed:', e.message); }
+          const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
+          const isPremiumSchool = selectedSchool.schoolTier === 'growth' || selectedSchool.schoolTier === 'pro';
+          return Response.json({
+            message: rec.content,
+            state: currentState,
+            briefStatus,
+            schools: currentSchools || [],
+            familyProfile: conversationFamilyProfile,
+            conversationContext: { ...(context || {}), [deepDiveFollowUpKey]: true },
+            deepDiveAnalysis: cachedDeepDiveAnalysis,
+            visitPrepKit: cachedVisitPrepKit,
+            actionPlan: cachedActionPlan,
+            tourRequestOffered: isPremiumSchool,
+            fromCache: true
+          });
+        } else {
+          console.log('[E30] Cache miss — falling through to fresh generation');
+        }
+      } catch (cacheErr) {
+        console.warn('[E30] Cache read failed (non-blocking):', cacheErr.message);
+      }
     }
 
     // Load upcoming SchoolEvents for this school (non-blocking, best-effort)
@@ -374,6 +426,7 @@ Generate the DEEPDIVE card for this family-school match.`;
       }
     }
 
+    const aiMessageRaw = aiMessage; // E30-001: snapshot before sanitization
     const sanitizedMessage = aiMessage
       .split('\n')
       .filter(line => {
@@ -385,6 +438,7 @@ Generate the DEEPDIVE card for this family-school match.`;
 
     // Generate visitPrepKit from deepDiveAnalysis for immediate card rendering
     let generatedVisitPrepKit = null;
+    let fullVisitPrepKit = null; // E30-002: hoisted for batch persist
     if (deepDiveAnalysis && selectedSchool) {
       const schoolName = selectedSchool.name;
       const derivedObservations = (deepDiveAnalysis.dataGaps || []).map(gap => `Observe how the school addresses: ${gap}`);
@@ -392,7 +446,7 @@ Generate the DEEPDIVE card for this family-school match.`;
         .filter(t => t.concern)
         .map(t => `Watch for concerns around ${t.dimension}.`);
 
-      const fullVisitPrepKit = {
+      fullVisitPrepKit = {
         schoolName,
         visitQuestions: (deepDiveAnalysis.visitQuestions || []).map(q => ({ question: q, priorityTag: 'medium' })),
         observations: derivedObservations,
@@ -449,23 +503,39 @@ Generate the DEEPDIVE card for this family-school match.`;
         fitSummary: deepDiveAnalysis.fitLabel
       };
 
-      // Persist as GeneratedArtifact (fire-and-forget)
+      // E30: Batch persist all 3 GeneratedArtifact types with metadata (fire-and-forget)
       (async () => {
-        try {
-          await base44.entities.GeneratedArtifact.create({
-            userId: userId,
-            schoolId: selectedSchoolId,
-            conversationId: conversationId || '',
-            artifactType: 'action_plan',
-            schoolName: selectedSchool.name,
-            content: JSON.stringify(generatedActionPlan),
-            isLocked: !isPremiumUser,
-            generatedAt: new Date().toISOString(),
-            status: 'active'
-          });
-        } catch (apErr) {
-          console.warn('[E28-S3] Action plan persist failed:', apErr.message);
-        }
+        const generatedAt = new Date().toISOString();
+
+        const upsert = async (artifactType, fields) => {
+          const existing = await base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType });
+          if (existing && existing.length > 0) {
+            await base44.entities.GeneratedArtifact.update(existing[0].id, { ...fields, generatedAt });
+            console.log(`[E30] ${artifactType} updated:`, existing[0].id);
+          } else {
+            const created = await base44.entities.GeneratedArtifact.create({
+              userId, schoolId: selectedSchoolId,
+              conversationId: conversationId || '',
+              artifactType,
+              schoolName: selectedSchool.name,
+              generatedAt,
+              status: 'active',
+              ...fields
+            });
+            console.log(`[E30] ${artifactType} created:`, created.id);
+          }
+        };
+
+        const writes = [
+          upsert('action_plan', { content: JSON.stringify(generatedActionPlan), isLocked: !isPremiumUser, metadata: { version: 'E30_V1' } }),
+          ...(aiMessageRaw ? [upsert('deep_dive_recommendation', { content: finalMessage, metadata: { rawAnalysis: aiMessageRaw, version: 'E30_V1' } })] : []),
+          ...(fullVisitPrepKit ? [upsert('visit_prep_kit', { content: JSON.stringify(fullVisitPrepKit), isLocked: false, metadata: { version: 'E30_V1' } })] : [])
+        ];
+
+        const results = await Promise.allSettled(writes);
+        results.forEach((r, i) => {
+          if (r.status === 'rejected') console.warn(`[E30] Write ${i} failed:`, r.reason?.message);
+        });
       })();
     }
 
