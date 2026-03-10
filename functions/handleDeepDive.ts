@@ -1,9 +1,10 @@
 // Function: handleDeepDive
 // Purpose: Handle deep-dive school analysis with visit prep generation and debrief mode routing
 // Entities: School, SchoolAnalysis, GeneratedArtifact, SchoolEvent, User
-// Last Modified: 2026-03-09
+// Last Modified: 2026-03-10
 // Dependencies: OpenRouter API, Base44 InvokeLLM fallback, handleVisitDebrief function
 // WC-2: LLM model upgrade — MiniMax M2.5 as primary model in callOpenRouter waterfall
+// S115-WC2: E10b structured output parse fix
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
@@ -90,8 +91,8 @@ async function callOpenRouter(options) {
     try {
       return JSON.parse(content);
     } catch (e) {
-      console.error('[OPENROUTER] JSON parse failed:', content.substring(0, 200));
-      throw new Error('OpenRouter structured output parse failed');
+      console.error('[OPENROUTER] JSON parse failed, returning raw content for caller recovery');
+      return content;
     }
   }
   
@@ -298,34 +299,29 @@ Generate the DEEPDIVE card for this family-school match.`;
     // E10b: Generate structured analysis in parallel
     let rawAnalysisResponse = null;
     try {
-      const analysisResponse = await callOpenRouter({
+      rawAnalysisResponse = await callOpenRouter({
         systemPrompt: `You are a school analysis engine. Given a consultant's analysis of a school for a specific family, extract structured data. Return ONLY valid JSON matching the schema.`,
         userPrompt: `Consultant's analysis: ${aiMessage}\n\nSchool data: ${JSON.stringify(compressedSchoolData)}\n\nFamily profile: child=${childDisplayName}, budget=${resolvedMaxTuition}, priorities=${resolvedPriorities?.join(', ') || 'None'}, interests=${conversationFamilyProfile?.interests?.join(', ') || 'None'}, academicStrengths=${conversationFamilyProfile?.academicStrengths?.join(', ') || 'None'}, learningStyle=${conversationFamilyProfile?.learningStyle || 'None'}, personalityTraits=${conversationFamilyProfile?.personalityTraits?.join(', ') || 'None'}\n\nIMPORTANT: Every school has trade-offs. You MUST return at least 3 items in tradeOffs[]. For each trade-off, include the dimension name, and either a strength (what this school does well for this family) or a concern (what might not fit), or both. Consider dimensions like: learning support, class size, arts/athletics programs, commute distance, budget fit, academic approach, campus facilities, community culture. If school data is missing for a dimension the family cares about, that itself is a trade-off with concern noting the data gap. Each dimension should appear only once in tradeOffs[]. Do not repeat dimensions. If a dimension has both a strength and a concern, include both in the same trade-off object.\n\nExtract: fitLabel (strong_match/good_match/worth_exploring), fitScore (0-100), tradeOffs (array with dimension, strength, concern, dataSource), dataGaps (array of field names with missing data relevant to this family), visitQuestions (array of 3-5 personalized questions for school visit), financialSummary (tuition, aidAvailable boolean, estimatedNetCost, budgetFit).`,
-        maxTokens: 800,
+        maxTokens: 1500,
         temperature: 0.3,
         responseSchema: {
           name: 'school_analysis',
           schema: {
             type: 'object',
+            additionalProperties: false,
             properties: {
               fitLabel: { type: 'string', enum: ['strong_match', 'good_match', 'worth_exploring'] },
               fitScore: { type: 'number' },
-              tradeOffs: { type: 'array', items: { type: 'object', properties: { dimension: { type: 'string' }, strength: { type: 'string' }, concern: { type: 'string' }, dataSource: { type: 'string' } } } },
+              tradeOffs: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['dimension', 'strength', 'concern', 'dataSource'], properties: { dimension: { type: 'string' }, strength: { type: 'string' }, concern: { type: 'string' }, dataSource: { type: 'string' } } } },
               dataGaps: { type: 'array', items: { type: 'string' } },
               visitQuestions: { type: 'array', items: { type: 'string' } },
-              financialSummary: { type: 'object', properties: { tuition: { type: 'number' }, aidAvailable: { type: 'boolean' }, estimatedNetCost: { type: 'number' }, budgetFit: { type: 'string' } } }
+              financialSummary: { type: 'object', additionalProperties: false, required: ['tuition', 'aidAvailable', 'estimatedNetCost', 'budgetFit'], properties: { tuition: { type: 'number' }, aidAvailable: { type: 'boolean' }, estimatedNetCost: { type: 'number' }, budgetFit: { type: 'string' } } }
             },
             required: ['fitLabel', 'fitScore', 'tradeOffs', 'dataGaps', 'visitQuestions', 'financialSummary']
           }
         }
       });
-      rawAnalysisResponse = analysisResponse;
-      if (typeof analysisResponse === 'string') {
-        const stripped = analysisResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-        deepDiveAnalysis = JSON.parse(stripped);
-      } else {
-        deepDiveAnalysis = analysisResponse;
-      }
+      deepDiveAnalysis = typeof rawAnalysisResponse === 'object' ? rawAnalysisResponse : JSON.parse(rawAnalysisResponse);
       console.log('[E10b] Structured analysis extracted successfully');
 
       // Save to SchoolAnalysis entity (non-blocking, fire-and-forget)
