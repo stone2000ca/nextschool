@@ -30,7 +30,13 @@ function StatusDot({ status }) {
   return <span className="inline-block w-2 h-2 rounded-full bg-slate-500 flex-shrink-0" />;
 }
 
-export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool, familyProfile }) {
+const FIT_BADGE = {
+  strong_match: { bg: '#22c55e', label: 'Strong Match' },
+  good_match: { bg: '#14b8a6', label: 'Good Match' },
+  worth_exploring: { bg: '#64748b', label: 'Worth Exploring' },
+};
+
+export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool, familyProfile, schoolAnalyses }) {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [eventsLoaded, setEventsLoaded] = useState(false);
   const [timelineExpanded, setTimelineExpanded] = useState(true);
@@ -151,7 +157,20 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
                 >
                   {/* School name + remove */}
                   <div className="flex items-start justify-between mb-1 gap-2">
-                    <h3 className="text-sm font-semibold text-white leading-snug">{school.name}</h3>
+                    <div>
+                      <h3 className="text-sm font-semibold text-white leading-snug">{school.name}</h3>
+                      {/* E30-004: Fit badge */}
+                      {(() => {
+                        const analysis = schoolAnalyses?.[school.id];
+                        const config = analysis?.fitLabel ? FIT_BADGE[analysis.fitLabel] : null;
+                        if (!config) return null;
+                        return (
+                          <span style={{ background: config.bg, color: '#fff', fontSize: 11, borderRadius: 4, padding: '1px 6px', fontWeight: 500, display: 'inline-block', marginTop: 3 }}>
+                            {config.label}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     <button
                       onClick={() => onRemove(school.id)}
                       className="text-slate-500 hover:text-rose-400 transition-colors flex-shrink-0 mt-0.5"

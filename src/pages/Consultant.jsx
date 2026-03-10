@@ -188,6 +188,9 @@ export default function Consultant() {
   // E29-007: Active journey context for returning users
   const [activeJourney, setActiveJourney] = useState(null);
 
+  // E30-004: Minimal SchoolAnalysis loader. E30-007 replaces this with batch-optimized hydration.
+  const [schoolAnalyses, setSchoolAnalyses] = useState({});
+
   // E13a-WC4: Track visited school IDs (schools with a visit_debrief artifact)
   const [visitedSchoolIds, setVisitedSchoolIds] = useState(new Set());
   
@@ -525,9 +528,10 @@ export default function Consultant() {
     if (!conversationId) return;
     
     try {
-      const artifacts = await base44.entities.GeneratedArtifact.filter({
-        conversationId
-      });
+      const [artifacts, analyses] = await Promise.all([
+        base44.entities.GeneratedArtifact.filter({ conversationId }),
+        user?.id ? base44.entities.SchoolAnalysis.filter({ userId: user.id }) : Promise.resolve([])
+      ]);
       
       // Build indexed map keyed by schoolId_artifactType
       const map = {};
@@ -539,8 +543,17 @@ export default function Consultant() {
         }
       }
       
+      // E30-004: Build schoolAnalyses map { [schoolId]: { fitLabel, fitScore } }
+      const analysesMap = {};
+      for (const analysis of analyses) {
+        if (analysis.schoolId) {
+          analysesMap[analysis.schoolId] = { fitLabel: analysis.fitLabel, fitScore: analysis.fitScore };
+        }
+      }
+      setSchoolAnalyses(analysesMap);
+
       setArtifactCache(map);
-      console.log('[WC6] Artifact cache loaded:', Object.keys(map).length, 'entries');
+      console.log('[WC6] Artifact cache loaded:', Object.keys(map).length, 'entries', '| SchoolAnalyses:', Object.keys(analysesMap).length);
     } catch (error) {
       console.error('[WC6] Failed to load artifacts:', error);
     }
@@ -1493,6 +1506,7 @@ export default function Consultant() {
               onClose={() => setActivePanel(null)}
               onRemove={handleToggleShortlist}
               familyProfile={familyProfile}
+              schoolAnalyses={schoolAnalyses}
               onViewSchool={(id) => {
                 handleViewSchoolDetail(id);
                 setActivePanel(null);
@@ -1710,6 +1724,7 @@ export default function Consultant() {
             shortlist={shortlistData}
             onClose={() => setShowShortlistPanel(false)}
             onRemove={handleToggleShortlist}
+            schoolAnalyses={schoolAnalyses}
             onViewSchool={(id) => {
               handleViewSchoolDetail(id);
               setShowShortlistPanel(false);
