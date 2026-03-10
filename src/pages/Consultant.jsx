@@ -543,11 +543,16 @@ export default function Consultant() {
         }
       }
       
-      // E30-004: Build schoolAnalyses map { [schoolId]: { fitLabel, fitScore } }
+      // E30-007: Build schoolAnalyses map with full record (excluding internal metadata)
       const analysesMap = {};
+      const METADATA_KEYS = new Set(['id', 'created_date', 'updated_date', 'created_by']);
       for (const analysis of analyses) {
         if (analysis.schoolId) {
-          analysesMap[analysis.schoolId] = { fitLabel: analysis.fitLabel, fitScore: analysis.fitScore };
+          const entry = {};
+          for (const [k, v] of Object.entries(analysis)) {
+            if (!METADATA_KEYS.has(k)) entry[k] = v;
+          }
+          analysesMap[analysis.schoolId] = entry;
         }
       }
       setSchoolAnalyses(analysesMap);
@@ -1507,6 +1512,7 @@ export default function Consultant() {
               onRemove={handleToggleShortlist}
               familyProfile={familyProfile}
               schoolAnalyses={schoolAnalyses}
+              artifactCache={artifactCache}
               onViewSchool={(id) => {
                 handleViewSchoolDetail(id);
                 setActivePanel(null);
