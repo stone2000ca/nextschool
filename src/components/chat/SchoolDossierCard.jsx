@@ -168,8 +168,19 @@ export default function SchoolDossierCard({
   consultantName, onSendMessage, isPremiumUser,
   onDossierExpandChange,
   onConfirmDeepDive, pendingDeepDiveSchoolIds,
+  isExpanded: controlledExpanded,
+  onToggleExpand,
 }) {
-  const [isExpanded,    setIsExpanded]    = useState(false);
+  const [internalExpanded, setInternalExpanded] = useState(false);
+  const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
+
+  const handleToggle = () => {
+    if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setInternalExpanded(v => !v);
+    }
+  };
   const [aiRecOpen,     setAiRecOpen]     = useState(true);
   const [tradeOffsOpen, setTradeOffsOpen] = useState(true);
   const [visitPrepOpen, setVisitPrepOpen] = useState(true);
@@ -220,7 +231,7 @@ export default function SchoolDossierCard({
               <button
                 onClick={() => {
                   const next = !isExpanded;
-                  setIsExpanded(next);
+                  handleToggle();
                   onDossierExpandChange?.(next);
                 }}
                 className="flex-shrink-0 text-slate-400 hover:text-white transition-colors"
