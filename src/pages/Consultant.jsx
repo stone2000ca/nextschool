@@ -138,6 +138,8 @@ export default function Consultant() {
 
   // E30-011: Auto-expand school ID in shortlist panel (set by dossier chip)
   const [autoExpandSchoolId, setAutoExpandSchoolId] = useState(null);
+  // E30-012: Track schools user has manually removed (prevents re-adding on deep dive)
+  const [removedSchoolIds, setRemovedSchoolIds] = useState([]);
 
   // E30-008: Track pending deep-dive school IDs (CTA spinner state)
   const [pendingDeepDiveSchoolIds, setPendingDeepDiveSchoolIds] = useState(new Set());
@@ -192,6 +194,8 @@ export default function Consultant() {
 
   // Track whether shortlist has ever been auto-populated (prevents re-populating after user manually empties)
   const hasAutoPopulatedShortlist = useRef(false);
+  // E30-012: Prevent double-processing the same deep dive school
+  const deepDiveAutoAddedRef = useRef(new Set());
   
   // WC6: Store restored session data for returning user context
   const [restoredSessionData, setRestoredSessionData] = useState(null);
@@ -1011,7 +1015,8 @@ export default function Consultant() {
     }]);
   };
 
-  const handleToggleShortlist = async (schoolId) => {
+  const handleToggleShortlist = async (schoolId, options = {}) => {
+    const { silent = false } = options;
     // Login gate for shortlist
     if (!isAuthenticated) {
       setShowLoginGate(true);
@@ -1029,6 +1034,7 @@ export default function Consultant() {
         updatedShortlist = currentShortlist.filter(id => id !== schoolId);
         // Optimistic update: remove immediately from UI
         setShortlistData(prev => prev.filter(s => s.id !== schoolId));
+        setRemovedSchoolIds(prev => [...prev, schoolId]);
       } else {
         updatedShortlist = [...currentShortlist, schoolId];
         trackEvent('shortlisted', { metadata: { schoolName: school?.name } });
@@ -1097,7 +1103,7 @@ export default function Consultant() {
       })();
 
       // T-SL-004: Determine nudge (max 1 per action, only in RESULTS state)
-      if (currentState === STATES.RESULTS) {
+      if (!silent && currentState === STATES.RESULTS) {
         const nudge = getShortlistNudge({
           isRemoving,
           newCount: updatedShortlist.length,
@@ -1215,6 +1221,27 @@ export default function Consultant() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // E30-012 + E30-013: Auto-add to shortlist + auto-open panel after deep dive
+  // Intentionally outside useMessageHandler to avoid F15 stale closure surface
+  useEffect(() => {
+    if (isTyping) return;
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg?.deepDiveAnalysis || lastMsg.role !== 'assistant') return;
+    const schoolId = lastMsg.deepDiveAnalysis.schoolId;
+    if (!schoolId || deepDiveAutoAddedRef.current.has(schoolId)) return;
+    deepDiveAutoAddedRef.current.add(schoolId);
+    const DOSSIER_AUTO_OPEN_DELAY_MS = 800;
+    const alreadyShortlisted = (user?.shortlist || []).includes(schoolId);
+    const wasRemoved = (removedSchoolIds || []).includes(schoolId);
+    if (!alreadyShortlisted && !wasRemoved) {
+      handleToggleShortlist(schoolId, { silent: true });
+    }
+    setTimeout(() => {
+      setAutoExpandSchoolId(schoolId);
+      setActivePanel('shortlist');
+    }, DOSSIER_AUTO_OPEN_DELAY_MS);
+  }, [messages, isTyping]);
 
   const handleScrollDownClick = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
