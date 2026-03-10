@@ -7,7 +7,6 @@ import ApplicationTimeline from '@/components/schools/ApplicationTimeline';
 import SchoolDossierCard from '@/components/chat/SchoolDossierCard';
 
 export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool, familyProfile, schoolAnalyses, artifactCache }) {
-  // NOTE: ExternalLink and StatusDot intentionally removed — now live in SchoolDossierCard
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [eventsLoaded, setEventsLoaded] = useState(false);
   const [timelineExpanded, setTimelineExpanded] = useState(true);
