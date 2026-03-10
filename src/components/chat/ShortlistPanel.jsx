@@ -116,78 +116,17 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
           </div>
         ) : (
           <div className="p-3 space-y-2">
-            {shortlist.map((school) => {
-              const checks = familyProfile ? buildPriorityChecks(school, familyProfile).slice(0, 4) : [];
-              const tuition = school.dayTuition ?? school.tuition;
-
-              return (
-                <div
-                  key={school.id}
-                  className="rounded-lg p-3 transition-colors"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
-                >
-                  {/* School name + remove */}
-                  <div className="flex items-start justify-between mb-1 gap-2">
-                    <div>
-                      <h3 className="text-sm font-semibold text-white leading-snug">{school.name}</h3>
-                      {/* E30-004: Fit badge */}
-                      {(() => {
-                        const analysis = schoolAnalyses?.[school.id];
-                        const config = analysis?.fitLabel ? FIT_BADGE[analysis.fitLabel] : null;
-                        if (!config) return null;
-                        return (
-                          <span style={{ background: config.bg, color: '#fff', fontSize: 11, borderRadius: 4, padding: '1px 6px', fontWeight: 500, display: 'inline-block', marginTop: 3 }}>
-                            {config.label}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                    <button
-                      onClick={() => onRemove(school.id)}
-                      className="text-slate-500 hover:text-rose-400 transition-colors flex-shrink-0 mt-0.5"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Location + grades */}
-                  <p className="text-xs text-slate-400 mb-1">
-                    {school.city}{school.provinceState ? `, ${school.provinceState}` : ''}
-                    {school.lowestGrade != null && ` · Gr ${formatGradeRange(school.lowestGrade, school.highestGrade)}`}
-                  </p>
-
-                  {/* Tuition */}
-                  {tuition > 0 && (
-                    <p className="text-xs text-slate-500 mb-2">
-                      {school.currency || 'CAD'} {tuition.toLocaleString()}/yr
-                    </p>
-                  )}
-
-                  {/* Priority checks */}
-                  {checks.length > 0 && (
-                    <div className="space-y-1 mb-2">
-                      {checks.map((row) => (
-                        <div key={row.id} className="flex items-center gap-1.5">
-                          <StatusDot status={row.status} />
-                          <span className="text-xs text-slate-400 truncate">{row.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => onViewSchool(school.id)}
-                    className="w-full flex items-center justify-center gap-1 text-xs font-medium py-1.5 rounded transition-colors"
-                    style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    View Details
-                  </button>
-                </div>
-              );
-            })}
+            {shortlist.map((school) => (
+              <SchoolDossierCard
+                key={school.id}
+                school={school}
+                familyProfile={familyProfile}
+                schoolAnalyses={schoolAnalyses}
+                artifactCache={artifactCache}
+                onRemove={onRemove}
+                onViewSchool={onViewSchool}
+              />
+            ))}
           </div>
         )}
 
