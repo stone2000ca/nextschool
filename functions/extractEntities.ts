@@ -175,7 +175,7 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
     // FIX-LOC-004: Helper function to clean non-geographic words from location strings
     const cleanLocation = (loc) => {
       if (!loc) return null;
-      const nonGeographicKeywords = /\b(budget|tuition|price|cost|afford|pay|spend|priority|priorities|interest|looking|need|want|IB|AP|STEM|IGCSE|Montessori|Waldorf|Reggio)\b/gi;
+      const nonGeographicKeywords = /\b(budget|tuition|price|cost|afford|pay|spend|priority|priorities|interest|looking|need|want|IB|AP|STEM|IGCSE|Montessori|Waldorf|Reggio|Programs?)\b/gi;
       let cleaned = loc.replace(nonGeographicKeywords, '').replace(/\s,/, ',').trim();
       cleaned = cleaned.replace(/,+$/, '').replace(/\s\s+/g, ' ').trim();
       return cleaned === '' ? null : cleaned;
@@ -346,7 +346,7 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
 
     // S97-WC4: If LLM returned an invalid location (e.g. 'Grade' from 'Grade 5'),
     // but regex found a valid city/region, prefer the regex-extracted location.
-    const isInvalidLocation = !effectiveLocation || effectiveLocation.length < 3 || /^(grade|school|class|program|budget|tuition|montessori|french|immersion)\b/i.test(effectiveLocation);
+    const isInvalidLocation = !effectiveLocation || effectiveLocation.length < 3 || /^(grade|school|class|program|budget|tuition|montessori|french|immersion|programs?)\b/i.test(effectiveLocation);
 
     if (isInvalidLocation && extractedLocation !== null) {
       effectiveLocation = extractedLocation;
@@ -424,7 +424,7 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     if (updatedFamilyProfile?.id) {
       try {
         // F11 FIX: Strip non-schema keys before DB write to prevent Firestore rejection
-        const NON_SCHEMA_KEYS = ['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers'];
+        const NON_SCHEMA_KEYS = ['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers', 'gender'];
         const profileToSave = { ...updatedFamilyProfile };
         for (const key of NON_SCHEMA_KEYS) {
           delete profileToSave[key];
