@@ -127,6 +127,7 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
                 consultantName={consultantName}
                 onSendMessage={onSendMessage}
                 isPremiumUser={isPremiumUser}
+                onDossierExpandChange={onDossierExpandChange}
               />
             ))}
           </div>

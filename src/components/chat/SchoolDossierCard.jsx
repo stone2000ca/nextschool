@@ -217,7 +217,11 @@ export default function SchoolDossierCard({
             <h3 className="text-sm font-semibold text-white leading-snug truncate">{school.name}</h3>
             {hasExpandedContent && (
               <button
-                onClick={() => setIsExpanded(v => !v)}
+                onClick={() => {
+                  const next = !isExpanded;
+                  setIsExpanded(next);
+                  onDossierExpandChange?.(next);
+                }}
                 className="flex-shrink-0 text-slate-400 hover:text-white transition-colors"
                 aria-label={isExpanded ? 'Collapse dossier' : 'Expand dossier'}
               >
