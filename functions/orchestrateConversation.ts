@@ -166,6 +166,36 @@ async function callOpenRouter(options) {
 }
 
 // =============================================================================
+// E32-001: UI Action validation helpers
+// =============================================================================
+const V1_ACTION_TYPES = ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL'];
+const VALID_PANELS = ['shortlist', 'comparison', 'brief'];
+const ACTION_TOOL_SCHEMA = [{ type: 'function', function: { name: 'execute_ui_action', description: 'Execute UI actions alongside your text response when the user wants to add schools to shortlist, open panels, or expand school details', parameters: { type: 'object', properties: { actions: { type: 'array', items: { type: 'object', properties: { type: { type: 'string', enum: ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL'] }, schoolId: { type: 'string', description: 'School entity ID' }, panel: { type: 'string', enum: ['shortlist', 'comparison', 'brief'] } }, required: ['type'] } } }, required: ['actions'] } } }];
+
+function validateActions(rawToolCalls, validSchoolIds, base44Client, conversationId) {
+  const validatedActions = [];
+  if (!rawToolCalls || !Array.isArray(rawToolCalls)) return validatedActions;
+  for (const tc of rawToolCalls) {
+    try {
+      const args = typeof tc.function?.arguments === 'string' ? JSON.parse(tc.function.arguments) : tc.function?.arguments;
+      if (!args?.actions || !Array.isArray(args.actions)) continue;
+      for (const action of args.actions) {
+        if (!V1_ACTION_TYPES.includes(action.type)) { logDroppedAction(base44Client, conversationId, action, 'INVALID_TYPE'); continue; }
+        if ((action.type === 'ADD_TO_SHORTLIST' || action.type === 'EXPAND_SCHOOL') && !validSchoolIds.has(action.schoolId)) { logDroppedAction(base44Client, conversationId, action, 'INVALID_SCHOOL_ID'); continue; }
+        if (action.type === 'OPEN_PANEL' && !VALID_PANELS.includes(action.panel)) { logDroppedAction(base44Client, conversationId, action, 'INVALID_PANEL'); continue; }
+        const timing = action.type === 'ADD_TO_SHORTLIST' ? 'immediate' : 'after_message';
+        validatedActions.push({ type: action.type, payload: action.type === 'OPEN_PANEL' ? { panel: action.panel } : { schoolId: action.schoolId }, timing });
+      }
+    } catch (e) { logDroppedAction(base44Client, conversationId, tc, 'PARSE_ERROR'); }
+  }
+  return validatedActions;
+}
+
+async function logDroppedAction(base44Client, conversationId, action, reason) {
+  try { await base44Client.entities.LLMLog.create({ conversation_id: conversationId || 'unknown', phase: 'ACTION_VALIDATION', status: 'ACTION_DROPPED', prompt_summary: JSON.stringify(action).substring(0, 100), response_summary: reason }); } catch (e) { console.error('[E32] Failed to log dropped action:', e.message); }
+}
+
+// =============================================================================
 // INLINED: resolveTransition
 // =============================================================================
 function resolveTransition(params) {
