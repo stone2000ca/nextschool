@@ -12,8 +12,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 // E18c-002: LLM call logging — writes LLMLog entity for every call (fire-and-forget)
 // =============================================================================
 async function callOpenRouter(options) {
-  // callOpenRouter v1.0 -- E25-S2 canonical
-  const { systemPrompt, userPrompt, responseSchema, maxTokens = 1000, temperature = 0.5, _logContext } = options;
+  // callOpenRouter v1.1 -- E32-001: added tools/toolChoice/returnRaw
+  const { systemPrompt, userPrompt, responseSchema, maxTokens = 1000, temperature = 0.5, _logContext, tools, toolChoice, returnRaw = false } = options;
   // _logContext = { base44, conversation_id, phase, is_test } — optional, used for LLMLog only
 
   const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
