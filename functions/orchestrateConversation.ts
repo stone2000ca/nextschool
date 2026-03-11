@@ -110,7 +110,8 @@ async function callOpenRouter(options) {
     console.log('[OPENROUTER] Response model used:', data.model, 'usage:', data.usage);
     
     const content = data.choices?.[0]?.message?.content;
-    if (!content) throw new Error('OpenRouter returned empty content');
+    const toolCalls = data.choices?.[0]?.message?.tool_calls || [];
+    if (!content && toolCalls.length === 0) throw new Error('OpenRouter returned empty content');
 
     // E18c-002: Log success (fire-and-forget)
     if (_logContext?.base44) {
