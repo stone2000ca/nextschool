@@ -275,6 +275,9 @@ export default function Consultant() {
     showDistances,
     applyDistances,
     resetSort,
+    filterOverrides,
+    setFilterOverrides,
+    resetFilterOverrides,
   } = useSchoolFiltering(schools, currentConversation?.conversationContext);
 
   // BRIEF→RESULTS transition animation

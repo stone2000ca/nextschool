@@ -11,6 +11,26 @@ import { calculateHaversineDistance, applyReligiousFilter } from '../utils/filte
 export function useSchoolFiltering(schools, conversationContext) {
   const [showDistances, setShowDistances] = useState(false);
 
+  const [filterOverrides, setFilterOverrides] = useState({
+    maxTuition: null,
+    childGrade: null,
+    dealbreakers: null,
+    boardingOnly: null,
+    genderFilter: null,
+    maxDistanceKm: null,
+  });
+
+  const resetFilterOverrides = useCallback(() => {
+    setFilterOverrides({
+      maxTuition: null,
+      childGrade: null,
+      dealbreakers: null,
+      boardingOnly: null,
+      genderFilter: null,
+      maxDistanceKm: null,
+    });
+  }, []);
+
   const getFilteredSchools = useCallback(() => {
     try {
       if (!schools || schools.length === 0) return schools || [];
@@ -21,8 +41,13 @@ export function useSchoolFiltering(schools, conversationContext) {
       try {
         const profile = conversationContext?.familyProfile;
 
+        // E31-005: Override resolution — override !== null takes priority over familyProfile
+        const effectiveChildGrade = filterOverrides.childGrade !== null ? filterOverrides.childGrade : profile?.childGrade;
+        const effectiveMaxTuition = filterOverrides.maxTuition !== null ? filterOverrides.maxTuition : profile?.maxTuition;
+        const effectiveDealbreakers = filterOverrides.dealbreakers !== null ? filterOverrides.dealbreakers : profile?.dealbreakers;
+
         // Grade Filter
-        const childGrade = profile?.childGrade;
+        const childGrade = effectiveChildGrade;
         if (childGrade !== null && childGrade !== undefined) {
           const gradeNum = typeof childGrade === 'number' ? childGrade : parseInt(String(childGrade));
           if (!isNaN(gradeNum)) {
@@ -35,7 +60,7 @@ export function useSchoolFiltering(schools, conversationContext) {
         }
 
         // Budget Filter
-        const maxBudget = profile?.maxTuition;
+        const maxBudget = effectiveMaxTuition;
         if (maxBudget && maxBudget !== 'unlimited') {
           const budgetNum = typeof maxBudget === 'number' ? maxBudget : parseInt(String(maxBudget));
           if (!isNaN(budgetNum)) {
@@ -52,7 +77,7 @@ export function useSchoolFiltering(schools, conversationContext) {
         // E31-006: Now uses canonical applyReligiousFilter from filterUtils (aligned with server)
         try {
           const beforeCount = filtered.length;
-          filtered = filtered.filter(school => applyReligiousFilter(school, profile, null));
+          filtered = filtered.filter(school => applyReligiousFilter(school, { ...profile, dealbreakers: effectiveDealbreakers }, null));
           if (filtered.length !== beforeCount) {
             console.log('[FILTER] Religious dealbreaker: filtered from', beforeCount, 'to', filtered.length, 'schools');
           }
@@ -70,7 +95,7 @@ export function useSchoolFiltering(schools, conversationContext) {
       console.error('[FILTER] Critical error, returning all schools:', error);
       return schools || [];
     }
-  }, [schools, conversationContext]);
+  }, [schools, conversationContext, filterOverrides]);
 
   /**
    * Calculate and apply distances from a user location to all schools.
@@ -108,5 +133,8 @@ export function useSchoolFiltering(schools, conversationContext) {
     showDistances,
     applyDistances,
     resetSort,
+    filterOverrides,
+    setFilterOverrides,
+    resetFilterOverrides,
   };
 }
