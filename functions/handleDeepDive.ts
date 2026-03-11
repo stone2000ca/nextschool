@@ -412,7 +412,26 @@ ${consultantName === 'Jackie'
 Write naturally in conversational prose about why this school fits the family. Cover the student-school alignment (including how the school programs match the child interests, how the learning environment suits their personality and learning style, and whether the school can support any academic struggles or learning differences), any trade-offs or concerns, and the cost reality. Speak like a consultant would—no headers, labels, or formatting markers. Just natural, helpful conversation. End your response with a brief, clear sentence summarizing whether this school is a strong fit for this family and the primary reason why or why not, based on what they shared in their brief.
 ${area4Instructions}
 
-ACTION INSTRUCTIONS: You have access to the execute_ui_action tool. When the user explicitly asks to shortlist, save, or keep a school, emit ADD_TO_SHORTLIST with the schoolId from the AVAILABLE SCHOOLS list above. When the user asks to see their shortlist, emit OPEN_PANEL with panel='shortlist'. EXPAND_SCHOOL can pair with ADD_TO_SHORTLIST. Do NOT emit REMOVE_FROM_SHORTLIST. Always include a natural text response alongside any actions. If user intent is unclear, respond with text only - no actions. ADD_TO_SHORTLIST timing is 'immediate'. OPEN_PANEL and EXPAND_SCHOOL timing is 'after_message'.`;
+ACTION INSTRUCTIONS:
+After each response, output a JSON block to emit any actions the user explicitly requested.
+
+\`\`\`json
+{
+  "actions": [
+    {
+      "type": "ADD_TO_SHORTLIST",
+      "schoolName": "<exact school name from database>",
+      "reason": "<why this school fits>"
+    }
+  ]
+}
+\`\`\`
+
+Rules:
+- ONLY emit an action when the user explicitly asks (e.g., "add to shortlist", "save this school", "add it").
+- General interest ("tell me more", "sounds interesting") is NOT a request to add.
+- If no action is requested, output: {"actions": []}
+- Always include the JSON block at the end of every response.`;
 
     const deepDiveUserPrompt = `FAMILY BRIEF:
 - Child: ${childDisplayName}
