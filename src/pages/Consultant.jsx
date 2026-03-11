@@ -1535,25 +1535,7 @@ export default function Consultant() {
         </>
       )}
 
-      {/* Login Gate Modal */}
-      {showLoginGate && (
-        <LoginGateModal
-          consultantName={selectedConsultant}
-          childName={familyProfile?.childName || 'your child'}
-          onClose={() => setShowLoginGate(false)}
-        />
-      )}
-
       {/* T046: Panel rendered inline in layout, no overlay needed */}
-
-      {/* E18c-001: Debug panel */}
-      {isDebugMode && (
-        <DebugPanel debugState={{
-          familyProfile,
-          extractedEntities: extractedEntitiesData,
-          conversationContext: currentConversation?.conversationContext,
-        }} />
-      )}
     </div>
   );
 }
