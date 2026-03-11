@@ -658,7 +658,7 @@ YOU ARE LIAM - Senior education strategist, 10+ years in private school placemen
   try {
     const fastResponse = await base44.integrations.Core.InvokeLLM({ 
       prompt: personaInstructions + '\n\nRecent chat:\n' + conversationSummary + '\n\nParent: "' + message + '"\n\nRespond as ' + consultantName + '. 2-3 questions max. No filler.',
-      model: 'gpt-5'
+      model: 'gpt_5_mini'
     });
     discoveryMessageRaw = fastResponse?.response || fastResponse || 'Tell me more about your child.';
     console.log('[DISCOVERY] Response via InvokeLLM (fast path)');
@@ -828,7 +828,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
       try {
         const fallbackResponse = await base44.integrations.Core.InvokeLLM({
           prompt: debriefSystemPrompt + '\n\n' + debriefUserPrompt,
-          model: 'gpt-5'
+          model: 'gpt_5_mini'
         });
         debriefMessage = fallbackResponse?.response || fallbackResponse || "Tell me about your visit experience.";
       } catch (fallbackError) {

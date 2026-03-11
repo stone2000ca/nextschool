@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
         adjustMessage = adjustResponse || "What would you like to adjust?";
       } catch (openrouterError) {
         try {
-          const fallbackResponse = await base44.integrations.Core.InvokeLLM({ prompt: adjustSystemPrompt, model: 'gpt-5' });
+          const fallbackResponse = await base44.integrations.Core.InvokeLLM({ prompt: adjustSystemPrompt, model: 'gpt_5_mini' });
           adjustMessage = fallbackResponse?.response || fallbackResponse || "What would you like to adjust?";
         } catch (fallbackError) {
           console.error('[FALLBACK ERROR] BRIEF adjustment failed:', fallbackError.message);
