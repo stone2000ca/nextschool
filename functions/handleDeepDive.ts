@@ -374,6 +374,11 @@ Deno.serve(async (req) => {
       eventContext = `UPCOMING EVENTS: None found in our system.`;
     }
 
+    // E32-002b: School ID context block — must be defined before area4Instructions
+    const schoolIdContext = currentSchools?.length > 0
+      ? `\nSCHOOL IDs (use these exact IDs in execute_ui_action):\n` + currentSchools.map(s => `[ID:${s.id}] ${s.name}`).join('\n')
+      : '';
+
     const area4Instructions = `
 AREA 4 — EVENT-AWARE NEXT STEP (include naturally at the end of your response, woven into conversational prose):
 ${upcomingEvents.length > 0
@@ -381,11 +386,6 @@ ${upcomingEvents.length > 0
   : `No upcoming events are in our system for this school. Use the Honesty Pattern: clearly say you don't have event dates on file, and suggest the parent contact admissions directly.${schoolContactEmail ? ` Their admissions contact is: ${schoolContactEmail}.` : ' Direct them to the school website for contact info.'}`
 }
 ${schoolIdContext}`;
-
-    // E32-002b: School ID context block so LLM can reference valid IDs in actions
-    const schoolIdContext = currentSchools?.length > 0
-      ? `\nSCHOOL IDs (use these exact IDs in execute_ui_action):\n` + currentSchools.map(s => `[ID:${s.id}] ${s.name}`).join('\n')
-      : '';
 
     const deepDiveSystemPrompt = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}You are ${consultantName}, an education consultant. The parent is currently in a deep-dive on a specific school.
 
