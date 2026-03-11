@@ -27,9 +27,7 @@ import { useUserLocation } from '../components/hooks/useUserLocation';
 import { getShortlistNudge } from '../components/utils/shortlistNudges';
 import { extractAndSaveMemories } from '../components/utils/memoryManager';
 import { restoreSessionFromParam } from '@/components/chat/SessionRestorer';
-import LoginGateModal from '@/components/dialogs/LoginGateModal';
-import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
-import DebugPanel from '@/components/utils/DebugPanel'; // E18c-001
+import ConsultantDialogs from '@/components/chat/ConsultantDialogs';
 import ChatPanel from '@/components/chat/ChatPanel';
 import ProgressBar from '@/components/ui/progress-bar';
 import { Link, useSearchParams } from 'react-router-dom';
