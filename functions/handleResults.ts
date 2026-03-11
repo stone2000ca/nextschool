@@ -655,7 +655,8 @@ ${schoolIdContext}`;
       briefStatus: 'confirmed',
       schools: matchingSchools,
       familyProfile: conversationFamilyProfile,
-      conversationContext: context
+      conversationContext: context,
+      rawToolCalls: rawToolCalls || []
     });
 
   } catch (error) {
