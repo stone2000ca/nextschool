@@ -1086,6 +1086,14 @@ export default function Consultant() {
                extractedEntities={extractedEntitiesData}
              />
            )}
+           {activePanel === 'addSchool' && (
+             <AddSchoolPanel
+               onClose={() => setActivePanel(null)}
+               onToggleShortlist={handleToggleShortlist}
+               shortlistedIds={user?.shortlist || []}
+               base44={base44}
+             />
+           )}
            <IconRail
              currentState={currentState}
              activePanel={activePanel}
@@ -1247,6 +1255,19 @@ export default function Consultant() {
               consultantName={selectedConsultant}
               onClose={() => setActivePanel(null)}
               extractedEntities={extractedEntitiesData}
+            />
+          </div>
+        )}
+        {activePanel === 'addSchool' && (
+          <div
+            className="flex-shrink-0 h-full overflow-hidden"
+            style={{ width: 320, animation: 'slideInFromRight 200ms ease-out', background: '#1A1A2A', borderLeft: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <AddSchoolPanel
+              onClose={() => setActivePanel(null)}
+              onToggleShortlist={handleToggleShortlist}
+              shortlistedIds={user?.shortlist || []}
+              base44={base44}
             />
           </div>
         )}
