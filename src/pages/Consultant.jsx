@@ -1282,6 +1282,12 @@ export default function Consultant() {
                 onNarrateComparison={handleNarrateComparison}
                 onOpenComparison={handleOpenComparison}
                 visitedSchoolIds={visitedSchoolIds}
+                extraSchools={extraSchools}
+                onLoadMore={loadMoreSchools}
+                extraSchoolsLoading={extraSchoolsLoading}
+                extraSchoolsHasMore={extraSchoolsHasMore}
+                extraSchoolsError={extraSchoolsError}
+                userLocationAvailable={!!(conversationContext?.resolvedLat || userLocation?.lat)}
                 />
               </div>
             </div>
