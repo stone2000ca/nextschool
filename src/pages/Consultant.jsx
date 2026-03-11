@@ -35,7 +35,7 @@ import ProgressBar from '@/components/ui/progress-bar';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import Navbar from '@/components/navigation/Navbar';
-import { useSchoolFiltering } from '@/hooks/useSchoolFiltering';
+import { useSchoolFiltering } from '@/components/hooks/useSchoolFiltering';
 import { useMessageHandler } from '@/components/hooks/useMessageHandler';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
