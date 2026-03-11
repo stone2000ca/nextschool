@@ -49,29 +49,11 @@ export function useSchoolFiltering(schools, conversationContext) {
         }
 
         // Religious Dealbreaker Filter
+        // E31-006: Now uses canonical applyReligiousFilter from filterUtils (aligned with server)
         try {
-          const dealbreakers = profile?.dealbreakers || [];
-          const hasReligiousDealbreaker = Array.isArray(dealbreakers) && dealbreakers.some(d => typeof d === 'string' && d.toLowerCase().includes('religious'));
-
-          if (hasReligiousDealbreaker) {
-            const beforeCount = filtered.length;
-            filtered = filtered.filter(school => {
-              const name = (school?.name || '').toLowerCase();
-              const affiliation = (school?.religiousAffiliation || '').toLowerCase();
-
-              if (affiliation && affiliation !== 'none' && affiliation !== 'secular' && affiliation !== 'non-denominational') {
-                console.log('[RELIGIOUS FILTER] Excluded by affiliation:', school.name, '(' + school.religiousAffiliation + ')');
-                return false;
-              }
-
-              const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'hebrew', 'saint'];
-              if (religiousKeywords.some(kw => name.includes(kw))) {
-                console.log('[RELIGIOUS FILTER] Excluded by name keyword:', school.name);
-                return false;
-              }
-
-              return true;
-            });
+          const beforeCount = filtered.length;
+          filtered = filtered.filter(school => applyReligiousFilter(school, profile, null));
+          if (filtered.length !== beforeCount) {
             console.log('[FILTER] Religious dealbreaker: filtered from', beforeCount, 'to', filtered.length, 'schools');
           }
         } catch (religiousFilterError) {
