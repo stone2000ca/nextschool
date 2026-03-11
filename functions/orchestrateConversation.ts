@@ -1652,6 +1652,10 @@ Object.assign(context, safeUpdatedContext);
         });
         responseData = deepDiveResult.data;
         responseData.extractedEntities = extractionResult?.extractedEntities || {};
+        // E32-001: Validate and attach actions
+        const validSchoolIds_deepdive = new Set((responseData.schools || currentSchools || []).map(s => s.id));
+        responseData.actions = responseData.toolCalls ? validateActions(responseData.toolCalls, validSchoolIds_deepdive, base44, conversationId) : [];
+        delete responseData.toolCalls;
 
         // E29-010/E29-012: Fire-and-forget — next action + session summary + totalSessions increment
         fireJourneyUpdate(base44, journeyContext, context, conversationHistory, message, 'DEEP_DIVE');
