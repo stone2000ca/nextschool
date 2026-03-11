@@ -80,7 +80,7 @@ export function useSchoolFiltering(schools, conversationContext) {
                 return false;
               }
 
-              const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'hebrew', 'saint', "st. michael's", "st michael's"];
+              const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'hebrew', 'saint'];
               if (religiousKeywords.some(kw => name.includes(kw))) {
                 console.log('[RELIGIOUS FILTER] Excluded by name keyword:', school.name);
                 return false;
