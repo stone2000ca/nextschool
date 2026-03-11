@@ -692,7 +692,8 @@ Generate the DEEPDIVE card for this family-school match.`;
       deepDiveAnalysis: deepDiveAnalysis,
       visitPrepKit: generatedVisitPrepKit,
       actionPlan: generatedActionPlan,
-      tourRequestOffered: tourRequestOffered
+      tourRequestOffered: tourRequestOffered,
+      rawToolCalls: rawToolCalls || []
     });
   } catch (error) {
     console.error('[DEEPDIVE] Fatal error:', error);
