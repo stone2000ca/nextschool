@@ -655,7 +655,7 @@ ${schoolIdContext}`;
     });
 
   } catch (error) {
-    console.error('[handleResults] FATAL:', error);
-    return Response.json({ error: error.message || String(error) }, { status: 500 });
+    console.error('[handleResults] FATAL:', error?.message, error?.stack);
+    return Response.json({ message: 'handleResults error: ' + (error?.message || String(error)), state: 'RESULTS', briefStatus: 'confirmed', schools: [], familyProfile: {}, conversationContext: {}, rawToolCalls: [], _debug_error: error?.message || String(error) });
   }
 });
