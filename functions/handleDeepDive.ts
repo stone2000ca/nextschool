@@ -192,6 +192,8 @@ function extractConciseSummary(fullProse) {
 // =============================================================================
 const ACTION_TOOL_SCHEMA = [{ type: 'function', function: { name: 'execute_ui_action', description: 'Execute UI actions alongside your text response when the user wants to add schools to shortlist, open panels, or expand school details', parameters: { type: 'object', properties: { actions: { type: 'array', items: { type: 'object', properties: { type: { type: 'string', enum: ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL'] }, schoolId: { type: 'string', description: 'School entity ID' }, panel: { type: 'string', enum: ['shortlist', 'comparison', 'brief'] } }, required: ['type'] } } }, required: ['actions'] } } }];
 
+const ACTIONS_RESPONSE_SCHEMA = { type: 'object', properties: { message: { type: 'string', description: 'The consultant response text to show the user' }, actions: { type: 'array', items: { type: 'object', properties: { type: { type: 'string', enum: ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL'] }, schoolId: { type: 'string' }, panel: { type: 'string', enum: ['shortlist', 'comparison', 'brief'] } }, required: ['type'] }, description: 'UI actions to execute. Empty array if no actions needed.' } }, required: ['message', 'actions'] };
+
 // =============================================================================
 // MAIN: Deno.serve — handleDeepDive
 // =============================================================================
@@ -225,7 +227,8 @@ Deno.serve(async (req) => {
         briefStatus: briefStatus,
         schools: currentSchools || [],
         familyProfile: conversationFamilyProfile,
-        conversationContext: context
+        conversationContext: context,
+        rawToolCalls: []
       });
     }
 
@@ -252,7 +255,8 @@ Deno.serve(async (req) => {
         briefStatus: briefStatus,
         schools: currentSchools || [],
         familyProfile: conversationFamilyProfile,
-        conversationContext: context
+        conversationContext: context,
+        rawToolCalls: []
       });
     }
 
@@ -297,7 +301,8 @@ Deno.serve(async (req) => {
             visitPrepKit: cachedVisitPrepKit,
             actionPlan: cachedActionPlan,
             tourRequestOffered: isPremiumSchool,
-            fromCache: true
+            fromCache: true,
+            rawToolCalls: []
           });
         } else {
           console.log('[E30] Cache miss — falling through to fresh generation');
@@ -433,21 +438,42 @@ Generate the DEEPDIVE card for this family-school match.`;
 
     let deepDiveAnalysis = null;
     const rawToolCalls = [];
-    // E32-002b: tools wiring deferred — plain callOpenRouter, no tools param
+    // E32-006b: InvokeLLM primary with structured actions schema, callOpenRouter fallback
     try {
-      const aiResponse = await callOpenRouter({
-        systemPrompt: deepDiveSystemPrompt,
-        userPrompt: deepDiveUserPrompt,
-        maxTokens: 2000,
-        temperature: 0.6
+      const fastResponse = await base44.integrations.Core.InvokeLLM({
+        prompt: deepDiveSystemPrompt + '\n\n' + deepDiveUserPrompt,
+        model: 'gpt_5_mini',
+        response_json_schema: ACTIONS_RESPONSE_SCHEMA
       });
-      if (aiResponse) {
-        console.log('[DEEPDIVE] AI card generated successfully');
-        aiMessage = aiResponse;
+      try {
+        const parsed = typeof fastResponse === 'object' ? fastResponse : JSON.parse(fastResponse);
+        aiMessage = parsed.message || '';
+        if (Array.isArray(parsed.actions) && parsed.actions.length > 0) {
+          rawToolCalls.push(...parsed.actions.map(a => ({ function: { name: 'execute_ui_action', arguments: JSON.stringify(a) } })));
+          console.log('[E32-006b] Actions parsed from InvokeLLM:', rawToolCalls.length);
+        }
+      } catch (parseError) {
+        console.log('[E32-006b]: malformed actions in InvokeLLM response:', parseError.message);
+        aiMessage = typeof fastResponse === 'string' ? fastResponse : (fastResponse?.response || '');
       }
+      if (aiMessage) console.log('[DEEPDIVE] AI card generated via InvokeLLM (primary)');
     } catch (llmError) {
-      console.error('[DEEPDIVE] OpenRouter failed:', llmError.message);
-      aiMessage = `**Great Fit for ${childDisplayName}**\n\n**Why ${selectedSchool.name} for ${childDisplayName}**\n${selectedSchool.description?.substring(0, 150) || 'School details available upon request.'}\n\n**Cost Reality**\nTuition: ${compressedSchoolData.tuitionFee}/year\n\nWhat would you like to know more about?`;
+      console.error('[DEEPDIVE] InvokeLLM failed, falling back to callOpenRouter:', llmError.message);
+      try {
+        const aiResponse = await callOpenRouter({
+          systemPrompt: deepDiveSystemPrompt,
+          userPrompt: deepDiveUserPrompt,
+          maxTokens: 2000,
+          temperature: 0.6
+        });
+        if (aiResponse) {
+          console.log('[DEEPDIVE] AI card generated via callOpenRouter (fallback)');
+          aiMessage = aiResponse;
+        }
+      } catch (openrouterError) {
+        console.error('[DEEPDIVE] OpenRouter fallback failed:', openrouterError.message);
+        aiMessage = `**Great Fit for ${childDisplayName}**\n\n**Why ${selectedSchool.name} for ${childDisplayName}**\n${selectedSchool.description?.substring(0, 150) || 'School details available upon request.'}\n\n**Cost Reality**\nTuition: ${compressedSchoolData.tuitionFee}/year\n\nWhat would you like to know more about?`;
+      }
     }
 
     // E10b: Generate structured analysis in parallel
