@@ -468,6 +468,15 @@ ${consultantName === 'Jackie'
 Write naturally in conversational prose about why this school fits the family. Cover the student-school alignment (including how the school programs match the child interests, how the learning environment suits their personality and learning style, and whether the school can support any academic struggles or learning differences), any trade-offs or concerns, and the cost reality. Speak like a consultant would—no headers, labels, or formatting markers. Just natural, helpful conversation. End your response with a brief, clear sentence summarizing whether this school is a strong fit for this family and the primary reason why or why not, based on what they shared in their brief.
 ${area4Instructions}
 
+STRUCTURED ANALYSIS INSTRUCTIONS:
+In your JSON response, also include a schoolAnalysis object with:
+- fitLabel: 'strong_match', 'good_match', or 'worth_exploring'
+- fitScore: 0-100 numeric score
+- tradeOffs: array of {dimension, strength, concern, dataSource} - MUST have at least 3 items. Consider: learning support, class size, arts/athletics, commute, budget fit, academic approach, facilities, community culture. If data is missing for a dimension the family cares about, note it as a concern.
+- dataGaps: array of field names with missing data relevant to this family
+- visitQuestions: array of 3-5 personalized questions for a school visit
+- financialSummary: {tuition (number), aidAvailable (boolean), estimatedNetCost (number), budgetFit (string)}
+
 ACTION INSTRUCTIONS:
 After each response, output a JSON block to emit any actions the user explicitly requested.
 
