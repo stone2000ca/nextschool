@@ -604,32 +604,27 @@ ${schoolIdContext}`;
         const resultsUserPrompt = `Recent chat:\n${conversationSummary}\n${schoolContext}\n\nParent: "${message}"\n\nRespond as ${consultantName}. ONE question max.`;
 
         let messageWithLinks = 'Here are the schools I found:';
-        let rawToolCalls = [];
-        // E32-002b: callOpenRouter primary (with tools), InvokeLLM as fallback
+        const rawToolCalls = [];
+        // E32-002b: InvokeLLM primary, callOpenRouter fallback (tools wiring deferred)
         try {
-          const rawResponse = await callOpenRouter({
-            systemPrompt: resultsSystemPrompt,
-            userPrompt: resultsUserPrompt,
-            maxTokens: 800,
-            temperature: 0.7,
-            tools: ACTION_TOOL_SCHEMA,
-            toolChoice: 'auto',
-            returnRaw: true
+          const fastResponse = await base44.integrations.Core.InvokeLLM({
+            prompt: resultsSystemPrompt + '\n\n' + resultsUserPrompt,
+            model: 'gpt-5'
           });
-          messageWithLinks = rawResponse.content || 'Here are the schools I found:';
-          rawToolCalls = rawResponse.toolCalls || [];
-          console.log('[RESULTS] Response via callOpenRouter (primary), toolCalls:', rawToolCalls.length);
-        } catch (openrouterError) {
-          console.log('[RESULTS] callOpenRouter failed, falling back to InvokeLLM');
+          messageWithLinks = fastResponse?.response || fastResponse || 'Here are the schools I found:';
+          console.log('[RESULTS] Response via InvokeLLM (primary)');
+        } catch (invokeLLMError) {
+          console.log('[RESULTS] InvokeLLM failed, falling back to callOpenRouter');
           try {
-            const fastResponse = await base44.integrations.Core.InvokeLLM({
-              prompt: resultsSystemPrompt + '\n\n' + resultsUserPrompt,
-              model: 'gpt-5'
-            });
-            messageWithLinks = fastResponse?.response || fastResponse || 'Here are the schools I found:';
-            console.log('[RESULTS] Response via InvokeLLM (fallback)');
-          } catch (invokeLLMError) {
-            console.error('[RESULTS] Both response methods failed:', invokeLLMError.message);
+            messageWithLinks = await callOpenRouter({
+              systemPrompt: resultsSystemPrompt,
+              userPrompt: resultsUserPrompt,
+              maxTokens: 800,
+              temperature: 0.7
+            }) || 'Here are the schools I found:';
+            console.log('[RESULTS] Response via callOpenRouter (fallback)');
+          } catch (openrouterError) {
+            console.error('[RESULTS] Both response methods failed:', openrouterError.message);
           }
         }
 
