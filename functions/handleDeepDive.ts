@@ -194,6 +194,62 @@ const ACTION_TOOL_SCHEMA = [{ type: 'function', function: { name: 'execute_ui_ac
 
 const ACTIONS_RESPONSE_SCHEMA = { type: 'object', properties: { message: { type: 'string', description: 'The consultant response text to show the user' }, actions: { type: 'array', items: { type: 'object', properties: { type: { type: 'string', enum: ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL'] }, schoolId: { type: 'string' }, panel: { type: 'string', enum: ['shortlist', 'comparison', 'brief'] } }, required: ['type'] }, description: 'UI actions to execute. Empty array if no actions needed.' } }, required: ['message', 'actions'] };
 
+const MERGED_RESPONSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    message: { type: 'string', description: 'The consultant response text' },
+    actions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL'] },
+          schoolId: { type: 'string' },
+          panel: { type: 'string', enum: ['shortlist', 'comparison', 'brief'] }
+        },
+        required: ['type']
+      },
+      description: 'UI actions to execute. Empty array if no actions needed.'
+    },
+    schoolAnalysis: {
+      type: 'object',
+      properties: {
+        fitLabel: { type: 'string', enum: ['strong_match', 'good_match', 'worth_exploring'] },
+        fitScore: { type: 'number' },
+        tradeOffs: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['dimension', 'strength', 'concern', 'dataSource'],
+            properties: {
+              dimension: { type: 'string' },
+              strength: { type: 'string' },
+              concern: { type: 'string' },
+              dataSource: { type: 'string' }
+            }
+          }
+        },
+        dataGaps: { type: 'array', items: { type: 'string' } },
+        visitQuestions: { type: 'array', items: { type: 'string' } },
+        financialSummary: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['tuition', 'aidAvailable', 'estimatedNetCost', 'budgetFit'],
+          properties: {
+            tuition: { type: 'number' },
+            aidAvailable: { type: 'boolean' },
+            estimatedNetCost: { type: 'number' },
+            budgetFit: { type: 'string' }
+          }
+        }
+      },
+      required: ['fitLabel', 'fitScore', 'tradeOffs', 'dataGaps', 'visitQuestions', 'financialSummary']
+    }
+  },
+  required: ['message', 'actions', 'schoolAnalysis']
+};
+
 // =============================================================================
 // MAIN: Deno.serve — handleDeepDive
 // =============================================================================
