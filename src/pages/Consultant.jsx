@@ -24,7 +24,7 @@ import { getTuitionBand, buildPriorityChecks } from '@/components/schools/School
 import { validateBriefContent, generateProgrammaticBrief } from '../components/utils/briefUtils';
 import { buildTiers } from '../components/utils/tierEngine';
 import { useUserLocation } from '../components/hooks/useUserLocation';
-import { getShortlistNudge } from '../components/utils/shortlistNudges';
+import { useShortlist } from '../components/hooks/useShortlist';
 import { extractAndSaveMemories } from '../components/utils/memoryManager';
 import { restoreSessionFromParam } from '@/components/chat/SessionRestorer';
 import ConsultantDialogs from '@/components/chat/ConsultantDialogs';
