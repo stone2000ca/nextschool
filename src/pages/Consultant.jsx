@@ -200,7 +200,6 @@ export default function Consultant() {
     loadPreviousArtifacts,
   } = useDataLoader({
     user, currentConversation, isAuthenticated, base44,
-    setShortlistData,
   });
 
   // Shortlist hook — must come after useDataLoader so familyProfile is defined
