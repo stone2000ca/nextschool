@@ -493,6 +493,16 @@ function lightweightExtract(message, existingProfile) {
   while ((iMatch = interestVerbPattern.exec(message)) !== null) {
     foundInterests.add(iMatch[1].toLowerCase());
   }
+  const interestVerbListPattern = new RegExp(`\\b(?:loves?|likes?|enjoys?|plays?|interested\\s+in|passionate\\s+about|into)\\s+((?:(?:${INTEREST_KEYWORDS})(?:\\s*,\\s*|\\s+and\\s+))*(?:${INTEREST_KEYWORDS}))`, 'gi');
+  while ((iMatch = interestVerbListPattern.exec(message)) !== null) {
+    const items = iMatch[1].split(/\s*,\s*|\s+and\s+/);
+    items.forEach(item => {
+      const trimmed = item.trim().toLowerCase();
+      if (new RegExp(`^(?:${INTEREST_KEYWORDS})$`).test(trimmed)) {
+        foundInterests.add(trimmed);
+      }
+    });
+  }
   while ((iMatch = interestListPattern.exec(message)) !== null) {
     const items = iMatch[1].split(/\s*,\s*|\s+and\s+/);
     items.forEach(item => {
