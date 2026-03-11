@@ -1603,6 +1603,10 @@ Object.assign(context, safeUpdatedContext);
         responseData = resultsResult.data;
         responseData.conversationContext = { ...(responseData.conversationContext || {}), autoRefreshed: autoRefresh };
         responseData.extractedEntities = extractionResult?.extractedEntities || {};
+        // E32-001: Validate and attach actions
+        const validSchoolIds_results = new Set((responseData.schools || currentSchools || []).map(s => s.id));
+        responseData.actions = responseData.toolCalls ? validateActions(responseData.toolCalls, validSchoolIds_results, base44, conversationId) : [];
+        delete responseData.toolCalls;
         return Response.json(responseData);
       }
 
