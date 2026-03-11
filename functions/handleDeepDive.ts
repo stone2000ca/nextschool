@@ -405,21 +405,7 @@ ${consultantName === 'Jackie'
   : "LIAM PERSONA: Direct, strategic, no-BS."}
 
 Write naturally in conversational prose about why this school fits the family. Cover the student-school alignment (including how the school programs match the child interests, how the learning environment suits their personality and learning style, and whether the school can support any academic struggles or learning differences), any trade-offs or concerns, and the cost reality. Speak like a consultant would—no headers, labels, or formatting markers. Just natural, helpful conversation. End your response with a brief, clear sentence summarizing whether this school is a strong fit for this family and the primary reason why or why not, based on what they shared in their brief.
-${area4Instructions}
-
-E32-005 — ACTION EMISSION (DEEPDIVE state):
-You may call the execute_ui_action tool ALONGSIDE your text response to trigger UI actions. Actions are always supplementary — always generate a natural conversational response. Never emit actions without text.
-
-INTENT PATTERNS (V1 only):
-- ADD_TO_SHORTLIST: emit when parent says "add X to my list", "shortlist X", "save X", or "keep X". Use schoolId from the SCHOOL IDs list above. Timing: immediate.
-- OPEN_PANEL: emit when parent says "show my shortlist" or "open my list". Payload: {panel: 'shortlist'}. Timing: after_message.
-- EXPAND_SCHOOL: emit paired with ADD_TO_SHORTLIST when contextually appropriate (same schoolId). Timing: after_message.
-
-3-BEAT CHOREOGRAPHY: When shortlisting a school, emit all three together — ADD_TO_SHORTLIST (immediate), OPEN_PANEL (after_message), EXPAND_SCHOOL (after_message).
-
-SCHOOL ID RULE: You MUST use the exact schoolId from the SCHOOL IDs list above. Name-only matching is last resort only.
-NEGATIVE GUARDRAIL: Do NOT emit REMOVE_FROM_SHORTLIST — it does not exist in V1. If a parent wants to remove a school, tell them to use the UI toggle on the school card.
-AMBIGUITY GUARDRAIL: If the user's intent is unclear (e.g. "tell me more about arts programs"), do NOT emit any actions — respond with text only.`;
+${area4Instructions}`;
 
     const deepDiveUserPrompt = `FAMILY BRIEF:
 - Child: ${childDisplayName}

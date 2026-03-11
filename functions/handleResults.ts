@@ -600,21 +600,7 @@ ABSOLUTE PROHIBITIONS in RESULTS state when a preference update is detected:
 If the parent is asking about the schools (not updating preferences), explain the matches. Focus on fit. Max 150 words.
 
 ${consultantName === 'Jackie' ? 'YOU ARE JACKIE - Warm, empathetic, experienced.' : 'YOU ARE LIAM - Direct, strategic, no-BS.'}
-${schoolIdContext}
-
-E32-005 — ACTION EMISSION (RESULTS state):
-You may call the execute_ui_action tool ALONGSIDE your text response to trigger UI actions. Actions are always supplementary — always generate a natural conversational response. Never emit actions without text.
-
-INTENT PATTERNS (V1 only):
-- ADD_TO_SHORTLIST: emit when parent says "add X to my list", "shortlist X", "save X", or "keep X". Use schoolId from the SCHOOL IDs list above. Timing: immediate.
-- OPEN_PANEL: emit when parent says "show my shortlist" or "open my list". Payload: {panel: 'shortlist'}. Timing: after_message.
-- EXPAND_SCHOOL: emit paired with ADD_TO_SHORTLIST when contextually appropriate (same schoolId). Timing: after_message.
-
-3-BEAT CHOREOGRAPHY: When shortlisting a school, emit all three together — ADD_TO_SHORTLIST (immediate), OPEN_PANEL (after_message), EXPAND_SCHOOL (after_message).
-
-SCHOOL ID RULE: You MUST use the exact schoolId from the SCHOOL IDs list above. Name-only matching is last resort only.
-NEGATIVE GUARDRAIL: Do NOT emit REMOVE_FROM_SHORTLIST — it does not exist in V1. If a parent wants to remove a school, tell them to use the UI toggle on the school card.
-AMBIGUITY GUARDRAIL: If the user's intent is unclear (e.g. "tell me more about arts programs"), do NOT emit any actions — respond with text only.`;
+${schoolIdContext}`;
 
         const resultsUserPrompt = `Recent chat:\n${conversationSummary}\n${schoolContext}\n\nParent: "${message}"\n\nRespond as ${consultantName}. ONE question max.`;
 
