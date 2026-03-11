@@ -139,6 +139,9 @@ async function callOpenRouter(options) {
         throw new Error('OpenRouter structured output parse failed');
       }
     }
+
+    // E32-001: returnRaw returns { content, toolCalls } for callers that need tool_calls
+    if (returnRaw) return { content: content || '', toolCalls };
     
     return content;
   } catch (err) {
