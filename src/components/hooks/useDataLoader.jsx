@@ -122,36 +122,6 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
     })();
   }, [isAuthenticated, user?.id]);
 
-  // E29-012: Hydrate shortlistData from SchoolJourney entity on auth load
-  useEffect(() => {
-    if (!isAuthenticated || !user?.id) return;
-
-    (async () => {
-      try {
-        const journeys = await base44.entities.FamilyJourney.filter({ userId: user.id });
-        const activeJourneyRecord = journeys.find(j => !j.isArchived);
-        if (!activeJourneyRecord) return;
-
-        const schoolJourneys = await base44.entities.SchoolJourney.filter({
-          familyJourneyId: activeJourneyRecord.id,
-          status: 'shortlisted',
-        });
-        if (schoolJourneys.length === 0) return;
-
-        const schoolIds = schoolJourneys.map(sj => sj.schoolId).filter(Boolean);
-        const fetchedSchools = await base44.entities.School.filter({ id: { $in: schoolIds } });
-
-        setShortlistData(prev => {
-          const existingIds = new Set(prev.map(s => s.id));
-          const newSchools = fetchedSchools.filter(s => !existingIds.has(s.id));
-          return newSchools.length > 0 ? [...prev, ...newSchools] : prev;
-        });
-      } catch (e) {
-        console.error('[E29-012] SchoolJourney shortlist hydration failed:', e.message);
-      }
-    })();
-  }, [isAuthenticated, user?.id]);
-
   return {
     familyProfile, setFamilyProfile,
     artifactCache, setArtifactCache,
