@@ -127,12 +127,10 @@ export default function Navbar({ variant = "default" }) {
             </Button>
           </div>
         ) : (
-          <Button 
-            className="bg-teal-600 hover:bg-teal-700"
-            onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
-          >
-            Login / Sign Up
-          </Button>
+          <div className="flex items-center gap-2">
+            <button className="ns-btn-outline" onClick={() => base44.auth.redirectToLogin(window.location.pathname)}>Log In</button>
+            <button className="ns-btn-primary" onClick={() => base44.auth.redirectToLogin(window.location.pathname)}>Sign Up</button>
+          </div>
         )}
       </div>
     </header>
