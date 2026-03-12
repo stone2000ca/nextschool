@@ -1384,37 +1384,13 @@ Object.assign(context, safeUpdatedContext);
 
       console.log('[ORCH] resolveTransition:', { nextState: currentState, intentSignal, sufficiency: resolveResult.sufficiency });
 
-      // S113-WC1: Conditional extractEntities — await for BRIEF/RESULTS, fire-and-forget for DISCOVERY
-      if (currentState === STATES.BRIEF || currentState === STATES.RESULTS) {
-        try {
-          const extractRes = await base44.asServiceRole.functions.invoke('extractEntities', {
-            message: processMessage,
-            conversationFamilyProfile,
-            context,
-            conversationHistory
-          });
-          const extractData = extractRes?.data || {};
-          if (extractData.updatedFamilyProfile) {
-            Object.assign(conversationFamilyProfile, mergeProfile(conversationFamilyProfile, extractData.updatedFamilyProfile));
-            Object.assign(workingProfile, mergeProfile(workingProfile, extractData.updatedFamilyProfile));
-            context.accumulatedFamilyProfile = mergeProfile(context.accumulatedFamilyProfile, extractData.updatedFamilyProfile);
-          }
-          if (extractData.extractedEntities) {
-            extractionResult.extractedEntities = extractData.extractedEntities;
-          }
-          console.log('[S113-WC1] extractEntities awaited for state:', currentState);
-        } catch (e) {
-          console.error('[S113-WC1] extractEntities await failed (non-blocking):', e.message);
-        }
-      } else {
-        // DISCOVERY and all other states: fire-and-forget
-        base44.asServiceRole.functions.invoke('extractEntities', {
-          message: processMessage,
-          conversationFamilyProfile,
-          context,
-          conversationHistory
-        }).catch(e => console.error('[ASYNC] extractEntities failed (non-blocking):', e.message));
-      }
+      // S136-WC1: E35-REC1 — fire-and-forget for ALL states (no await, no post-merge)
+      base44.asServiceRole.functions.invoke('extractEntities', {
+        message: processMessage,
+        conversationFamilyProfile,
+        context,
+        conversationHistory
+      }).catch(e => console.error('[S136-WC1] extractEntities fire-and-forget failed:', e.message));
 
       // GIBBERISH DETECTION: Catch nonsensical input before routing to handlers
       const normalizedMsg = (processMessage || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
