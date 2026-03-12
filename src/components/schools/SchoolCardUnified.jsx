@@ -75,8 +75,7 @@ export default function SchoolCardUnified({
 
   return (
     <Card 
-      className={`overflow-hidden transition-all duration-300 cursor-pointer group h-full flex flex-col
-        hover:shadow-lg focus-within:ring-2 focus-within:ring-offset-2`}
+      className={`ns-card-interactive transition-all duration-300 cursor-pointer group h-full flex flex-col focus-within:ring-2 focus-within:ring-offset-2`}
       style={{
         animation: 'fadeSlideUp 0.4s ease-out',
         animationDelay: `${index * 0.1}s`,

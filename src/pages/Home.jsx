@@ -150,7 +150,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-center mb-12 sm:mb-16 text-slate-900">How It Works</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+            <div className="ns-card p-8">
               <div className="h-14 w-14 bg-teal-100 rounded-lg flex items-center justify-center mb-6">
                 <MessageSquare className="h-7 w-7 text-teal-600" />
               </div>
@@ -160,7 +160,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+            <div className="ns-card p-8">
               <div className="h-14 w-14 bg-amber-100 rounded-lg flex items-center justify-center mb-6">
                 <Zap className="h-7 w-7 text-amber-600" />
               </div>
@@ -170,7 +170,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+            <div className="ns-card p-8">
               <div className="h-14 w-14 bg-teal-100 rounded-lg flex items-center justify-center mb-6">
                 <BarChart3 className="h-7 w-7 text-teal-600" />
               </div>
