@@ -324,7 +324,7 @@ Format as a markdown bullet list with one field per line. Start the child field 
           const briefResult = await callOpenRouter({
             systemPrompt: jackieBriefSystemPrompt,
             userPrompt: jackieBriefUserPrompt,
-            maxTokens: 800,
+            maxTokens: 500,
             temperature: 0.5
           });
           briefMessageText = briefResult || programmaticFallback;

@@ -615,51 +615,15 @@ ACTIONS (JSON output): Your response will be structured as JSON with a 'message'
 
         const resultsUserPrompt = `Recent chat:\n${conversationSummary}\n${schoolContext}\n\nParent: "${message}"\n\nRespond as ${consultantName}. ONE question max.`;
 
-        let messageWithLinks = 'Here are the schools I found:';
-        // E32-006: InvokeLLM primary with structured actions schema
-        try {
-          const fastResponse = await base44.integrations.Core.InvokeLLM({
-            prompt: resultsSystemPrompt + '\n\n' + resultsUserPrompt,
-            model: 'gpt_5_mini',
-            response_json_schema: ACTIONS_RESPONSE_SCHEMA
-          });
-          try {
-            const parsed = typeof fastResponse === 'object' ? fastResponse : JSON.parse(fastResponse);
-            messageWithLinks = parsed.message || 'Here are the schools I found:';
-            if (Array.isArray(parsed.actions) && parsed.actions.length > 0) {
-              rawToolCalls.push({ function: { name: 'execute_ui_action', arguments: JSON.stringify({ actions: parsed.actions }) } });
-              console.log('[E32-006] Actions parsed from InvokeLLM:', rawToolCalls.length);
-            }
-          } catch (parseError) {
-            console.log('[E32-006]: malformed actions in InvokeLLM response:', parseError.message);
-            messageWithLinks = typeof fastResponse === 'string' ? fastResponse : (fastResponse?.response || 'Here are the schools I found:');
-          }
-          console.log('[RESULTS] Response via InvokeLLM (primary)');
-        } catch (invokeLLMError) {
-          console.log('[RESULTS] InvokeLLM failed, falling back to callOpenRouter');
-          try {
-            messageWithLinks = await callOpenRouter({
-              systemPrompt: resultsSystemPrompt,
-              userPrompt: resultsUserPrompt,
-              maxTokens: 800,
-              temperature: 0.7
-            }) || 'Here are the schools I found:';
-            console.log('[RESULTS] Response via callOpenRouter (fallback)');
-          } catch (openrouterError) {
-            console.error('[RESULTS] Both response methods failed:', openrouterError.message);
-          }
+        if (autoRefresh && autoRefreshEntitiesStr) {
+          aiMessage = "I've refreshed your matches based on the new info — here's what changed.";
+        } else if (isThinResults) {
+          aiMessage = `I found ${schoolCount} school${schoolCount === 1 ? '' : 's'} that fit your criteria. Want me to adjust the search to find more options?`;
+        } else if (isFirstResults) {
+          aiMessage = "Here are your strongest matches based on everything you've told me. Take your time browsing — when a school catches your eye, save it to your shortlist.";
+        } else {
+          aiMessage = "Got it — I've updated your matches.";
         }
-
-        matchingSchools.forEach(school => {
-          const escapedName = school.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const schoolNameRegex = new RegExp(`(?<!\\[)\\b${escapedName}\\b(?!\\]\\()`, 'gi');
-          messageWithLinks = messageWithLinks.replace(
-            schoolNameRegex,
-            `[${school.name}](school:${school.slug})`
-          );
-        });
-
-        aiMessage = messageWithLinks;
       }
     } catch (e) {
       console.error('[ERROR] RESULTS response failed:', e.message);
