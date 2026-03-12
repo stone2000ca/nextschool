@@ -48,7 +48,7 @@ async function callOpenRouter(options) {
   console.log('[OPENROUTER] Calling with models:', body.models, 'maxTokens:', maxTokens);
 
   const controller = new AbortController();
-  const TIMEOUT_MS = 15000;
+  const TIMEOUT_MS = 10000;
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   let response;

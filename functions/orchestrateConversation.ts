@@ -61,7 +61,7 @@ async function callOpenRouter(options) {
   const fullPromptStr = messages.map(m => `[${m.role}] ${m.content}`).join('\n');
 
   const controller = new AbortController();
-  const TIMEOUT_MS = 15000;
+  const TIMEOUT_MS = 10000;
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
