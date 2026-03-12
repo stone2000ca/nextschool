@@ -828,10 +828,13 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
       debriefMessage = debriefResponse || "Tell me about your visit experience.";
     } catch (openrouterError) {
       try {
-        const fallbackResponse = await base44.integrations.Core.InvokeLLM({
-          prompt: debriefSystemPrompt + '\n\n' + debriefUserPrompt,
-          model: 'gpt_5_mini'
-        });
+        const fallbackResponse = await Promise.race([
+          base44.integrations.Core.InvokeLLM({
+            prompt: debriefSystemPrompt + '\n\n' + debriefUserPrompt,
+            model: 'gpt_5_mini'
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('InvokeLLM timed out after 8s')), 8000))
+        ]);
         debriefMessage = fallbackResponse?.response || fallbackResponse || "Tell me about your visit experience.";
       } catch (fallbackError) {
         console.error('[E13a] Debrief response failed:', fallbackError.message);
