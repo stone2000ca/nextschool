@@ -1186,7 +1186,10 @@ The family is returning to continue their school search. Here is their journey c
 
 Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they left off, reference specific schools or the suggested next step if relevant, and invite them to continue. Be concise and personal. Do NOT ask multiple questions — end with one clear invitation.`;
 
-          const greeting = await base44.integrations.Core.InvokeLLM({ prompt: welcomeBackPrompt });
+          const greeting = await Promise.race([
+            base44.integrations.Core.InvokeLLM({ prompt: welcomeBackPrompt }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('InvokeLLM timed out after 8s')), 8000))
+          ]);
           const greetingText = typeof greeting === 'string' ? greeting : (greeting?.response || greeting?.text || 'Welcome back! Ready to pick up where we left off?');
 
           console.log('[E29-008] Journey resumption short-circuit fired for journeyId:', journeyContext.journeyId);
