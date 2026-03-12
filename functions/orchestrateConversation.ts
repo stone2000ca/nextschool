@@ -927,21 +927,23 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
                 const qaText = qaPairs.map((qa, i) => `Q${i+1}: ${qa.question}\nA${i+1}: ${qa.answer}`).join('\n\n');
                 const debriefAnalysis = await Promise.race([
                   base44.integrations.Core.InvokeLLM({
-                  prompt: `A parent just completed a post-visit debrief for ${school?.name || 'a school'}. Analyze their responses and return JSON only.
+                    prompt: `A parent just completed a post-visit debrief for ${school?.name || 'a school'}. Analyze their responses and return JSON only.
 
 Debrief Q&A:
 ${qaText}
 
 Return ONLY this JSON (no markdown): { "debriefSummary": "<2-3 sentences summarizing what the parent observed and felt>", "debriefSentiment": "<POSITIVE|MIXED|NEGATIVE based on overall impression>" }`,
-                  response_json_schema: {
-                    type: 'object',
-                    properties: {
-                      debriefSummary: { type: 'string' },
-                      debriefSentiment: { type: 'string', enum: ['POSITIVE', 'MIXED', 'NEGATIVE'] }
-                    },
-                    required: ['debriefSummary', 'debriefSentiment']
-                  }
-                });
+                    response_json_schema: {
+                      type: 'object',
+                      properties: {
+                        debriefSummary: { type: 'string' },
+                        debriefSentiment: { type: 'string', enum: ['POSITIVE', 'MIXED', 'NEGATIVE'] }
+                      },
+                      required: ['debriefSummary', 'debriefSentiment']
+                    }
+                  }),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('InvokeLLM timed out after 12s')), 12000))
+                ]);
                 const parsed = typeof debriefAnalysis === 'object' ? debriefAnalysis : JSON.parse(debriefAnalysis);
                 if (parsed?.debriefSummary) {
                   await base44.asServiceRole.entities.SchoolJourney.update(sjId, {
