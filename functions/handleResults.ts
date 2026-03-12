@@ -349,6 +349,7 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
       } catch (e) {
         console.error('[WC10] Narrative generation failed:', e.message);
       }
+      })();
     }
 
     // =========================================================================
