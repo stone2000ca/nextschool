@@ -121,7 +121,7 @@ export default function Home() {
         {/* RIGHT: Content Panel */}
         <div
           className="lg:w-[45%] w-full flex flex-col justify-center px-8 lg:px-16 py-16"
-          style={{ backgroundColor: 'var(--ns-cream)' }}
+          style={{ backgroundColor: '#F5F2ED' }}
         >
           <div id="main-content">
             <p className="ns-label mb-3" style={{ color: 'var(--ns-teal-600)' }}>FIND THE SCHOOL</p>
@@ -130,8 +130,8 @@ export default function Home() {
               Tell us what matters to your family, and we'll match you with the right private schools in Canada.
             </p>
             <div className="flex flex-row gap-4 flex-wrap">
-              <Link to={createPageUrl('Consultant')}><button className="ns-btn-primary">Chat with Jackie</button></Link>
-              <Link to={createPageUrl('Consultant')}><button className="ns-btn-primary">Chat with Liam</button></Link>
+              <Link to={createPageUrl('Consultant')}><button className="ns-btn-primary" style={{ backgroundColor: 'var(--ns-teal-900)', color: 'white', borderRadius: '9999px', padding: '12px 28px', fontWeight: '600', fontSize: '16px', border: 'none', cursor: 'pointer' }}>Chat with Jackie</button></Link>
+              <Link to={createPageUrl('Consultant')}><button className="ns-btn-primary" style={{ backgroundColor: 'var(--ns-teal-900)', color: 'white', borderRadius: '9999px', padding: '12px 28px', fontWeight: '600', fontSize: '16px', border: 'none', cursor: 'pointer' }}>Chat with Liam</button></Link>
             </div>
             <div className="mt-6">
               <Link to={createPageUrl('SchoolDirectory')} className="text-sm font-medium" style={{ color: 'var(--ns-teal-600)' }}>
