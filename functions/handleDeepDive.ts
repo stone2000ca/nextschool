@@ -498,11 +498,14 @@ Generate the DEEPDIVE card for this family-school match.`;
     const rawToolCalls = [];
     // MERGED: Single LLM call combining conversational prose + structured analysis
     try {
-      const mergedResponse = await base44.integrations.Core.InvokeLLM({
-        prompt: deepDiveSystemPrompt + '\n\n' + deepDiveUserPrompt,
-        model: 'gpt_5_mini',
-        response_json_schema: MERGED_RESPONSE_SCHEMA
-      });
+      const mergedResponse = await Promise.race([
+        base44.integrations.Core.InvokeLLM({
+          prompt: deepDiveSystemPrompt + '\n\n' + deepDiveUserPrompt,
+          model: 'gpt_5_mini',
+          response_json_schema: MERGED_RESPONSE_SCHEMA
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('InvokeLLM timed out after 12s')), 12000))
+      ]);
       try {
         const parsed = typeof mergedResponse === 'object' ? mergedResponse : JSON.parse(mergedResponse);
         aiMessage = parsed.message || '';

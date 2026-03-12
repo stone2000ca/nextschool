@@ -314,10 +314,13 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
 
         let aiNarrative = null;
         try {
-          const fastResponse = await base44.integrations.Core.InvokeLLM({ 
-            prompt: 'You are a skilled education consultant writing warm, personalized school profile narratives. Keep it 2-3 sentences max.\n\n' + narrativePrompt,
-            model: 'gpt_5_mini'
-          });
+          const fastResponse = await Promise.race([
+            base44.integrations.Core.InvokeLLM({ 
+              prompt: 'You are a skilled education consultant writing warm, personalized school profile narratives. Keep it 2-3 sentences max.\n\n' + narrativePrompt,
+              model: 'gpt_5_mini'
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('InvokeLLM timed out after 12s')), 12000))
+          ]);
           aiNarrative = fastResponse?.response || fastResponse;
           console.log('[WC10] Narrative generated via InvokeLLM (fast path)');
         } catch (invokeLLMError) {
