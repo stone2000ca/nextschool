@@ -2,7 +2,7 @@
 // Purpose: Extract and persist family profile data from parent messages with intent classification
 // Entities: FamilyProfile
 // Last Modified: 2026-03-09
-// Dependencies: OpenRouter API, Base44 InvokeLLM fallback
+// Dependencies: Base44 InvokeLLM
 // WC-1: F11 FIX — strip non-schema keys before DB write to prevent Firestore rejection
 // WC-2: LLM model upgrade — MiniMax M2.5 as primary model in callOpenRouter waterfall
 // WC-3: S122 extraction bug fixes — location false positive, interests list, gender keywords
