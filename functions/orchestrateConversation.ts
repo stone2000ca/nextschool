@@ -1384,13 +1384,13 @@ Object.assign(context, safeUpdatedContext);
 
       console.log('[ORCH] resolveTransition:', { nextState: currentState, intentSignal, sufficiency: resolveResult.sufficiency });
 
-      // S136-WC1: E35-REC1 — fire-and-forget for ALL states (no await, no post-merge)
+      // E35-REC1: extractEntities fire-and-forget for ALL states (was awaited for BRIEF/RESULTS)
       base44.asServiceRole.functions.invoke('extractEntities', {
         message: processMessage,
         conversationFamilyProfile,
         context,
         conversationHistory
-      }).catch(e => console.error('[S136-WC1] extractEntities fire-and-forget failed:', e.message));
+      }).catch(e => console.error('[E35-REC1] extractEntities failed (non-blocking):', e.message));
 
       // GIBBERISH DETECTION: Catch nonsensical input before routing to handlers
       const normalizedMsg = (processMessage || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
