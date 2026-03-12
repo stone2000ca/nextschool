@@ -1059,19 +1059,25 @@ Phase: ${currentPhase}
 Write 3 sentences only. No headings, no bullet points.`;
 
       const [nextActionRaw, summaryRaw] = await Promise.all([
-        base44.integrations.Core.InvokeLLM({
-          prompt: nextActionPrompt,
-          response_json_schema: {
-            type: 'object',
-            properties: {
-              nextAction: { type: 'string' },
-              nextActionType: { type: 'string' },
-              nextActionDue: { type: 'string' }
-            },
-            required: ['nextAction', 'nextActionType', 'nextActionDue']
-          }
-        }),
-        base44.integrations.Core.InvokeLLM({ prompt: summaryPrompt })
+        Promise.race([
+          base44.integrations.Core.InvokeLLM({
+            prompt: nextActionPrompt,
+            response_json_schema: {
+              type: 'object',
+              properties: {
+                nextAction: { type: 'string' },
+                nextActionType: { type: 'string' },
+                nextActionDue: { type: 'string' }
+              },
+              required: ['nextAction', 'nextActionType', 'nextActionDue']
+            }
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('InvokeLLM timed out after 12s')), 12000))
+        ]),
+        Promise.race([
+          base44.integrations.Core.InvokeLLM({ prompt: summaryPrompt }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('InvokeLLM timed out after 12s')), 12000))
+        ])
       ]);
 
       const parsedAction = typeof nextActionRaw === 'object' ? nextActionRaw : JSON.parse(nextActionRaw);
