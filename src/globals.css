@@ -137,6 +137,60 @@
     letter-spacing: 1.2px;
     color: var(--ns-teal-600);
   }
+
+  .ns-btn-primary {
+    background-color: var(--ns-teal-900);
+    color: white;
+    border-radius: 9999px;
+    padding: 0.75rem 1.75rem;
+    font-weight: 600;
+    transition: all 150ms ease;
+    min-width: 120px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+  }
+  .ns-btn-primary:hover {
+    background-color: var(--ns-teal-700);
+  }
+
+  .ns-btn-secondary {
+    background-color: var(--ns-teal-500);
+    color: white;
+    border-radius: 9999px;
+    padding: 0.75rem 1.75rem;
+    font-weight: 600;
+    transition: all 150ms ease;
+    min-width: 120px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+  }
+  .ns-btn-secondary:hover {
+    background-color: var(--ns-teal-600);
+  }
+
+  .ns-btn-outline {
+    background-color: transparent;
+    color: var(--ns-teal-600);
+    border: 2px solid var(--ns-teal-600);
+    border-radius: 9999px;
+    padding: calc(0.75rem - 2px) calc(1.75rem - 2px);
+    font-weight: 600;
+    transition: all 150ms ease;
+    min-width: 120px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .ns-btn-outline:hover {
+    background-color: var(--ns-teal-50);
+  }
 }
 
 @keyframes fadeIn {
