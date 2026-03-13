@@ -578,6 +578,9 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
     if (resolvedLat && resolvedLng) {
       searchParams.resolvedLat = resolvedLat;
       searchParams.resolvedLng = resolvedLng;
+      searchParams.maxDistanceKm = conversationFamilyProfile?.commuteToleranceMinutes 
+        ? Math.ceil(conversationFamilyProfile.commuteToleranceMinutes / 2) 
+        : 75;
     }
 
     if (parsedGrade !== null) {
