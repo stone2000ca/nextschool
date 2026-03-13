@@ -1151,7 +1151,7 @@ export default function Consultant() {
       <Navbar variant="minimal" />
 
       {/* E37: Loading overlay on brief confirmation */}
-      {showLoadingOverlay && <LoadingOverlay isVisible={showLoadingOverlay} />}
+      {showLoadingOverlay && <LoadingOverlay isVisible={showLoadingOverlay} onTransitionComplete={() => setIsTransitioning(true)} />}
 
       {(isIntakePhase && !showSchoolGrid) ? (
          /* INTAKE PHASE - Centered Layout */
