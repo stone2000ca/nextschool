@@ -806,7 +806,10 @@ ${schoolIdContext}`;
     }
 
     // Persist last matched schools into context so shortlist-action fast path can use them next call
-    context.lastMatchedSchools = matchingSchools;
+    const existingPool = context.lastMatchedSchools || [];
+    const newIds = new Set(matchingSchools.map(s => s.id));
+    const preserved = existingPool.filter(s => !newIds.has(s.id));
+    context.lastMatchedSchools = [...matchingSchools, ...preserved].slice(0, 50);
 
     return Response.json({
       message: aiMessage,
