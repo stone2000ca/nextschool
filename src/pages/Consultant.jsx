@@ -725,8 +725,8 @@ export default function Consultant() {
   // E31-003: Load More Schools handler
   const conversationContext = currentConversation?.conversationContext;
   const loadMoreSchools = useCallback(async () => {
-    const lat = conversationContext?.resolvedLat || userLocation?.lat;
-    const lng = conversationContext?.resolvedLng || userLocation?.lng;
+    const lat = conversationContext?.resolvedLat || familyProfile?.resolvedLat || userLocation?.lat;
+    const lng = conversationContext?.resolvedLng || familyProfile?.resolvedLng || userLocation?.lng;
     if (!lat || !lng) {
       setExtraSchoolsError('no_location');
       return;
