@@ -449,6 +449,7 @@ function lightweightExtract(message, existingProfile) {
 
   // Budget extraction
   const budgetMatches = message.matchAll(/(\$)\s*(\d{1,3}(?:,\d{3})*|\d+)\s*([kK])?|(\d{1,3}(?:,\d{3})*|\d+)\s*([kK])/g);
+  let maxBudgetFound = 0;
   for (const match of budgetMatches) {
     let numStr, hasKilo;
     if (match[1]) {
@@ -462,10 +463,12 @@ function lightweightExtract(message, existingProfile) {
     if (!isNaN(num)) {
       const amount = hasKilo ? num * 1000 : num;
       if (amount >= 5000 && amount <= 500000) {
-        bridgeProfile.maxTuition = amount;
-        break;
+        maxBudgetFound = Math.max(maxBudgetFound, amount);
       }
     }
+  }
+  if (maxBudgetFound > 0) {
+    bridgeProfile.maxTuition = maxBudgetFound;
   }
 
   // Gender extraction
