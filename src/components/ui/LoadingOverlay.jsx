@@ -52,6 +52,123 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
           Finding Your Matches...
         </div>
 
+        {/* Orbit Animation */}
+        <div style={{
+          position: 'relative',
+          width: '160px',
+          height: '160px',
+          margin: '0 auto 28px',
+        }}>
+          {/* Static Rings */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '100px',
+            height: '100px',
+            borderRadius: '50%',
+            border: '1px solid rgba(24,150,138,0.3)',
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '130px',
+            height: '130px',
+            borderRadius: '50%',
+            border: '1px solid rgba(24,150,138,0.3)',
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '160px',
+            height: '160px',
+            borderRadius: '50%',
+            border: '1px solid rgba(24,150,138,0.3)',
+          }} />
+
+          {/* Spinning Arc 1 (130px, 3s) */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '130px',
+            height: '130px',
+            borderRadius: '50%',
+            borderTop: '2.5px solid #18968a',
+            borderRight: '2.5px solid #18968a',
+            borderBottom: '2.5px solid transparent',
+            borderLeft: '2.5px solid transparent',
+            animation: 'spin 3s linear infinite',
+          }} />
+
+          {/* Spinning Arc 2 (160px, 4.5s reverse) */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '160px',
+            height: '160px',
+            borderRadius: '50%',
+            borderTop: '2.5px solid #18968a',
+            borderRight: '2.5px solid #18968a',
+            borderBottom: '2.5px solid transparent',
+            borderLeft: '2.5px solid transparent',
+            animation: 'spin 4.5s linear infinite reverse',
+          }} />
+
+          {/* Center Circle with Logo */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '68px',
+            height: '68px',
+            borderRadius: '50%',
+            background: 'white',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40.54 38.56' width='36' height='36'>
+              <path fill='#18968a' d='M20.21,0h-11.7L0,8.48l7,10.78L0,30.05l8.52,8.52h12.76l19.26-19.3L21.28,0h-1.06ZM37.53,19.27l-16.26,16.29-.09-.09-5.7-5.7,6.06-9.34.75-1.16-.75-1.16-6.06-9.34,5.79-5.76.58.58,15.68,15.68Z' />
+              <polygon fill='#fff' points='15.48 8.77 21.54 18.11 22.29 19.26 21.54 20.42 15.48 29.76 21.18 35.46 21.28 35.56 37.53 19.27 21.85 3.59 21.27 3.01 15.48 8.77' />
+            </svg>
+          </div>
+
+          {/* Gold Dots */}
+          {[0, 1, 2, 3, 4].map((i) => {
+            const angle = (i * 72) * Math.PI / 180; // 5 dots evenly spaced
+            const x = 80 * Math.cos(angle);
+            const y = 80 * Math.sin(angle);
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  background: '#d4a017',
+                  animation: `pulse 2s ease-in-out infinite`,
+                  animationDelay: `${i * 0.2}s`,
+                }}
+              />
+            );
+          })}
+        </div>
+
         {/* Progress Steps */}
         <div style={{ margin: '36px auto', fontSize: '14px', color: '#334155', textAlign: 'left', display: 'inline-block' }}>
           {['Analyzing preferences', 'Matching with schools', 'Ranking top picks'].map((label, i) => (
