@@ -373,8 +373,12 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
 
     // =========================================================================
     // FAST PATH: shortlist-action — no search, no LLM, just fuzzy match + tool call
+    // NOTE: extractedEntities is a fire-and-forget stub (always {}), so we detect
+    // shortlist intent directly from the message via regex as the primary signal.
     // =========================================================================
-    if (extractedEntities?.intentSignal === 'shortlist-action') {
+    const shortlistFastPathRegex = /\b(add|save|shortlist|bookmark|keep)\b.{0,40}\b(school|academy|college|it|that|this|one)\b|\b(shortlist|save|add)\s+(it|that|this)\b|\badd\b.{0,30}\bto\b.{0,20}\b(shortlist|list|saved)\b/i;
+    const isShortlistAction = extractedEntities?.intentSignal === 'shortlist-action' || shortlistFastPathRegex.test(message);
+    if (isShortlistAction) {
       const schoolPool = (previousSchools && previousSchools.length > 0)
         ? previousSchools
         : (context.lastMatchedSchools || []);

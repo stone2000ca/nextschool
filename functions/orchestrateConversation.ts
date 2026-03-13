@@ -1618,7 +1618,8 @@ Object.assign(context, safeUpdatedContext);
           userLocation,
           autoRefresh,
           extractedEntities: extractionResult?.extractedEntities || {},
-          returningUserContextBlock
+          returningUserContextBlock,
+          previousSchools: currentSchools || []
         });
         responseData = resultsResult.data;
         responseData.conversationContext = {
