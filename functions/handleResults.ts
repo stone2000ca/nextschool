@@ -392,21 +392,26 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
       const msgWords = strippedMsg.split(' ').filter(w => w.length > 2);
       console.log(`[SHORTLIST-FAST-PATH] Pool size: ${schoolPool.length}, msgWords=${JSON.stringify(msgWords)}`);
 
-      // Score each school by word overlap count, pick highest
+      // Score each school — require ALL significant words (length >= 4) to match to avoid
+      // false positives like 'howlett academy' matching 'Hanson International Academy' via 'academy'
+      const significantMsgWords = msgWords.filter(w => w.length >= 4);
+      const requiredScore = significantMsgWords.length > 0 ? significantMsgWords.length : 1;
       let bestMatch = null;
       let bestScore = 0;
       for (const s of schoolPool) {
         const nameNorm = s.name.toLowerCase().replace(/[^a-z0-9\s]/g, '');
         const nameWords = nameNorm.split(' ').filter(w => w.length > 2);
-        const overlapCount = msgWords.filter(w => nameWords.includes(w)).length;
-        console.log(`[SHORTLIST-FAST-PATH] "${s.name}" score=${overlapCount} (nameWords=[${nameWords.join(',')}])`);
+        const overlapCount = significantMsgWords.length > 0
+          ? significantMsgWords.filter(w => nameWords.includes(w)).length
+          : msgWords.filter(w => nameWords.includes(w)).length;
+        console.log(`[SHORTLIST-FAST-PATH] "${s.name}" score=${overlapCount}/${requiredScore} (nameWords=[${nameWords.join(',')}])`);
         if (overlapCount > bestScore) {
           bestScore = overlapCount;
           bestMatch = s;
         }
       }
 
-      let matched = bestScore >= 1 ? bestMatch : null;
+      let matched = bestScore >= requiredScore ? bestMatch : null;
 
       if (matched) {
         console.log(`[SHORTLIST-FAST-PATH] Best match: "${matched.name}" (${matched.id}) score=${bestScore} — skipping search & LLM`);
