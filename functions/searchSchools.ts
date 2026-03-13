@@ -60,8 +60,8 @@ function applyGenderFilter(school, familyProfile) {
   const gp = school.genderPolicy || null;
   if (gp === null) return true;
   
-  // HARD SAFETY: childGender vs genderPolicy - always enforced, never a fallback
-  const childGender = familyProfile?.childGender || null;
+  // F8 FIX: also check gender fallback field (set from lightweightExtract)
+  const childGender = familyProfile?.childGender || familyProfile?.gender || null;
   const gpLower = gp.toLowerCase();
   if (childGender === 'male' && (gpLower === 'all-girls' || gpLower === 'girls only')) {
     console.log(`[GENDER] Excluded (childGender=male) ${school.name}: genderPolicy="${gp}"`);
@@ -266,7 +266,9 @@ async function performSearch(req) {
     if (cityMatches.length === 0 && (resolvedLat || finalLat)) {
       console.log(`[CITY FILTER] Falling back to coordinate-based with 75km cap`);
       locationFiltered = locationFiltered.filter(s => {
-        if (!s.lat || !s.lng) return true;
+        // F3 FIX: exclude schools without coordinates in coord-based fallback (was: return true)
+        // Schools without lat/lng could be from any region and slip through a city-scoped search
+        if (!s.lat || !s.lng) return false;
         const dist = calculateDistance(finalLat, finalLng, s.lat, s.lng);
         return dist <= 75;
       });
@@ -305,7 +307,8 @@ async function performSearch(req) {
        let sHigh = parseInt(school.highestGrade);
        if (!isNaN(sLow) && !isNaN(sHigh)) {
          const distanceOutsideRange = parsedMinGrade < sLow ? sLow - parsedMinGrade : (parsedMinGrade > sHigh ? parsedMinGrade - sHigh : 0);
-         if (distanceOutsideRange > 2) {
+         // F4 FIX: exclude if >= 2 grades outside (was > 2 which allowed Gr0-2 for Grade4 child)
+         if (distanceOutsideRange > 1) {
            console.log(`[GRADE FILTER] Excluded ${school.name}: grades ${sLow}-${sHigh}, need ${parsedMinGrade} (${distanceOutsideRange} grades outside range)`);
            return false;
          }

@@ -169,7 +169,8 @@ const ChatPanel = forwardRef(function ChatPanel({
           )
         )}
 
-        {messages.map((msg, index) => {
+        {messages.filter(msg => msg?.content && msg.content.trim() !== '').map((msg, index) => {
+          // F14 FIX: skip blank/empty message bubbles
           const isLastAssistant =
             msg.role === 'assistant' &&
             index === messages.map(m => m.role).lastIndexOf('assistant');

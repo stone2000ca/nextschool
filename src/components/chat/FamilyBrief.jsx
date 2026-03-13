@@ -128,8 +128,10 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName, ex
             <MapPin className="h-3.5 w-3.5" style={{ color: accentColor }} />
             <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Logistics</span>
           </div>
-          {fp.locationArea && <Field label="Location" value={fp.locationArea} />}
+          {/* F9 FIX: Location always rendered (Field handles null with placeholder) */}
+          <Field label="Location" value={fp.locationArea || extractedEntities?.locationArea} />
           <Field label="Budget" value={formatBudget(fp.maxTuition || extractedEntities?.maxTuition)} />
+          {fp.learningStyle && <Field label="Learning Style" value={fp.learningStyle} />}
           {fp.schoolType && <Field label="School Type" value={formatSchoolType(fp.schoolType)} />}
         </section>
 

@@ -266,17 +266,34 @@ Deno.serve(async (req) => {
 
     const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
-    // E30-S1: Check if user is trying to switch schools (back-to-results intent)
-    const backToResultsPattern = /\b(what about another|show me other|different school|go back|other options|other schools|what else|see other|back to results)\b/i;
+    // F16 FIX: Detect school-switch intent (user wants to see a different school)
+    const backToResultsPattern = /\b(what about another|show me other|different school|go back|other options|other schools|what else|see other|back to results|show me more|look at other|compare other|other matches|show other|different one|another school)\b/i;
     if (backToResultsPattern.test(message)) {
       console.log('[DEEPDIVE] Back-to-results intent detected, routing user to RESULTS');
       return Response.json({
-        message: "I'd be happy to look at another school! You can click on any school card from your results to explore it, or ask me about a specific school by name.",
+        message: "Of course! Here are your school matches — click any card to explore it in detail.",
         state: STATES.RESULTS,
         briefStatus: briefStatus,
         schools: currentSchools || [],
         familyProfile: conversationFamilyProfile,
         conversationContext: context,
+        rawToolCalls: []
+      });
+    }
+
+    // F13 FIX: Detect tour booking intent in DEEPDIVE — return INITIATE_TOUR action
+    const TOUR_BOOKING_RE = /\b(book|schedule|arrange|request|sign\s*up\s*for|register\s*for|set\s*up)\b.{0,30}\b(tour|visit|open\s*house|campus\s*visit|info\s*session)\b|\b(want\s+to|like\s+to|ready\s+to)\s+(visit|tour|see|check\s*out)\b|\b(can\s+(?:we|i)|how\s+(?:do\s+i|can\s+i))\s+(?:book|schedule|arrange|visit|tour)\b/i;
+    if (TOUR_BOOKING_RE.test(message) && selectedSchoolId) {
+      console.log('[DEEPDIVE] Tour booking intent detected, returning INITIATE_TOUR action');
+      const schoolNameForTour = selectedSchool ? selectedSchool.name : 'that school';
+      return Response.json({
+        message: `Great — let me pull up the tour request form for ${schoolNameForTour}.`,
+        state: STATES.DEEP_DIVE,
+        briefStatus: briefStatus,
+        schools: currentSchools || [],
+        familyProfile: conversationFamilyProfile,
+        conversationContext: context,
+        actions: [{ type: 'INITIATE_TOUR', payload: { schoolId: selectedSchoolId }, timing: 'immediate' }],
         rawToolCalls: []
       });
     }

@@ -118,18 +118,36 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
       }
     }
 
-    // BUG-ENT-004: Budget extraction with ALWAYS-RUN regex fallback
+    // BUG-ENT-004 + F2 FIX: Budget extraction — handle ranges (e.g. "$15K-$20K") and use max value
     let extractedBudget = null;
-    const budgetMatch = message.match(/(?:budget|tuition|cost|price|afford|pay|spend)?[\s:]*\$?\s*(\d{1,3}(?:,\d{3})*|\d+)\s*(?:k|K|thousand)?(?:\b|$)/i);
-    if (budgetMatch) {
-      const raw = budgetMatch[0];
-      const numStr = budgetMatch[1].replace(/,/g, '');
-      const num = parseInt(numStr);
-      if (!isNaN(num)) {
-        const isThousands = /[kK]/.test(raw) || /thousand/i.test(raw);
-        const amount = isThousands ? num * 1000 : num;
-        if (amount >= 5000 && amount <= 500000) {
-          extractedBudget = amount;
+    // F2 FIX: Check for range pattern first (e.g. "$15K-$20K", "$15,000 to $20,000")
+    const budgetRangeMatch = message.match(/\$?\s*(\d{1,3}(?:,\d{3})*|\d+)\s*(?:k|K|thousand)?\s*(?:-|to)\s*\$?\s*(\d{1,3}(?:,\d{3})*|\d+)\s*(?:k|K|thousand)?/i);
+    if (budgetRangeMatch) {
+      const parse = (numStr, rawSegment) => {
+        const n = parseInt(numStr.replace(/,/g, ''));
+        const isK = /[kK]/.test(rawSegment) || /thousand/i.test(rawSegment);
+        return isK ? n * 1000 : n;
+      };
+      const lo = parse(budgetRangeMatch[1], budgetRangeMatch[0]);
+      const hi = parse(budgetRangeMatch[2], budgetRangeMatch[0]);
+      const maxVal = Math.max(lo, hi);
+      if (maxVal >= 5000 && maxVal <= 500000) {
+        extractedBudget = maxVal;
+        console.log(`[BUDGET-RANGE] Extracted max of range: ${lo}-${hi} → ${maxVal}`);
+      }
+    }
+    if (extractedBudget === null) {
+      const budgetMatch = message.match(/(?:budget|tuition|cost|price|afford|pay|spend)?[\s:]*\$?\s*(\d{1,3}(?:,\d{3})*|\d+)\s*(?:k|K|thousand)?(?:\b|$)/i);
+      if (budgetMatch) {
+        const raw = budgetMatch[0];
+        const numStr = budgetMatch[1].replace(/,/g, '');
+        const num = parseInt(numStr);
+        if (!isNaN(num)) {
+          const isThousands = /[kK]/.test(raw) || /thousand/i.test(raw);
+          const amount = isThousands ? num * 1000 : num;
+          if (amount >= 5000 && amount <= 500000) {
+            extractedBudget = amount;
+          }
         }
       }
     }
