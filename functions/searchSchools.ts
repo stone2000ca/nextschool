@@ -178,6 +178,7 @@ async function performSearch(req) {
   };
 
   const regionAliases = {
+    'toronto': { cities: ['Toronto', 'North York', 'Scarborough', 'Etobicoke', 'East York', 'York', 'Markham', 'Mississauga', 'Richmond Hill', 'Vaughan', 'Oakville', 'Burlington'] },
     'gta': { cities: ['Toronto', 'Mississauga', 'Brampton', 'Oakville', 'Markham', 'Vaughan', 'Richmond Hill'] },
     'greater toronto area': { cities: ['Toronto', 'Mississauga', 'Brampton', 'Oakville', 'Markham', 'Vaughan', 'Richmond Hill'] },
     'lower mainland': { cities: ['Vancouver', 'Burnaby', 'Surrey', 'Richmond', 'Coquitlam'] },
@@ -265,7 +266,7 @@ async function performSearch(req) {
     if (cityMatches.length === 0 && (resolvedLat || finalLat)) {
       console.log(`[CITY FILTER] Falling back to coordinate-based with 75km cap`);
       locationFiltered = locationFiltered.filter(s => {
-        if (!s.lat || !s.lng) return false;
+        if (!s.lat || !s.lng) return true;
         const dist = calculateDistance(finalLat, finalLng, s.lat, s.lng);
         return dist <= 75;
       });
@@ -282,8 +283,9 @@ async function performSearch(req) {
     const normalizedProvince = fullProvinceName || toTitleCase(provinceState.trim());
     const provinceRegex = new RegExp(`^${normalizedProvince}$`, 'i');
     locationFiltered = locationFiltered.filter(s => {
-      if (!s.provinceState) return false;
-      return provinceRegex.test(s.provinceState);
+      const schoolPS = s.provinceState?.toUpperCase().trim();
+      const expandedSchoolPS = provinceAbbreviations[schoolPS] || stateAbbreviations[schoolPS] || s.provinceState;
+      return provinceRegex.test(expandedSchoolPS) || provinceRegex.test(s.provinceState);
     });
   }
 
