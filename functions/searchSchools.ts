@@ -339,9 +339,9 @@ async function performSearch(req) {
         let sLow = parseInt(school.lowestGrade);
         let sHigh = parseInt(school.highestGrade);
         if (!isNaN(sLow) && !isNaN(sHigh)) {
-          // In relaxed mode, allow grades up to 3 outside range (more lenient than strict mode)
+          // In relaxed mode, allow grades up to 1 outside range (borderline cases only)
           const distanceOutsideRange = parsedMinGrade < sLow ? sLow - parsedMinGrade : (parsedMinGrade > sHigh ? parsedMinGrade - sHigh : 0);
-          if (distanceOutsideRange > 3) {
+          if (distanceOutsideRange > 1) {
             return false;
           }
         }
