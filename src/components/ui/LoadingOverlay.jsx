@@ -236,6 +236,21 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
             from { opacity: 0; }
             to { opacity: 1; }
           }
+          @keyframes spin {
+            to {
+              transform: translate(-50%, -50%) rotate(360deg);
+            }
+          }
+          @keyframes pulse {
+            0%, 100% {
+              transform: scale(1);
+              opacity: 0.85;
+            }
+            50% {
+              transform: scale(1.5);
+              opacity: 1;
+            }
+          }
         `}</style>
       </div>
     </div>
