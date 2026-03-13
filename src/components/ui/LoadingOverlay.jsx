@@ -80,7 +80,7 @@ export default function LoadingOverlay({ visible, statusMessage = 'Finding Your 
       )}
 
       {/* Loader Content */}
-      <div style={{ textAlign: 'center', maxWidth: '500px', width: '100%', padding: '20px' }}>
+      <div style={{ textAlign: 'center', maxWidth: '600px', width: '100%', padding: '20px', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '20px' }}>
         {/* Status Badge */}
         <div
           style={{
