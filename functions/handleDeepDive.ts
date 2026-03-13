@@ -184,7 +184,7 @@ function extractConciseSummary(fullProse) {
   const meaningful = sentences.filter(s => s.trim().length > 0);
   if (meaningful.length < 2) return fullProse;
   const concise = meaningful.slice(0, 3).join(' ');
-  return concise + " I've saved the full breakdown to your shortlist -- tap the bookmark icon to see everything.";
+  return concise + " I've saved the full breakdown to your shortlist — tap the ❤️ to see everything.";
 }
 
 const MERGED_RESPONSE_SCHEMA = {
