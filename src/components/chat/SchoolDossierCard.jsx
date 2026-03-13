@@ -366,23 +366,25 @@ export default function SchoolDossierCard({
         View Details
       </button>
 
-      {/* ── Empty state CTA / pending spinner ── */}
-      {!hasAnalysisData && (
+      {/* ── Deep Dive Analysis CTA ── */}
+      {onConfirmDeepDive && (
         isPendingAnalysis ? (
           <div className="w-full flex items-center justify-center gap-1.5 text-xs py-1.5 mt-2 text-slate-400">
             <Loader2 className="w-3 h-3 flex-shrink-0 animate-spin" />
             Analyzing {school.name}…
           </div>
-        ) : onConfirmDeepDive ? (
+        ) : (
           <button
             onClick={handleAnalyzeCTA}
-            className="w-full flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded mt-2 transition-colors"
-            style={{ background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.3)', color: '#2dd4bf' }}
+            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded mt-2 transition-colors"
+            style={{ background: '#d97706', border: '1px solid #b45309', color: '#1c1000' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#b45309'}
+            onMouseLeave={e => e.currentTarget.style.background = '#d97706'}
           >
             <Sparkles className="w-3 h-3 flex-shrink-0" />
-            Get insight on {school.name}
+            Deep Dive Analysis
           </button>
-        ) : null
+        )
       )}
 
       {/* ── Expanded accordion sections ── */}
