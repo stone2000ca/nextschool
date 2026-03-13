@@ -1281,6 +1281,9 @@ export default function Consultant() {
               isShortlisted={user?.shortlist?.includes(selectedSchool.id) || false}
               onCompare={(school) => handleOpenComparison([school])}
               actionPlan={actionPlan}
+              visitPrepKit={visitPrepKit}
+              isPremium={isPremium}
+              onUpgrade={() => setShowUpgradeModal(true)}
             />
           ) : currentState === STATES.RESULTS && schools.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center p-6 text-center">
