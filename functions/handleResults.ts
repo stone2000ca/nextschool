@@ -383,8 +383,6 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
         ? previousSchools
         : (context.lastMatchedSchools || []);
 
-      console.log(`[SHORTLIST-FAST-PATH] Pool size: ${schoolPool.length}, msgWords=${JSON.stringify(msgWords)}`);
-
       // Extract the school name fragment from the message for scoring
       // Strip common command words to isolate the school name portion
       const msgNorm = message.toLowerCase().replace(/[^a-z0-9\s]/g, '');
@@ -392,6 +390,7 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
         .replace(/\b(add|save|shortlist|bookmark|keep|put|please|can you|i want to|to my|my|to the|the|shortlist|list|saved)\b/g, ' ')
         .replace(/\s+/g, ' ').trim();
       const msgWords = strippedMsg.split(' ').filter(w => w.length > 2);
+      console.log(`[SHORTLIST-FAST-PATH] Pool size: ${schoolPool.length}, msgWords=${JSON.stringify(msgWords)}`);
 
       // Score each school by word overlap count, pick highest
       let bestMatch = null;
