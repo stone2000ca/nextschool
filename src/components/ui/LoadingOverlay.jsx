@@ -91,7 +91,6 @@ export default function LoadingOverlay({ visible, statusMessage = 'Finding Your 
             fontSize: '13px',
             color: '#18968a',
             display: 'inline-block',
-            marginBottom: '32px',
             fontWeight: '500',
             animation: 'pulse 2s ease-in-out infinite',
           }}
