@@ -246,7 +246,7 @@ export default function LoadingOverlay({ visible, statusMessage = 'Finding Your 
         </div>
 
         {/* Progress Steps */}
-        <div style={{ fontSize: '14px', color: '#334155', textAlign: 'left', display: 'inline-block' }}>
+        <div style={{ fontSize: '14px', color: '#555', textAlign: 'left', display: 'inline-block', width: '100%' }}>
           {[
             { emoji: '📋', label: 'Analyzing your preferences', progress: 0 },
             { emoji: '👓', label: 'Matching with schools', progress: 1 },
@@ -264,7 +264,7 @@ export default function LoadingOverlay({ visible, statusMessage = 'Finding Your 
               }}
             >
               <span style={{ fontSize: '16px' }}>{step.emoji}</span>
-              <span>{step.label}</span>
+              <span style={{ color: '#555' }}>{step.label}</span>
               <div
                 style={{
                   height: '3px',
