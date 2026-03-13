@@ -638,10 +638,10 @@ ${schoolIdContext}`;
         aiMessage = "I've refreshed your matches based on the new info — here's what changed.";
       } else if (matchingSchools.length < 5 && matchingSchools.length > 0) {
         aiMessage = `I found ${matchingSchools.length} school${matchingSchools.length === 1 ? '' : 's'} that fit your criteria. Want me to adjust the search to find more options?`;
-      } else if (!conversationHistory?.filter(m => m.role === 'assistant' && m.content?.includes('school')).length) {
-        aiMessage = "Here are your strongest matches based on everything you've told me. Take your time browsing — when a school catches your eye, save it to your shortlist.";
+      } else if (!conversationHistory?.some(m => m.role === 'assistant' && m.content?.includes('your matches'))) {
+        aiMessage = consultantName === 'Jackie' ? "Based on everything you've shared, I've put together an initial list of schools for you to explore. Let me know what catches your eye!" : "Based on your criteria, here's your initial shortlist. Take a look and tell me which ones stand out.";
       } else {
-        aiMessage = "Got it — I've updated your matches.";
+        aiMessage = consultantName === 'Jackie' ? "Got it — I've refreshed your matches with that in mind." : "Noted. I've updated your matches accordingly.";
       }
     }
 
