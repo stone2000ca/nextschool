@@ -153,7 +153,9 @@ PRIORITY vs INTEREST CLASSIFICATION:
 - Examples: 'STEM-focused school' = PRIORITY. 'likes robotics' = INTEREST. 'boys-only' = PRIORITY. 'structured learning' = PRIORITY. 'coding' = INTEREST.
 
 CRITICAL: If the user confirms the brief or says something like "that looks right", "show me schools", "yes", "confirmed", "let's see", "go ahead", set intentSignal to 'confirm-brief'.
-CRITICAL: If the user requests a Visit Prep Kit or tour preparation — phrases like "yes prepare my visit kit", "prepare the kit", "yes make it", "visit prep", "tour preparation", "prepare that", "yes please" (in context of a visit kit offer) — set intentSignal to 'visit_prep_request'.`;
+CRITICAL: If the user requests a Visit Prep Kit or tour preparation — phrases like "yes prepare my visit kit", "prepare the kit", "yes make it", "visit prep", "tour preparation", "prepare that", "yes please" (in context of a visit kit offer) — set intentSignal to 'visit_prep_request'.
+
+CRITICAL: If the user asks to add, save, shortlist, or bookmark a specific school — phrases like "add Howlett Academy to my shortlist", "save that school", "shortlist Rosedale", "add it", "keep that one", "I want to save this school", "add to my list" — set intentSignal to 'shortlist-action'. This takes priority over 'ask-about-school' and 'continue'.`;
 
     const userPrompt = `CURRENT KNOWN DATA:
 ${JSON.stringify(knownData, null, 2)}
@@ -186,7 +188,7 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
             remove_priorities: { type: 'array', items: { type: 'string' } },
             remove_interests: { type: 'array', items: { type: 'string' } },
             remove_dealbreakers: { type: 'array', items: { type: 'string' } },
-            intentSignal: { type: 'string', enum: ['continue', 'request-brief', 'request-results', 'edit-criteria', 'ask-about-school', 'back-to-results', 'restart', 'off-topic', 'confirm-brief', 'visit_prep_request', 'visit_debrief'] },
+            intentSignal: { type: 'string', enum: ['continue', 'request-brief', 'request-results', 'edit-criteria', 'ask-about-school', 'shortlist-action', 'back-to-results', 'restart', 'off-topic', 'confirm-brief', 'visit_prep_request', 'visit_debrief'] },
             briefDelta: { type: 'object', properties: { additions: { type: 'array', items: { type: 'string' } }, updates: { type: 'array', items: { type: 'string' } }, removals: { type: 'array', items: { type: 'string' } } } }
           },
           required: ['intentSignal', 'briefDelta']
@@ -198,6 +200,14 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
       }
       result = llmResult || {};
       intentSignal = result?.intentSignal || 'continue';
+
+      // Deterministic regex override — force shortlist-action regardless of LLM output
+      const shortlistPatterns = /\b(add|save|shortlist|bookmark|keep)\b.{0,40}\b(school|academy|college|it|that|this|one)\b|\b(shortlist|save|add)\s+(it|that|this)\b|\badd\b.{0,30}\bto\b.{0,20}\b(shortlist|list|saved)\b/i;
+      if (shortlistPatterns.test(message)) {
+        intentSignal = 'shortlist-action';
+        console.log('[INTENT OVERRIDE] shortlist-action detected via regex');
+      }
+
       console.log('[INTENT SIGNAL]', intentSignal);
     } catch (llmError) {
       console.error('[EXTRACT ERROR] InvokeLLM failed:', llmError.message);
