@@ -93,6 +93,7 @@ export default function Consultant() {
   // Panel states
   const [showShortlistPanel, setShowShortlistPanel] = useState(false);
   const [showNotesPanel, setShowNotesPanel] = useState(false);
+  const [tourRequestSchool, setTourRequestSchool] = useState(null);
   
   // Distance feature
   const userLocation = useUserLocation();
