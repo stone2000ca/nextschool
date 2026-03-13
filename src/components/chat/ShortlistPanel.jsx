@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { X, Heart, ExternalLink, CalendarDays, ChevronDown, Bell, BellRing } from 'lucide-react';
+import { X, Heart } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, formatEventDate } from '@/components/utils/eventConstants';
-import ApplicationTimeline from '@/components/schools/ApplicationTimeline';
 import SchoolDossierCard from '@/components/chat/SchoolDossierCard';
 
 export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool, familyProfile, schoolAnalyses, artifactCache, consultantName, onSendMessage, isPremiumUser, onDossierExpandChange, onConfirmDeepDive, pendingDeepDiveSchoolIds, autoExpandSchoolId, onClearAutoExpand }) {
