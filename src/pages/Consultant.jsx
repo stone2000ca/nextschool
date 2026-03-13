@@ -36,6 +36,7 @@ import ProgressBar from '@/components/ui/progress-bar';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import Navbar from '@/components/navigation/Navbar';
+import TourRequestModal from '../components/schools/TourRequestModal';
 import { useSchoolFiltering } from '@/components/hooks/useSchoolFiltering';
 import { useMessageHandler } from '@/components/hooks/useMessageHandler';
 
@@ -1540,6 +1541,15 @@ export default function Consultant() {
             onClose={() => setShowNotesPanel(false)}
           />
         </>
+      )}
+
+      {/* Tour Request Modal */}
+      {tourRequestSchool && (
+        <TourRequestModal
+          school={tourRequestSchool}
+          onClose={() => setTourRequestSchool(null)}
+          upcomingEvents={[]}
+        />
       )}
 
       {/* T046: Panel rendered inline in layout, no overlay needed */}
