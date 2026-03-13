@@ -104,7 +104,7 @@ export default function LoadingOverlay({ visible, statusMessage = 'Finding Your 
             position: 'relative',
             width: '160px',
             height: '160px',
-            margin: '0 auto 28px',
+            margin: '0 auto',
           }}
         >
           {/* Concentric Rings */}
