@@ -41,7 +41,7 @@ export function useShortlist({
   };
 
   const handleToggleShortlist = async (schoolId, options = {}) => {
-    const { silent = false } = options;
+    const { silent = false, school: preloadedSchool = null } = options;
     if (!isAuthenticated) {
       setShowLoginGate(true);
       return;
@@ -51,7 +51,7 @@ export function useShortlist({
     try {
       const currentShortlist = user.shortlist || [];
       let updatedShortlist;
-      let school = schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId) || extraSchools?.find(s => s.id === schoolId);
+      let school = preloadedSchool || schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId) || extraSchools?.find(s => s.id === schoolId);
       const isRemoving = currentShortlist.includes(schoolId);
       if (!school && !isRemoving) {
         try {
