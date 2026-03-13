@@ -279,8 +279,35 @@ export default function Consultant() {
   // Override: show split layout if schools exist (from session restore)
   const showSchoolGrid = schools.length > 0;
 
+  // Track when brief was confirmed for minimum 5-second display
+  const briefConfirmTimeRef = useRef(null);
+
   // E37: Show loading overlay when brief confirmed and consultant is typing
   const showLoadingOverlay = briefStatus === 'confirmed' && isTyping;
+
+  // Enforce minimum 5-second display for loading overlay
+  useEffect(() => {
+    if (showLoadingOverlay && !briefConfirmTimeRef.current) {
+      briefConfirmTimeRef.current = Date.now();
+    }
+  }, [showLoadingOverlay]);
+
+  // When response arrives quickly, delay hiding overlay until 5s has passed
+  useEffect(() => {
+    if (briefStatus === 'confirmed' && !isTyping && briefConfirmTimeRef.current) {
+      const elapsedTime = Date.now() - briefConfirmTimeRef.current;
+      const remainingTime = Math.max(0, 5000 - elapsedTime);
+
+      if (remainingTime > 0) {
+        const timer = setTimeout(() => {
+          briefConfirmTimeRef.current = null;
+        }, remainingTime);
+        return () => clearTimeout(timer);
+      } else {
+        briefConfirmTimeRef.current = null;
+      }
+    }
+  }, [isTyping, briefStatus]);
 
 
 
