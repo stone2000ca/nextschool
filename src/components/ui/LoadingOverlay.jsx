@@ -14,6 +14,7 @@ export default function LoadingOverlay({ visible, statusMessage = 'Finding Your 
   const [flashOpacity, setFlashOpacity] = useState(0);
   const [factIndex, setFactIndex] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
+  const showTimeRef = useRef(null);
 
   // Flash animation on mount
   useEffect(() => {
