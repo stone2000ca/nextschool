@@ -114,7 +114,7 @@ export default function AddSchoolPanel({ onClose, onToggleShortlist, shortlisted
                   className="flex-shrink-0 flex items-center justify-center rounded-full transition-colors hover:bg-teal-500/20"
                   style={{ width: 26, height: 26, background: 'rgba(13,148,136,0.15)', color: '#0D9488' }}
                 >
-                  <Plus style={{ width: 14, height: 14 }} />
+                  <Heart style={{ width: 14, height: 14 }} />
                 </button>
               )}
             </div>
