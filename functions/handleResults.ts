@@ -697,6 +697,33 @@ ${schoolIdContext}`;
             aiMessage = "Let me pull up the details on that school.";
           }
         }
+
+        // Fix B: Deterministic shortlist fallback — if LLM didn't fire the tool at all for a shortlist-action intent
+        const detectedIntent = extractedEntities?.intentSignal;
+        if (detectedIntent === 'shortlist-action' && rawToolCalls.length === 0) {
+          // Fuzzy-match school name from message against matchingSchools
+          const msgNorm = message.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+          const matched = matchingSchools.find(s => {
+            const nameNorm = s.name.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+            // Check if any word of the school name appears in the message or vice versa
+            const nameWords = nameNorm.split(' ').filter(w => w.length > 3);
+            return nameWords.some(w => msgNorm.includes(w)) || msgNorm.includes(nameNorm);
+          });
+          if (matched) {
+            rawToolCalls.push({
+              id: `synthetic-shortlist-${matched.id}`,
+              type: 'function',
+              function: {
+                name: 'execute_ui_action',
+                arguments: JSON.stringify({ action: 'ADD_TO_SHORTLIST', schoolId: matched.id })
+              }
+            });
+            if (!aiMessage || aiMessage === "Here are your matches.") {
+              aiMessage = `Done — ${matched.name} has been added to your shortlist.`;
+            }
+            console.log(`[SHORTLIST-FALLBACK] Programmatically constructed ADD_TO_SHORTLIST for "${matched.name}" (${matched.id})`);
+          }
+        }
       }
     } catch (e) {
       console.error('[ERROR] RESULTS response failed:', e.message);
