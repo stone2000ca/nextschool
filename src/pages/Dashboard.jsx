@@ -240,16 +240,25 @@ export default function Dashboard() {
   };
 
   const handleDeleteAll = async () => {
-    const toDelete = sessions.filter(s => s.status === deleteAllTarget);
+    const toProcess = sessions.filter(s => s.status === deleteAllTarget);
+    const isArchivingActive = deleteAllTarget === 'active';
     // Optimistic UI update
-    setSessions(prev => prev.filter(s => s.status !== deleteAllTarget));
+    setSessions(prev => isArchivingActive
+      ? prev.map(s => s.status === 'active' ? { ...s, status: 'archived' } : s)
+      : prev.filter(s => s.status !== 'archived')
+    );
     setDeleteAllTarget(null);
-    await Promise.all(toDelete.map(async (s) => {
-      // Cascade delete: Remove associated ChatHistory if archived
-      if (deleteAllTarget === 'archived' && s.chatHistoryId) {
-        await base44.entities.ChatHistory.delete(s.chatHistoryId);
+    await Promise.all(toProcess.map(async (s) => {
+      if (isArchivingActive) {
+        // Archive active sessions — soft archive only
+        return base44.entities.ChatSession.update(s.id, { status: 'archived' });
+      } else {
+        // Permanently delete archived sessions + their chat history
+        if (s.chatHistoryId) {
+          await base44.entities.ChatHistory.delete(s.chatHistoryId);
+        }
+        return base44.entities.ChatSession.update(s.id, { status: 'deleted', isActive: false });
       }
-      return base44.entities.ChatSession.update(s.id, { status: 'deleted', isActive: false });
     }));
   };
 
