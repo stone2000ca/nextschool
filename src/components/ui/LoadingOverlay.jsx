@@ -9,7 +9,7 @@ const FUN_FACTS = [
   "The average private school class has fewer than 18 students.",
 ];
 
-export default function LoadingOverlay({ visible, statusMessage = 'Finding Your Matches...', onTransitionComplete }) {
+export default function LoadingOverlay({ visible = true, statusMessage = 'Finding Your Matches...', onTransitionComplete }) {
   const [showFlash, setShowFlash] = useState(false);
   const [flashOpacity, setFlashOpacity] = useState(0);
   const [factIndex, setFactIndex] = useState(0);
