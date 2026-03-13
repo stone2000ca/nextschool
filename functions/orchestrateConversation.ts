@@ -478,7 +478,9 @@ function lightweightExtract(message, existingProfile) {
   // S111-WC3: Child name extraction
   if (!existingProfile?.childName) {
     const nameMatch = message.match(/\b(?:my\s+)?(?:son|daughter|child|kid)\s+(?:is\s+)?(?:named\s+)?([A-Z][a-z]{1,15})\b/) ||
-                      message.match(/\b(?:named|name\s+is|call(?:ed)?)\s+([A-Z][a-z]{1,15})\b/);
+                      message.match(/\b(?:named|name\s+is|call(?:ed)?)\s+([A-Z][a-z]{1,15})\b/) ||
+                      message.match(/\b([A-Z][a-z]{1,15})\s+(?:is\s+)?(?:my\s+)?(?:son|daughter|child|kid)\b/) ||
+                      message.match(/\b([A-Z][a-z]{1,15})\s+(?:is\s+)?(?:in\s+)?grade\s+/);
     if (nameMatch) {
       const candidateName = nameMatch[1];
       const CITY_NAMES = new Set(['Toronto', 'Vancouver', 'Ottawa', 'Montreal', 'Calgary', 'Edmonton', 'Winnipeg', 'Halifax', 'Victoria', 'London', 'Boston', 'Chicago']);
