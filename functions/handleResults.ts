@@ -407,9 +407,7 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
       }
 
       let matched = bestScore >= 1 ? bestMatch : null;
-
-      // DB fallback removed: $contains is not a valid Base44 filter operator.
-      // Pool match (bestScore >= 1) is sufficient — only fall through to normal search if no pool match.
+</invoke>
 
       if (matched) {
         console.log(`[SHORTLIST-FAST-PATH] Best match: "${matched.name}" (${matched.id}) score=${bestScore} — skipping search & LLM`);
