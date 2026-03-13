@@ -535,9 +535,14 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
     };
 
     if (conversationFamilyProfile?.locationArea) {
-      const locationAreaLower = conversationFamilyProfile.locationArea.toLowerCase().trim();
-      const regionAliases = ['gta', 'greater toronto area', 'lower mainland', 'metro vancouver', 'greater vancouver'];
-      if (regionAliases.includes(locationAreaLower)) {
+      const cleanedLocation = conversationFamilyProfile.locationArea;
+      const locationAreaLower = cleanedLocation.toLowerCase().trim();
+      const regionAliases = ['gta', 'greater toronto area', 'lower mainland', 'metro vancouver', 'greater vancouver', 'toronto'];
+      const metroRegions = ['toronto', 'vancouver', 'montreal', 'calgary', 'ottawa', 'edmonton', 'winnipeg', 'hamilton'];
+      
+      if (metroRegions.includes(locationAreaLower)) {
+        searchParams.region = cleanedLocation || conversationFamilyProfile.locationArea;
+      } else if (regionAliases.includes(locationAreaLower)) {
         searchParams.region = conversationFamilyProfile.locationArea;
       } else {
         const cityToProvinceMap = {
