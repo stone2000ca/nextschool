@@ -259,7 +259,8 @@ Deno.serve(async (req) => {
       userLocation,
       autoRefresh,
       extractedEntities,
-      returningUserContextBlock
+      returningUserContextBlock,
+      previousSchools
     } = await req.json();
 
     let conversationFamilyProfile = rawProfile || {};
@@ -368,6 +369,44 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
         conversationContext: { ...context, state: 'DEEP_DIVE' },
         rawToolCalls: []
       });
+    }
+
+    // =========================================================================
+    // FAST PATH: shortlist-action — no search, no LLM, just fuzzy match + tool call
+    // =========================================================================
+    if (extractedEntities?.intentSignal === 'shortlist-action') {
+      const schoolPool = (previousSchools && previousSchools.length > 0)
+        ? previousSchools
+        : (context.lastMatchedSchools || []);
+
+      const msgNorm = message.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+      const matched = schoolPool.find(s => {
+        const nameNorm = s.name.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+        const nameWords = nameNorm.split(' ').filter(w => w.length > 3);
+        return nameWords.some(w => msgNorm.includes(w)) || msgNorm.includes(nameNorm);
+      });
+
+      if (matched) {
+        console.log(`[SHORTLIST-FAST-PATH] Matched "${matched.name}" (${matched.id}) — skipping search & LLM`);
+        return Response.json({
+          message: `Done — ${matched.name} has been added to your shortlist.`,
+          state: STATES.RESULTS,
+          briefStatus: briefStatus,
+          schools: schoolPool,
+          familyProfile: conversationFamilyProfile,
+          conversationContext: context,
+          rawToolCalls: [{
+            id: `synthetic-shortlist-${matched.id}`,
+            type: 'function',
+            function: {
+              name: 'execute_ui_action',
+              arguments: JSON.stringify({ action: 'ADD_TO_SHORTLIST', schoolId: matched.id })
+            }
+          }]
+        });
+      }
+      // If no fuzzy match found, fall through to normal search so we can still try
+      console.log('[SHORTLIST-FAST-PATH] No school match found in pool — falling through to search');
     }
 
     console.log('[SEARCH] Running fresh school search in RESULTS state');
@@ -739,6 +778,9 @@ ${schoolIdContext}`;
         aiMessage = consultantName === 'Jackie' ? "Got it — I've refreshed your matches with that in mind." : "Noted. I've updated your matches accordingly.";
       }
     }
+
+    // Persist last matched schools into context so shortlist-action fast path can use them next call
+    context.lastMatchedSchools = matchingSchools;
 
     return Response.json({
       message: aiMessage,
