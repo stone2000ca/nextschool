@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Check, Plus, Loader2 } from 'lucide-react';
+import { X, Check, Heart, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AddSchoolPanel({ onClose, onToggleShortlist, shortlistedIds, base44 }) {
