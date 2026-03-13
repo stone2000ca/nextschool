@@ -407,7 +407,6 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
       }
 
       let matched = bestScore >= 1 ? bestMatch : null;
-</invoke>
 
       if (matched) {
         console.log(`[SHORTLIST-FAST-PATH] Best match: "${matched.name}" (${matched.id}) score=${bestScore} — skipping search & LLM`);
