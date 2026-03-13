@@ -16,6 +16,13 @@ export default function LoadingOverlay({ visible, statusMessage = 'Finding Your 
   const [fadeOut, setFadeOut] = useState(false);
   const showTimeRef = useRef(null);
 
+  // Track show time for minimum 5-second display
+  useEffect(() => {
+    if (visible && !showTimeRef.current) {
+      showTimeRef.current = Date.now();
+    }
+  }, [visible]);
+
   // Flash animation on mount
   useEffect(() => {
     if (visible && !showFlash) {
