@@ -383,7 +383,7 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
         ? previousSchools
         : (context.lastMatchedSchools || []);
 
-      console.log(`[SHORTLIST-FAST-PATH] Pool size: ${schoolPool.length}`);
+      console.log(`[SHORTLIST-FAST-PATH] Pool size: ${schoolPool.length}, msgWords=${JSON.stringify(msgWords)}`);
 
       // Extract the school name fragment from the message for scoring
       // Strip common command words to isolate the school name portion
