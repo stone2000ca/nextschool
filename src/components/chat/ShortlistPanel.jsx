@@ -5,12 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import SchoolDossierCard from '@/components/chat/SchoolDossierCard';
 
 export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool, familyProfile, schoolAnalyses, artifactCache, consultantName, onSendMessage, isPremiumUser, onDossierExpandChange, onConfirmDeepDive, pendingDeepDiveSchoolIds, autoExpandSchoolId, onClearAutoExpand }) {
-  const [upcomingEvents, setUpcomingEvents] = useState([]);
-  const [eventsLoaded, setEventsLoaded] = useState(false);
-  const [timelineExpanded, setTimelineExpanded] = useState(true);
   const [expandedSchoolId, setExpandedSchoolId] = useState(null);
-  // E16a-019: Reminded events loaded from localStorage
-  const [remindedEvents, setRemindedEvents] = useState(new Set());
 
   // E30-012 + E30-013: Auto-expand school after deep dive
   useEffect(() => {
@@ -19,81 +14,6 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
       onClearAutoExpand?.();
     }
   }, [autoExpandSchoolId]);
-
-  // E16a-019: Load reminded events from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('ns_event_reminders');
-      if (stored) {
-        const reminders = JSON.parse(stored);
-        setRemindedEvents(new Set(reminders.map(r => r.eventId)));
-      }
-    } catch (err) {
-      console.error('[E16a-019] Failed to load reminders:', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    async function fetchEvents() {
-      if (shortlist.length === 0) {
-        setUpcomingEvents([]);
-        setEventsLoaded(true);
-        return;
-      }
-      setEventsLoaded(false);
-      const today = new Date().toISOString();
-      try {
-        const results = await Promise.all(
-          shortlist.map(school =>
-            base44.entities.SchoolEvent.filter({ schoolId: school.id, isActive: true })
-              .then(evs => evs
-                .filter(e => e.date && e.date >= today)
-                .map(e => ({ ...e, schoolName: school.name }))
-              )
-          )
-        );
-        const merged = results.flat().sort((a, b) => new Date(a.date) - new Date(b.date));
-        setUpcomingEvents(merged);
-      } catch (err) {
-        console.error('[ShortlistPanel] Failed to fetch events:', err);
-        setUpcomingEvents([]);
-      } finally {
-        setEventsLoaded(true);
-      }
-    }
-    fetchEvents();
-  }, [shortlist.map(s => s.id).join(',')]);
-
-  // E16a-019: Handle reminder toggle for event
-  const handleToggleReminder = (event) => {
-    try {
-      let stored = [];
-      const existing = localStorage.getItem('ns_event_reminders');
-      if (existing) {
-        stored = JSON.parse(existing);
-      }
-
-      const isReminded = remindedEvents.has(event.id);
-      if (isReminded) {
-        // Remove reminder
-        stored = stored.filter(r => r.eventId !== event.id);
-      } else {
-        // Add reminder
-        stored.push({
-          eventId: event.id,
-          schoolName: event.schoolName,
-          eventTitle: event.title,
-          eventDate: event.date,
-          savedAt: new Date().toISOString()
-        });
-      }
-
-      localStorage.setItem('ns_event_reminders', JSON.stringify(stored));
-      setRemindedEvents(new Set(stored.map(r => r.eventId)));
-    } catch (err) {
-      console.error('[E16a-019] Failed to toggle reminder:', err);
-    }
-  };
 
   return (
     <div className="h-full flex flex-col" style={{ background: '#1E1E30', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
