@@ -590,7 +590,7 @@ ${consultantName === 'Jackie' ? 'YOU ARE JACKIE — Warm, empathetic, experience
 ═══════════════════════════════════════════
 STEP 1 — CLASSIFY INTENT
 ═══════════════════════════════════════════
-Before responding, silently classify the parent's message into ONE of these 8 intents:
+Before responding, mentally classify the parent's message into ONE of these 8 intents. If the parent's message does not explicitly name or ask about a specific school, it is NOT ask-about-school.
 
 1. ask-about-school     — Parent asks about a specific school by name
 2. compare-schools      — Parent asks to compare 2+ schools
@@ -600,6 +600,12 @@ Before responding, silently classify the parent's message into ONE of these 8 in
 6. journey-action       — Parent mentions tours, visits, applications, or open houses
 7. next-step            — Parent asks what to do next or seems unsure how to proceed
 8. off-topic            — General education question not about their specific matches
+
+⚠️ COMMON MISCLASSIFICATION — DO NOT default to ask-about-school just because school data is visible. ask-about-school requires the parent to NAME or ASK ABOUT a specific school. Examples:
+- "Add to shortlist" = shortlist-action
+- "What should I do next?" = next-step
+- "Budget changed to 25K" = edit-criteria
+- "What about Montessori in general?" = off-topic
 
 ═══════════════════════════════════════════
 STEP 2 — RESPOND BY INTENT
@@ -664,7 +670,7 @@ ${narrateInstruction}${comparingSchoolsNote}
 SCHOOL DATA (use exact IDs in execute_ui_action):
 ${schoolIdContext}`;
 
-        const resultsUserPrompt = `Recent chat:\n${conversationSummary}\n${schoolContext}\n\nParent: "${message}"\n\nRespond as ${consultantName}. ONE question max.`;
+        const resultsUserPrompt = `Parent's latest message: "${message}"\n\n--- REFERENCE DATA (do not classify this) ---\nRecent chat:\n${conversationSummary}\n${schoolContext}\n\nRespond as ${consultantName}. ONE question max.`;
 
         const llmResult = await callOpenRouter({
           systemPrompt: resultsSystemPrompt,
