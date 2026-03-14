@@ -186,6 +186,35 @@ export default function Consultant() {
   // T047: Auto-refresh animation trigger
   const [schoolsAnimKey, setSchoolsAnimKey] = useState(0);
 
+  // Journey Steps: fetch when selected school changes
+  const [journeySteps, setJourneySteps] = useState(null);
+  useEffect(() => {
+    if (!selectedSchool?.id || !isAuthenticated || !user?.id) {
+      setJourneySteps(null);
+      return;
+    }
+    (async () => {
+      try {
+        const journeys = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
+        if (!journeys.length) { setJourneySteps(null); return; }
+        const journey = journeys.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
+        const schoolJourneys = await base44.entities.SchoolJourney.filter({ familyJourneyId: journey.id, schoolId: selectedSchool.id });
+        const sj = schoolJourneys[0] || null;
+        const PHASE_ORDER = ['MATCH', 'EVALUATE', 'DECIDE'];
+        const pastMatch = journey.currentPhase && PHASE_ORDER.indexOf(journey.currentPhase) > PHASE_ORDER.indexOf('MATCH');
+        const sjStatus = sj?.status?.toUpperCase() || '';
+        setJourneySteps([
+          { label: 'Discovery',   status: 'completed' },
+          { label: 'Matched',     status: pastMatch ? 'completed' : 'active' },
+          { label: 'Shortlisted', status: sj ? 'completed' : 'pending' },
+          { label: 'Toured',      status: ['VISITED', 'TOURING', 'DECIDED'].includes(sjStatus) ? 'completed' : 'pending' },
+          { label: 'Compared',    status: sj?.postVisitFitLabel ? 'completed' : 'pending' },
+          { label: 'Decided',     status: sjStatus === 'DECIDED' ? 'completed' : 'pending' },
+        ]);
+      } catch { setJourneySteps(null); }
+    })();
+  }, [selectedSchool?.id, isAuthenticated, user?.id]);
+
   // Research Notes: fetch when selected school changes
   useEffect(() => {
     if (!selectedSchool?.id || !isAuthenticated || !user?.id) {

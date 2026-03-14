@@ -373,6 +373,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
   const bubbles = chatBubbles || MOCK_CHAT_BUBBLES;
   const prefs = preferences || MOCK_PREFERENCES;
   const insight = aiInsight || MOCK_AI_INSIGHT;
+  // Normalise journeySteps: accept {label,status} (live) or {label,status:'completed'|'active'|'pending'} (mock)
   const journey = journeySteps || MOCK_JOURNEY;
   const stats = schoolStats || { students: school.students, teacherRatio: school.teacherRatio, tuition: school.tuition };
   const [open, setOpen] = useState(true);
