@@ -89,6 +89,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
     wasVisible.current = true;
     pending.current = false;
     minReady.current = false;
+    setFlashActive(false);
     setStep(0); setTimedOut(false); setFactVisible(true);
     setFactIdx(Math.floor(Math.random() * FACTS.length));
 
