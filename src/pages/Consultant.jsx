@@ -1356,6 +1356,7 @@ export default function Consultant() {
                   chatBubbles={null}
                   preferences={null}
                   keyDates={keyDates}
+                  visitPrepKit={visitPrepKit}
                 />
               );
             })()}

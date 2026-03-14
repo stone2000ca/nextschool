@@ -487,22 +487,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
 
             {/* ── Visit Prep Kit ────────────────────────────────── */}
             <CollapsibleSection icon={<BookIcon />} label="Visit Prep Kit" color="#8b5cf6">
-              <div style={{ fontSize: 12.5, color: '#5a4030', lineHeight: 1.7 }}>
-                <div style={{ marginBottom: 8, fontWeight: 600, color: '#6d28d9' }}>Questions to Ask</div>
-                {['How is the transition from JK to Grade 1 supported?', 'What does a typical extracurricular week look like?', 'How does the school support learning differences?'].map((q, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 7, marginBottom: 5 }}>
-                    <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>→</span>
-                    <span>{q}</span>
-                  </div>
-                ))}
-                <div style={{ marginTop: 12, marginBottom: 8, fontWeight: 600, color: '#6d28d9' }}>Things to Notice</div>
-                {['Classroom size and energy', 'How students interact with staff', 'Hallway displays and student work'].map((n, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 7, marginBottom: 5 }}>
-                    <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>•</span>
-                    <span>{n}</span>
-                  </div>
-                ))}
-              </div>
+              <VisitPrepKitContent visitPrepKit={visitPrepKit} />
             </CollapsibleSection>
 
             {/* ── Contact Log ───────────────────────────────────── */}
