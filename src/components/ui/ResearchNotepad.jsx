@@ -41,6 +41,25 @@ const MOCK_FIT_SCORE = 92;
 
 const MOCK_AI_INSIGHT = "UCC is an exceptionally strong academic fit for Ethan. The main trade-off is the all-boys environment — worth discussing as a family whether the programme strength outweighs that preference.";
 
+// ─── Helper Functions ─────────────────────────────────────────────────────────
+
+const timeAgo = (isoString) => {
+  if (!isoString) return null;
+  const seconds = Math.floor((Date.now() - new Date(isoString)) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+};
+
+const isStale = (isoString, thresholdDays = 7) => {
+  if (!isoString) return false;
+  return (Date.now() - new Date(isoString)) > thresholdDays * 86400000;
+};
+
 // ─── Inline SVG Icons ─────────────────────────────────────────────────────────
 
 const ChevronIcon = ({ open }) => (
@@ -357,7 +376,7 @@ function PremiumLockBadge() {
   );
 }
 
-export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes }) {
+export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive }) {
   const school = schoolData || MOCK_SCHOOL;
   const score = fitScore ?? MOCK_FIT_SCORE;
   const label = fitLabel || 'STRONG MATCH';
@@ -450,6 +469,11 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
             }}>
               Deep Dive
             </span>
+            {lastDeepDiveAt && (
+              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400, marginLeft: 8 }}>
+                Updated {timeAgo(lastDeepDiveAt)}
+              </span>
+            )}
           </div>
           <span style={{ color: '#a89060' }}><ChevronIcon open={open} /></span>
         </button>
@@ -530,6 +554,15 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
 
               {deepDiveOpen && (
                 <div style={{ padding: '18px 20px' }}>
+
+                  {isStale(lastDeepDiveAt) && (
+                    <div style={{ margin: '0 20px 12px', padding: '10px 14px', background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, color: '#92400e' }}>
+                      <span>Warning: Data may be outdated ({timeAgo(lastDeepDiveAt)})</span>
+                      {onRefreshDeepDive && (
+                        <button onClick={onRefreshDeepDive} style={{ background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Refresh</button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Fit Score + Chat Bubbles row */}
                   <div style={{ display: 'flex', gap: 18, marginBottom: 18, alignItems: 'flex-start' }}>
