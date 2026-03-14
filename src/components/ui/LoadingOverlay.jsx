@@ -43,7 +43,12 @@ const KEYFRAMES = `
   @keyframes dotPulse{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.4);opacity:1}}
   @keyframes fillBar{from{width:0%}to{width:100%}}
   @keyframes badgePulse{0%,100%{opacity:.85}50%{opacity:1}}
+  @keyframes dotOrbitCW{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes dotOrbitCCW{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+  @keyframes iconPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.08)}}
+  @keyframes iconLook{0%,100%{transform:rotate(0deg)}25%{transform:rotate(6deg)}75%{transform:rotate(-6deg)}}
 `;
+
 
 const DOT_CONFIG = [
   { radius: 50, duration: 8, direction: 'CW', delayOffset: 0 },
