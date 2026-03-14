@@ -957,23 +957,6 @@ export default function Consultant() {
     handleBackToResults();
   };
 
-  const lastDeepDiveAt = useMemo(() => {
-    if (deepDiveAnalysis?.generatedAt) return deepDiveAnalysis.generatedAt;
-    if (!selectedSchool?.id || !messages.length) return null;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
-      if (msg.role === 'assistant' && msg.deepDiveAnalysis?.schoolId === selectedSchool.id) {
-        return msg.timestamp;
-      }
-    }
-    return null;
-  }, [messages, selectedSchool?.id, deepDiveAnalysis]);
-
-  const handleRefreshDeepDive = () => {
-    if (!selectedSchool) return;
-    handleConfirmDeepDive(selectedSchool);
-  };
-
   // T047: No manual refresh handler needed — matches auto-refresh on entity extraction
 
   // Open full-screen comparison view and update conversationContext with compared school names
@@ -1531,11 +1514,7 @@ export default function Consultant() {
                   researchNotes={researchNotes}
                   onNotesChange={setResearchNotes}
                   onSaveNotes={handleSaveNotes}
-                  lastDeepDiveAt={lastDeepDiveAt}
-                  onRefreshDeepDive={handleRefreshDeepDive}
-                  deepDiveAnalysis={deepDiveAnalysis}
-                  selectedSchoolName={selectedSchool?.name || selectedSchool?.school_name}
-                  />
+                />
               );
             })()}
             <SchoolDetailPanel
