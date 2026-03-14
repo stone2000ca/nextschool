@@ -1401,6 +1401,9 @@ export default function Consultant() {
                   keyDates={keyDates}
                   visitPrepKit={visitPrepKit}
                   contactLog={contactLog}
+                  researchNotes={researchNotes}
+                  onNotesChange={setResearchNotes}
+                  onSaveNotes={handleSaveNotes}
                 />
               );
             })()}

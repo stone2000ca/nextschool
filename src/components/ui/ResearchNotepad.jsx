@@ -655,8 +655,8 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                 My Notes
               </div>
               <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
+                value={noteValue}
+                onChange={e => handleNotesChange(e.target.value)}
                 placeholder="Jot down your thoughts about this school..."
                 rows={4}
                 style={{
@@ -666,17 +666,17 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                   lineHeight: 1.55, outline: 'none',
                 }}
               />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, marginTop: 8 }}>
+                {saved && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Saved!</span>}
                 <button
                   onClick={handleSave}
                   style={{
-                    background: saved ? '#16a34a' : '#0d9488', color: '#fff',
+                    background: '#0d9488', color: '#fff',
                     border: 'none', borderRadius: 7, padding: '8px 20px',
                     fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    transition: 'background 0.2s',
                   }}
                 >
-                  {saved ? '✓ Saved' : 'Save Notes'}
+                  Save Notes
                 </button>
               </div>
             </div>
