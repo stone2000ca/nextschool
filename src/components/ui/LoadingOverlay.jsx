@@ -136,11 +136,13 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
           <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:52,height:52,borderRadius:'50%',background:'#fff',boxShadow:'0 2px 12px rgba(0,0,0,0.08)',display:'flex',alignItems:'center',justifyContent:'center'}}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.54 38.56" width="32" height="32"><path fill={TEAL} d="M20.21,0h-11.7L0,8.48l7,10.78L0,30.05l8.52,8.52h12.76l19.26-19.3L21.28,0h-1.06ZM37.53,19.27l-16.26,16.29-.09-.09-5.7-5.7,6.06-9.34.75-1.16-.75-1.16-6.06-9.34,5.79-5.76.58.58,15.68,15.68Z"/><polygon fill="#fff" points="15.48 8.77 21.54 18.11 22.29 19.26 21.54 20.42 15.48 29.76 21.18 35.46 21.28 35.56 37.53 19.27 21.85 3.59 21.27 3.01 15.48 8.77"/></svg>
           </div>
-          {DOT_CONFIG.map((d,i)=>(
-            <div key={i} style={{position:'absolute',top:'50%',left:'50%',width:0,height:0,animation:`dotOrbit${d.direction} ${d.duration}s linear infinite`,animationDelay:`${d.delayOffset}s`}}>
-              <div style={{position:'absolute',top:0,left:0,width:8,height:8,borderRadius:'50%',background:GOLD,transform:`translateX(${d.radius}px) translateY(-4px)`,animation:`dotPulse 2s ease-in-out infinite`,animationDelay:`${i*0.4}s`}}/>
-            </div>
-          ))}
+            {DOT_CONFIG.map((d,i)=>(
+              <div key={i} style={{position:'absolute',top:'50%',left:'50%',width:0,height:0,animation:`dotOrbit${d.direction} ${d.duration}s linear infinite`,animationDelay:`${d.delayOffset}s`}}>
+                <div style={{position:'absolute',transform:`translateX(${d.radius}px)`}}>
+                  <div style={{width:10,height:10,background:GOLD,borderRadius:'50%',boxShadow:'0 0 6px rgba(212,160,23,.4)',animation:'dotPulse 2s ease-in-out infinite',animationDelay:`${i*0.4}s`}}/>
+                </div>
+              </div>
+            ))}
         </div>
 
         {/* Progress Steps */}
