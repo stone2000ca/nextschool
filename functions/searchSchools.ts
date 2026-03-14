@@ -185,7 +185,13 @@ async function performSearch(req) {
     'metro vancouver': { cities: ['Vancouver', 'Burnaby', 'Surrey', 'Richmond', 'Coquitlam'] },
     'greater vancouver': { cities: ['Vancouver', 'Burnaby', 'Surrey', 'Richmond', 'Coquitlam'] },
     'montreal': { cities: ['Montreal', 'Laval', 'Longueuil'] },
-    'greater montreal': { cities: ['Montreal', 'Laval', 'Longueuil'] }
+    'greater montreal': { cities: ['Montreal', 'Laval', 'Longueuil'] },
+    'vancouver': { cities: ['Vancouver', 'Burnaby', 'Surrey', 'Richmond', 'Coquitlam', 'North Vancouver', 'West Vancouver', 'New Westminster'], provinces: ['British Columbia', 'BC'] },
+    'ottawa': { cities: ['Ottawa', 'Gatineau', 'Kanata', 'Orleans', 'Nepean', 'Barrhaven', 'Gloucester', 'Nottawa'], provinces: ['Ontario', 'ON'] },
+    'calgary': { cities: ['Calgary', 'Airdrie', 'Cochrane', 'Okotoks'], provinces: ['Alberta', 'AB'] },
+    'edmonton': { cities: ['Edmonton', 'Sherwood Park', 'St. Albert', 'Spruce Grove', 'Leduc'], provinces: ['Alberta', 'AB'] },
+    'winnipeg': { cities: ['Winnipeg', 'Steinbach'], provinces: ['Manitoba', 'MB'] },
+    'hamilton': { cities: ['Hamilton', 'Burlington', 'Dundas', 'Ancaster', 'Stoney Creek'], provinces: ['Ontario', 'ON'] }
   };
 
   // T045: resolvedLat/resolvedLng from orchestrator take priority (stated city coords),
@@ -291,7 +297,16 @@ async function performSearch(req) {
   }
 
   if (region && !aliasedCities.length && !aliasedProvinces.length && !city) {
-    locationFiltered = locationFiltered.filter(s => s.region === region);
+    const regionMatched = locationFiltered.filter(s => s.region === region);
+    if (regionMatched.length > 0) {
+      locationFiltered = regionMatched;
+    } else if (finalLat && finalLng) {
+      console.log(`[S151-WC3] region="${region}" matched 0 schools - falling back to geo radius`);
+      locationFiltered = locationFiltered.filter(s => {
+        if (!s.lat || !s.lng) return true;
+        return calculateDistance(finalLat, finalLng, s.lat, s.lng) <= 75;
+      });
+    }
   }
   if (country) {
     locationFiltered = locationFiltered.filter(s => s.country === country);
