@@ -357,7 +357,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
 
                     {/* NS chat bubbles */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {MOCK_CHAT_BUBBLES.map((text, i) => (
+                      {bubbles.map((text, i) => (
                         <div key={i} style={{
                           background: '#0d9488', color: '#fff', fontSize: 12, lineHeight: 1.5,
                           padding: '8px 12px', borderRadius: '12px 12px 12px 2px',
