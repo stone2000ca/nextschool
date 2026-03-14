@@ -274,3 +274,33 @@ function CollapsibleSection({ label, data }) {
     </div>
   );
 }
+
+// E39-S11: Notepad section helper
+function NotepadSection({ label, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-amber-300 rounded overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-1.5 bg-amber-200 text-amber-900 font-mono text-xs font-semibold hover:bg-amber-300 transition-colors"
+      >
+        <span>{label}</span>
+        <span>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="p-3 space-y-1" style={{ background: '#1a1a2e' }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// E39-S11: Notepad field helper
+function NotepadField({ label, value }) {
+  return (
+    <div className="font-mono text-xs" style={{ color: '#c8d3f5' }}>
+      <span style={{ color: '#7aa2f7' }}>{label}:</span> <span>{String(value)}</span>
+    </div>
+  );
+}
