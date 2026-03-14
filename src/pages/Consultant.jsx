@@ -1317,25 +1317,48 @@ export default function Consultant() {
             />
           ) : currentView === 'detail' && selectedSchool ? (
             <div style={{display:'contents'}}>
-            {selectedSchool && deepDiveAnalysis && (
-              <ResearchNotepad
-                schoolData={{
-                  name: selectedSchool.name || selectedSchool.schoolName,
-                  location: `${selectedSchool.city || ''}, ${selectedSchool.provinceState || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
-                  grades: selectedSchool.gradesServed || `${selectedSchool.lowestGrade || 'K'}-${selectedSchool.highestGrade || '12'}`,
-                  type: selectedSchool.genderPolicy || selectedSchool.schoolType || '',
-                  students: selectedSchool.enrollment || 0,
-                  teacherRatio: selectedSchool.studentTeacherRatio || '',
-                  tuition: selectedSchool.tuitionDomesticDay ? `$${Number(selectedSchool.tuitionDomesticDay).toLocaleString()}` : 'Contact school',
-                }}
-                fitScore={deepDiveAnalysis.fitScore}
-                fitLabel={deepDiveAnalysis.fitLabel}
-                tradeOffs={deepDiveAnalysis.tradeOffs}
-                aiInsight={deepDiveAnalysis.aiInsight}
-                chatBubbles={null}
-                preferences={null}
-              />
-            )}
+            {selectedSchool && deepDiveAnalysis && (() => {
+              const keyDates = actionPlan ? [
+                ...(actionPlan.visitTimeline?.events || []).map(e => ({
+                  type: 'event',
+                  label: e.title || e.type || 'Event',
+                  date: e.date,
+                  isEstimated: false,
+                })),
+                ...(actionPlan.applicationDeadlines?.deadline ? [{
+                  type: 'deadline',
+                  label: 'Application Deadline',
+                  date: actionPlan.applicationDeadlines.deadline,
+                  isEstimated: actionPlan.applicationDeadlines.isEstimated || false,
+                }] : []),
+                ...(actionPlan.applicationDeadlines?.financialAidDeadline ? [{
+                  type: 'deadline',
+                  label: 'Financial Aid Deadline',
+                  date: actionPlan.applicationDeadlines.financialAidDeadline,
+                  isEstimated: actionPlan.applicationDeadlines.isEstimated || false,
+                }] : []),
+              ] : null;
+              return (
+                <ResearchNotepad
+                  schoolData={{
+                    name: selectedSchool.name || selectedSchool.schoolName,
+                    location: `${selectedSchool.city || ''}, ${selectedSchool.provinceState || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
+                    grades: selectedSchool.gradesServed || `${selectedSchool.lowestGrade || 'K'}-${selectedSchool.highestGrade || '12'}`,
+                    type: selectedSchool.genderPolicy || selectedSchool.schoolType || '',
+                    students: selectedSchool.enrollment || 0,
+                    teacherRatio: selectedSchool.studentTeacherRatio || '',
+                    tuition: selectedSchool.tuitionDomesticDay ? `$${Number(selectedSchool.tuitionDomesticDay).toLocaleString()}` : 'Contact school',
+                  }}
+                  fitScore={deepDiveAnalysis.fitScore}
+                  fitLabel={deepDiveAnalysis.fitLabel}
+                  tradeOffs={deepDiveAnalysis.tradeOffs}
+                  aiInsight={deepDiveAnalysis.aiInsight}
+                  chatBubbles={null}
+                  preferences={null}
+                  keyDates={keyDates}
+                />
+              );
+            })()}
             <SchoolDetailPanel
               school={selectedSchool}
               familyProfile={familyProfile}
