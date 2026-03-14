@@ -1316,6 +1316,26 @@ export default function Consultant() {
               }}
             />
           ) : currentView === 'detail' && selectedSchool ? (
+            <>
+            {selectedSchool && deepDiveAnalysis && (
+              <ResearchNotepad
+                schoolData={{
+                  name: selectedSchool.name || selectedSchool.schoolName,
+                  location: `${selectedSchool.city || ''}, ${selectedSchool.provinceState || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
+                  grades: selectedSchool.gradesServed || `${selectedSchool.lowestGrade || 'K'}-${selectedSchool.highestGrade || '12'}`,
+                  type: selectedSchool.genderPolicy || selectedSchool.schoolType || '',
+                  students: selectedSchool.enrollment || 0,
+                  teacherRatio: selectedSchool.studentTeacherRatio || '',
+                  tuition: selectedSchool.tuitionDomesticDay ? `$${Number(selectedSchool.tuitionDomesticDay).toLocaleString()}` : 'Contact school',
+                }}
+                fitScore={deepDiveAnalysis.fitScore}
+                fitLabel={deepDiveAnalysis.fitLabel}
+                tradeOffs={deepDiveAnalysis.tradeOffs}
+                aiInsight={deepDiveAnalysis.aiInsight}
+                chatBubbles={null}
+                preferences={null}
+              />
+            )}
             <SchoolDetailPanel
               school={selectedSchool}
               familyProfile={familyProfile}
