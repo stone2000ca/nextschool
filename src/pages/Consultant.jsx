@@ -1147,7 +1147,7 @@ export default function Consultant() {
       if (
         msg.role === 'assistant' &&
         msg.deepDiveAnalysis &&
-        msg.deepDiveAnalysis.schoolId === selectedSchool.id
+        (msg.deepDiveAnalysis.schoolId === selectedSchool.id || msg.deepDiveAnalysis.schoolName === (selectedSchool?.name || selectedSchool?.school_name))
       ) {
         console.log('[E39-S4a] Rehydrating deepDiveAnalysis from message', i);
         setDeepDiveAnalysis(msg.deepDiveAnalysis);
@@ -1166,7 +1166,7 @@ export default function Consultant() {
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'assistant' && msg.visitPrepKit && msg.visitPrepKit.schoolId === selectedSchool.id) {
+      if (msg.role === 'assistant' && msg.visitPrepKit && (msg.visitPrepKit.schoolId === selectedSchool.id || msg.visitPrepKit.schoolName === (selectedSchool?.name || selectedSchool?.school_name))) {
         console.log('[E39-S4b] Rehydrating visitPrepKit from message', i);
         setVisitPrepKit(msg.visitPrepKit);
         return;
@@ -1184,7 +1184,7 @@ export default function Consultant() {
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'assistant' && msg.actionPlan && msg.actionPlan.schoolId === selectedSchool.id) {
+      if (msg.role === 'assistant' && msg.actionPlan && (msg.actionPlan.schoolId === selectedSchool.id || msg.actionPlan.schoolName === (selectedSchool?.name || selectedSchool?.school_name))) {
         console.log('[E39-S4c] Rehydrating actionPlan from message', i);
         setActionPlan(msg.actionPlan);
         return;
@@ -1202,7 +1202,7 @@ export default function Consultant() {
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'assistant' && msg.fitReEvaluation && msg.fitReEvaluation.schoolId === selectedSchool.id) {
+      if (msg.role === 'assistant' && msg.fitReEvaluation && (msg.fitReEvaluation.schoolId === selectedSchool.id || msg.fitReEvaluation.schoolName === (selectedSchool?.name || selectedSchool?.school_name))) {
         console.log('[E39-S4d] Rehydrating fitReEvaluation from message', i);
         setFitReEvaluation(msg.fitReEvaluation);
         return;
