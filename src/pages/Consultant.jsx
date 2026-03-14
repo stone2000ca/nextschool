@@ -1177,7 +1177,7 @@ export default function Consultant() {
       {/* E37: Loading overlay on brief confirmation with 5-second minimum */}
       <LoadingOverlay 
         isVisible={showLoadingOverlay}
-        onTransitionComplete={() => setIsTransitioning(true)}
+        onTransitionComplete={() => { setBriefStatus(null); setIsTransitioning(true); }}
       />
 
       {(isIntakePhase && !showSchoolGrid) ? (
