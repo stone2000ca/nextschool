@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart, ExternalLink, CheckCircle, Check, X, CalendarDays, Mail, ClipboardList } from "lucide-react";
 import TourRequestModal from './TourRequestModal';
-import VisitPrepCard from '../chat/VisitPrepCard';
 import { base44 } from '@/api/base44Client';
 
 function gradeLabel(grade) {
