@@ -425,27 +425,7 @@ export default function SchoolDetailPanel({
         {/* E28-S3 WC2: Action Plan */}
         <ActionPlanSection actionPlan={actionPlan} />
 
-        {/* Audit #16: Visit Prep Kit */}
-        {visitPrepKit && !visitPrepKit.__gated && (
-          <VisitPrepCard
-            schoolName={visitPrepKit.schoolName}
-            visitQuestions={visitPrepKit.visitQuestions || []}
-            observations={visitPrepKit.observations || []}
-            redFlags={visitPrepKit.redFlags || []}
-            isPremium={isPremium}
-            onUpgrade={onUpgrade}
-          />
-        )}
-        {visitPrepKit?.__gated && (
-          <VisitPrepCard
-            schoolName={visitPrepKit.schoolName}
-            visitQuestions={[]}
-            observations={[]}
-            redFlags={[]}
-            isPremium={false}
-            onUpgrade={onUpgrade}
-          />
-        )}
+  
       </div>
       
       {/* TIER 5 */}
