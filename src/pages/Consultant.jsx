@@ -174,6 +174,9 @@ export default function Consultant() {
   // Contact Log data
   const [contactLog, setContactLog] = useState([]);
 
+  // Research Notes
+  const [researchNotes, setResearchNotes] = useState('');
+
   // Action Plan data
   const [actionPlan, setActionPlan] = useState(null);
 
