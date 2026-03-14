@@ -243,6 +243,11 @@ export default function DebugPanel({ debugState }) {
                 <NotepadField label="selectedSchoolId" value={debugState?.selectedSchool?.id || 'null'} />
                 <NotepadField label="schoolsWithDeepDive" value={debugState?.schoolsWithDeepDive?.length || 0} />
               </NotepadSection>
+
+              {/* Persistence */}
+              <NotepadSection label="Persistence">
+                <NotepadField label="hydrationSource" value={debugState?.hydrationSource || 'null'} />
+              </NotepadSection>
             </TabsContent>
           </Tabs>
         </div>
