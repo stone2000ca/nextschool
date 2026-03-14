@@ -541,9 +541,9 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 {[
-                  { label: 'Students', val: school.students },
-                  { label: 'Teacher Ratio', val: school.teacherRatio },
-                  { label: 'Tuition', val: school.tuition },
+                  { label: 'Students', val: stats.students },
+                  { label: 'Teacher Ratio', val: stats.teacherRatio },
+                  { label: 'Tuition', val: stats.tuition },
                 ].map((stat, i) => (
                   <div key={i} style={{
                     flex: 1, background: '#fff', border: '1px solid #e8dfc0', borderRadius: 7,
