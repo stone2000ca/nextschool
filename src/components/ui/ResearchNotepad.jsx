@@ -377,12 +377,18 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
   const stats = schoolStats || { students: school.students, teacherRatio: school.teacherRatio, tuition: school.tuition };
   const [open, setOpen] = useState(true);
   const [deepDiveOpen, setDeepDiveOpen] = useState(true);
-  const [notes, setNotes] = useState('');
+  const [localNotes, setLocalNotes] = useState('');
   const [saved, setSaved] = useState(false);
+
+  // Controlled vs uncontrolled: use props if provided, else local state
+  const isControlled = onNotesChange != null;
+  const noteValue = isControlled ? (researchNotes || '') : localNotes;
+  const handleNotesChange = isControlled ? onNotesChange : setLocalNotes;
 
   if (loading) return <LoadingSkeleton />;
 
   const handleSave = () => {
+    if (onSaveNotes) onSaveNotes();
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

@@ -186,6 +186,27 @@ export default function Consultant() {
   // T047: Auto-refresh animation trigger
   const [schoolsAnimKey, setSchoolsAnimKey] = useState(0);
 
+  // Research Notes: fetch when selected school changes
+  useEffect(() => {
+    if (!selectedSchool?.id || !isAuthenticated || !user?.id) {
+      setResearchNotes('');
+      return;
+    }
+    base44.entities.ResearchNote.filter({ userId: user.id, schoolId: selectedSchool.id }).then(results => {
+      setResearchNotes(results[0]?.notes || '');
+    }).catch(() => setResearchNotes(''));
+  }, [selectedSchool?.id, isAuthenticated, user?.id]);
+
+  const handleSaveNotes = async () => {
+    if (!selectedSchool?.id || !user?.id) return;
+    const existing = await base44.entities.ResearchNote.filter({ userId: user.id, schoolId: selectedSchool.id });
+    if (existing.length > 0) {
+      await base44.entities.ResearchNote.update(existing[0].id, { notes: researchNotes, updated_at: new Date().toISOString() });
+    } else {
+      await base44.entities.ResearchNote.create({ userId: user.id, schoolId: selectedSchool.id, notes: researchNotes, updated_at: new Date().toISOString() });
+    }
+  };
+
   // Contact Log: fetch inquiries when selected school changes
   useEffect(() => {
     if (!selectedSchool?.id || !isAuthenticated) {
