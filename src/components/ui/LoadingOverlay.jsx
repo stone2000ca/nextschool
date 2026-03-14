@@ -116,7 +116,15 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
   useEffect(() => clear, [clear]);
 
   if (!isVisible && !wasVisible.current) return null;
-  if (!isVisible) return null;
+  if (!isVisible && !flashActive) return null;
+
+  if (flashActive) {
+    return (
+      <div style={{position:'fixed',inset:0,zIndex:10001,background:TEAL,animation:'tealFlash 0.45s ease-out forwards'}}>
+        <style>{KEYFRAMES}</style>
+      </div>
+    );
+  }
 
   if (timedOut) {
     return (
