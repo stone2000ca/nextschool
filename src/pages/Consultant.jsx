@@ -183,6 +183,22 @@ export default function Consultant() {
   // T047: Auto-refresh animation trigger
   const [schoolsAnimKey, setSchoolsAnimKey] = useState(0);
 
+  // Contact Log: fetch inquiries when selected school changes
+  useEffect(() => {
+    if (!selectedSchool?.id || !isAuthenticated) {
+      setContactLog([]);
+      return;
+    }
+    base44.entities.SchoolInquiry.filter({ schoolId: selectedSchool.id }).then(inquiries => {
+      setContactLog(inquiries.map(inq => ({
+        type: inq.inquiryType === 'tour_request' ? 'Tour Request' : 'General Inquiry',
+        date: new Date(inq.created_date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: inq.tourStatus || inq.status || 'pending',
+        note: inq.specialRequests || '',
+      })));
+    }).catch(() => setContactLog([]));
+  }, [selectedSchool?.id, isAuthenticated]);
+
   // E30-012: Prevent double-processing the same deep dive school
   const deepDiveAutoAddedRef = useRef(new Set());
   // E32-003: Prevent double-processing the same UI action

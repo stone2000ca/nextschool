@@ -310,6 +310,46 @@ function VisitPrepKitContent({ visitPrepKit }) {
   );
 }
 
+const STATUS_DOT = {
+  pending:    '#f59e0b',
+  new:        '#f59e0b',
+  contacted:  '#0d9488',
+  scheduled:  '#3b82f6',
+  completed:  '#16a34a',
+  responded:  '#16a34a',
+  closed:     '#94a3b8',
+};
+
+function ContactLogContent({ contactLog }) {
+  if (!contactLog || contactLog.length === 0) {
+    return (
+      <div style={{ fontSize: 12.5, color: '#a89060', fontStyle: 'italic' }}>
+        No inquiries yet. Tour requests and messages to this school will appear here.
+      </div>
+    );
+  }
+  return (
+    <div style={{ fontSize: 12.5, color: '#5a4030', lineHeight: 1.6 }}>
+      {contactLog.map((entry, i) => {
+        const dot = STATUS_DOT[entry.status] || '#cbd5e1';
+        const isLast = i === contactLog.length - 1;
+        return (
+          <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: isLast ? 'none' : '1px solid #f5edd4', alignItems: 'flex-start' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: dot, marginTop: 4, flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 600 }}>{entry.type}</div>
+              <div style={{ color: '#a89060', fontSize: 11 }}>
+                {entry.date}{entry.status ? ` — ${entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}` : ''}
+              </div>
+              {entry.note && <div style={{ color: '#6b5c40', fontSize: 11, marginTop: 2 }}>{entry.note}</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function PremiumLockBadge() {
   return (
     <div style={{
