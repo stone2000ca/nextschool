@@ -1,364 +1,155 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const FUN_FACTS = [
+const MIN_LOADER_MS = 3000;
+const TIMEOUT_MS = 30000;
+
+const STEPS = [
+  { label: 'Analyzing preferences', icon: '🔍' },
+  { label: 'Matching with schools', icon: '🏫' },
+  { label: 'Ranking top picks',    icon: '⭐' },
+];
+
+const FACTS = [
   "Private school students average 8 more library visits per year.",
   "Small class sizes are linked to stronger critical thinking skills.",
   "Students who feel matched to their school report 40% higher engagement.",
   "Schools with outdoor programs see improved student focus and creativity.",
   "Over 60% of private schools offer needs-based financial aid.",
   "The average private school class has fewer than 18 students.",
+  "Bilingual education can improve problem-solving ability by up to 20%.",
+  "Families who visit 3+ schools report higher satisfaction with their choice.",
+  "Schools with strong arts programs see higher academic performance overall.",
+  "Students in project-based learning develop stronger collaboration skills.",
+  "NextSchool matches families using 40+ personalized criteria.",
+  "Private schools with mentorship programs report higher acceptance rates.",
+  "Experiential learning improves long-term knowledge retention by up to 75%.",
+  "Students in robust STEM programs are twice as likely to pursue tech careers.",
+  "Schools emphasizing social-emotional learning see fewer behavioral issues.",
+  "A strong school-family partnership is the #1 predictor of student success.",
+  "Over 80% of private school graduates attend their first-choice university.",
+  "Nature-based learning increases student curiosity and self-directed study.",
+  "Schools with dedicated advisors see 30% fewer mid-year transfers.",
+  "Music education strengthens mathematical reasoning in young learners.",
 ];
 
-export default function LoadingOverlay({ visible = true, statusMessage = 'Finding Your Matches...', onTransitionComplete }) {
-  const [showFlash, setShowFlash] = useState(false);
-  const [flashOpacity, setFlashOpacity] = useState(0);
-  const [factIndex, setFactIndex] = useState(0);
-  const [fadeOut, setFadeOut] = useState(false);
-  const showTimeRef = useRef(null);
+const TEAL = '#18968a';
+const GOLD = '#d4a017';
+const BG = '#f8f9fb';
 
-  // Track show time for minimum 5-second display
+const spin = (name, dir) => `@keyframes ${name}{to{transform:translate(-50%,-50%) rotate(${dir}360deg)}}`;
+const KEYFRAMES = `
+  ${spin('arcCW','')}
+  ${spin('arcCCW','-')}
+  @keyframes dotPulse{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.4);opacity:1}}
+  @keyframes fillBar{from{width:0%}to{width:100%}}
+  @keyframes badgePulse{0%,100%{opacity:.85}50%{opacity:1}}
+`;
+
+const DOT_POS = [
+  { top: 2, left: 72 }, { top: 28, left: 138 }, { top: 112, left: 142 },
+  { top: 138, left: 52 }, { top: 38, left: 8 },
+];
+
+export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
+  const [step, setStep] = useState(0);
+  const [factIdx, setFactIdx] = useState(() => Math.floor(Math.random() * FACTS.length));
+  const [factVisible, setFactVisible] = useState(true);
+  const [timedOut, setTimedOut] = useState(false);
+  const timers = useRef([]);
+  const minReady = useRef(false);
+  const pending = useRef(false);
+  const wasVisible = useRef(false);
+
+  const clear = useCallback(() => { timers.current.forEach(clearTimeout); timers.current = []; }, []);
+  const t = useCallback((fn, ms) => { const id = setTimeout(fn, ms); timers.current.push(id); return id; }, []);
+
   useEffect(() => {
-    if (visible && !showTimeRef.current) {
-      showTimeRef.current = Date.now();
+    if (!isVisible) {
+      if (wasVisible.current) {
+        if (minReady.current) { onTransitionComplete?.(); }
+        else { pending.current = true; }
+      }
+      return;
     }
-  }, [visible]);
+    wasVisible.current = true;
+    pending.current = false;
+    minReady.current = false;
+    setStep(0); setTimedOut(false); setFactVisible(true);
+    setFactIdx(Math.floor(Math.random() * FACTS.length));
 
-  // Flash animation on mount
-  useEffect(() => {
-    if (visible && !showFlash) {
-      setShowFlash(true);
-      setFlashOpacity(1);
-      const timer = setTimeout(() => setFlashOpacity(0), 350);
-      return () => clearTimeout(timer);
-    }
-  }, [visible, showFlash]);
+    t(() => setStep(1), 2000);
+    t(() => setStep(2), 4000);
+    t(() => {
+      minReady.current = true;
+      if (pending.current) { pending.current = false; onTransitionComplete?.(); }
+    }, MIN_LOADER_MS);
+    t(() => setTimedOut(true), TIMEOUT_MS);
 
-  // Rotating facts
-  useEffect(() => {
-    if (!visible) return;
-    const interval = setInterval(() => {
-      setFactIndex(i => (i + 1) % FUN_FACTS.length);
+    const factInterval = setInterval(() => {
+      setFactVisible(false);
+      setTimeout(() => { setFactIdx(i => (i + 1) % FACTS.length); setFactVisible(true); }, 400);
     }, 4000);
-    return () => clearInterval(interval);
-  }, [visible]);
+    timers.current.push(factInterval);
 
-  // Handle fade out with minimum 5-second display time
-  useEffect(() => {
-    if (!visible && showFlash) {
-      const elapsedTime = Date.now() - (showTimeRef.current || 0);
-      const remainingTime = Math.max(0, 5000 - elapsedTime);
-      
-      const timer = setTimeout(() => {
-        setFadeOut(true);
-        const fadeTimer = setTimeout(() => {
-          setFadeOut(false);
-          setShowFlash(false);
-          showTimeRef.current = null;
-          if (onTransitionComplete) onTransitionComplete();
-        }, 400);
-        return () => clearTimeout(fadeTimer);
-      }, remainingTime);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [visible, showFlash, onTransitionComplete]);
+    return clear;
+  }, [isVisible, onTransitionComplete, t, clear]);
 
-  if (!visible && !showFlash) return null;
+  useEffect(() => clear, [clear]);
+
+  if (!isVisible && !wasVisible.current) return null;
+  if (!isVisible) return null;
+
+  if (timedOut) {
+    return (
+      <div style={{position:'fixed',inset:0,zIndex:10000,background:BG,display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{textAlign:'center',padding:40}}>
+          <div style={{fontSize:48,marginBottom:16}}>⏳</div>
+          <h3 style={{color:'#334155',marginBottom:8}}>Taking longer than expected</h3>
+          <p style={{color:'#64748b',marginBottom:24}}>The search is still running. You can wait or try again.</p>
+          <button onClick={() => onTransitionComplete?.()} style={{background:TEAL,color:'#fff',border:'none',borderRadius:8,padding:'10px 28px',fontSize:15,cursor:'pointer'}}>Try Again</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 10000,
-        background: '#f8f9fb',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'auto',
-        opacity: fadeOut ? 0 : 1,
-        transition: 'opacity 0.4s ease',
-      }}
-    >
-      {/* Teal Flash */}
-      {showFlash && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: '#18968a',
-            opacity: flashOpacity,
-            transition: 'opacity 0.35s ease',
-            pointerEvents: 'none',
-            zIndex: 10001,
-          }}
-        />
-      )}
-
-      {/* Loader Content */}
-      <div style={{ textAlign: 'center', maxWidth: '600px', width: '100%', padding: '20px', minHeight: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '20px' }}>
+    <div style={{position:'fixed',inset:0,zIndex:10000,background:BG,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column'}}>
+      <style>{KEYFRAMES}</style>
+      <div style={{textAlign:'center',maxWidth:420,width:'100%',padding:'0 20px'}}>
         {/* Status Badge */}
-        <div
-          style={{
-            background: 'rgba(24,150,138,0.1)',
-            border: '1px solid rgba(24,150,138,0.25)',
-            padding: '6px 18px',
-            borderRadius: '20px',
-            fontSize: '13px',
-            color: '#18968a',
-            display: 'inline-block',
-            fontWeight: '500',
-            animation: 'pulse 2s ease-in-out infinite',
-          }}
-        >
-          {statusMessage}
-        </div>
+        <div style={{display:'inline-block',background:`rgba(24,150,138,0.1)`,border:`1px solid rgba(24,150,138,0.25)`,padding:'6px 18px',borderRadius:20,fontSize:13,color:TEAL,fontWeight:500,animation:'badgePulse 2s ease-in-out infinite',marginBottom:28}}>Finding Your Matches...</div>
 
-        {/* Orbit Container */}
-        <div
-          style={{
-            position: 'relative',
-            width: '160px',
-            height: '160px',
-            margin: '0 auto',
-          }}
-        >
-          {/* Concentric Rings */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '100px',
-              height: '100px',
-              borderRadius: '50%',
-              border: '1px solid rgba(24,150,138,0.3)',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '130px',
-              height: '130px',
-              borderRadius: '50%',
-              border: '1px solid rgba(24,150,138,0.3)',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '160px',
-              height: '160px',
-              borderRadius: '50%',
-              border: '1px solid rgba(24,150,138,0.3)',
-            }}
-          />
-
-          {/* Rotating Arc 1 (130px, 8s) */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '130px',
-              height: '130px',
-              borderRadius: '50%',
-              borderTop: '2.5px solid #18968a',
-              borderRight: '2.5px solid #18968a',
-              borderBottom: '2.5px solid transparent',
-              borderLeft: '2.5px solid transparent',
-              animation: 'spin 8s linear infinite',
-            }}
-          />
-
-          {/* Rotating Arc 2 (160px, 12s reverse) */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '160px',
-              height: '160px',
-              borderRadius: '50%',
-              borderTop: '2.5px solid #18968a',
-              borderRight: '2.5px solid #18968a',
-              borderBottom: '2.5px solid transparent',
-              borderLeft: '2.5px solid transparent',
-              animation: 'spin 12s linear infinite reverse',
-            }}
-          />
-
-          {/* Center Logo */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '52px',
-              height: '52px',
-              borderRadius: '50%',
-              background: 'white',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.54 38.56" width="32" height="32">
-              <path fill="#18968a" d="M20.21,0h-11.7L0,8.48l7,10.78L0,30.05l8.52,8.52h12.76l19.26-19.3L21.28,0h-1.06ZM37.53,19.27l-16.26,16.29-.09-.09-5.7-5.7,6.06-9.34.75-1.16-.75-1.16-6.06-9.34,5.79-5.76.58.58,15.68,15.68Z" />
-              <polygon fill="#fff" points="15.48 8.77 21.54 18.11 22.29 19.26 21.54 20.42 15.48 29.76 21.18 35.46 21.28 35.56 37.53 19.27 21.85 3.59 21.27 3.01 15.48 8.77" />
-            </svg>
+        {/* Orbit */}
+        <div style={{position:'relative',width:160,height:160,margin:'0 auto 28px'}}>
+          {[100,130,160].map(d=>(<div key={d} style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:d,height:d,borderRadius:'50%',border:`1px solid rgba(24,150,138,0.3)`}}/>))}
+          <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:130,height:130,borderRadius:'50%',borderTop:`2.5px solid ${TEAL}`,borderRight:`2.5px solid ${TEAL}`,borderBottom:'2.5px solid transparent',borderLeft:'2.5px solid transparent',animation:'arcCW 3s linear infinite'}}/>
+          <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:160,height:160,borderRadius:'50%',borderTop:`2.5px solid ${TEAL}`,borderRight:`2.5px solid ${TEAL}`,borderBottom:'2.5px solid transparent',borderLeft:'2.5px solid transparent',animation:'arcCCW 4.5s linear infinite'}}/>
+          <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:52,height:52,borderRadius:'50%',background:'#fff',boxShadow:'0 2px 12px rgba(0,0,0,0.08)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.54 38.56" width="32" height="32"><path fill={TEAL} d="M20.21,0h-11.7L0,8.48l7,10.78L0,30.05l8.52,8.52h12.76l19.26-19.3L21.28,0h-1.06ZM37.53,19.27l-16.26,16.29-.09-.09-5.7-5.7,6.06-9.34.75-1.16-.75-1.16-6.06-9.34,5.79-5.76.58.58,15.68,15.68Z"/><polygon fill="#fff" points="15.48 8.77 21.54 18.11 22.29 19.26 21.54 20.42 15.48 29.76 21.18 35.46 21.28 35.56 37.53 19.27 21.85 3.59 21.27 3.01 15.48 8.77"/></svg>
           </div>
-
-          {/* Gold Orbit Dots */}
-          {[
-            { top: '5px', left: '75px', delay: '0s' },
-            { top: '30px', left: '140px', delay: '0.4s' },
-            { top: '115px', left: '145px', delay: '0.8s' },
-            { top: '140px', left: '55px', delay: '1.2s' },
-            { top: '40px', left: '10px', delay: '1.6s' },
-          ].map((dot, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                top: dot.top,
-                left: dot.left,
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#e8a838',
-                animation: `dotPulse 2s ease-in-out infinite`,
-                animationDelay: dot.delay,
-              }}
-            />
-          ))}
+          {DOT_POS.map((d,i)=>(<div key={i} style={{position:'absolute',top:d.top,left:d.left,width:8,height:8,borderRadius:'50%',background:GOLD,animation:`dotPulse 2s ease-in-out infinite`,animationDelay:`${i*0.4}s`}}/>))}
         </div>
 
         {/* Progress Steps */}
-        <div style={{ fontSize: '14px', color: '#555', textAlign: 'left', display: 'inline-block', width: '100%', background: 'yellow' }}>
-          {[
-            { emoji: '📋', label: 'Analyzing your preferences', progress: 0 },
-            { emoji: '👓', label: 'Matching with schools', progress: 1 },
-            { emoji: '⭐', label: 'Ranking your top picks', progress: 2 },
-          ].map((step, i) => (
-            <div
-              key={i}
-              style={{
-                opacity: i <= Math.min(Math.floor((Date.now() % 9000) / 3000), 2) ? 1 : 0.4,
-                padding: '12px 0',
-                transition: 'opacity 0.3s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-              }}
-            >
-              <span style={{ fontSize: '16px' }}>{step.emoji}</span>
-              <span style={{ color: '#555' }}>{step.label}</span>
-              <div
-                style={{
-                  height: '3px',
-                  width: '60px',
-                  background: '#cbd5e1',
-                  borderRadius: '2px',
-                  marginLeft: 'auto',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    height: '100%',
-                    background: '#18968a',
-                    borderRadius: '2px',
-                    animation: `progressBar 9s linear infinite`,
-                    animationDelay: `${-i * 3}s`,
-                  }}
-                />
+        <div style={{textAlign:'left',marginBottom:24}}>
+          {STEPS.map((s,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',opacity:i<=step?1:0.35,transition:'opacity 0.3s'}}>
+              <span style={{fontSize:16,width:24,textAlign:'center'}}>{i<step?'✅':s.icon}</span>
+              <span style={{flex:1,fontSize:14,color:'#334155'}}>{s.label}</span>
+              <div style={{width:60,height:3,background:'#e2e8f0',borderRadius:2,overflow:'hidden'}}>
+                {i<=step && <div style={{height:'100%',background:TEAL,borderRadius:2,animation:i===step?'fillBar 1.8s ease-out forwards':'none',width:i<step?'100%':'0%'}}/>}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Fun Fact Box */}
-        <div
-          style={{
-            padding: '16px',
-            background: 'rgba(51,65,85,0.05)',
-            borderRadius: '8px',
-            fontSize: '13px',
-            color: '#555',
-            minHeight: '50px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            border: '1px solid rgba(24,150,138,0.15)',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
-        >
-          <div
-            style={{
-              textAlign: 'center',
-              animation: 'fadeInFact 0.5s ease',
-            }}
-          >
-            <span style={{ color: '#18968a', fontWeight: 'bold', marginRight: '4px' }}>Did you know?</span>
-            <span style={{ color: '#555' }}>{FUN_FACTS[factIndex]}</span>
+        {/* Fun Facts */}
+        <div style={{background:'rgba(51,65,85,0.04)',border:'1px solid rgba(24,150,138,0.15)',borderRadius:8,padding:16,minHeight:60,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <div style={{textAlign:'center',opacity:factVisible?1:0,transform:factVisible?'translateY(0)':'translateY(8px)',transition:'opacity 0.4s, transform 0.4s'}}>
+            <span style={{color:TEAL,fontWeight:600,marginRight:4,fontSize:13}}>Did you know?</span>
+            <span style={{color:'#64748b',fontSize:13}}>{FACTS[factIdx]}</span>
           </div>
         </div>
-
-        <style>{`
-          @keyframes spin {
-            to {
-              transform: translate(-50%, -50%) rotate(360deg);
-            }
-          }
-          @keyframes pulse {
-            0%, 100% {
-              opacity: 0.85;
-            }
-            50% {
-              opacity: 1;
-            }
-          }
-          @keyframes dotPulse {
-            0%, 100% {
-              transform: scale(1);
-              opacity: 0.85;
-            }
-            50% {
-              transform: scale(1.4);
-              opacity: 1;
-            }
-          }
-          @keyframes progressBar {
-            0% {
-              width: 0%;
-            }
-            100% {
-              width: 100%;
-            }
-          }
-          @keyframes fadeInFact {
-            from {
-              opacity: 0;
-            }
-            to {
-              opacity: 1;
-            }
-          }
-        `}</style>
       </div>
     </div>
   );
