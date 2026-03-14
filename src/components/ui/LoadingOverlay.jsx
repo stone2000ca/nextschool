@@ -4,10 +4,11 @@ const MIN_LOADER_MS = 3000;
 const TIMEOUT_MS = 30000;
 
 const STEPS = [
-  { label: 'Analyzing preferences', icon: '🔍' },
-  { label: 'Matching with schools', icon: '🏫' },
-  { label: 'Ranking top picks',    icon: '⭐' },
+  { label: 'Analyzing preferences', icon: (color) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">ircle cx="11" cy="11" r="8"/>e x1="21" y1="21" x2="16.65" y2="16.65"/></svg> },
+  { label: 'Matching with schools', icon: (color) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
+  { label: 'Ranking top picks', icon: (color) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
 ];
+
 
 const FACTS = [
   "Private school students average 8 more library visits per year.",
@@ -47,6 +48,7 @@ const KEYFRAMES = `
   @keyframes dotOrbitCCW{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
   @keyframes iconPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.08)}}
   @keyframes iconLook{0%,100%{transform:rotate(0deg)}25%{transform:rotate(6deg)}75%{transform:rotate(-6deg)}}
+  @keyframes tealFlash{0%{opacity:0}40%{opacity:1}100%{opacity:1}}
 `;
 
 
@@ -58,6 +60,7 @@ const DOT_CONFIG = [
   { radius: 80, duration: 7, direction: 'CW', delayOffset: -2.3 },
 ];
 
+const [flashActive, setFlashActive] = useState(false);
 
 export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
   const [step, setStep] = useState(0);
@@ -75,7 +78,11 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
   useEffect(() => {
     if (!isVisible) {
       if (wasVisible.current) {
-        if (minReady.current) { onTransitionComplete?.(); }
+        if (minReady.current) { 
+          setFlashActive(true);
+          setTimeout(() => onTransitionComplete?.(), 450);
+        }
+
         else { pending.current = true; }
       }
       return;
@@ -90,7 +97,11 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
     t(() => setStep(2), 4000);
     t(() => {
       minReady.current = true;
-      if (pending.current) { pending.current = false; onTransitionComplete?.(); }
+      if (pending.current) { 
+          pending.current = false; 
+          setFlashActive(true);
+          setTimeout(() => onTransitionComplete?.(), 450);
+        }
     }, MIN_LOADER_MS);
     t(() => setTimedOut(true), TIMEOUT_MS);
 
@@ -123,6 +134,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
 
   return (
     <div style={{position:'fixed',inset:0,zIndex:10000,background:BG,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column'}}>
+      {flashActive && <div style={{position:'fixed',inset:0,background:TEAL,zIndex:10001,animation:'tealFlash 0.45s ease-out forwards'}}/>}
       <style>{KEYFRAMES}</style>
       <div style={{textAlign:'center',maxWidth:420,width:'100%',padding:'0 20px'}}>
         {/* Status Badge */}
@@ -149,7 +161,12 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
         <div style={{textAlign:'left',marginBottom:24}}>
           {STEPS.map((s,i)=>(
             <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',opacity:i<=step?1:0.35,transition:'opacity 0.3s'}}>
-              <span style={{fontSize:16,width:24,textAlign:'center'}}>{i<step?'✅':s.icon}</span>
+              <span style={{width:24,textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                {i<step 
+                  ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={TEAL} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  : s.icon(i<=step ? TEAL : '#94a3b8')
+                }
+              </span>
               <span style={{flex:1,fontSize:14,color:'#334155'}}>{s.label}</span>
               <div style={{width:60,height:3,background:'#e2e8f0',borderRadius:2,overflow:'hidden'}}>
                 {i<=step && <div style={{height:'100%',background:TEAL,borderRadius:2,animation:i===step?'fillBar 1.8s ease-out forwards':'none',width:i<step?'100%':'0%'}}/>}
