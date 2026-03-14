@@ -141,6 +141,9 @@ export default function Consultant() {
   const [extraSchoolsLoading, setExtraSchoolsLoading] = useState(false);
   const [extraSchoolsError, setExtraSchoolsError] = useState(null);
 
+  // E39-S11: Hydration source tracking
+  const [hydrationSource, setHydrationSource] = useState(null);
+
   // BRIEF→RESULTS transition animation
   const [isTransitioning, setIsTransitioning] = useState(false);
   const prevIsIntakePhaseRef = useRef(true);
@@ -1151,6 +1154,7 @@ export default function Consultant() {
     if (isTyping) return;
     if (!selectedSchool?.id || !messages.length) {
       setDeepDiveAnalysis(null);
+      setHydrationSource(null);
       return;
     }
 
@@ -1163,11 +1167,13 @@ export default function Consultant() {
         (msg.deepDiveAnalysis.schoolId === selectedSchool.id || msg.deepDiveAnalysis.schoolName === (selectedSchool?.name || selectedSchool?.school_name))
       ) {
         console.log('[E39-S4a] Rehydrating deepDiveAnalysis from message', i);
+        setHydrationSource('HYDRATED_MSG');
         setDeepDiveAnalysis(msg.deepDiveAnalysis);
         return;
       }
     }
     setDeepDiveAnalysis(null);
+    setHydrationSource(null);
   }, [messages, isTyping, selectedSchool?.id]);
 
   // E39-S4b: Rehydrate visitPrepKit from persisted messages on school switch
@@ -1175,17 +1181,20 @@ export default function Consultant() {
     if (isTyping) return;
     if (!selectedSchool?.id || !messages.length) {
       setVisitPrepKit(null);
+      setHydrationSource(null);
       return;
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
       if (msg.role === 'assistant' && msg.visitPrepKit && (msg.visitPrepKit.schoolId === selectedSchool.id || msg.visitPrepKit.schoolName === (selectedSchool?.name || selectedSchool?.school_name))) {
         console.log('[E39-S4b] Rehydrating visitPrepKit from message', i);
+        setHydrationSource('HYDRATED_MSG');
         setVisitPrepKit(msg.visitPrepKit);
         return;
       }
     }
     setVisitPrepKit(null);
+    setHydrationSource(null);
   }, [messages, isTyping, selectedSchool?.id]);
 
   // E39-S4c: Rehydrate actionPlan from persisted messages on school switch
@@ -1193,17 +1202,20 @@ export default function Consultant() {
     if (isTyping) return;
     if (!selectedSchool?.id || !messages.length) {
       setActionPlan(null);
+      setHydrationSource(null);
       return;
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
       if (msg.role === 'assistant' && msg.actionPlan && (msg.actionPlan.schoolId === selectedSchool.id || msg.actionPlan.schoolName === (selectedSchool?.name || selectedSchool?.school_name))) {
         console.log('[E39-S4c] Rehydrating actionPlan from message', i);
+        setHydrationSource('HYDRATED_MSG');
         setActionPlan(msg.actionPlan);
         return;
       }
     }
     setActionPlan(null);
+    setHydrationSource(null);
   }, [messages, isTyping, selectedSchool?.id]);
 
   // E39-S4d: Rehydrate fitReEvaluation from persisted messages on school switch
@@ -1211,17 +1223,20 @@ export default function Consultant() {
     if (isTyping) return;
     if (!selectedSchool?.id || !messages.length) {
       setFitReEvaluation(null);
+      setHydrationSource(null);
       return;
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
       if (msg.role === 'assistant' && msg.fitReEvaluation && (msg.fitReEvaluation.schoolId === selectedSchool.id || msg.fitReEvaluation.schoolName === (selectedSchool?.name || selectedSchool?.school_name))) {
         console.log('[E39-S4d] Rehydrating fitReEvaluation from message', i);
+        setHydrationSource('HYDRATED_MSG');
         setFitReEvaluation(msg.fitReEvaluation);
         return;
       }
     }
     setFitReEvaluation(null);
+    setHydrationSource(null);
   }, [messages, isTyping, selectedSchool?.id]);
 
   // E32-003: Action processor - executes UI actions from backend
@@ -1780,6 +1795,7 @@ export default function Consultant() {
         journeySteps={journeySteps}
         selectedSchool={selectedSchool}
         schoolsWithDeepDive={schoolsWithDeepDive}
+        hydrationSource={hydrationSource}
       />
 
       {/* Shortlist Panel */}
