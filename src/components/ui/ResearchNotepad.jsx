@@ -165,7 +165,60 @@ function CollapsibleSection({ icon, label, color, children, defaultOpen = false 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, schoolStats }) {
+const MOCK_KEY_DATES = [
+  { type: 'event', label: 'Open House', date: '2025-11-14', isEstimated: false },
+  { type: 'deadline', label: 'Application Deadline', date: '2026-01-15', isEstimated: false },
+  { type: 'deadline', label: 'Entry Year', date: '2026-09-01', isEstimated: true },
+];
+
+function KeyDatesContent({ keyDates }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const source = keyDates || MOCK_KEY_DATES;
+
+  const upcoming = source
+    .filter(d => d.date && new Date(d.date) >= today)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (upcoming.length === 0) {
+    return <div style={{ fontSize: 12.5, color: '#a89060', fontStyle: 'italic' }}>No upcoming dates on file.</div>;
+  }
+
+  return (
+    <div style={{ fontSize: 12.5, color: '#5a4030', lineHeight: 1.6 }}>
+      {upcoming.map((d, i) => {
+        const dateObj = new Date(d.date);
+        const daysUntil = Math.ceil((dateObj - today) / (1000 * 60 * 60 * 24));
+        const badgeColor = daysUntil < 14 ? '#ef4444' : daysUntil < 30 ? '#d97706' : '#16a34a';
+        const badgeText = daysUntil < 14 ? 'Urgent' : daysUntil < 30 ? 'Coming Soon' : null;
+        const dateStr = dateObj.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+        const isLast = i === upcoming.length - 1;
+        return (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: isLast ? 'none' : '1px solid #f5edd4', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 600 }}>{d.label}</span>
+              {d.isEstimated && (
+                <span style={{ fontSize: 10, color: '#a89060', fontStyle: 'italic', border: '1px solid #d4c9a8', borderRadius: 4, padding: '1px 5px' }}>est.</span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {badgeText && (
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', background: badgeColor, borderRadius: 10, padding: '1px 7px' }}>{badgeText}</span>
+              )}
+              {!badgeText && (
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: badgeColor, display: 'inline-block' }} />
+              )}
+              <span style={{ color: '#a89060' }}>{dateStr}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, schoolStats, keyDates }) {
   const school = schoolData || MOCK_SCHOOL;
   const score = fitScore ?? MOCK_FIT_SCORE;
   const label = fitLabel || 'STRONG MATCH';
