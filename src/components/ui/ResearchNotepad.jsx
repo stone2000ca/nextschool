@@ -218,7 +218,115 @@ function KeyDatesContent({ keyDates }) {
   );
 }
 
-export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, schoolStats, keyDates }) {
+const PRIORITY_TAG_STYLE = {
+  high:   { background: '#fee2e2', color: '#b91c1c' },
+  medium: { background: '#fef3c7', color: '#b45309' },
+  low:    { background: '#dcfce7', color: '#15803d' },
+};
+
+function VisitPrepKitContent({ visitPrepKit }) {
+  if (!visitPrepKit) {
+    // Fallback mock
+    return (
+      <div style={{ fontSize: 12.5, color: '#5a4030', lineHeight: 1.7 }}>
+        <div style={{ marginBottom: 8, fontWeight: 600, color: '#6d28d9' }}>Questions to Ask</div>
+        {['How is the transition from JK to Grade 1 supported?', 'What does a typical extracurricular week look like?', 'How does the school support learning differences?'].map((q, i) => (
+          <div key={i} style={{ display: 'flex', gap: 7, marginBottom: 5 }}>
+            <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>→</span>
+            <span>{q}</span>
+          </div>
+        ))}
+        <div style={{ marginTop: 12, marginBottom: 8, fontWeight: 600, color: '#6d28d9' }}>Things to Notice</div>
+        {['Classroom size and energy', 'How students interact with staff', 'Hallway displays and student work'].map((n, i) => (
+          <div key={i} style={{ display: 'flex', gap: 7, marginBottom: 5 }}>
+            <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>•</span>
+            <span>{n}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const { visitQuestions = [], observations = [], redFlags = [], isLocked = false } = visitPrepKit;
+
+  return (
+    <div style={{ fontSize: 12.5, color: '#5a4030', lineHeight: 1.7 }}>
+      {/* Questions to Ask */}
+      {visitQuestions.length > 0 && (
+        <>
+          <div style={{ marginBottom: 8, fontWeight: 600, color: '#6d28d9' }}>Questions to Ask</div>
+          {visitQuestions.map((q, i) => {
+            const tag = q.priorityTag || 'medium';
+            const tagStyle = PRIORITY_TAG_STYLE[tag] || PRIORITY_TAG_STYLE.medium;
+            return (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 7 }}>
+                <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>→</span>
+                <span style={{ flex: 1 }}>{q.question}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, flexShrink: 0, ...tagStyle }}>{tag}</span>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {/* Observations */}
+      {(observations?.length > 0 || isLocked) && (
+        <div style={{ marginTop: 12, position: 'relative' }}>
+          <div style={{ marginBottom: 8, fontWeight: 600, color: '#6d28d9', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#6d28d9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Things to Notice
+          </div>
+          <div style={{ filter: isLocked ? 'blur(4px)' : 'none', userSelect: isLocked ? 'none' : 'auto' }}>
+            {(isLocked ? ['Notice how staff interact with students', 'Observe classroom atmosphere and energy', 'Look for signs of student wellbeing'] : observations).map((n, i) => (
+              <div key={i} style={{ display: 'flex', gap: 7, marginBottom: 5 }}>
+                <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>•</span>
+                <span>{n}</span>
+              </div>
+            ))}
+          </div>
+          {isLocked && <PremiumLockBadge />}
+        </div>
+      )}
+
+      {/* Red Flags */}
+      {(redFlags?.length > 0 || isLocked) && (
+        <div style={{ marginTop: 12, position: 'relative' }}>
+          <div style={{ marginBottom: 8, fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Red Flags to Watch For
+          </div>
+          <div style={{ filter: isLocked ? 'blur(4px)' : 'none', userSelect: isLocked ? 'none' : 'auto' }}>
+            {(isLocked ? ['Watch for misalignment on key priorities', 'Note any concerns around class size'] : redFlags).map((f, i) => (
+              <div key={i} style={{ display: 'flex', gap: 7, marginBottom: 5 }}>
+                <span style={{ color: '#dc2626', fontWeight: 700, flexShrink: 0 }}>!</span>
+                <span>{f}</span>
+              </div>
+            ))}
+          </div>
+          {isLocked && <PremiumLockBadge />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PremiumLockBadge() {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(255,253,245,0.6)',
+    }}>
+      <span style={{
+        background: '#7c3aed', color: '#fff', fontSize: 11, fontWeight: 700,
+        padding: '3px 12px', borderRadius: 10, letterSpacing: 0.3,
+      }}>
+        🔒 Premium
+      </span>
+    </div>
+  );
+}
+
+export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, schoolStats, keyDates, visitPrepKit }) {
   const school = schoolData || MOCK_SCHOOL;
   const score = fitScore ?? MOCK_FIT_SCORE;
   const label = fitLabel || 'STRONG MATCH';
