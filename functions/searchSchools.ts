@@ -271,9 +271,9 @@ async function performSearch(req) {
     // city name (e.g. "North York" vs "Toronto") but prevents out-of-region schools
     if (cityMatches.length === 0 && (resolvedLat || finalLat)) {
       console.log(`[CITY FILTER] Falling back to coordinate-based with 75km cap`);
+      // [S161-WC1-FIX-A] Filter OUT schools without coordinates instead of auto-including
       locationFiltered = locationFiltered.filter(s => {
-        // S151-P0: include schools without coordinates so they aren't silently discarded
-        if (!s.lat || !s.lng) return true;
+        if (!s.lat || !s.lng) return false;
         const dist = calculateDistance(finalLat, finalLng, s.lat, s.lng);
         return dist <= 75;
       });
@@ -302,14 +302,25 @@ async function performSearch(req) {
       locationFiltered = regionMatched;
     } else if (finalLat && finalLng) {
       console.log(`[S151-WC3] region="${region}" matched 0 schools - falling back to geo radius`);
+      // [S161-WC1-FIX-A] Filter OUT schools without coordinates instead of auto-including
       locationFiltered = locationFiltered.filter(s => {
-        if (!s.lat || !s.lng) return true;
+        if (!s.lat || !s.lng) return false;
         return calculateDistance(finalLat, finalLng, s.lat, s.lng) <= 75;
       });
     }
   }
   if (country) {
     locationFiltered = locationFiltered.filter(s => s.country === country);
+  }
+
+  // [S161-WC1-FIX-B] Geo-radius safety net: if no location filter was applied, enforce 100km cap
+  if (locationFiltered.length === schools.length && finalLat && finalLng) {
+    console.log('[S161-WC1-FIX-B] No location filter applied - enforcing 100km safety radius');
+    locationFiltered = locationFiltered.filter(s => {
+      if (!s.lat || !s.lng) return false;
+      const dist = calculateDistance(finalLat, finalLng, s.lat, s.lng);
+      return dist <= 100;
+    });
   }
 
   let hardFiltered = locationFiltered.filter(school => {
@@ -480,7 +491,11 @@ async function performSearch(req) {
 
     if (schools.length === 0 && schoolsToRank.length > 0) {
       console.log('[S151-WC2] Post-scoring distance filter killed all results - falling back');
-      schools = scored.sort((a, b) => b.score - a.score).map(s => s.school);
+      // [S161-WC1-FIX-C] Add 150km distance cap to post-scoring fallback
+      schools = scored
+        .filter(s => !s.school.distanceKm || s.school.distanceKm <= 150)
+        .sort((a, b) => b.score - a.score)
+        .map(s => s.school);
     }
 
     // E26-S2: Composite sort - score primary, distance penalty secondary
