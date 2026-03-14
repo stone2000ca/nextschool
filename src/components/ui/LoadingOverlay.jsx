@@ -246,7 +246,7 @@ export default function LoadingOverlay({ visible = true, statusMessage = 'Findin
         </div>
 
         {/* Progress Steps */}
-        <div style={{ fontSize: '14px', color: '#555', textAlign: 'left', display: 'inline-block', width: '100%' }}>
+        <div style={{ fontSize: '14px', color: '#555', textAlign: 'left', display: 'inline-block', width: '100%', background: 'yellow' }}>
           {[
             { emoji: '📋', label: 'Analyzing your preferences', progress: 0 },
             { emoji: '👓', label: 'Matching with schools', progress: 1 },
