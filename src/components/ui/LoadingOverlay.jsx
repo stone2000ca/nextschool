@@ -54,7 +54,7 @@ const KEYFRAMES = `
   @keyframes dotOrbitCCW{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
   @keyframes iconPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.08)}}
   @keyframes iconLook{0%,100%{transform:rotate(0deg)}25%{transform:rotate(6deg)}75%{transform:rotate(-6deg)}}
-  @keyframes tealFlash{0%{opacity:0}40%{opacity:1}100%{opacity:1}}
+  @keyframes tealFlash{0%{opacity:0}30%{opacity:1}70%{opacity:1}100%{opacity:0}}
 `;
 
 
