@@ -378,7 +378,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                       <div style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>
                         ✓ Matches Your Priorities
                       </div>
-                      {MOCK_PREFERENCES.matches.map((item, i) => (
+                      {prefs.matches.map((item, i) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 6 }}>
                           <span style={{ marginTop: 1, flexShrink: 0 }}><CheckIcon /></span>
                           <div>
