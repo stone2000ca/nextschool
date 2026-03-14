@@ -1193,11 +1193,13 @@ export default function Consultant() {
     setActionPlan(null);
   }, [messages, isTyping, selectedSchool?.id]);
 
-  // E39-S4d: Rehydrate fitReEvaluation from persisted messages on session restore
+  // E39-S4d: Rehydrate fitReEvaluation from persisted messages on school switch
   useEffect(() => {
-    if (fitReEvaluation?.schoolId === selectedSchool?.id) return;
     if (isTyping) return;
-    if (!selectedSchool?.id || !messages.length) return;
+    if (!selectedSchool?.id || !messages.length) {
+      setFitReEvaluation(null);
+      return;
+    }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
       if (msg.role === 'assistant' && msg.fitReEvaluation && msg.fitReEvaluation.schoolId === selectedSchool.id) {
@@ -1207,7 +1209,7 @@ export default function Consultant() {
       }
     }
     setFitReEvaluation(null);
-  }, [messages, isTyping, selectedSchool?.id, fitReEvaluation]);
+  }, [messages, isTyping, selectedSchool?.id]);
 
   // E32-003: Action processor - executes UI actions from backend
   useEffect(() => {
