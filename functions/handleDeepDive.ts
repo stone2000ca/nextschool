@@ -235,9 +235,10 @@ const MERGED_RESPONSE_SCHEMA = {
             estimatedNetCost: { type: 'number' },
             budgetFit: { type: 'string' }
           }
-        }
+        },
+        aiInsight: { type: 'string', description: 'A 2-3 sentence summary insight about this school-family match, written in second person to the parent. Highlight the strongest alignment and the most important trade-off.' }
       },
-      required: ['fitLabel', 'fitScore', 'tradeOffs', 'dataGaps', 'visitQuestions', 'financialSummary']
+      required: ['fitLabel', 'fitScore', 'tradeOffs', 'dataGaps', 'visitQuestions', 'financialSummary', 'aiInsight']
     }
   },
   required: ['message', 'actions', 'schoolAnalysis']
