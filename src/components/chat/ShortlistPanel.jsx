@@ -4,7 +4,7 @@ import { X, Heart } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import SchoolDossierCard from '@/components/chat/SchoolDossierCard';
 
-export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool, familyProfile, schoolAnalyses, artifactCache, consultantName, onSendMessage, isPremiumUser, onDossierExpandChange, onConfirmDeepDive, pendingDeepDiveSchoolIds, autoExpandSchoolId, onClearAutoExpand }) {
+export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool, familyProfile, schoolAnalyses, artifactCache, consultantName, onSendMessage, isPremiumUser, onDossierExpandChange, onConfirmDeepDive, pendingDeepDiveSchoolIds, autoExpandSchoolId, onClearAutoExpand, schoolsWithDeepDive }) {
   const [expandedSchoolId, setExpandedSchoolId] = useState(null);
 
   // E30-012 + E30-013: Auto-expand school after deep dive
@@ -59,6 +59,7 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
                 pendingDeepDiveSchoolIds={pendingDeepDiveSchoolIds}
                 isExpanded={expandedSchoolId === school.id}
                 onToggleExpand={() => setExpandedSchoolId(prev => prev === school.id ? null : school.id)}
+                schoolsWithDeepDive={schoolsWithDeepDive}
               />
             ))}
           </div>

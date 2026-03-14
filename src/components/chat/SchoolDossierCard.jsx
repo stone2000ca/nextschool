@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { X, ExternalLink, ChevronDown, Lock, Sparkles, Loader2 } from 'lucide-react';
+import { X, ExternalLink, ChevronDown, Lock, Sparkles, Loader2, CheckCircle } from 'lucide-react';
 import { buildPriorityChecks } from '@/components/schools/SchoolCard';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -237,6 +237,7 @@ export default function SchoolDossierCard({
   onConfirmDeepDive, pendingDeepDiveSchoolIds,
   isExpanded: controlledExpanded,
   onToggleExpand,
+  schoolsWithDeepDive,
 }) {
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
@@ -373,18 +374,46 @@ export default function SchoolDossierCard({
             <Loader2 className="w-3 h-3 flex-shrink-0 animate-spin" />
             Analyzing {school.name}…
           </div>
-        ) : (
-          <button
-            onClick={handleAnalyzeCTA}
-            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded mt-2 transition-colors"
-            style={{ background: '#d97706', border: '1px solid #b45309', color: '#1c1000' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#b45309'}
-            onMouseLeave={e => e.currentTarget.style.background = '#d97706'}
-          >
-            <Sparkles className="w-3 h-3 flex-shrink-0" />
-            Deep Dive Analysis
-          </button>
-        )
+        ) : (() => {
+          const hasDeepDive = schoolsWithDeepDive?.has(school.id);
+          return (
+            <button
+              onClick={handleAnalyzeCTA}
+              className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded mt-2 transition-colors"
+              style={hasDeepDive ? {
+                background: '#0d9488',
+                border: '1px solid #0a7560',
+                color: '#fff'
+              } : {
+                background: 'transparent',
+                border: '1px solid #9ca3af',
+                color: '#6b7280'
+              }}
+              onMouseEnter={e => {
+                if (hasDeepDive) {
+                  e.currentTarget.style.background = '#0a7560';
+                } else {
+                  e.currentTarget.style.background = 'rgba(156,163,175,0.1)';
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = hasDeepDive ? '#0d9488' : 'transparent';
+              }}
+            >
+              {hasDeepDive ? (
+                <>
+                  <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                  View Deep Dive
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3 h-3 flex-shrink-0" />
+                  Deep Dive Analysis
+                </>
+              )}
+            </button>
+          );
+        })()
       )}
 
       {/* ── Expanded accordion sections ── */}
