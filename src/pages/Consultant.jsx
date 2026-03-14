@@ -1693,6 +1693,7 @@ export default function Consultant() {
               }}
               autoExpandSchoolId={autoExpandSchoolId}
               onClearAutoExpand={() => setAutoExpandSchoolId(null)}
+              schoolsWithDeepDive={schoolsWithDeepDive}
             />
           </div>
         )}
