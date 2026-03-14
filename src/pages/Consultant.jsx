@@ -1534,7 +1534,8 @@ export default function Consultant() {
                   lastDeepDiveAt={lastDeepDiveAt}
                   onRefreshDeepDive={handleRefreshDeepDive}
                   deepDiveAnalysis={deepDiveAnalysis}
-                 />
+                  selectedSchoolName={selectedSchool?.name || selectedSchool?.school_name}
+                  />
               );
             })()}
             <SchoolDetailPanel

@@ -376,7 +376,7 @@ function PremiumLockBadge() {
   );
 }
 
-export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive, deepDiveAnalysis }) {
+export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive, deepDiveAnalysis, selectedSchoolName }) {
   const school = schoolData || MOCK_SCHOOL;
   const score = fitScore ?? MOCK_FIT_SCORE;
   const label = fitLabel || 'STRONG MATCH';
@@ -480,6 +480,24 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
 
         {open && (
           <div style={{ position: 'relative', zIndex: 2 }}>
+
+            {/* Cross-school warning */}
+            {selectedSchoolName && school.name && selectedSchoolName !== school.name && deepDiveAnalysis && (
+              <div style={{
+                background: '#FFF3CD',
+                border: '1px solid #FFEEBA',
+                padding: '8px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                color: '#856404',
+                marginBottom: '8px',
+                marginLeft: '20px',
+                marginRight: '20px',
+                marginTop: '16px',
+              }}>
+                These findings are from a previous analysis. Tap View Full Analysis in chat to refresh.
+              </div>
+            )}
 
             {/* Journey Timeline */}
             <div style={{
