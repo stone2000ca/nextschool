@@ -390,8 +390,6 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
 
   return (
     <div style={{
-      maxWidth: 660,
-      margin: '0 auto',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     }}>
       <style>{`

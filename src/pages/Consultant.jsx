@@ -200,16 +200,12 @@ export default function Consultant() {
         const journey = journeys.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
         const schoolJourneys = await base44.entities.SchoolJourney.filter({ familyJourneyId: journey.id, schoolId: selectedSchool.id });
         const sj = schoolJourneys[0] || null;
-        const PHASE_ORDER = ['MATCH', 'EVALUATE', 'DECIDE'];
-        const pastMatch = journey.currentPhase && PHASE_ORDER.indexOf(journey.currentPhase) > PHASE_ORDER.indexOf('MATCH');
-        const sjStatus = sj?.status?.toUpperCase() || '';
         setJourneySteps([
-          { label: 'Discovery',   status: 'completed' },
-          { label: 'Matched',     status: pastMatch ? 'completed' : 'active' },
-          { label: 'Shortlisted', status: sj ? 'completed' : 'pending' },
-          { label: 'Toured',      status: ['VISITED', 'TOURING', 'DECIDED'].includes(sjStatus) ? 'completed' : 'pending' },
-          { label: 'Compared',    status: sj?.postVisitFitLabel ? 'completed' : 'pending' },
-          { label: 'Decided',     status: sjStatus === 'DECIDED' ? 'completed' : 'pending' },
+          { label: 'Match Found',  status: 'completed' },
+          { label: 'Deep Dive',    status: 'active' },
+          { label: 'Book Tour',    status: 'pending' },
+          { label: 'Debrief Tour', status: 'pending' },
+          { label: 'Apply',        status: 'pending' },
         ]);
       } catch { setJourneySteps(null); }
     })();
