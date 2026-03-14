@@ -376,7 +376,7 @@ function PremiumLockBadge() {
   );
 }
 
-export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive }) {
+export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive, deepDiveAnalysis }) {
   const school = schoolData || MOCK_SCHOOL;
   const score = fitScore ?? MOCK_FIT_SCORE;
   const label = fitLabel || 'STRONG MATCH';
@@ -469,9 +469,9 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
             }}>
               Deep Dive
             </span>
-            {lastDeepDiveAt && (
+            {(lastDeepDiveAt || deepDiveAnalysis) && (
               <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400, marginLeft: 8 }}>
-                Updated {timeAgo(lastDeepDiveAt)}
+                Updated {lastDeepDiveAt ? timeAgo(lastDeepDiveAt) : 'unknown'}
               </span>
             )}
           </div>

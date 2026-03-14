@@ -958,6 +958,7 @@ export default function Consultant() {
   };
 
   const lastDeepDiveAt = useMemo(() => {
+    if (deepDiveAnalysis?.generatedAt) return deepDiveAnalysis.generatedAt;
     if (!selectedSchool?.id || !messages.length) return null;
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
@@ -966,7 +967,7 @@ export default function Consultant() {
       }
     }
     return null;
-  }, [messages, selectedSchool?.id]);
+  }, [messages, selectedSchool?.id, deepDiveAnalysis]);
 
   const handleRefreshDeepDive = () => {
     if (!selectedSchool) return;
@@ -1508,30 +1509,31 @@ export default function Consultant() {
               ] : null;
               return (
                 <ResearchNotepad
-                   schoolData={{
-                     name: selectedSchool.name || selectedSchool.schoolName || 'Unknown School',
-                     location: `${selectedSchool.city || ''}, ${selectedSchool.provinceState || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
-                     grades: selectedSchool.gradesServed || `${selectedSchool.lowestGrade || 'K'}-${selectedSchool.highestGrade || '12'}`,
-                     type: selectedSchool.genderPolicy || selectedSchool.schoolType || '',
-                     students: selectedSchool.enrollment || 0,
-                     teacherRatio: selectedSchool.studentTeacherRatio || '',
-                     tuition: selectedSchool.tuitionDomesticDay ? `$${Number(selectedSchool.tuitionDomesticDay).toLocaleString()}` : 'Contact school',
-                   }}
-                   fitScore={deepDiveAnalysis.fitScore}
-                   fitLabel={deepDiveAnalysis.fitLabel}
-                   tradeOffs={deepDiveAnalysis.tradeOffs}
-                   aiInsight={deepDiveAnalysis.aiInsight}
-                   chatBubbles={null}
-                   preferences={null}
-                   journeySteps={journeySteps}
-                   keyDates={keyDates}
-                   visitPrepKit={visitPrepKit}
-                   contactLog={contactLog}
-                   researchNotes={researchNotes}
-                   onNotesChange={setResearchNotes}
-                   onSaveNotes={handleSaveNotes}
-                   lastDeepDiveAt={lastDeepDiveAt}
-                   onRefreshDeepDive={handleRefreshDeepDive}
+                  schoolData={{
+                    name: selectedSchool.name || selectedSchool.schoolName || 'Unknown School',
+                    location: `${selectedSchool.city || ''}, ${selectedSchool.provinceState || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
+                    grades: selectedSchool.gradesServed || `${selectedSchool.lowestGrade || 'K'}-${selectedSchool.highestGrade || '12'}`,
+                    type: selectedSchool.genderPolicy || selectedSchool.schoolType || '',
+                    students: selectedSchool.enrollment || 0,
+                    teacherRatio: selectedSchool.studentTeacherRatio || '',
+                    tuition: selectedSchool.tuitionDomesticDay ? `$${Number(selectedSchool.tuitionDomesticDay).toLocaleString()}` : 'Contact school',
+                  }}
+                  fitScore={deepDiveAnalysis.fitScore}
+                  fitLabel={deepDiveAnalysis.fitLabel}
+                  tradeOffs={deepDiveAnalysis.tradeOffs}
+                  aiInsight={deepDiveAnalysis.aiInsight}
+                  chatBubbles={null}
+                  preferences={null}
+                  journeySteps={journeySteps}
+                  keyDates={keyDates}
+                  visitPrepKit={visitPrepKit}
+                  contactLog={contactLog}
+                  researchNotes={researchNotes}
+                  onNotesChange={setResearchNotes}
+                  onSaveNotes={handleSaveNotes}
+                  lastDeepDiveAt={lastDeepDiveAt}
+                  onRefreshDeepDive={handleRefreshDeepDive}
+                  deepDiveAnalysis={deepDiveAnalysis}
                  />
               );
             })()}
