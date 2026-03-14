@@ -60,9 +60,8 @@ const DOT_CONFIG = [
   { radius: 80, duration: 7, direction: 'CW', delayOffset: -2.3 },
 ];
 
-const [flashActive, setFlashActive] = useState(false);
-
 export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
+  const [flashActive, setFlashActive] = useState(false);
   const [step, setStep] = useState(0);
   const [factIdx, setFactIdx] = useState(() => Math.floor(Math.random() * FACTS.length));
   const [factVisible, setFactVisible] = useState(true);
