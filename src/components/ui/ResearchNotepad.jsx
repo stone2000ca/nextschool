@@ -165,7 +165,15 @@ function CollapsibleSection({ icon, label, color, children, defaultOpen = false 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function ResearchNotepad({ loading = false, school = MOCK_SCHOOL }) {
+export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, schoolStats }) {
+  const school = schoolData || MOCK_SCHOOL;
+  const score = fitScore ?? MOCK_FIT_SCORE;
+  const label = fitLabel || 'STRONG MATCH';
+  const bubbles = chatBubbles || MOCK_CHAT_BUBBLES;
+  const prefs = preferences || MOCK_PREFERENCES;
+  const insight = aiInsight || MOCK_AI_INSIGHT;
+  const journey = journeySteps || MOCK_JOURNEY;
+  const stats = schoolStats || { students: school.students, teacherRatio: school.teacherRatio, tuition: school.tuition };
   const [open, setOpen] = useState(true);
   const [deepDiveOpen, setDeepDiveOpen] = useState(true);
   const [notes, setNotes] = useState('');
