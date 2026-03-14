@@ -564,7 +564,7 @@ Generate the DEEPDIVE card for this family-school match.`;
           if (parsed.schoolAnalysis) {
             deepDiveAnalysis = parsed.schoolAnalysis;
           } else {
-            deepDiveAnalysis = { fitLabel: 'worth_exploring', fitScore: 50, tradeOffs: [], dataGaps: [], visitQuestions: [], financialSummary: null };
+            deepDiveAnalysis = { fitLabel: 'worth_exploring', fitScore: 50, tradeOffs: [], dataGaps: [], visitQuestions: [], financialSummary: null, aiInsight: '' };
           }
         }
       } catch (openrouterError) {
