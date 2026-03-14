@@ -396,7 +396,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                       <div style={{ fontSize: 10, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>
                         ⚑ Things to Consider
                       </div>
-                      {MOCK_PREFERENCES.flags.map((item, i) => (
+                      {prefs.flags.map((item, i) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 6 }}>
                           <span style={{ marginTop: 1, flexShrink: 0 }}><FlagIcon /></span>
                           <div>
