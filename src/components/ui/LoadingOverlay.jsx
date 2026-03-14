@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+
 const MIN_LOADER_MS = 3000;
 const TIMEOUT_MS = 30000;
+
 const STEPS = [
   { label: 'Analyzing preferences', icon: '🔍' },
   { label: 'Matching with schools', icon: '🏫' },
-  { label: 'Ranking top picks', icon: '⭐' },
+  { label: 'Ranking top picks',    icon: '⭐' },
 ];
+
 const FACTS = [
   "Private school students average 8 more library visits per year.",
   "Small class sizes are linked to stronger critical thinking skills.",
@@ -28,9 +31,11 @@ const FACTS = [
   "Schools with dedicated advisors see 30% fewer mid-year transfers.",
   "Music education strengthens mathematical reasoning in young learners.",
 ];
+
 const TEAL = '#18968a';
 const GOLD = '#d4a017';
 const BG = '#f8f9fb';
+
 const spin = (name, dir) => `@keyframes ${name}{to{transform:translate(-50%,-50%) rotate(${dir}360deg)}}`;
 const KEYFRAMES = `
   ${spin('arcCW','')}
@@ -38,18 +43,17 @@ const KEYFRAMES = `
   @keyframes dotPulse{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.4);opacity:1}}
   @keyframes fillBar{from{width:0%}to{width:100%}}
   @keyframes badgePulse{0%,100%{opacity:.85}50%{opacity:1}}
-  @keyframes dotOrbitCW{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-  @keyframes dotOrbitCCW{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
-  @keyframes iconPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.08)}}
-  @keyframes iconLook{0%,100%{transform:rotate(0deg)}25%{transform:rotate(6deg)}75%{transform:rotate(-6deg)}}
 `;
+
 const DOT_CONFIG = [
-  { radius: 50, duration: 8, direction: 'CW', startAngle: 0 },
-  { radius: 50, duration: 8, direction: 'CW', startAngle: 180 },
-  { radius: 65, duration: 10, direction: 'CCW', startAngle: 60 },
-  { radius: 65, duration: 10, direction: 'CCW', startAngle: 240 },
-  { radius: 80, duration: 7, direction: 'CW', startAngle: 120 },
+  { radius: 50, duration: 8, direction: 'CW', delayOffset: 0 },
+  { radius: 50, duration: 8, direction: 'CW', delayOffset: -4 },
+  { radius: 65, duration: 10, direction: 'CCW', delayOffset: -1.7 },
+  { radius: 65, duration: 10, direction: 'CCW', delayOffset: -6.7 },
+  { radius: 80, duration: 7, direction: 'CW', delayOffset: -2.3 },
 ];
+
+
 export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
   const [step, setStep] = useState(0);
   const [factIdx, setFactIdx] = useState(() => Math.floor(Math.random() * FACTS.length));
@@ -59,8 +63,10 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
   const minReady = useRef(false);
   const pending = useRef(false);
   const wasVisible = useRef(false);
+
   const clear = useCallback(() => { timers.current.forEach(clearTimeout); timers.current = []; }, []);
   const t = useCallback((fn, ms) => { const id = setTimeout(fn, ms); timers.current.push(id); return id; }, []);
+
   useEffect(() => {
     if (!isVisible) {
       if (wasVisible.current) {
@@ -74,6 +80,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
     minReady.current = false;
     setStep(0); setTimedOut(false); setFactVisible(true);
     setFactIdx(Math.floor(Math.random() * FACTS.length));
+
     t(() => setStep(1), 2000);
     t(() => setStep(2), 4000);
     t(() => {
@@ -81,16 +88,21 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
       if (pending.current) { pending.current = false; onTransitionComplete?.(); }
     }, MIN_LOADER_MS);
     t(() => setTimedOut(true), TIMEOUT_MS);
+
     const factInterval = setInterval(() => {
       setFactVisible(false);
       setTimeout(() => { setFactIdx(i => (i + 1) % FACTS.length); setFactVisible(true); }, 400);
     }, 4000);
     timers.current.push(factInterval);
+
     return clear;
   }, [isVisible, onTransitionComplete, t, clear]);
+
   useEffect(() => clear, [clear]);
+
   if (!isVisible && !wasVisible.current) return null;
   if (!isVisible) return null;
+
   if (timedOut) {
     return (
       <div style={{position:'fixed',inset:0,zIndex:10000,background:BG,display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -103,30 +115,29 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
       </div>
     );
   }
+
   return (
     <div style={{position:'fixed',inset:0,zIndex:10000,background:BG,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column'}}>
       <style>{KEYFRAMES}</style>
       <div style={{textAlign:'center',maxWidth:420,width:'100%',padding:'0 20px'}}>
         {/* Status Badge */}
         <div style={{display:'inline-block',background:`rgba(24,150,138,0.1)`,border:`1px solid rgba(24,150,138,0.25)`,padding:'6px 18px',borderRadius:20,fontSize:13,color:TEAL,fontWeight:500,animation:'badgePulse 2s ease-in-out infinite',marginBottom:28}}>Finding Your Matches...</div>
+
         {/* Orbit */}
         <div style={{position:'relative',width:160,height:160,margin:'0 auto 28px'}}>
           {[100,130,160].map(d=>(<div key={d} style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:d,height:d,borderRadius:'50%',border:`1px solid rgba(24,150,138,0.3)`}}/>))}
           <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:130,height:130,borderRadius:'50%',borderTop:`2.5px solid ${TEAL}`,borderRight:`2.5px solid ${TEAL}`,borderBottom:'2.5px solid transparent',borderLeft:'2.5px solid transparent',animation:'arcCW 3s linear infinite'}}/>
           <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:160,height:160,borderRadius:'50%',borderTop:`2.5px solid ${TEAL}`,borderRight:`2.5px solid ${TEAL}`,borderBottom:'2.5px solid transparent',borderLeft:'2.5px solid transparent',animation:'arcCCW 4.5s linear infinite'}}/>
-          {/* Center icon with pulsate */}
-          <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:52,height:52,borderRadius:'50%',background:'#fff',boxShadow:'0 2px 12px rgba(0,0,0,0.08)',display:'flex',alignItems:'center',justifyContent:'center',animation:'iconPulse 3s ease-in-out infinite'}}>
-            <div style={{animation:'iconLook 5s ease-in-out infinite',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.54 38.56" width="32" height="32"><path fill={TEAL} d="M20.21,0h-11.7L0,8.48l7,10.78L0,30.05l8.52,8.52h12.76l19.26-19.3L21.28,0h-1.06ZM37.53,19.27l-16.26,16.29-.09-.09-5.7-5.7,6.06-9.34.75-1.16-.75-1.16-6.06-9.34,5.79-5.76.58.58,15.68,15.68Z"/><polygon fill="#fff" points="15.48 8.77 21.54 18.11 22.29 19.26 21.54 20.42 15.48 29.76 21.18 35.46 21.28 35.56 37.53 19.27 21.85 3.59 21.27 3.01 15.48 8.77"/></svg>
-            </div>
+          <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:52,height:52,borderRadius:'50%',background:'#fff',boxShadow:'0 2px 12px rgba(0,0,0,0.08)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.54 38.56" width="32" height="32"><path fill={TEAL} d="M20.21,0h-11.7L0,8.48l7,10.78L0,30.05l8.52,8.52h12.76l19.26-19.3L21.28,0h-1.06ZM37.53,19.27l-16.26,16.29-.09-.09-5.7-5.7,6.06-9.34.75-1.16-.75-1.16-6.06-9.34,5.79-5.76.58.58,15.68,15.68Z"/><polygon fill="#fff" points="15.48 8.77 21.54 18.11 22.29 19.26 21.54 20.42 15.48 29.76 21.18 35.46 21.28 35.56 37.53 19.27 21.85 3.59 21.27 3.01 15.48 8.77"/></svg>
           </div>
-          {/* Orbiting dots */}
           {DOT_CONFIG.map((d,i)=>(
-            <div key={i} style={{position:'absolute',top:'50%',left:'50%',width:0,height:0,animation:`dotOrbit${d.direction} ${d.duration}s linear infinite`,animationDelay:`${i * -1.5}s`,transform:`rotate(${d.startAngle}deg)`}}>
+            <div key={i} style={{position:'absolute',top:'50%',left:'50%',width:0,height:0,animation:`dotOrbit${d.direction} ${d.duration}s linear infinite`,animationDelay:`${d.delayOffset}s`}}>
               <div style={{position:'absolute',top:0,left:0,width:8,height:8,borderRadius:'50%',background:GOLD,transform:`translateX(${d.radius}px) translateY(-4px)`,animation:`dotPulse 2s ease-in-out infinite`,animationDelay:`${i*0.4}s`}}/>
             </div>
           ))}
         </div>
+
         {/* Progress Steps */}
         <div style={{textAlign:'left',marginBottom:24}}>
           {STEPS.map((s,i)=>(
@@ -139,6 +150,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
             </div>
           ))}
         </div>
+
         {/* Fun Facts */}
         <div style={{background:'rgba(51,65,85,0.04)',border:'1px solid rgba(24,150,138,0.15)',borderRadius:8,padding:16,minHeight:60,display:'flex',alignItems:'center',justifyContent:'center'}}>
           <div style={{textAlign:'center',opacity:factVisible?1:0,transform:factVisible?'translateY(0)':'translateY(8px)',transition:'opacity 0.4s, transform 0.4s'}}>
