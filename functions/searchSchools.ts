@@ -60,14 +60,23 @@ function applyGenderFilter(school, familyProfile) {
   const gp = school.genderPolicy || null;
   if (gp === null) return true;
   
-  // F8 FIX: also check gender fallback field (set from lightweightExtract)
-  const childGender = familyProfile?.childGender || familyProfile?.gender || null;
+  // Fix A: Normalize childGender to canonical 'male' or 'female'
+  const rawGender = (familyProfile?.childGender || familyProfile?.gender || '').toLowerCase().trim();
+  const MALE_TERMS = ['male', 'boy', 'son', 'm', 'he', 'him'];
+  const FEMALE_TERMS = ['female', 'girl', 'daughter', 'f', 'she', 'her'];
+  const childGender = MALE_TERMS.includes(rawGender) ? 'male' : FEMALE_TERMS.includes(rawGender) ? 'female' : null;
+  
   const gpLower = gp.toLowerCase();
-  if (childGender === 'male' && (gpLower === 'all-girls' || gpLower === 'girls only')) {
+  
+  // Fix B: Expand genderPolicy matching with arrays
+  const isGirlsSchool = ['all-girls', 'girls only', 'girls', 'female only', 'all girls'].includes(gpLower);
+  const isBoysSchool = ['all-boys', 'boys only', 'boys', 'male only', 'all boys'].includes(gpLower);
+  
+  if (childGender === 'male' && isGirlsSchool) {
     console.log(`[GENDER] Excluded (childGender=male) ${school.name}: genderPolicy="${gp}"`);
     return false;
   }
-  if (childGender === 'female' && (gpLower === 'all-boys' || gpLower === 'boys only')) {
+  if (childGender === 'female' && isBoysSchool) {
     console.log(`[GENDER] Excluded (childGender=female) ${school.name}: genderPolicy="${gp}"`);
     return false;
   }
