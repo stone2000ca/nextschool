@@ -1155,6 +1155,51 @@ export default function Consultant() {
     }
   }, [messages, isTyping, selectedSchool?.id, deepDiveAnalysis]);
 
+  // E39-S4b: Rehydrate visitPrepKit from persisted messages on session restore
+  useEffect(() => {
+    if (visitPrepKit?.schoolId === selectedSchool?.id) return;
+    if (isTyping) return;
+    if (!selectedSchool?.id || !messages.length) return;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.role === 'assistant' && msg.visitPrepKit && msg.visitPrepKit.schoolId === selectedSchool.id) {
+        console.log('[E39-S4b] Rehydrating visitPrepKit from message', i);
+        setVisitPrepKit(msg.visitPrepKit);
+        return;
+      }
+    }
+  }, [messages, isTyping, selectedSchool?.id, visitPrepKit]);
+
+  // E39-S4c: Rehydrate actionPlan from persisted messages on session restore
+  useEffect(() => {
+    if (actionPlan?.schoolId === selectedSchool?.id) return;
+    if (isTyping) return;
+    if (!selectedSchool?.id || !messages.length) return;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.role === 'assistant' && msg.actionPlan && msg.actionPlan.schoolId === selectedSchool.id) {
+        console.log('[E39-S4c] Rehydrating actionPlan from message', i);
+        setActionPlan(msg.actionPlan);
+        return;
+      }
+    }
+  }, [messages, isTyping, selectedSchool?.id, actionPlan]);
+
+  // E39-S4d: Rehydrate fitReEvaluation from persisted messages on session restore
+  useEffect(() => {
+    if (fitReEvaluation?.schoolId === selectedSchool?.id) return;
+    if (isTyping) return;
+    if (!selectedSchool?.id || !messages.length) return;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.role === 'assistant' && msg.fitReEvaluation && msg.fitReEvaluation.schoolId === selectedSchool.id) {
+        console.log('[E39-S4d] Rehydrating fitReEvaluation from message', i);
+        setFitReEvaluation(msg.fitReEvaluation);
+        return;
+      }
+    }
+  }, [messages, isTyping, selectedSchool?.id, fitReEvaluation]);
+
   // E32-003: Action processor - executes UI actions from backend
   useEffect(() => {
     if (isTyping) return;
