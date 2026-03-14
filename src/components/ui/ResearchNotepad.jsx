@@ -482,20 +482,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
 
             {/* ── Key Dates ─────────────────────────────────────── */}
             <CollapsibleSection icon={<CalendarIcon />} label="Key Dates" color="#ef4444">
-              <div style={{ fontSize: 12.5, color: '#5a4030', lineHeight: 1.6 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f5edd4' }}>
-                  <span style={{ fontWeight: 600 }}>Open House</span>
-                  <span style={{ color: '#a89060' }}>Nov 14, 2025</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f5edd4' }}>
-                  <span style={{ fontWeight: 600 }}>Application Deadline</span>
-                  <span style={{ color: '#a89060' }}>Jan 15, 2026</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
-                  <span style={{ fontWeight: 600 }}>Entry Year</span>
-                  <span style={{ color: '#a89060' }}>Sept 2026</span>
-                </div>
-              </div>
+              <KeyDatesContent keyDates={keyDates} />
             </CollapsibleSection>
 
             {/* ── Visit Prep Kit ────────────────────────────────── */}
