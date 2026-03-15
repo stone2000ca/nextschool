@@ -320,8 +320,6 @@ export default function Consultant() {
     user, setUser, isAuthenticated, schools, currentState,
     selectedConsultant, familyProfile, setMessages, trackEvent, setShowLoginGate, base44,
     onConfirmDeepDive: (school) => handleConfirmDeepDive(school),
-    currentConversation,
-    activeJourney,
   });
 
   // Whether the Family Brief toggle should be visible
@@ -373,7 +371,21 @@ export default function Consultant() {
   const briefConfirmTimeRef = useRef(null);
 
   // E37: Show loading overlay when brief confirmed and consultant is typing
-  const showLoadingOverlay = briefStatus === 'confirmed' && isTyping;
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
+
+  // P0 hotfix: Drive overlay via state, not derived from isTyping
+  useEffect(() => {
+    if (briefStatus === 'confirmed') {
+      setShowLoadingOverlay(true);
+    }
+  }, [briefStatus]);
+
+  // Enforce minimum 5-second display for loading overlay
+  useEffect(() => {
+    if (showLoadingOverlay && !briefConfirmTimeRef.current) {
+      briefConfirmTimeRef.current = Date.now();
+    }
+  }, [showLoadingOverlay]);
 
 
 
@@ -613,7 +625,7 @@ export default function Consultant() {
         setIsPremium(false);
         }
         await loadConversations(userData.id);
-        await loadShortlist();
+        await loadShortlist(userData);
       } else {
         // For guest users, check localStorage for balance
         const guestBalance = parseInt(localStorage.getItem('guestTokenBalance') || '100');
@@ -757,6 +769,7 @@ export default function Consultant() {
     setContactLog([]);
     setHydrationSource(null);
     setSchoolsAnimKey(0);
+    setShowLoadingOverlay(false);
     setCurrentView('chat');
   };
 
@@ -1146,7 +1159,7 @@ export default function Consultant() {
       return next;
     });
     const DOSSIER_AUTO_OPEN_DELAY_MS = 800;
-    const alreadyShortlisted = shortlistData.some(s => s.id === schoolId);
+    const alreadyShortlisted = (user?.shortlist || []).includes(schoolId);
     const wasRemoved = (removedSchoolIds || []).includes(schoolId);
     if (!alreadyShortlisted && !wasRemoved) {
       handleToggleShortlist(schoolId, { silent: true });
@@ -1272,7 +1285,7 @@ export default function Consultant() {
       const executeAction = () => {
         switch (action.type) {
           case 'ADD_TO_SHORTLIST': {
-            const alreadyShortlisted = shortlistData.some(s => s.id === action.payload.schoolId);
+            const alreadyShortlisted = (user?.shortlist || []).includes(action.payload.schoolId);
             const wasRemoved = (removedSchoolIds || []).includes(action.payload.schoolId);
             const alreadyHandledByDeepDive = lastMsg.deepDiveAnalysis?.schoolId === action.payload.schoolId;
             if (!alreadyShortlisted && !wasRemoved && !alreadyHandledByDeepDive) {
@@ -1380,7 +1393,7 @@ export default function Consultant() {
       {/* E37: Loading overlay on brief confirmation with 5-second minimum */}
       <LoadingOverlay 
         isVisible={showLoadingOverlay}
-        onTransitionComplete={() => { setBriefStatus(null); setIsTransitioning(true); }}
+        onTransitionComplete={() => { setShowLoadingOverlay(false); setBriefStatus(null); setIsTransitioning(true); }}
       />
 
       {(isIntakePhase && !showSchoolGrid) ? (
@@ -1449,7 +1462,7 @@ export default function Consultant() {
              <AddSchoolPanel
                onClose={() => setActivePanel(null)}
                onToggleShortlist={handleToggleShortlist}
-               shortlistedIds={shortlistData.map(s => s.id)}
+               shortlistedIds={user?.shortlist || []}
                base44={base44}
              />
            )}
@@ -1588,7 +1601,7 @@ export default function Consultant() {
                 setCurrentView('schools');
               }}
               onToggleShortlist={handleToggleShortlist}
-              isShortlisted={shortlistData.some(s => s.id === selectedSchool.id)}
+              isShortlisted={user?.shortlist?.includes(selectedSchool.id) || false}
               onCompare={(school) => handleOpenComparison([school])}
               actionPlan={actionPlan}
               visitPrepKit={visitPrepKit}
@@ -1646,7 +1659,7 @@ export default function Consultant() {
                 tieredSchools={buildTiers(filteredSchools, familyProfile, priorityOverrides)}
                 onViewDetails={handleViewSchoolDetail}
                 onToggleShortlist={handleToggleShortlist}
-                shortlistedIds={shortlistData.map(s => s.id)}
+                shortlistedIds={user?.shortlist || []}
                 shortlistedSchools={shortlistData}
                 showDistances={showDistances}
                 isLoading={isTyping && schools.length === 0}
@@ -1697,7 +1710,7 @@ export default function Consultant() {
             <AddSchoolPanel
               onClose={() => setActivePanel(null)}
               onToggleShortlist={handleToggleShortlist}
-              shortlistedIds={shortlistData.map(s => s.id)}
+              shortlistedIds={user?.shortlist || []}
               base44={base44}
             />
           </div>
