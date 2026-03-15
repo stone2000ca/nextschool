@@ -1287,7 +1287,7 @@ export default function Consultant() {
       const executeAction = () => {
         switch (action.type) {
           case 'ADD_TO_SHORTLIST': {
-            const alreadyShortlisted = (user?.shortlist || []).includes(action.payload.schoolId);
+            const alreadyShortlisted = shortlistData.some(s => s.id === action.payload.schoolId);
             const wasRemoved = (removedSchoolIds || []).includes(action.payload.schoolId);
             const alreadyHandledByDeepDive = lastMsg.deepDiveAnalysis?.schoolId === action.payload.schoolId;
             if (!alreadyShortlisted && !wasRemoved && !alreadyHandledByDeepDive) {
