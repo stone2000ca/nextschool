@@ -57,6 +57,7 @@ export const useMessageHandler = ({
     // CRT-S109-F15: Message queue to prevent message loss during rapid input
     let isProcessing = false;
     const messageQueue = [];
+    let lastResolvedSchoolId = null;
     
     const processQueuedMessages = async () => {
       while (messageQueue.length > 0 && !isProcessing) {
@@ -161,13 +162,15 @@ export const useMessageHandler = ({
     // CRT-S109-F16: Detect school switch from natural language
     let resolvedSchoolId = explicitSchoolId;
     if (!resolvedSchoolId && schools?.length) {
+          const currentSchoolId = selectedSchool?.id || lastResolvedSchoolId;
       const msgLower = messageText.toLowerCase();
       const matchedSchool = schools
-        .filter(s => s.id !== selectedSchool?.id && s.name)
+            .filter(s => s.id !== currentSchoolId && s.name)
         .sort((a, b) => b.name.length - a.name.length)
         .find(s => msgLower.includes(s.name.toLowerCase()));
       if (matchedSchool) { resolvedSchoolId = matchedSchool.id; }
     }
+    if (resolvedSchoolId && resolvedSchoolId !== explicitSchoolId) { lastResolvedSchoolId = resolvedSchoolId; }
       // Call orchestrateConversation with current schools context and user location
       const response = await base44.functions.invoke('orchestrateConversation', {
         message: messageText,
@@ -183,7 +186,7 @@ export const useMessageHandler = ({
           lng: userLocation.lng,
           address: userLocation.address
         } : null,
-        selectedSchoolId: resolvedSchoolId || selectedSchool?.id || null,
+            selectedSchoolId: resolvedSchoolId || lastResolvedSchoolId || selectedSchool?.id || null,
         conversationId: currentConversation?.id || null,
         returningUserContext,
         ...(restoredSessionData && activeJourney ? { journeyContext: activeJourney } : {})
