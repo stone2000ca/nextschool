@@ -146,6 +146,7 @@ export default function Consultant() {
 
   // BRIEF→RESULTS transition animation
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showTealFlash, setShowTealFlash] = useState(false);
   const prevIsIntakePhaseRef = useRef(true);
 
   // T-RES-006: Priority overrides { [rowId]: 'musthave' | 'nicetohave' | 'dontcare' }
