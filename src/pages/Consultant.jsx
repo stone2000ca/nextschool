@@ -627,7 +627,7 @@ export default function Consultant() {
         setIsPremium(false);
         }
         await loadConversations(userData.id);
-        await loadShortlist(userData);
+        await loadShortlist();
       } else {
         // For guest users, check localStorage for balance
         const guestBalance = parseInt(localStorage.getItem('guestTokenBalance') || '100');
