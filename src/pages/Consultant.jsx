@@ -520,8 +520,6 @@ export default function Consultant() {
     return 10;
   };
 
-  useSEOAndReminders({ sessionId, checkAuth });
-
   const checkAuth = async () => {
     try {
       const authenticated = await base44.auth.isAuthenticated();
