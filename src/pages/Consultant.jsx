@@ -412,9 +412,10 @@ export default function Consultant() {
     const wasIntake = prevIsIntakePhaseRef.current;
     prevIsIntakePhaseRef.current = isIntakePhase;
     if (wasIntake && !isIntakePhase) {
-      // Just switched from intake → results: trigger animation
       setIsTransitioning(true);
+      setShowTealFlash(true);
       setTimeout(() => setIsTransitioning(false), 600);
+      setTimeout(() => setShowTealFlash(false), 700);
     }
   }, [isIntakePhase]);
 
