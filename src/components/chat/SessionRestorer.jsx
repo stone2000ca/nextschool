@@ -182,10 +182,7 @@ export async function restoreSessionFromParam(
       });
     }
 
-    // Load shortlist from user if authenticated
-    if (isAuthenticated && user) {
-      await loadShortlist(user);
-    }
+
 
     // Add welcome-back message
     const childName = chatSession.childName || 'your child';
