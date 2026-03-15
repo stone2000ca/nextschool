@@ -14,8 +14,6 @@ export default function Dashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState([]);
-  const [shortlistedSchools, setShortlistedSchools] = useState([]);
-  const [sessionMap, setSessionMap] = useState({});
   const [error, setError] = useState(null);
   const [showNewSearchModal, setShowNewSearchModal] = useState(false);
   const [showArchiveChoiceModal, setShowArchiveChoiceModal] = useState(false);
@@ -65,54 +63,11 @@ export default function Dashboard() {
       );
       
       setSessions(sorted);
-
-      // WC7: Load shortlisted schools and build session map
-      if (userData.shortlist && userData.shortlist.length > 0) {
-        try {
-          // Build map of school ID -> session name for later cross-reference
-          const map = {};
-          for (const session of sorted) {
-            if (session.matchedSchools) {
-              try {
-                const matchedIds = JSON.parse(session.matchedSchools);
-                for (const schoolId of matchedIds) {
-                  if (!map[schoolId]) {
-                    map[schoolId] = session.profileName || 'Unnamed Profile';
-                  }
-                }
-              } catch (e) {
-                console.error('Failed to parse matchedSchools:', e);
-              }
-            }
-          }
-          setSessionMap(map);
-
-          // Fetch school data for shortlisted IDs
-          const schools = await base44.entities.School.filter({
-            id: { $in: userData.shortlist }
-          });
-          setShortlistedSchools(schools);
-        } catch (err) {
-          console.error('Failed to load shortlisted schools:', err);
-        }
-      }
     } catch (err) {
       console.error('Failed to load dashboard:', err);
       setError('Failed to load your sessions. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleRemoveFromShortlist = async (schoolId) => {
-    if (!user) return;
-    try {
-      const updated = (user.shortlist || []).filter(id => id !== schoolId);
-      await base44.auth.updateMe({ shortlist: updated });
-      setUser({ ...user, shortlist: updated });
-      setShortlistedSchools(shortlistedSchools.filter(s => s.id !== schoolId));
-    } catch (err) {
-      console.error('Failed to remove school from shortlist:', err);
     }
   };
 
@@ -482,44 +437,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* WC7: Global Shortlist Section */}
-            {!showArchivedTab && (
-            <div className="mt-12 pt-8 border-t border-white/10">
-              <h2 className="text-xl font-semibold text-white mb-6">Your Shortlisted Schools</h2>
-              {shortlistedSchools.length === 0 ? (
-                <div className="bg-[#2A2A3D] rounded-lg p-8 border border-white/10 text-center">
-                  <div className="text-4xl mb-3">📚</div>
-                  <p className="text-white/60">Schools you shortlist during your search will appear here.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {shortlistedSchools.map((school) => (
-                    <div
-                      key={school.id}
-                      className="bg-[#2A2A3D] rounded-lg p-4 border border-white/10 hover:border-white/20 transition-colors flex items-center justify-between"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-white">{school.name}</h3>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-white/60">
-                          <span>{school.city || 'Location TBA'}</span>
-                          {sessionMap[school.id] && (
-                            <span className="text-teal-400">Added in: {sessionMap[school.id]}</span>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveFromShortlist(school.id)}
-                        className="p-2 hover:bg-red-500/20 rounded-lg transition-colors flex-shrink-0 ml-4"
-                        title="Remove from shortlist"
-                      >
-                        <X className="w-5 h-5 text-white/60 hover:text-red-400" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            )}
           </div>
         )}
         </div>
@@ -588,7 +505,7 @@ export default function Dashboard() {
                       }
                     })()}
                   </strong>{' '}
-                  matched schools and <strong>{sessions[0].shortlistedCount || 0}</strong> shortlisted schools. Your global shortlist will be preserved.
+                  matched schools.
                 </p>
               </div>
             </div>
