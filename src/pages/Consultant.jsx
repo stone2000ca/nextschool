@@ -320,6 +320,8 @@ export default function Consultant() {
     user, setUser, isAuthenticated, schools, currentState,
     selectedConsultant, familyProfile, setMessages, trackEvent, setShowLoginGate, base44,
     onConfirmDeepDive: (school) => handleConfirmDeepDive(school),
+    currentConversation,
+    activeJourney,
   });
 
   // Whether the Family Brief toggle should be visible
