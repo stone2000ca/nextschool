@@ -1661,7 +1661,7 @@ export default function Consultant() {
                 tieredSchools={buildTiers(filteredSchools, familyProfile, priorityOverrides)}
                 onViewDetails={handleViewSchoolDetail}
                 onToggleShortlist={handleToggleShortlist}
-                shortlistedIds={user?.shortlist || []}
+                shortlistedIds={shortlistData.map(s => s.id)}
                 shortlistedSchools={shortlistData}
                 showDistances={showDistances}
                 isLoading={isTyping && schools.length === 0}
