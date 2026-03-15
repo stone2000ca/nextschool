@@ -110,7 +110,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
           nextAction: journey.nextAction,
           lastSessionSummary: journey.lastSessionSummary,
           consultantId: journey.consultantId,
-          isResuming: false,
+          isResuming: true, // S169-WC1: E29-RESUMPTION-FIX
           schoolsSummary: schoolJourneys.map(sj => ({
             schoolId: sj.schoolId,
             schoolName: sj.schoolName,
