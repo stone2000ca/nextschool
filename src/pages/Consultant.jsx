@@ -1712,7 +1712,7 @@ export default function Consultant() {
             <AddSchoolPanel
               onClose={() => setActivePanel(null)}
               onToggleShortlist={handleToggleShortlist}
-              shortlistedIds={user?.shortlist || []}
+              shortlistedIds={shortlistData.map(s => s.id)}
               base44={base44}
             />
           </div>
