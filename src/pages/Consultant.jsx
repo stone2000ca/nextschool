@@ -1401,6 +1401,12 @@ export default function Consultant() {
         isVisible={showLoadingOverlay}
         onTransitionComplete={() => { setShowLoadingOverlay(false); setBriefStatus(null); setIsTransitioning(true); }}
       />
+      {showTealFlash && (
+        <>
+          <style>{`@keyframes tealFlash{0%{opacity:0}30%{opacity:1}70%{opacity:1}100%{opacity:0}}`}</style>
+          <div style={{position:'fixed',inset:0,zIndex:9999,background:'#18968a',pointerEvents:'none',animation:'tealFlash 700ms ease-out forwards'}} />
+        </>
+      )}
 
       {(isIntakePhase && !showSchoolGrid) ? (
          /* INTAKE PHASE - Centered Layout */
