@@ -789,6 +789,8 @@ export default function Consultant() {
     // E40-S4: Complete state reset for fresh conversation
     resetChatState();
     
+        // S169-WC1: E29-RESUMPTION-FIX - skip greeting for returning users
+    if (!activeJourney?.isResuming) {
     // Initialize first message with consultant's greeting
     const greeting = {
       role: 'assistant',
@@ -799,6 +801,7 @@ export default function Consultant() {
     };
     setMessages([greeting]);
     setShowResponseChips(true);
+        } // end E29-RESUMPTION-FIX guard
   };
 
   const selectConversation = (convo) => {
