@@ -379,6 +379,8 @@ export default function Consultant() {
   useEffect(() => {
     if (briefStatus === 'confirmed') {
       setShowLoadingOverlay(true);
+    } else if (showLoadingOverlay) {
+      setShowLoadingOverlay(false);
     }
   }, [briefStatus]);
 
