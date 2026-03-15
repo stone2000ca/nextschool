@@ -236,7 +236,20 @@ const MERGED_RESPONSE_SCHEMA = {
             budgetFit: { type: 'string' }
           }
         },
-        aiInsight: { type: 'string', description: 'A 2-3 sentence summary insight about this school-family match, written in second person to the parent. Highlight the strongest alignment and the most important trade-off.' }
+        aiInsight: { type: 'string', description: 'A 2-3 sentence summary insight about this school-family match, written in second person to the parent. Highlight the strongest alignment and the most important trade-off.' },
+        priorityMatches: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['priority', 'status', 'detail'],
+            properties: {
+              priority: { type: 'string' },
+              status: { type: 'string', enum: ['match', 'partial', 'flag'] },
+              detail: { type: 'string' }
+            }
+          }
+        }
       },
       required: ['fitLabel', 'fitScore', 'tradeOffs', 'dataGaps', 'visitQuestions', 'financialSummary', 'aiInsight']
     }
@@ -487,6 +500,7 @@ In your JSON response, also include a schoolAnalysis object with:
 - dataGaps: array of field names with missing data relevant to this family
 - visitQuestions: array of 3-5 personalized questions for a school visit
 - financialSummary: {tuition (number), aidAvailable (boolean), estimatedNetCost (number), budgetFit (string)}
+- priorityMatches: For each priority from the family Brief, assess how this school fits. If it clearly fits the priority, set status to 'match'. If it somewhat fits or has trade-offs, set status to 'partial'. If it conflicts with or does not address the priority, set status to 'flag'. Return these as priorityMatches array where each item has: priority (the brief priority name), status ('match', 'partial', or 'flag'), and detail (1-2 sentences explaining why).
 
 `;
 
