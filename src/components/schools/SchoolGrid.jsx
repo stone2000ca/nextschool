@@ -196,6 +196,10 @@ export default function SchoolGrid({
   if (!schools || !Array.isArray(schools)) {
     schools = [];
   }
+  // Guard: visitedSchoolIds may arrive as an array from parent state
+  if (Array.isArray(visitedSchoolIds)) {
+    visitedSchoolIds = new Set(visitedSchoolIds);
+  }
   const [tier3Expanded, setTier3Expanded] = useState(false);
 
   // E16b-005: Bulk fetch upcoming events for all visible schools
