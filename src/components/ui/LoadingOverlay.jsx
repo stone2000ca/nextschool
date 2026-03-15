@@ -129,7 +129,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
 
   if (flashActive) {
     return (
-      <div style={{position:'fixed',inset:0,zIndex:10001,background:TEAL,animation:'tealFlash 0.7s ease-out forwards'}}>
+      <div style={{position:'fixed',inset:0,zIndex:9999,background:TEAL,animation:'tealFlash 700ms ease-in-out forwards'}}>
         <style>{KEYFRAMES}</style>
       </div>
     );
