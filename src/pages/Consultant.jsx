@@ -934,7 +934,7 @@ export default function Consultant() {
     setActiveJourney,
   });
 
-  const handleViewSchoolDetail = async (schoolId) => {
+  const handleViewSchoolDetail = async (schoolId, skipConfirmation = false) => {
     let school = schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId) || extraSchools.find(s => s.id === schoolId);
     if (school && !school.description && !school.website) {
       try {
