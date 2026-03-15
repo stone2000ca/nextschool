@@ -176,7 +176,7 @@ export const useMessageHandler = ({
         selectedSchoolId: explicitSchoolId || selectedSchool?.id || null,
         conversationId: currentConversation?.id || null,
         returningUserContext,
-        ...(activeJourney ? { journeyContext: activeJourney } : {})
+        ...(restoredSessionData && activeJourney ? { journeyContext: activeJourney } : {})
       });
 
       // DEFENSIVE CHECK: Ensure response.data exists

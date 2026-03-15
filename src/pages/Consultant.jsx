@@ -757,6 +757,7 @@ export default function Consultant() {
     setSchools([]);
     setBriefStatus(null);
     setOnboardingPhase(null);
+    setActiveJourney(null);
     setCurrentView('chat');
     
     // Initialize first message with consultant's greeting
