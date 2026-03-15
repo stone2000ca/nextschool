@@ -105,6 +105,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
         const schoolJourneys = await base44.entities.SchoolJourney.filter({ familyJourneyId: journey.id });
 
         setActiveJourney({
+          id: journey.id,
           journeyId: journey.id,
           currentPhase: journey.currentPhase,
           nextAction: journey.nextAction,
@@ -122,7 +123,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
         console.error('[E29-007] Journey detection failed:', e.message);
       }
     })();
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, currentConversation?.id]);
 
   return {
     familyProfile, setFamilyProfile,
