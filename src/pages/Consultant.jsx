@@ -371,7 +371,14 @@ export default function Consultant() {
   const briefConfirmTimeRef = useRef(null);
 
   // E37: Show loading overlay when brief confirmed and consultant is typing
-  const showLoadingOverlay = briefStatus === 'confirmed' && isTyping;
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
+
+  // P0 hotfix: Drive overlay via state, not derived from isTyping
+  useEffect(() => {
+    if (briefStatus === 'confirmed') {
+      setShowLoadingOverlay(true);
+    }
+  }, [briefStatus]);
 
   // Enforce minimum 5-second display for loading overlay
   useEffect(() => {
@@ -380,22 +387,7 @@ export default function Consultant() {
     }
   }, [showLoadingOverlay]);
 
-  // When response arrives quickly, delay hiding overlay until 5s has passed
-  useEffect(() => {
-    if (briefStatus === 'confirmed' && !isTyping && briefConfirmTimeRef.current) {
-      const elapsedTime = Date.now() - briefConfirmTimeRef.current;
-      const remainingTime = Math.max(0, 5000 - elapsedTime);
 
-      if (remainingTime > 0) {
-        const timer = setTimeout(() => {
-          briefConfirmTimeRef.current = null;
-        }, remainingTime);
-        return () => clearTimeout(timer);
-      } else {
-        briefConfirmTimeRef.current = null;
-      }
-    }
-  }, [isTyping, briefStatus]);
 
 
 
@@ -777,6 +769,7 @@ export default function Consultant() {
     setContactLog([]);
     setHydrationSource(null);
     setSchoolsAnimKey(0);
+    setShowLoadingOverlay(false);
     setCurrentView('chat');
   };
 
@@ -1400,7 +1393,7 @@ export default function Consultant() {
       {/* E37: Loading overlay on brief confirmation with 5-second minimum */}
       <LoadingOverlay 
         isVisible={showLoadingOverlay}
-        onTransitionComplete={() => { setBriefStatus(null); setIsTransitioning(true); }}
+        onTransitionComplete={() => { setShowLoadingOverlay(false); setBriefStatus(null); setIsTransitioning(true); }}
       />
 
       {(isIntakePhase && !showSchoolGrid) ? (
