@@ -158,6 +158,16 @@ export const useMessageHandler = ({
         };
       }
 
+    // CRT-S109-F16: Detect school switch from natural language
+    let resolvedSchoolId = explicitSchoolId;
+    if (!resolvedSchoolId && schools?.length) {
+      const msgLower = messageText.toLowerCase();
+      const matchedSchool = schools
+        .filter(s => s.id !== selectedSchool?.id && s.name)
+        .sort((a, b) => b.name.length - a.name.length)
+        .find(s => msgLower.includes(s.name.toLowerCase()));
+      if (matchedSchool) { resolvedSchoolId = matchedSchool.id; }
+    }
       // Call orchestrateConversation with current schools context and user location
       const response = await base44.functions.invoke('orchestrateConversation', {
         message: messageText,
@@ -173,7 +183,7 @@ export const useMessageHandler = ({
           lng: userLocation.lng,
           address: userLocation.address
         } : null,
-        selectedSchoolId: explicitSchoolId || selectedSchool?.id || null,
+        selectedSchoolId: resolvedSchoolId || selectedSchool?.id || null,
         conversationId: currentConversation?.id || null,
         returningUserContext,
         ...(restoredSessionData && activeJourney ? { journeyContext: activeJourney } : {})
