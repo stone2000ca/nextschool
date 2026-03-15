@@ -125,7 +125,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
   useEffect(() => clear, [clear]);
 
   if (!isVisible && !wasVisible.current) return null;
-  if (!isVisible && !flashActive) return null;
+  if (!isVisible && !flashActive && !wasVisible.current) return null;
 
   if (flashActive) {
     return (
