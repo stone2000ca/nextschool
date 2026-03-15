@@ -18,7 +18,7 @@ export function useShortlist({
   const hasAutoPopulatedShortlist = useRef(false);
 
   const loadShortlist = async () => {
-    if (!activeJourney?.id) return;
+    if (!activeJourney?.journeyId) return;
     try {
       const records = await base44.entities.ChatShortlist.filter({ familyJourneyId: activeJourney.id });
       if (records.length === 0) {
