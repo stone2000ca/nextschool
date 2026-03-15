@@ -146,7 +146,6 @@ export default function Consultant() {
 
   // BRIEF→RESULTS transition animation
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showTealFlash, setShowTealFlash] = useState(false);
   const prevIsIntakePhaseRef = useRef(true);
 
   // T-RES-006: Priority overrides { [rowId]: 'musthave' | 'nicetohave' | 'dontcare' }
@@ -412,10 +411,9 @@ export default function Consultant() {
     const wasIntake = prevIsIntakePhaseRef.current;
     prevIsIntakePhaseRef.current = isIntakePhase;
     if (wasIntake && !isIntakePhase) {
+      // Just switched from intake → results: trigger animation
       setIsTransitioning(true);
-      setShowTealFlash(true);
       setTimeout(() => setIsTransitioning(false), 600);
-      setTimeout(() => setShowTealFlash(false), 700);
     }
   }, [isIntakePhase]);
 
@@ -1401,12 +1399,6 @@ export default function Consultant() {
         isVisible={showLoadingOverlay}
         onTransitionComplete={() => { setShowLoadingOverlay(false); setBriefStatus(null); setIsTransitioning(true); }}
       />
-      {showTealFlash && (
-        <>
-          <style>{`@keyframes tealFlash{0%{opacity:0}30%{opacity:1}70%{opacity:1}100%{opacity:0}}`}</style>
-          <div style={{position:'fixed',inset:0,zIndex:9999,background:'#18968a',pointerEvents:'none',animation:'tealFlash 700ms ease-out forwards'}} />
-        </>
-      )}
 
       {(isIntakePhase && !showSchoolGrid) ? (
          /* INTAKE PHASE - Centered Layout */
