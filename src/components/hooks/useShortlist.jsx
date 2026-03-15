@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getShortlistNudge } from '@/components/utils/shortlistNudges';
 import { STATES } from '@/pages/stateMachineConfig';
+import { base44 } from '@/api/base44Client';
 
 export function useShortlist({
   user, setUser, isAuthenticated, schools, currentState,
-  selectedConsultant, familyProfile, setMessages, trackEvent, setShowLoginGate, base44,
+  selectedConsultant, familyProfile, setMessages, trackEvent, setShowLoginGate,
   onConfirmDeepDive,
+  currentConversation, activeJourney,
 }) {
   const [shortlistData, setShortlistData] = useState([]);
   const [removedSchoolIds, setRemovedSchoolIds] = useState([]);
@@ -15,16 +17,17 @@ export function useShortlist({
   const [pendingDeepDiveSchoolIds, setPendingDeepDiveSchoolIds] = useState(new Set());
   const hasAutoPopulatedShortlist = useRef(false);
 
-  const loadShortlist = async (userDataOrId) => {
+  const loadShortlist = async () => {
+    if (!activeJourney?.id) return;
     try {
-      const userData = typeof userDataOrId === 'object' && userDataOrId !== null ? userDataOrId : user;
-      const shortlistIds = userData?.shortlist || [];
-      if (shortlistIds.length > 0) {
-        const shortlistSchools = await base44.entities.School.filter({ id: { $in: shortlistIds } });
-        setShortlistData(shortlistSchools);
-      } else {
+      const records = await base44.entities.ChatShortlist.filter({ familyJourneyId: activeJourney.id });
+      if (records.length === 0) {
         setShortlistData([]);
+        return;
       }
+      const schoolIds = records.map(r => r.schoolId).filter(Boolean);
+      const schools = await base44.entities.School.filter({ id: { $in: schoolIds } });
+      setShortlistData(schools);
     } catch (error) {
       console.error('Failed to load shortlist:', error);
       setShortlistData([]);
@@ -49,10 +52,9 @@ export function useShortlist({
     if (!user) return;
 
     try {
-      const currentShortlist = user.shortlist || [];
-      let updatedShortlist;
-      let school = preloadedSchool || schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId) || extraSchools?.find(s => s.id === schoolId);
-      const isRemoving = currentShortlist.includes(schoolId);
+      let school = preloadedSchool || schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId);
+      const isRemoving = shortlistData.some(s => s.id === schoolId);
+
       if (!school && !isRemoving) {
         try {
           const fetched = await base44.entities.School.filter({ id: schoolId });
@@ -63,28 +65,33 @@ export function useShortlist({
       }
 
       if (isRemoving) {
-        updatedShortlist = currentShortlist.filter(id => id !== schoolId);
         setShortlistData(prev => prev.filter(s => s.id !== schoolId));
         setRemovedSchoolIds(prev => [...prev, schoolId]);
+        // Remove from ChatShortlist
+        if (activeJourney?.id) {
+          const existing = await base44.entities.ChatShortlist.filter({ familyJourneyId: activeJourney.id, schoolId });
+          for (const rec of existing) {
+            await base44.entities.ChatShortlist.delete(rec.id);
+          }
+        }
       } else {
-        updatedShortlist = [...currentShortlist, schoolId];
         trackEvent('shortlisted', { metadata: { schoolName: school?.name } });
         if (school) setShortlistData(prev => [...prev, school]);
+        // Add to ChatShortlist
+        if (activeJourney?.id) {
+          await base44.entities.ChatShortlist.create({
+            familyJourneyId: activeJourney.id,
+            schoolId,
+            addedAt: new Date().toISOString(),
+            source: 'manual',
+          });
+        }
       }
-
-      await base44.auth.updateMe({ shortlist: updatedShortlist });
-      setUser({ ...user, shortlist: updatedShortlist });
 
       // E29-004: Sync shortlist to SchoolJourney entity
       ;(async () => {
         try {
-          const freshUser = await base44.auth.me();
-          if (!freshUser?.id) return;
-
-          const journeys = await base44.entities.FamilyJourney.filter(
-            { userId: freshUser.id }, '-updated_date', 1
-          );
-          const familyJourney = journeys[0];
+          const familyJourney = activeJourney;
           if (!familyJourney) return;
 
           if (isRemoving) {
@@ -125,13 +132,14 @@ export function useShortlist({
 
       // T-SL-004: Inject nudge (only in RESULTS state, only when not silent)
       if (!silent && currentState === STATES.RESULTS) {
+        const updatedCount = isRemoving ? shortlistData.length - 1 : shortlistData.length + 1;
         const nudge = getShortlistNudge({
           isRemoving,
-          newCount: updatedShortlist.length,
+          newCount: updatedCount,
           isJackie: selectedConsultant === 'Jackie',
           school,
           familyProfile,
-          shortlistData: shortlistData.filter(s => updatedShortlist.includes(s.id)),
+          shortlistData: isRemoving ? shortlistData.filter(s => s.id !== schoolId) : [...shortlistData, school].filter(Boolean),
           schools,
         });
         if (nudge) injectShortlistNudge(nudge);
@@ -141,35 +149,11 @@ export function useShortlist({
     }
   };
 
-  // E29-012: Hydrate shortlistData from SchoolJourney entity on auth load
+  // E29-012: Hydrate shortlistData from ChatShortlist on activeJourney load
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) return;
-
-    (async () => {
-      try {
-        const journeys = await base44.entities.FamilyJourney.filter({ userId: user.id });
-        const activeJourneyRecord = journeys.find(j => !j.isArchived);
-        if (!activeJourneyRecord) return;
-
-        const schoolJourneys = await base44.entities.SchoolJourney.filter({
-          familyJourneyId: activeJourneyRecord.id,
-          status: 'shortlisted',
-        });
-        if (schoolJourneys.length === 0) return;
-
-        const schoolIds = schoolJourneys.map(sj => sj.schoolId).filter(Boolean);
-        const fetchedSchools = await base44.entities.School.filter({ id: { $in: schoolIds } });
-
-        setShortlistData(prev => {
-          const existingIds = new Set(prev.map(s => s.id));
-          const newSchools = fetchedSchools.filter(s => !existingIds.has(s.id));
-          return newSchools.length > 0 ? [...prev, ...newSchools] : prev;
-        });
-      } catch (e) {
-        console.error('[E29-012] SchoolJourney shortlist hydration failed:', e.message);
-      }
-    })();
-  }, [isAuthenticated, user?.id]);
+    if (!activeJourney?.id) return;
+    loadShortlist();
+  }, [activeJourney?.id]);
 
   // E30-006
   const handleDossierExpandChange = (isExpanding) =>
