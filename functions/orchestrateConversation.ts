@@ -1384,7 +1384,8 @@ Object.assign(context, safeUpdatedContext);
         console.log('[T047] Changed entities:', extractedKeys, '| Tier1 changed:', tier1Changed);
       }
 
-      if (isFirstMessage && !context.state) {
+      if (isFirstMessage && !context.state && !journeyContext?.isResuming) { // S169-WC1: E29-RESUMPTION-FIX    if (!activeJourney?.isResuming) {
+    // Initialize first message with consultant's greeting
         console.log('[ORCH] First message, return WELCOME greeting');
         const welcomeMessage = consultantName === 'Jackie'
           ? "Hey there — I'm Jackie. I've worked with hundreds of families going through exactly this. Tell me a bit about your child and what's prompting the search."
