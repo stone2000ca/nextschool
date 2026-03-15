@@ -1,46 +1,5 @@
 import React, { useState } from 'react';
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_SCHOOL = {
-  name: 'Upper Canada College',
-  location: 'Toronto, ON',
-  students: 1100,
-  teacherRatio: '8:1',
-  tuition: '$42,500',
-};
-
-const MOCK_JOURNEY = [
-  { label: 'Match Found',  status: 'completed' },
-  { label: 'Deep Dive',    status: 'active'    },
-  { label: 'Book Tour',    status: 'pending'   },
-  { label: 'Debrief Tour', status: 'pending'   },
-  { label: 'Apply',        status: 'pending'   },
-];
-
-const MOCK_CHAT_BUBBLES = [
-  "UCC has an exceptional IB programme that aligns perfectly with your academic goals for Ethan.",
-  "Their student-teacher ratio of 8:1 means Ethan will get the individual attention he needs.",
-  "Strong arts and music programmes match the extracurricular priorities you mentioned.",
-];
-
-const MOCK_PREFERENCES = {
-  matches: [
-    { icon: 'check', label: 'IB Curriculum', detail: 'Offered' },
-    { icon: 'check', label: 'Small Classes', detail: 'Avg 18 students' },
-    { icon: 'check', label: 'Arts Programme', detail: 'Music & Visual' },
-    { icon: 'check', label: 'University Prep', detail: '98% acceptance' },
-  ],
-  flags: [
-    { icon: 'flag', label: 'All-Boys School', detail: 'Co-ed preferred' },
-    { icon: 'flag', label: 'Tuition', detail: '$42.5k — above budget' },
-  ],
-};
-
-const MOCK_FIT_SCORE = 92;
-
-const MOCK_AI_INSIGHT = "UCC is an exceptionally strong academic fit for Ethan. The main trade-off is the all-boys environment — worth discussing as a family whether the programme strength outweighs that preference.";
-
 // ─── Inline SVG Icons ─────────────────────────────────────────────────────────
 
 const ChevronIcon = ({ open }) => (
@@ -156,17 +115,11 @@ function CollapsibleSection({ icon, label, color, children, defaultOpen = false 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const MOCK_KEY_DATES = [
-  { type: 'event', label: 'Open House', date: '2025-11-14', isEstimated: false },
-  { type: 'deadline', label: 'Application Deadline', date: '2026-01-15', isEstimated: false },
-  { type: 'deadline', label: 'Entry Year', date: '2026-09-01', isEstimated: true },
-];
-
 function KeyDatesContent({ keyDates }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const source = keyDates || MOCK_KEY_DATES;
+  const source = keyDates || [];
 
   const upcoming = source
     .filter(d => d.date && new Date(d.date) >= today)
@@ -217,23 +170,9 @@ const PRIORITY_TAG_STYLE = {
 
 function VisitPrepKitContent({ visitPrepKit }) {
   if (!visitPrepKit) {
-    // Fallback mock
     return (
-      <div style={{ fontSize: 12.5, color: '#5a4030', lineHeight: 1.7 }}>
-        <div style={{ marginBottom: 8, fontWeight: 600, color: '#6d28d9' }}>Questions to Ask</div>
-        {['How is the transition from JK to Grade 1 supported?', 'What does a typical extracurricular week look like?', 'How does the school support learning differences?'].map((q, i) => (
-          <div key={i} style={{ display: 'flex', gap: 7, marginBottom: 5 }}>
-            <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>→</span>
-            <span>{q}</span>
-          </div>
-        ))}
-        <div style={{ marginTop: 12, marginBottom: 8, fontWeight: 600, color: '#6d28d9' }}>Things to Notice</div>
-        {['Classroom size and energy', 'How students interact with staff', 'Hallway displays and student work'].map((n, i) => (
-          <div key={i} style={{ display: 'flex', gap: 7, marginBottom: 5 }}>
-            <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>•</span>
-            <span>{n}</span>
-          </div>
-        ))}
+      <div style={{ fontSize: 12.5, color: '#a89060', fontStyle: 'italic' }}>
+        Run a Deep Dive to see visit prep questions.
       </div>
     );
   }
@@ -372,14 +311,13 @@ function timeAgo(isoString) {
 }
 
 export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, chatBubbles, preferences, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive }) {
-  const school = schoolData || MOCK_SCHOOL;
-  const score = fitScore ?? MOCK_FIT_SCORE;
-  const label = fitLabel || 'STRONG MATCH';
-  const bubbles = chatBubbles || MOCK_CHAT_BUBBLES;
-  const prefs = preferences || MOCK_PREFERENCES;
-  const insight = aiInsight || MOCK_AI_INSIGHT;
-  // Normalise journeySteps: accept {label,status} (live) or {label,status:'completed'|'active'|'pending'} (mock)
-  const journey = journeySteps || MOCK_JOURNEY;
+  const school = schoolData || null;
+  const score = fitScore ?? null;
+  const label = fitLabel || null;
+  const bubbles = chatBubbles || null;
+  const prefs = preferences || null;
+  const insight = aiInsight || null;
+  const journey = journeySteps || [];
   const [open, setOpen] = useState(true);
   const [deepDiveOpen, setDeepDiveOpen] = useState(true);
   const [localNotes, setLocalNotes] = useState('');
@@ -400,7 +338,8 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
   };
 
   // Fit score circle
-  const fitPct = score;
+  const hasAnalysis = score !== null;
+  const fitPct = score ?? 0;
   const fitDeg = Math.round(fitPct * 3.6);
 
   return (
@@ -458,7 +397,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: '#2d1e0e' }}>
-                My Research on {school.name}
+                My Research on {school?.name || 'Select a school'}
               </span>
               <span style={{
                 background: '#d4a017', color: '#fff', fontSize: 11, fontWeight: 700,
@@ -610,18 +549,18 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                           width: 54, height: 54, borderRadius: '50%', background: '#fffdf5',
                           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                         }}>
-                          <span style={{ fontSize: 18, fontWeight: 800, color: '#0d9488', lineHeight: 1 }}>{fitPct}%</span>
+                          <span style={{ fontSize: 18, fontWeight: 800, color: hasAnalysis ? '#0d9488' : '#a89060', lineHeight: 1 }}>{hasAnalysis ? `${fitPct}%` : '—'}</span>
                           <span style={{ fontSize: 8.5, color: '#a89060', fontWeight: 600 }}>FIT</span>
                         </div>
                       </div>
                       <span style={{ fontSize: 10, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        {label}
+                        {label || 'No analysis yet'}
                       </span>
                     </div>
 
                     {/* NS chat bubbles */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {bubbles.map((text, i) => (
+                      {bubbles && bubbles.length > 0 ? bubbles.map((text, i) => (
                         <div key={i} style={{
                           background: '#0d9488', color: '#fff', fontSize: 12, lineHeight: 1.5,
                           padding: '8px 12px', borderRadius: '12px 12px 12px 2px',
@@ -629,11 +568,16 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                         }}>
                           {text}
                         </div>
-                      ))}
+                      )) : (
+                        <div style={{ fontSize: 12.5, color: '#a89060', fontStyle: 'italic', padding: '8px 0' }}>
+                          Run a Deep Dive to see analysis
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Two-column preference grid */}
+                  {prefs ? (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
                     {/* Matches column */}
                     <div style={{
@@ -642,7 +586,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                       <div style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>
                         ✓ Matches Your Priorities
                       </div>
-                      {prefs.matches.map((item, i) => (
+                      {(prefs.matches || []).map((item, i) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 6 }}>
                           <span style={{ marginTop: 1, flexShrink: 0 }}><CheckIcon /></span>
                           <div>
@@ -660,7 +604,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                       <div style={{ fontSize: 10, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>
                         ⚑ Things to Consider
                       </div>
-                      {prefs.flags.map((item, i) => (
+                      {(prefs.flags || []).map((item, i) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 6 }}>
                           <span style={{ marginTop: 1, flexShrink: 0 }}><FlagIcon /></span>
                           <div>
@@ -671,6 +615,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                       ))}
                     </div>
                   </div>
+                  ) : null}
 
                   {/* AI Insight box */}
                   <div style={{
@@ -682,8 +627,8 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                       <div style={{ fontSize: 10.5, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4 }}>
                         AI Insight
                       </div>
-                      <div style={{ fontSize: 12.5, color: '#134e4a', lineHeight: 1.55 }}>
-                        {insight}
+                      <div style={{ fontSize: 12.5, color: insight ? '#134e4a' : '#a89060', lineHeight: 1.55, fontStyle: insight ? 'normal' : 'italic' }}>
+                        {insight || 'Run a Deep Dive to see AI insight'}
                       </div>
                     </div>
                   </div>
