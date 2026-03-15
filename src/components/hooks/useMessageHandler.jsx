@@ -278,12 +278,12 @@ export const useMessageHandler = ({
 
       // CRITICAL: Update briefStatus from response immediately
       const newBriefStatus = response.data?.briefStatus || null;
-      if (newBriefStatus) {
+      if (response.data?.state === STATES.RESULTS && isBriefConfirmation) {
+        setBriefStatus(null);
+        console.log('[BRIEF STATUS] Cleared on RESULTS arrival (P0 overlay fix)');
+      } else if (newBriefStatus) {
         setBriefStatus(newBriefStatus);
         console.log('[BRIEF STATUS] Updated to:', newBriefStatus);
-      } else if (response.data?.state === STATES.RESULTS && isBriefConfirmation) {
-        setBriefStatus(null);
-        console.log('[BRIEF STATUS] Cleared on RESULTS transition (S151-P0 restored)');
       }
 
       // CRITICAL FIX: Merge backend's full context (including extractedEntities) with frontend state
