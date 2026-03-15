@@ -1161,7 +1161,7 @@ export default function Consultant() {
       return next;
     });
     const DOSSIER_AUTO_OPEN_DELAY_MS = 800;
-    const alreadyShortlisted = (user?.shortlist || []).includes(schoolId);
+    const alreadyShortlisted = shortlistData.some(s => s.id === schoolId);
     const wasRemoved = (removedSchoolIds || []).includes(schoolId);
     if (!alreadyShortlisted && !wasRemoved) {
       handleToggleShortlist(schoolId, { silent: true });
