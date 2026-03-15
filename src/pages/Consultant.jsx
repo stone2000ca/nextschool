@@ -579,6 +579,8 @@ export default function Consultant() {
     }
   };
 
+  useSEOAndReminders({ sessionId, checkAuth });
+
   const loadConversations = async (userId) => {
     try {
       const convos = await base44.entities.ChatHistory.filter({ userId, isActive: true });
