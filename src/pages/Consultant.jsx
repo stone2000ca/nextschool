@@ -1603,7 +1603,7 @@ export default function Consultant() {
                 setCurrentView('schools');
               }}
               onToggleShortlist={handleToggleShortlist}
-              isShortlisted={user?.shortlist?.includes(selectedSchool.id) || false}
+              isShortlisted={shortlistData.some(s => s.id === selectedSchool?.id)}
               onCompare={(school) => handleOpenComparison([school])}
               actionPlan={actionPlan}
               visitPrepKit={visitPrepKit}
