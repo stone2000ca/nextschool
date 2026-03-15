@@ -68,8 +68,8 @@ export function useShortlist({
         setShortlistData(prev => prev.filter(s => s.id !== schoolId));
         setRemovedSchoolIds(prev => [...prev, schoolId]);
         // Remove from ChatShortlist
-        if (activeJourney?.id) {
-          const existing = await base44.entities.ChatShortlist.filter({ familyJourneyId: activeJourney.id, schoolId });
+        if (activeJourney?.journeyId) {
+          const existing = await base44.entities.ChatShortlist.filter({ familyJourneyId: activeJourney.journeyId, schoolId });
           for (const rec of existing) {
             await base44.entities.ChatShortlist.delete(rec.id);
           }
@@ -78,9 +78,9 @@ export function useShortlist({
         trackEvent('shortlisted', { metadata: { schoolName: school?.name } });
         if (school) setShortlistData(prev => [...prev, school]);
         // Add to ChatShortlist
-        if (activeJourney?.id) {
+        if (activeJourney?.journeyId) {
           await base44.entities.ChatShortlist.create({
-            familyJourneyId: activeJourney.id,
+            familyJourneyId: activeJourney.journeyId,
             schoolId,
             addedAt: new Date().toISOString(),
             source: 'manual',
@@ -96,7 +96,7 @@ export function useShortlist({
 
           if (isRemoving) {
             const existing = await base44.entities.SchoolJourney.filter({
-              familyJourneyId: familyJourney.id,
+              familyJourneyId: familyJourney.journeyId,
               schoolId: schoolId,
             });
             if (existing.length > 0) {
@@ -116,7 +116,7 @@ export function useShortlist({
           if (!isRemoving && familyJourney.currentPhase === 'MATCH') {
             try {
               const currentHistory = Array.isArray(familyJourney.phaseHistory) ? familyJourney.phaseHistory : [];
-              await base44.entities.FamilyJourney.update(familyJourney.id, {
+              await base44.entities.FamilyJourney.update(familyJourney.journeyId, {
                 currentPhase: 'EVALUATE',
                 phaseHistory: [...currentHistory, { phase: 'EVALUATE', enteredAt: new Date().toISOString() }],
               });
