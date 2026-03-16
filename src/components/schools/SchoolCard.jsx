@@ -69,11 +69,12 @@ export function buildPriorityChecks(school, familyProfile) {
 
   if (familyProfile.curriculumPreference && familyProfile.curriculumPreference.length > 0) {
     const prefs = familyProfile.curriculumPreference.map(p => p.toLowerCase());
-    const ct = (school.curriculum || '').toLowerCase();
-    if (!ct) {
+    const ct = Array.isArray(school.curriculum) ? school.curriculum.map(c => c.toLowerCase()) : [];
+    const match = ct.length > 0 && prefs.some(p => ct.some(c => c.includes(p) || p.includes(c)));
+    if (ct.length === 0) {
       rows.push({ id: 'curriculum', rowNum: 4, label: 'Curriculum', status: 'unknown', detail: 'Worth asking about' });
     } else {
-      rows.push({ id: 'curriculum', rowNum: 4, label: 'Curriculum', status: prefs.some(p => ct.includes(p) || p.includes(ct)) ? 'match' : 'mismatch', detail: school.curriculum });
+      rows.push({ id: 'curriculum', rowNum: 4, label: 'Curriculum', status: match ? 'match' : 'mismatch', detail: school.curriculum.join(', ') });
     }
   }
 
