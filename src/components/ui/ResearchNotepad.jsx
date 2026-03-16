@@ -407,7 +407,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: '#2d1e0e' }}>
-                My Research on {school?.name || 'Select a school'}
+                My Research on {displayName}
               </span>
               <span style={{
                 background: '#d4a017', color: '#fff', fontSize: 11, fontWeight: 700,
