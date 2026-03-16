@@ -22,9 +22,9 @@ function isFilled(value) {
 
 const TIER_WEIGHTS = [
   { fields: ['name','city','province_state','country','lowest_grade','highest_grade','gender_policy','day_tuition','school_type_label','email'], weight: 50 },
-  { fields: ['description','website','boarding_available','faith_based','languages_of_instruction','avg_class_size','student_teacher_ratio'], weight: 30 },
-  { fields: ['arts_programs','sports_programs','clubs','facilities','specialEdPrograms','curriculum','accreditations','_testimonials'], weight: 15 },
-  { fields: ['logo_url','header_photo_url','photoGallery'], weight: 5 }, // media fields kept for score only
+  { fields: ['description','mission_statement','website','boarding_available','faith_based','languages_of_instruction','avg_class_size','student_teacher_ratio'], weight: 30 },
+  { fields: ['arts_programs','sports_programs','clubs','facilities','special_ed_programs','curriculum','accreditations','teaching_philosophy','_testimonials'], weight: 15 },
+  { fields: ['logo_url','header_photo_url','photo_gallery'], weight: 5 }, // media fields kept for score only
 ];
 
 function calcWeightedScore(data, testimonialCount = 0) {
@@ -77,7 +77,7 @@ const TIERS = [
     color: 'amber',
     weight: 0.3,
     motivational: 'Schools with these fields completed appear in 3x more results.',
-    fields: ['description', 'website', 'boarding_available', 'faith_based', 'languages_of_instruction', 'avg_class_size', 'student_teacher_ratio'],
+    fields: ['description', 'mission_statement', 'website', 'boarding_available', 'faith_based', 'languages_of_instruction', 'avg_class_size', 'student_teacher_ratio'],
   },
   {
     id: 'tier3',
@@ -85,7 +85,7 @@ const TIERS = [
     color: 'teal',
     weight: 0.15,
     motivational: 'Add depth to your profile with testimonials and details that set you apart.',
-    fields: ['arts_programs', 'sports_programs', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations', '_testimonials'],
+    fields: ['arts_programs', 'sports_programs', 'clubs', 'facilities', 'special_ed_programs', 'curriculum', 'accreditations', 'teaching_philosophy', '_testimonials'],
   },
 ];
 
@@ -431,6 +431,10 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
         <Textarea value={formData.description || ''} onChange={(e) => handleChange('description', e.target.value)} rows={4} className={isAI('description') ? 'bg-blue-50 border-blue-200' : ''} />
       </div>
       <div>
+        <FieldLabel aiEnriched={isAI('mission_statement')}>Mission Statement</FieldLabel>
+        <Textarea value={formData.mission_statement || ''} onChange={(e) => handleChange('mission_statement', e.target.value.slice(0, 500))} rows={3} maxLength={500} placeholder="Describe your school's mission" className={isAI('mission_statement') ? 'bg-blue-50 border-blue-200' : ''} />
+      </div>
+      <div>
         <Label>Website</Label>
         <Input value={formData.website || ''} onChange={(e) => handleChange('website', e.target.value)} placeholder="https://..." />
       </div>
@@ -439,26 +443,29 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
         <Switch checked={formData.boarding_available || false} onCheckedChange={(val) => handleChange('boarding_available', val)} />
       </div>
       {formData.boarding_available && (
-        <div>
-          <Label>Boarding Type</Label>
-          <Select value={formData.boardingType || ''} onValueChange={(val) => handleChange('boardingType', val)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="full">Full Boarding</SelectItem>
-              <SelectItem value="weekly">Weekly Boarding</SelectItem>
-              <SelectItem value="day">Day School Only</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <>
+          <div>
+            <Label>Boarding Type</Label>
+            <Select value={formData.boarding_type || ''} onValueChange={(val) => handleChange('boarding_type', val)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="full">Full Boarding</SelectItem>
+                <SelectItem value="weekly">Weekly Boarding</SelectItem>
+                <SelectItem value="day">Day School Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Boarding Tuition (Annual)</Label>
+            <Input type="number" value={formData.boarding_tuition || ''} onChange={(e) => handleChange('boarding_tuition', parseFloat(e.target.value))} placeholder="e.g. 45000" />
+          </div>
+        </>
       )}
       <div>
         <Label>Religious Affiliation</Label>
         <Input value={formData.faith_based || ''} onChange={(e) => handleChange('faith_based', e.target.value)} placeholder="e.g. Non-denominational, Catholic" />
       </div>
-      <div>
-        <Label>Language of Instruction</Label>
-        <Input value={formData.languages_of_instruction || ''} onChange={(e) => handleChange('languages_of_instruction', e.target.value)} placeholder="e.g. English, French, Bilingual" />
-      </div>
+      <TagInput label="Languages of Instruction" field="languages_of_instruction" placeholder="e.g. English, French" formData={formData} onChange={handleChange} />
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Average Class Size</Label>
@@ -481,19 +488,13 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
       <TagInput label="Sports Programs" field="sports_programs" placeholder="Add sports program" formData={formData} onChange={handleChange} />
       <TagInput label="Clubs & Activities" field="clubs" placeholder="Add club" formData={formData} onChange={handleChange} />
       <TagInput label="Facilities" field="facilities" placeholder="e.g. Pool, Theatre, Lab" formData={formData} onChange={handleChange} />
-      <TagInput label="Special Education Programs" field="specialEdPrograms" placeholder="Add program" formData={formData} onChange={handleChange} />
-      <div>
-        <Label>Curriculum Type</Label>
-        <Select value={formData.curriculum || ''} onValueChange={(val) => handleChange('curriculum', val)}>
-          <SelectTrigger><SelectValue placeholder="Select curriculum" /></SelectTrigger>
-          <SelectContent>
-            {['Traditional','Montessori','IB','Waldorf','AP','Catholic','Other'].map(c => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <TagInput label="Special Education Programs" field="special_ed_programs" placeholder="Add program" formData={formData} onChange={handleChange} />
+      <TagInput label="Curriculum Type" field="curriculum" placeholder="e.g. IB, Montessori, AP" formData={formData} onChange={handleChange} />
       <TagInput label="Accreditations" field="accreditations" placeholder="Add accreditation" formData={formData} onChange={handleChange} />
+      <div>
+        <Label>Teaching Philosophy</Label>
+        <Textarea value={formData.teaching_philosophy || ''} onChange={(e) => handleChange('teaching_philosophy', e.target.value.slice(0, 500))} rows={3} maxLength={500} placeholder="Describe your teaching approach" />
+      </div>
     </div>
   );
 

@@ -9,7 +9,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
   const [uploading, setUploading] = useState(null);
   const [formData, setFormData] = useState({
     videoUrl: school?.videos?.[0] || '',
-    virtualTourUrl: school?.virtualTourUrl || '',
+    virtual_tour_url: school?.virtual_tour_url || '',
   });
 
   const recalculateScore = () => {
@@ -47,9 +47,9 @@ export default function PhotosMediaSection({ school, onUpdate }) {
     setUploading('gallery');
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const newGallery = [...(school?.photoGallery || []), file_url];
-      await base44.entities.School.update(school.id, { photoGallery: newGallery });
-      onUpdate && onUpdate('photoGallery', newGallery);
+      const newGallery = [...(school?.photo_gallery || []), file_url];
+      await base44.entities.School.update(school.id, { photo_gallery: newGallery });
+      onUpdate && onUpdate('photo_gallery', newGallery);
       toast.success('Photo added to gallery');
       recalculateScore();
     } catch (error) {
@@ -69,9 +69,9 @@ export default function PhotosMediaSection({ school, onUpdate }) {
         await base44.entities.School.update(school.id, { header_photo_url: null });
         onUpdate && onUpdate('header_photo_url', null);
       } else if (field === 'gallery') {
-        const newGallery = school.photoGallery.filter(u => u !== url);
-        await base44.entities.School.update(school.id, { photoGallery: newGallery });
-        onUpdate && onUpdate('photoGallery', newGallery);
+        const newGallery = school.photo_gallery.filter(u => u !== url);
+        await base44.entities.School.update(school.id, { photo_gallery: newGallery });
+        onUpdate && onUpdate('photo_gallery', newGallery);
       }
       toast.success('Photo removed');
       recalculateScore();
@@ -87,8 +87,8 @@ export default function PhotosMediaSection({ school, onUpdate }) {
     const updateData = {};
     if (field === 'videoUrl') {
       updateData.videos = value ? [value] : [];
-    } else if (field === 'virtualTourUrl') {
-      updateData.virtualTourUrl = value;
+    } else if (field === 'virtual_tour_url') {
+      updateData.virtual_tour_url = value;
     }
 
     try {
@@ -189,11 +189,11 @@ export default function PhotosMediaSection({ school, onUpdate }) {
       <div>
         <h3 className="font-semibold text-slate-900 mb-2">Photo Gallery</h3>
         <p className="text-xs text-slate-600 mb-4">
-          {(school?.photoGallery?.length || 0)} of 3 minimum for complete profile
+          {(school?.photo_gallery?.length || 0)} of 3 minimum for complete profile
         </p>
-        {(school?.photoGallery || []).length > 0 && (
+        {(school?.photo_gallery || []).length > 0 && (
           <div className="mb-4 grid grid-cols-3 gap-4">
-            {school.photoGallery.map((url, idx) => (
+            {school.photo_gallery.map((url, idx) => (
               <div key={idx} className="relative">
                 <img src={url} alt={`Gallery ${idx + 1}`} className="h-32 w-full rounded-lg border object-cover" />
                 <button
@@ -246,8 +246,8 @@ export default function PhotosMediaSection({ school, onUpdate }) {
         <h3 className="font-semibold text-slate-900 mb-2">Virtual Tour URL</h3>
         <p className="text-xs text-slate-600 mb-3">Link to virtual tour (optional)</p>
         <Input
-          value={formData.virtualTourUrl}
-          onChange={(e) => handleUrlChange('virtualTourUrl', e.target.value)}
+          value={formData.virtual_tour_url}
+          onChange={(e) => handleUrlChange('virtual_tour_url', e.target.value)}
           placeholder="https://example.com/tour"
         />
       </div>

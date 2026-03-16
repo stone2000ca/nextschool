@@ -249,10 +249,10 @@ export default function EditProfileForm({ school, onUpdate }) {
           />
         </FieldWrapper>
 
-        <FieldWrapper label="Teaching Philosophy (500 chars max)" field="teachingPhilosophy">
+        <FieldWrapper label="Teaching Philosophy (500 chars max)" field="teaching_philosophy">
           <Textarea
-            value={formData.teachingPhilosophy || ''}
-            onChange={(e) => handleChange('teachingPhilosophy', e.target.value.slice(0, 500))}
+            value={formData.teaching_philosophy || ''}
+            onChange={(e) => handleChange('teaching_philosophy', e.target.value.slice(0, 500))}
             placeholder="Describe your teaching approach"
             maxLength={500}
             rows={3}
@@ -277,10 +277,10 @@ export default function EditProfileForm({ school, onUpdate }) {
           </div>
         </FieldWrapper>
 
-        <FieldWrapper label="Campus Feel" field="campusFeel">
+        <FieldWrapper label="Campus Feel" field="campus_feel">
           <select
-            value={formData.campusFeel || ''}
-            onChange={(e) => handleChange('campusFeel', e.target.value)}
+            value={formData.campus_feel || ''}
+            onChange={(e) => handleChange('campus_feel', e.target.value)}
             className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
             <option value="">Select...</option>
@@ -303,19 +303,11 @@ export default function EditProfileForm({ school, onUpdate }) {
       {/* Academics */}
       <FormSection title="Academics">
         <FieldWrapper label="Curriculum Type" field="curriculum">
-          <select
-            value={formData.curriculum || ''}
-            onChange={(e) => handleChange('curriculum', e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-          >
-            <option value="">Select...</option>
-            <option value="Traditional">Traditional</option>
-            <option value="Montessori">Montessori</option>
-            <option value="IB">IB</option>
-            <option value="Waldorf">Waldorf</option>
-            <option value="AP">AP</option>
-            <option value="Other">Other</option>
-          </select>
+          <TagInput
+            value={Array.isArray(formData.curriculum) ? formData.curriculum : (formData.curriculum ? [formData.curriculum] : [])}
+            onChange={(value) => handleTagChange('curriculum', value)}
+            placeholder="e.g. IB, Montessori, AP"
+          />
         </FieldWrapper>
 
         <FieldWrapper label="Average Class Size" field="avg_class_size">
@@ -378,10 +370,10 @@ export default function EditProfileForm({ school, onUpdate }) {
           />
         </FieldWrapper>
 
-        <FieldWrapper label="Special Education Programs" field="specialEdPrograms">
+        <FieldWrapper label="Special Education Programs" field="special_ed_programs">
           <TagInput
-            value={formData.specialEdPrograms || []}
-            onChange={(value) => handleTagChange('specialEdPrograms', value)}
+            value={formData.special_ed_programs || []}
+            onChange={(value) => handleTagChange('special_ed_programs', value)}
             placeholder="e.g., Learning Support, ESL"
           />
         </FieldWrapper>
