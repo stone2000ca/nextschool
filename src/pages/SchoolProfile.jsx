@@ -49,9 +49,9 @@ export default function SchoolProfile() {
     if (schoolId) {
       setLoadingEvents(true);
       const now = new Date().toISOString();
-      base44.entities.SchoolEvent.filter({ 
-        schoolId, 
-        isActive: true,
+      base44.entities.SchoolEvent.filter({
+        school_id: schoolId,
+        is_active: true,
         date: { $gte: now }
       })
         .then(events => {
@@ -76,7 +76,7 @@ export default function SchoolProfile() {
       metaDesc.name = 'description';
       document.head.appendChild(metaDesc);
     }
-    const desc = (school.mission_statement || school.teachingPhilosophy || '').substring(0, 155);
+    const desc = (school.mission_statement || school.teaching_philosophy || '').substring(0, 155);
     metaDesc.content = desc || `${school.name} - Private school in ${school.city}`;
 
     // OG Tags
@@ -336,7 +336,7 @@ export default function SchoolProfile() {
                    </Card>
                  )}
 
-                {!loadingEvents && (upcomingEvents.length > 0 || school.virtualTourUrl) && (
+                {!loadingEvents && (upcomingEvents.length > 0 || school.virtual_tour_url) && (
                    <Card className="p-6 border-teal-200 bg-teal-50">
                      <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                        <Calendar className="h-5 w-5 text-teal-600" />
@@ -347,8 +347,8 @@ export default function SchoolProfile() {
                          {upcomingEvents.map((event) => (
                            <div key={event.id} className="bg-white rounded-lg p-4 border border-teal-100">
                              <div className="flex items-start gap-3 mb-2">
-                               <span className={`px-2 py-0.5 rounded text-xs font-semibold ${EVENT_TYPE_COLORS[event.eventType] || 'bg-slate-100 text-slate-600'}`}>
-                                 {EVENT_TYPE_LABELS[event.eventType] || event.eventType}
+                               <span className={`px-2 py-0.5 rounded text-xs font-semibold ${EVENT_TYPE_COLORS[event.event_type] || 'bg-slate-100 text-slate-600'}`}>
+                                 {EVENT_TYPE_LABELS[event.event_type] || event.event_type}
                                </span>
                                {event.source === 'school_portal' ? (
                                  <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded">
@@ -368,8 +368,8 @@ export default function SchoolProfile() {
                              {event.description && (
                                <p className="text-sm text-slate-600 mb-3 line-clamp-2">{event.description}</p>
                              )}
-                             {event.registrationUrl && (
-                               <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer">
+                             {event.registration_url && (
+                               <a href={event.registration_url} target="_blank" rel="noopener noreferrer">
                                  <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white">
                                    Register
                                  </Button>
@@ -378,10 +378,10 @@ export default function SchoolProfile() {
                            </div>
                          ))}
                        </div>
-                     ) : school.virtualTourUrl ? (
+                     ) : school.virtual_tour_url ? (
                        <div className="text-center py-4">
                          <p className="text-slate-600 mb-3">No upcoming in-person events listed.</p>
-                         <a href={school.virtualTourUrl} target="_blank" rel="noopener noreferrer">
+                         <a href={school.virtual_tour_url} target="_blank" rel="noopener noreferrer">
                            <Button size="sm" variant="outline" className="gap-2">
                              <Eye className="h-4 w-4" />
                              Take a Virtual Tour
@@ -399,18 +399,24 @@ export default function SchoolProfile() {
                   </Card>
                 )}
 
-                {(school.teachingPhilosophy || school.curriculum) && (
+                {(school.teaching_philosophy || school.curriculum) && (
                   <Card className="p-6">
                     <h2 className="text-xl font-bold mb-3">Teaching Philosophy</h2>
-                    {school.teachingPhilosophy && (
-                      <p className="text-slate-700 mb-4">{school.teachingPhilosophy}</p>
+                    {school.teaching_philosophy && (
+                      <p className="text-slate-700 mb-4">{school.teaching_philosophy}</p>
                     )}
                     {school.curriculum && (
                       <div>
                         <span className="text-sm text-slate-600 font-medium">Curriculum Type:</span>
-                        <span className="ml-2 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-medium">
-                          {school.curriculum}
-                        </span>
+                        {Array.isArray(school.curriculum) ? school.curriculum.map((c, i) => (
+                          <span key={i} className="ml-2 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-medium">
+                            {c}
+                          </span>
+                        )) : (
+                          <span className="ml-2 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-medium">
+                            {school.curriculum}
+                          </span>
+                        )}
                       </div>
                     )}
                   </Card>
@@ -490,7 +496,7 @@ export default function SchoolProfile() {
                     {school.curriculum && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">Curriculum</span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.curriculum}</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{Array.isArray(school.curriculum) ? school.curriculum.join(', ') : school.curriculum}</span>
                       </div>
                     )}
                     {school.lowest_grade !== null && school.highest_grade !== null && (
@@ -600,10 +606,10 @@ export default function SchoolProfile() {
                       <span className="ml-2">{school.day_admission_deadline}</span>
                     </div>
                   )}
-                  {school.acceptanceRate && (
+                  {school.acceptance_rate && (
                     <div className="mb-4">
                       <span className="text-slate-600 font-medium">Acceptance Rate:</span>
-                      <span className="ml-2">{school.acceptanceRate}%</span>
+                      <span className="ml-2">{school.acceptance_rate}%</span>
                     </div>
                   )}
                   {school.admission_requirements && school.admission_requirements.length > 0 && (
@@ -635,9 +641,9 @@ export default function SchoolProfile() {
               <TabsContent value="photos" className="space-y-6">
                 <Card className="p-4 sm:p-6">
                   <h2 className="text-lg sm:text-xl font-bold mb-4">Gallery</h2>
-                  {school.photoGallery && school.photoGallery.length > 0 ? (
+                  {school.photo_gallery && school.photo_gallery.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      {school.photoGallery.map((photo, index) => (
+                      {school.photo_gallery.map((photo, index) => (
                         <img 
                           key={index} 
                           src={photo} 
