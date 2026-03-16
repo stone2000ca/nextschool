@@ -335,15 +335,8 @@ export const useMessageHandler = ({
       const isViewingSchoolDetail = selectedSchool !== null && !isSchoolSwitch;
 
       if (isSchoolSwitch && responseTargetSchoolId) {
-        // Prefer full school record from schools/shortlist arrays over the minimal
-        // summary in response.data.schools (which may lack profile fields like city,
-        // tuition, enrollment, etc.). This fixes the stale-closure issue where
-        // handleConfirmDeepDive already set the full school but selectedSchool in
-        // this closure still holds the previous value.
-        const fullSchool = schools?.find(s => s.id === responseTargetSchoolId)
-          || shortlistData?.find(s => s.id === responseTargetSchoolId);
         const responseSchools = response.data?.schools || [];
-        const switchTarget = fullSchool || responseSchools.find(s => s.id === responseTargetSchoolId);
+        const switchTarget = responseSchools.find(s => s.id === responseTargetSchoolId);
         if (switchTarget && setSelectedSchool) {
           setSelectedSchool(switchTarget);
         }
