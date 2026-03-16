@@ -90,17 +90,40 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
     }
   }, [user?.id, currentConversation?.id]);
 
-  // E29-007: Detect active journey on auth
+  // E29-007: Detect active journey on auth, scoped to current chat
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
 
     (async () => {
       try {
-        const journeyFilter = { userId: user.id, isArchived: false };
-        const journeys = await base44.entities.FamilyJourney.filter(journeyFilter);
-        if (journeys.length === 0) { setActiveJourney(null); return; }
+        let journey = null;
 
-        const journey = journeys.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
+        if (currentConversation?.id) {
+          // Step (a): Try to find journey specifically linked to this chat
+          const linked = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false, chatHistoryId: currentConversation.id });
+          if (linked.length > 0) {
+            journey = linked.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
+          } else {
+            // Step (b): Fallback — find most recent journey for user, then stamp chatHistoryId if missing
+            const all = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
+            if (all.length > 0) {
+              journey = all.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
+              if (!journey.chatHistoryId) {
+                await base44.entities.FamilyJourney.update(journey.id, { chatHistoryId: currentConversation.id });
+                journey = { ...journey, chatHistoryId: currentConversation.id };
+              }
+            }
+          }
+        } else {
+          // Step (c): No conversation context — just pick most recent journey
+          const all = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
+          if (all.length > 0) {
+            journey = all.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
+          }
+        }
+
+        if (!journey) { setActiveJourney(null); return; }
+
         const schoolJourneys = await base44.entities.SchoolJourney.filter({ familyJourneyId: journey.id });
 
         setActiveJourney({
@@ -122,7 +145,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
         console.error('[E29-007] Journey detection failed:', e.message);
       }
     })();
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, currentConversation?.id]);
 
   return {
     familyProfile, setFamilyProfile,
