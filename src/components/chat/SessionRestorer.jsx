@@ -161,6 +161,7 @@ export async function restoreSessionFromParam(
 
     // Restore deep dive state from message scan (BUG-RN-05)
     const conversationContext = chatHistory?.conversationContext || {};
+    const hasDeepDiveRestore = !!lastDeepDiveSchoolId;
     if (lastDeepDiveSchoolId && setSelectedSchool) {
       console.log('[RESTORE] Found deep dive in messages for school:', lastDeepDiveSchoolId, lastDeepDiveSchoolName);
       const targetSchool = restoredSchools.find(s => s.id === lastDeepDiveSchoolId);
