@@ -29,7 +29,6 @@ export function useShortlist({
       setShortlistData(schools);
     } catch (error) {
       console.error('Failed to load shortlist:', error);
-      setShortlistData([]);
     }
   };
 
