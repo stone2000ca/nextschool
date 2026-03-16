@@ -943,6 +943,7 @@ export default function Consultant() {
     schools,
     setSchools,
     selectedSchool,
+    setSelectedSchool,
     setCurrentView,
     onboardingPhase,
     restoredSessionData,

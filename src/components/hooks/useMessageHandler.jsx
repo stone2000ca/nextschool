@@ -25,6 +25,7 @@ export const useMessageHandler = ({
   schools,
   setSchools,
   selectedSchool,
+  setSelectedSchool,
   setCurrentView,
   onboardingPhase,
   restoredSessionData,
@@ -327,6 +328,14 @@ export const useMessageHandler = ({
       const responseTargetSchoolId = response.data?.deepDiveAnalysis?.schoolId || resolvedSchoolId || explicitSchoolId;
       const isSchoolSwitch = responseTargetSchoolId && responseTargetSchoolId !== selectedSchool?.id;
       const isViewingSchoolDetail = selectedSchool !== null && !isSchoolSwitch;
+
+      if (isSchoolSwitch && responseTargetSchoolId) {
+        const responseSchools = response.data?.schools || [];
+        const switchTarget = responseSchools.find(s => s.id === responseTargetSchoolId);
+        if (switchTarget && setSelectedSchool) {
+          setSelectedSchool(switchTarget);
+        }
+      }
 
       if (!isViewingSchoolDetail && response.data?.state) {
         // Only update view if NOT viewing a school detail
