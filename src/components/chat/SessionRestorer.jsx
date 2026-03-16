@@ -23,7 +23,11 @@ export async function restoreSessionFromParam(
   loadShortlist,
   isRestoringSessionRef,
   sessionParamProcessedRef,
-  setDebugInfo
+  setDebugInfo,
+  setDeepDiveAnalysis,
+  setSelectedSchool,
+  setVisitPrepKit,
+  setActionPlan
 ) {
   if (!sessionIdParam) return;
   
