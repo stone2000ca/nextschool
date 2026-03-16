@@ -147,9 +147,9 @@ export async function restoreSessionFromParam(
 
     // Check if session was in DEEP_DIVE state and restore accordingly
     const conversationContext = chatHistory?.conversationContext || {};
-    if (conversationContext.resumeView === 'DEEP_DIVE' && conversationContext.lastDeepDiveSchoolId && setDeepDiveAnalysis) {
+    if ((conversationContext.resumeView === 'DEEP_DIVE' || conversationContext.state === 'DEEP_DIVE') && (conversationContext.lastDeepDiveSchoolId || conversationContext.selectedSchoolId) && setDeepDiveAnalysis) {
       try {
-        const schoolId = conversationContext.lastDeepDiveSchoolId;
+        const schoolId = conversationContext.lastDeepDiveSchoolId || conversationContext.selectedSchoolId;
         const targetSchool = restoredSchools.find(s => s.id === schoolId);
         if (targetSchool && setSelectedSchool) {
           setSelectedSchool(targetSchool);
