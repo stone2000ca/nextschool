@@ -151,7 +151,7 @@ export function useShortlist({
 
   // E29-012: Hydrate shortlistData from ChatShortlist on activeJourney load
   useEffect(() => {
-    if (!activeJourney?.journeyId) return;
+    if (!activeJourney?.journeyId) { setShortlistData([]); return; }
     loadShortlist();
   }, [activeJourney?.journeyId]);
 
