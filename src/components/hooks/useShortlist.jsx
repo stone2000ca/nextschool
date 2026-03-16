@@ -52,7 +52,7 @@ export function useShortlist({
     if (!user) return;
 
     try {
-      let school = preloadedSchool || schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId);
+      let school = preloadedSchool || schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId) || extraSchools?.find(s => s.id === schoolId);
       const isRemoving = shortlistData.some(s => s.id === schoolId);
 
       if (!school && !isRemoving) {
