@@ -36,6 +36,7 @@ export async function restoreSessionFromParam(
   sessionParamProcessedRef.current = true;
   isRestoringSessionRef.current = true;
   if (skipViewOverrideRef) skipViewOverrideRef.current = true;
+  console.log('[RESTORE-DEBUG] Starting restore. skipViewOverride set to true');
   setRestoringSession(true);
   try {
     // Fetch ChatSession
@@ -149,14 +150,18 @@ export async function restoreSessionFromParam(
 
     // Check if session was in DEEP_DIVE state and restore accordingly
     const conversationContext = chatHistory?.conversationContext || {};
+    console.log('[RESTORE-DEBUG] conversationContext from ChatHistory:', JSON.stringify({state: conversationContext?.state, resumeView: conversationContext?.resumeView, lastDeepDiveSchoolId: conversationContext?.lastDeepDiveSchoolId, selectedSchoolId: conversationContext?.selectedSchoolId}));
+    console.log('[RESTORE-DEBUG] Checking deep dive condition. lastDeepDiveSchoolId:', conversationContext?.lastDeepDiveSchoolId, 'selectedSchoolId:', conversationContext?.selectedSchoolId, 'setDeepDiveAnalysis exists:', !!setDeepDiveAnalysis);
     if ((conversationContext.lastDeepDiveSchoolId || conversationContext.selectedSchoolId) && setDeepDiveAnalysis) {
       try {
+        console.log('[RESTORE-DEBUG] Deep dive block ENTERED');
         const schoolId = conversationContext.lastDeepDiveSchoolId || conversationContext.selectedSchoolId;
         const targetSchool = restoredSchools.find(s => s.id === schoolId);
         if (targetSchool && setSelectedSchool) {
           setSelectedSchool(targetSchool);
         }
         const analysisRecords = await base44.entities.SchoolAnalysis.filter({ userId: user.id, schoolId });
+        console.log('[RESTORE-DEBUG] SchoolAnalysis records found:', analysisRecords?.length);
         if (analysisRecords && analysisRecords[0] && setDeepDiveAnalysis) {
           setDeepDiveAnalysis(analysisRecords[0]);
           setOnboardingPhase(STATES.DEEP_DIVE);
@@ -176,6 +181,7 @@ export async function restoreSessionFromParam(
       }
     }
 
+    console.log('[RESTORE-DEBUG] Building restoredContext with state:', conversationContext?.resumeView || conversationContext?.state || 'RESULTS');
     if (chatHistory) {
       const restoredContext = {
         ...(chatHistory.conversationContext || {}),
@@ -228,6 +234,7 @@ export async function restoreSessionFromParam(
     };
     setMessages(prev => [...prev, welcomeMsg]);
 
+    console.log('[RESTORE-DEBUG] About to clear skipViewOverrideRef via setTimeout');
     if (skipViewOverrideRef) setTimeout(() => { skipViewOverrideRef.current = false; }, 0);
     setSessionRestored(true);
   } catch (error) {
