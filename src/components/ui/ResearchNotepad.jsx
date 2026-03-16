@@ -318,6 +318,11 @@ function timeAgo(isoString) {
 
 export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, priorityMatches, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive }) {
   const school = schoolData || null;
+  const lastSchoolNameRef = useRef(null);
+  if (school?.name && school.name !== 'School') {
+    lastSchoolNameRef.current = school.name;
+  }
+  const displayName = lastSchoolNameRef.current || school?.name || 'Select a school';
   const score = fitScore ?? null;
   const label = fitLabel || null;
   const priorityList = priorityMatches || [];
