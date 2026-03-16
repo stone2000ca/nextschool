@@ -17,10 +17,11 @@ export function useShortlist({
   const [pendingDeepDiveSchoolIds, setPendingDeepDiveSchoolIds] = useState(new Set());
   const hasAutoPopulatedShortlist = useRef(false);
 
-  const loadShortlist = async () => {
-    if (!activeJourney?.journeyId) return;
+  const loadShortlist = async (journeyId) => {
+    const jid = journeyId || activeJourney?.journeyId;
+    if (!jid) return;
     try {
-      const records = await base44.entities.ChatShortlist.filter({ familyJourneyId: activeJourney.journeyId });
+      const records = await base44.entities.ChatShortlist.filter({ familyJourneyId: jid });
       if (records.length === 0) {
         return;
       }
@@ -150,7 +151,7 @@ export function useShortlist({
   // E29-012: Hydrate shortlistData from ChatShortlist on activeJourney load
   useEffect(() => {
     if (!activeJourney?.journeyId) { setShortlistData([]); return; }
-    loadShortlist();
+    loadShortlist(activeJourney.journeyId);
   }, [activeJourney?.journeyId]);
 
   // E30-006
