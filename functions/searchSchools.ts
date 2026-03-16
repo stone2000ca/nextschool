@@ -39,9 +39,9 @@ function applyReligiousFilter(school, familyProfile, payload) {
     typeof d === 'string' && religiousDealbreakTerms.some(term => d.toLowerCase().includes(term))
   );
   if (hasReligiousDealbreaker) {
-    const schoolAffiliation = (school.religiousAffiliation || '').toLowerCase().trim().replace(/[\s-]+/g, ' ');
+    const schoolAffiliation = (school.faith_based || school.religiousAffiliation || '').toLowerCase().trim().replace(/[\s-]+/g, ' ');
     const knownReligiousAffiliations = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'methodist', 'presbyterian', 'anglican', 'orthodox', 'evangelical', 'pentecostal', 'adventist', 'mormon', 'lds', 'quaker', 'mennonite', 'amish', 'hindu', 'buddhist', 'sikh', 'muslim'];
-    if (school.religiousAffiliation && knownReligiousAffiliations.includes(schoolAffiliation)) {
+    if ((school.faith_based || school.religiousAffiliation) && knownReligiousAffiliations.includes(schoolAffiliation)) {
       console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation`);
       return false;
     }
