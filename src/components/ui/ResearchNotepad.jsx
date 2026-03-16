@@ -722,13 +722,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                             : { background: '#f0fdfa', border: '1px solid #d1fae5' };
                           return (
                             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                              <div style={{
-                                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                                background: 'linear-gradient(135deg, #0d9488, #14b8a6)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              }}>
-                                <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>NS</span>
-                              </div>
+                              <div style={{ flexShrink: 0, marginTop: 2 }}><NsDiamond /></div>
                               <div style={{
                                 ...bubbleStyle,
                                 borderRadius: '2px 10px 10px 10px',
