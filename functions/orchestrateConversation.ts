@@ -1504,7 +1504,7 @@ Object.assign(context, safeUpdatedContext);
         try {
           const briefResult = await base44.asServiceRole.functions.invoke('handleBrief', {
             message: processMessage,
-            conversationFamilyProfile: workingProfile,
+            localProfile: workingProfile,
             context,
             conversationHistory,
             consultantName,
