@@ -116,14 +116,14 @@ async function performSearch(req) {
     region, 
     country,
     city,
-    provinceState,
+    province_state: provinceState,
     minGrade, 
     maxGrade, 
     minTuition, 
     maxTuition, 
-    curriculumType,
+    curriculum,
     specializations,
-    schoolType,
+    school_type_label: schoolType,
     userLat,
     userLng,
     resolvedLat,
@@ -136,6 +136,8 @@ async function performSearch(req) {
     userId = null,
     searchQuery = ''
   } = payload;
+  // V1 compat aliases for payload params
+  const curriculumType = payload.curriculumType || curriculum;
 
   // BUG-SEARCH-003: Validate minimum required search params exist
   const hasLocation = !!(region || city || provinceState || country || resolvedLat || resolvedLng);
