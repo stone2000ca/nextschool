@@ -249,6 +249,38 @@ const MERGED_RESPONSE_SCHEMA = {
               detail: { type: 'string' }
             }
           }
+        },
+        communityPulse: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['reviewCount', 'themes', 'sentimentBreakdown', 'parentPerspective'],
+          properties: {
+            reviewCount: { type: 'number', description: 'Number of parent testimonials/reviews analyzed' },
+            themes: {
+              type: 'array',
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['label', 'sentiment'],
+                properties: {
+                  label: { type: 'string', description: 'Short theme label e.g. "Warm community"' },
+                  sentiment: { type: 'string', enum: ['positive', 'neutral', 'negative'] }
+                }
+              },
+              description: 'AI-distilled themes from parent reviews, 3-5 items'
+            },
+            sentimentBreakdown: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['positive', 'neutral', 'negative'],
+              properties: {
+                positive: { type: 'number', description: 'Percentage 0-100' },
+                neutral: { type: 'number', description: 'Percentage 0-100' },
+                negative: { type: 'number', description: 'Percentage 0-100' }
+              }
+            },
+            parentPerspective: { type: 'string', description: '1-2 sentence synthesis of overall parent sentiment' }
+          }
         }
       },
       required: ['fitLabel', 'fitScore', 'tradeOffs', 'dataGaps', 'visitQuestions', 'financialSummary', 'aiInsight']
@@ -303,7 +335,7 @@ Deno.serve(async (req) => {
 
     // PERF FIX: Parallelize all pre-LLM DB calls (user tier, school load, cache check, events)
     // Previously these ran serially (~1s total), now they run concurrently (~200ms)
-    const [userRecords, schoolResults, [cachedRec, cachedPrep, cachedPlan], allEvents] = await Promise.all([
+    const [userRecords, schoolResults, [cachedRec, cachedPrep, cachedPlan], allEvents, testimonials] = await Promise.all([
       userId ? base44.asServiceRole.entities.User.filter({ id: userId }).catch(e => { console.warn('[E24-S3-WC1] Failed to fetch user tier:', e.message); return []; }) : Promise.resolve([]),
       selectedSchoolId ? base44.entities.School.filter({ id: selectedSchoolId }).catch(e => { console.error('[DEEPDIVE ERROR] Failed to load school:', e.message); return []; }) : Promise.resolve([]),
       (userId && selectedSchoolId) ? Promise.all([
@@ -311,7 +343,8 @@ Deno.serve(async (req) => {
         base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'visit_prep_kit' }),
         base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'action_plan' })
       ]).catch(e => { console.warn('[E30] Cache read failed:', e.message); return [[], [], []]; }) : Promise.resolve([[], [], []]),
-      selectedSchoolId ? base44.entities.SchoolEvent.filter({ schoolId: selectedSchoolId, isActive: true }).catch(e => { console.warn('[DEEPDIVE] SchoolEvent fetch failed:', e.message); return []; }) : Promise.resolve([])
+      selectedSchoolId ? base44.entities.SchoolEvent.filter({ schoolId: selectedSchoolId, isActive: true }).catch(e => { console.warn('[DEEPDIVE] SchoolEvent fetch failed:', e.message); return []; }) : Promise.resolve([]),
+      selectedSchoolId ? base44.entities.Testimonial.filter({ schoolId: selectedSchoolId, is_visible: true }).catch(e => { console.warn('[DEEPDIVE] Testimonial fetch failed:', e.message); return []; }) : Promise.resolve([])
     ]);
 
     // E24-S3-WC1: Resolve user tier for premium content gating
@@ -488,6 +521,7 @@ In your JSON response, also include a schoolAnalysis object with:
 - visitQuestions: array of 3-5 personalized questions for a school visit
 - financialSummary: {tuition (number), aidAvailable (boolean), estimatedNetCost (number), budgetFit (string)}
 - priorityMatches: For each priority from the family Brief, assess how this school fits. If it clearly fits the priority, set status to 'match'. If it somewhat fits or has trade-offs, set status to 'partial'. If it conflicts with or does not address the priority, set status to 'flag'. Return these as priorityMatches array where each item has: priority (the brief priority name), status ('match', 'partial', or 'flag'), and detail (1-2 sentences explaining why).
+- communityPulse: Analyze any parent testimonials provided and generate: reviewCount (number of testimonials), themes (3-5 AI-distilled theme labels with sentiment 'positive'/'neutral'/'negative'), sentimentBreakdown (positive/neutral/negative percentages summing to 100), and parentPerspective (1-2 sentence synthesis). If no testimonials are available, base this on general community reputation data from the school profile.
 
 `;
 
@@ -508,6 +542,9 @@ ${JSON.stringify(compressedSchoolData, null, 2)}
 SCHOOL SUBSCRIPTION TIER: ${subscriptionTier}
 
 ${eventContext}
+
+${testimonials && testimonials.length > 0 ? `PARENT TESTIMONIALS (${testimonials.length} reviews):
+${testimonials.map(t => `"${t.quote_text}" — ${t.author_role}${t.year ? ` (${t.year})` : ''}`).join('\n')}` : 'PARENT TESTIMONIALS: None available for this school.'}
 
 Generate the DEEPDIVE card for this family-school match.`;
 
@@ -539,7 +576,7 @@ Generate the DEEPDIVE card for this family-school match.`;
       } catch (parseError) {
         console.log('[MERGED]: malformed response from InvokeLLM:', parseError.message);
         aiMessage = typeof mergedResponse === 'string' ? mergedResponse : (mergedResponse?.response || mergedResponse?.message || '');
-        deepDiveAnalysis = { fitLabel: 'worth_exploring', fitScore: 50, tradeOffs: [], dataGaps: [], visitQuestions: [], financialSummary: null, aiInsight: '', priorityMatches: [] };
+        deepDiveAnalysis = { fitLabel: 'worth_exploring', fitScore: 50, tradeOffs: [], dataGaps: [], visitQuestions: [], financialSummary: null, aiInsight: '', priorityMatches: [], communityPulse: null };
       }
       if (aiMessage) console.log('[DEEPDIVE] AI card generated via InvokeLLM (merged)');
     } catch (llmError) {
@@ -565,13 +602,13 @@ Generate the DEEPDIVE card for this family-school match.`;
           if (parsed.schoolAnalysis) {
             deepDiveAnalysis = parsed.schoolAnalysis;
           } else {
-            deepDiveAnalysis = { fitLabel: 'worth_exploring', fitScore: 50, tradeOffs: [], dataGaps: [], visitQuestions: [], financialSummary: null, aiInsight: '', priorityMatches: [] };
+            deepDiveAnalysis = { fitLabel: 'worth_exploring', fitScore: 50, tradeOffs: [], dataGaps: [], visitQuestions: [], financialSummary: null, aiInsight: '', priorityMatches: [], communityPulse: null };
           }
         }
       } catch (openrouterError) {
         console.error('[DEEPDIVE] OpenRouter fallback failed:', openrouterError.message);
         aiMessage = `**Great Fit for ${childDisplayName}**\n\n**Why ${selectedSchool.name} for ${childDisplayName}**\n${selectedSchool.description?.substring(0, 150) || 'School details available upon request.'}\n\n**Cost Reality**\nTuition: ${compressedSchoolData.tuitionFee}/year\n\nWhat would you like to know more about?`;
-        deepDiveAnalysis = { fitLabel: 'worth_exploring', fitScore: 50, tradeOffs: [], dataGaps: [], visitQuestions: [], financialSummary: null, aiInsight: '', priorityMatches: [] };
+        deepDiveAnalysis = { fitLabel: 'worth_exploring', fitScore: 50, tradeOffs: [], dataGaps: [], visitQuestions: [], financialSummary: null, aiInsight: '', priorityMatches: [], communityPulse: null };
       }
     }
 
