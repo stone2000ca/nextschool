@@ -997,6 +997,10 @@ export default function Consultant() {
 
   const handleConfirmDeepDive = async (school) => {
     setConfirmingSchool(null);
+    setSelectedSchool(school);
+    setDeepDiveAnalysis(null);
+    setVisitPrepKit(null);
+    setActionPlan(null);
     await handleSendMessage(`Tell me about ${school.name}`, school.id);
   };
 

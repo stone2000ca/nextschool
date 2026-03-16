@@ -212,7 +212,7 @@ export const useMessageHandler = ({
       // DEEPDIVE: Store structured analysis card data
       // Only update if a new one is returned; only clear when leaving DEEP_DIVE state entirely
       if (response.data?.deepDiveAnalysis) {
-        const diveSchoolId = response.data?.deepDiveAnalysis?.schoolId || selectedSchool?.id || null;
+        const diveSchoolId = response.data?.deepDiveAnalysis?.schoolId || resolvedSchoolId || explicitSchoolId || selectedSchool?.id || null;
         setDeepDiveAnalysis({ ...response.data.deepDiveAnalysis, schoolId: diveSchoolId });
       } else if (response.data?.state === 'DEEP_DIVE' && response.data?.deepDiveAnalysis === null && artifactCache && selectedSchool?.id) {
         // WC6: Hydrate from cache if no new analysis in DEEP_DIVE state
@@ -324,7 +324,9 @@ export const useMessageHandler = ({
       }
 
       // BUG-DD-001 FIX: selectedSchool is SINGLE SOURCE OF TRUTH - NEVER clear it based on AI state
-      const isViewingSchoolDetail = selectedSchool !== null;
+      const responseTargetSchoolId = response.data?.deepDiveAnalysis?.schoolId || resolvedSchoolId || explicitSchoolId;
+      const isSchoolSwitch = responseTargetSchoolId && responseTargetSchoolId !== selectedSchool?.id;
+      const isViewingSchoolDetail = selectedSchool !== null && !isSchoolSwitch;
 
       if (!isViewingSchoolDetail && response.data?.state) {
         // Only update view if NOT viewing a school detail
