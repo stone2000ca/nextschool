@@ -440,12 +440,15 @@ async function performSearch(req) {
       }
     }
     
-    if (curriculumType && school.curriculumType === curriculumType) {
-      score += 3;
+    if (curriculumType) {
+      const sc = school.curriculum || school.curriculumType;
+      const matches = Array.isArray(sc) ? sc.some(c => c.toLowerCase() === curriculumType.toLowerCase()) : (sc || '').toLowerCase() === curriculumType.toLowerCase();
+      if (matches) score += 3;
     }
     
-    if (schoolType && school.schoolType === schoolType) {
-      score += 2;
+    if (schoolType) {
+      const st = school.school_type_label || school.schoolType;
+      if (st === schoolType) score += 2;
     }
     
     if (specializations && specializations.length > 0) {
