@@ -97,7 +97,6 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
     (async () => {
       try {
         const journeyFilter = { userId: user.id, isArchived: false };
-        if (currentConversation?.id) { journeyFilter.chatHistoryId = currentConversation.id; }
         const journeys = await base44.entities.FamilyJourney.filter(journeyFilter);
         if (journeys.length === 0) { setActiveJourney(null); return; }
 
