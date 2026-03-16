@@ -807,6 +807,8 @@ export default function Consultant() {
 
   const selectConversation = (convo) => {
     setCurrentConversation(convo);
+    setShortlistData([]);
+    setRemovedSchoolIds([]);
     
     // FIX #3: Set briefStatus from conversation context
     const contextBriefStatus = convo.conversationContext?.briefStatus;
