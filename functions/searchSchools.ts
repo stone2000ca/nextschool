@@ -140,7 +140,7 @@ async function performSearch(req) {
   const curriculumType = payload.curriculumType || curriculum;
 
   // BUG-SEARCH-003: Validate minimum required search params exist
-  const hasLocation = !!(region || city || provinceState || country || resolvedLat || resolvedLng);
+  const hasLocation = !!(region || city || provinceState || country || resolvedLat || resolvedLng || payload.province_state);
   const hasGrade = minGrade !== null && minGrade !== undefined;
   
   if (!hasLocation && !hasGrade) {
