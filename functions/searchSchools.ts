@@ -259,9 +259,9 @@ async function performSearch(req) {
     );
   } else if (aliasedProvinces.length > 0) {
     locationFiltered = locationFiltered.filter(s => {
-      if (!s.provinceState) return false;
-      const schoolPS = s.provinceState.toLowerCase();
-      return aliasedProvinces.some(p => schoolPS === p.toLowerCase());
+      const ps = s.province_state || s.provinceState;
+      if (!ps) return false;
+      return aliasedProvinces.some(p => ps.toLowerCase() === p.toLowerCase());
     });
   }
 
