@@ -31,7 +31,7 @@ export default function AdminUsers() {
 
   const loadUsers = async () => {
     try {
-      const data = await base44.entities.User.list('-created_date');
+      const data = await base44.entities.User.list('-created_at');
       setUsers(data);
     } catch (error) {
       console.error('Failed to load users:', error);
@@ -257,7 +257,7 @@ export default function AdminUsers() {
                     </td>
 
                     <td className="p-4 text-sm text-slate-600">
-                      {new Date(user.created_date).toLocaleDateString()}
+                      {new Date(user.created_at).toLocaleDateString()}
                     </td>
 
                     {/* Actions */}

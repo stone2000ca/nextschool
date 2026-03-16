@@ -67,7 +67,7 @@ export default function SchoolProfile() {
     if (!school) return;
 
     // Set meta tags for SEO
-    const gradeRange = school.gradesServed || '';
+    const gradeRange = school.grades_served || '';
     document.title = `${school.name} - Grades ${gradeRange}, Tuition, Programs | NextSchool`;
     
     let metaDesc = document.querySelector('meta[name="description"]');
@@ -76,14 +76,14 @@ export default function SchoolProfile() {
       metaDesc.name = 'description';
       document.head.appendChild(metaDesc);
     }
-    const desc = (school.missionStatement || school.teachingPhilosophy || '').substring(0, 155);
+    const desc = (school.mission_statement || school.teachingPhilosophy || '').substring(0, 155);
     metaDesc.content = desc || `${school.name} - Private school in ${school.city}`;
 
     // OG Tags
     const ogTags = {
       'og:title': `${school.name} - Grades ${gradeRange} | NextSchool`,
       'og:description': desc || `Discover ${school.name} in ${school.city}`,
-      'og:image': school.logoUrl || school.headerPhotoUrl || '/logo.png',
+      'og:image': school.logo_url || school.header_photo_url || '/logo.png',
       'og:url': `https://nextschool.ca/SchoolProfile?id=${schoolId}`,
       'og:type': 'place',
       'og:site_name': 'NextSchool'
@@ -109,15 +109,15 @@ export default function SchoolProfile() {
         '@type': 'PostalAddress',
         streetAddress: school.address || '',
         addressLocality: school.city || '',
-        addressRegion: school.provinceState || '',
+        addressRegion: school.province_state || '',
         addressCountry: school.country || 'CA'
       },
       telephone: school.phone || '',
       email: school.email || '',
-      description: school.missionStatement || '',
+      description: school.mission_statement || '',
       ...(school.enrollment && { numberOfStudents: school.enrollment }),
       priceRange: school.tuition ? `${school.currency || 'CAD'} ${school.tuition}` : '',
-      image: school.logoUrl || school.headerPhotoUrl || '',
+      image: school.logo_url || school.header_photo_url || '',
       ...(school.website && { sameAs: school.website.startsWith('http') ? school.website : `https://${school.website}` })
     };
 
@@ -221,18 +221,18 @@ export default function SchoolProfile() {
       {/* Hero Section */}
       <div className="relative h-56 sm:h-80 lg:h-96 bg-slate-200">
         <img 
-          src={school.headerPhotoUrl || school.heroImage || `https://via.placeholder.com/1200x675/e2e8f0/64748b?text=${encodeURIComponent(school.name)}`}
+          src={school.header_photo_url || school.heroImage || `https://via.placeholder.com/1200x675/e2e8f0/64748b?text=${encodeURIComponent(school.name)}`}
           alt={`${school.name} campus`}
           className="w-full h-full object-cover"
           loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         {/* School Logo - Overlapping Bottom Left */}
-        {school.logoUrl && !isClearbitUrl(school.headerPhotoUrl) && (
+        {school.logo_url && !isClearbitUrl(school.header_photo_url) && (
           <div className="absolute bottom-0 left-0 p-4 sm:p-8 pb-0">
             <div className="transform translate-y-1/2">
               <img 
-                src={school.logoUrl} 
+                src={school.logo_url} 
                 alt={`${school.name} logo`}
                 className="h-16 sm:h-24 w-16 sm:w-24 rounded-lg bg-white p-2 shadow-lg object-contain"
                 loading="eager"
@@ -246,9 +246,9 @@ export default function SchoolProfile() {
               {badge.emoji} {school.region}
             </div>
             <div className="flex items-center gap-2 sm:gap-3 mb-2">
-              {school.logoUrl && isClearbitUrl(school.headerPhotoUrl) && (
+              {school.logo_url && isClearbitUrl(school.header_photo_url) && (
                 <img 
-                  src={school.logoUrl} 
+                  src={school.logo_url} 
                   alt={`${school.name} logo`}
                   className="h-8 sm:h-12 w-8 sm:w-12 rounded-lg bg-white p-1 sm:p-2 shadow-lg object-contain"
                   loading="eager"
@@ -259,7 +259,7 @@ export default function SchoolProfile() {
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
-                <span className="truncate">{school.city}, {school.provinceState}</span>
+                <span className="truncate">{school.city}, {school.province_state}</span>
               </span>
               {school.verified && (
                 <span className="flex items-center gap-1 bg-teal-600 px-2 py-1 rounded">
@@ -278,7 +278,7 @@ export default function SchoolProfile() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
             <div>
               <div className="text-xs sm:text-sm text-slate-600 mb-1">Grades</div>
-              <div className="text-base sm:text-xl font-bold truncate">{school.gradesServed}</div>
+              <div className="text-base sm:text-xl font-bold truncate">{school.grades_served}</div>
             </div>
             <div>
               <div className="text-xs sm:text-sm text-slate-600 mb-1">Enrollment</div>
@@ -287,12 +287,12 @@ export default function SchoolProfile() {
             <div>
               <div className="text-xs sm:text-sm text-slate-600 mb-1">Annual Tuition</div>
               <div className="text-base sm:text-xl font-bold truncate">
-                {school.dayTuition ? `${getCurrencySymbol(school.currency)}${school.dayTuition.toLocaleString()}` : 'N/A'}
+                {school.day_tuition ? `${getCurrencySymbol(school.currency)}${school.day_tuition.toLocaleString()}` : 'N/A'}
               </div>
             </div>
             <div>
               <div className="text-xs sm:text-sm text-slate-600 mb-1">Class Size</div>
-              <div className="text-base sm:text-xl font-bold">{school.avgClassSize || 'N/A'}</div>
+              <div className="text-base sm:text-xl font-bold">{school.avg_class_size || 'N/A'}</div>
             </div>
           </div>
         </div>
@@ -392,24 +392,24 @@ export default function SchoolProfile() {
                    </Card>
                  )}
 
-                {school.missionStatement && (
+                {school.mission_statement && (
                   <Card className="p-6">
                     <h2 className="text-xl font-bold mb-3">Mission Statement</h2>
-                    <p className="text-slate-700 leading-relaxed">{school.missionStatement}</p>
+                    <p className="text-slate-700 leading-relaxed">{school.mission_statement}</p>
                   </Card>
                 )}
 
-                {(school.teachingPhilosophy || school.curriculumType) && (
+                {(school.teachingPhilosophy || school.curriculum) && (
                   <Card className="p-6">
                     <h2 className="text-xl font-bold mb-3">Teaching Philosophy</h2>
                     {school.teachingPhilosophy && (
                       <p className="text-slate-700 mb-4">{school.teachingPhilosophy}</p>
                     )}
-                    {school.curriculumType && (
+                    {school.curriculum && (
                       <div>
                         <span className="text-sm text-slate-600 font-medium">Curriculum Type:</span>
                         <span className="ml-2 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-medium">
-                          {school.curriculumType}
+                          {school.curriculum}
                         </span>
                       </div>
                     )}
@@ -449,7 +449,7 @@ export default function SchoolProfile() {
                   </Card>
                 )}
 
-                {(school.founded || school.studentTeacherRatio || school.financialAidAvailable !== null || school.religiousAffiliation) && (
+                {(school.founded || school.student_teacher_ratio || school.financial_aid_available !== null || school.faith_based) && (
                   <Card className="p-6">
                     <h2 className="text-xl font-bold mb-4">Key Facts</h2>
                     <div className="space-y-3">
@@ -459,22 +459,22 @@ export default function SchoolProfile() {
                           <span className="font-medium">{school.founded}</span>
                         </div>
                       )}
-                      {school.studentTeacherRatio && (
+                      {school.student_teacher_ratio && (
                         <div className="flex justify-between">
                           <span className="text-slate-600">Student:Teacher Ratio</span>
-                          <span className="font-medium">{school.studentTeacherRatio}</span>
+                          <span className="font-medium">{school.student_teacher_ratio}</span>
                         </div>
                       )}
-                      {school.financialAidAvailable !== null && (
+                      {school.financial_aid_available !== null && (
                         <div className="flex justify-between">
                           <span className="text-slate-600">Financial Aid</span>
-                          <span className="font-medium">{school.financialAidAvailable ? 'Available' : 'Not Available'}</span>
+                          <span className="font-medium">{school.financial_aid_available ? 'Available' : 'Not Available'}</span>
                         </div>
                       )}
-                      {school.religiousAffiliation && (
+                      {school.faith_based && (
                         <div className="flex justify-between">
                           <span className="text-slate-600">Religious Affiliation</span>
-                          <span className="font-medium">{school.religiousAffiliation}</span>
+                          <span className="font-medium">{school.faith_based}</span>
                         </div>
                       )}
                     </div>
@@ -487,28 +487,28 @@ export default function SchoolProfile() {
                 <Card className="p-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
                   <h2 className="text-lg font-bold mb-4">Academic Programs</h2>
                   <div className="space-y-3">
-                    {school.curriculumType && (
+                    {school.curriculum && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">Curriculum</span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.curriculumType}</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.curriculum}</span>
                       </div>
                     )}
-                    {school.lowestGrade !== null && school.highestGrade !== null && (
+                    {school.lowest_grade !== null && school.highest_grade !== null && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">Grade Levels</span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.gradesServed}</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.grades_served}</span>
                       </div>
                     )}
-                    {school.avgClassSize && (
+                    {school.avg_class_size && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">Average Class Size</span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.avgClassSize} students</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.avg_class_size} students</span>
                       </div>
                     )}
-                    {school.studentTeacherRatio && (
+                    {school.student_teacher_ratio && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">Student-Teacher Ratio</span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.studentTeacherRatio}</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.student_teacher_ratio}</span>
                       </div>
                     )}
                   </div>
@@ -538,11 +538,11 @@ export default function SchoolProfile() {
                   </Card>
                 )}
 
-                {school.artsPrograms && school.artsPrograms.length > 0 && (
+                {school.arts_programs && school.arts_programs.length > 0 && (
                   <Card className="p-6">
                     <h2 className="text-lg font-bold mb-3">Arts Programs</h2>
                     <div className="flex flex-wrap gap-2">
-                      {school.artsPrograms.map((program, index) => (
+                      {school.arts_programs.map((program, index) => (
                         <span key={index} className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
                           {program}
                         </span>
@@ -551,11 +551,11 @@ export default function SchoolProfile() {
                   </Card>
                 )}
 
-                {school.sportsPrograms && school.sportsPrograms.length > 0 && (
+                {school.sports_programs && school.sports_programs.length > 0 && (
                   <Card className="p-6">
                     <h2 className="text-lg font-bold mb-3">Sports Programs</h2>
                     <div className="flex flex-wrap gap-2">
-                      {school.sportsPrograms.map((program, index) => (
+                      {school.sports_programs.map((program, index) => (
                         <span key={index} className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm">
                           {program}
                         </span>
@@ -594,10 +594,10 @@ export default function SchoolProfile() {
               <TabsContent value="admissions" className="space-y-6">
                 <Card className="p-6">
                   <h2 className="text-xl font-bold mb-4">Admissions Information</h2>
-                  {school.applicationDeadline && (
+                  {school.day_admission_deadline && (
                     <div className="mb-4">
                       <span className="text-slate-600 font-medium">Application Deadline:</span>
-                      <span className="ml-2">{school.applicationDeadline}</span>
+                      <span className="ml-2">{school.day_admission_deadline}</span>
                     </div>
                   )}
                   {school.acceptanceRate && (
@@ -606,21 +606,21 @@ export default function SchoolProfile() {
                       <span className="ml-2">{school.acceptanceRate}%</span>
                     </div>
                   )}
-                  {school.admissionRequirements && school.admissionRequirements.length > 0 && (
+                  {school.admission_requirements && school.admission_requirements.length > 0 && (
                     <div className="mb-4">
                       <span className="text-slate-600 font-medium mb-2 block">Requirements:</span>
                       <ul className="list-disc ml-6 text-slate-700 space-y-1">
-                        {school.admissionRequirements.map((req, index) => (
+                        {school.admission_requirements.map((req, index) => (
                           <li key={index}>{req}</li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  {school.openHouseDates && school.openHouseDates.length > 0 && (
+                  {school.open_house_dates && school.open_house_dates.length > 0 && (
                     <div>
                       <span className="text-slate-600 font-medium mb-2 block">Open House Dates:</span>
                       <div className="space-y-1 text-slate-700">
-                        {school.openHouseDates.map((date, index) => (
+                        {school.open_house_dates.map((date, index) => (
                           <div key={index} className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-teal-600" />
                             {date}
@@ -675,19 +675,19 @@ export default function SchoolProfile() {
               </Button>
 
               {/* Claim Button / Badge */}
-              {(!school.claimStatus || school.claimStatus === 'unclaimed') && (
+              {(!school.claim_status || school.claim_status === 'unclaimed') && (
                 <Link to={`${createPageUrl('ClaimSchool')}?schoolId=${schoolId}`} className="block w-full">
                   <Button className="w-full bg-blue-600 hover:bg-blue-700 mb-4">
                     Claim This School
                   </Button>
                 </Link>
               )}
-              {school.claimStatus === 'pending' && (
+              {school.claim_status === 'pending' && (
                 <div className="w-full px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm text-center mb-4">
                   Claim in Progress
                 </div>
               )}
-              {school.claimStatus === 'claimed' && (
+              {school.claim_status === 'claimed' && (
                 <div className="w-full px-3 py-2 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-sm text-center mb-4">
                   ✓ Managed by school
                 </div>

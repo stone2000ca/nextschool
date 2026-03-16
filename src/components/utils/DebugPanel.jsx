@@ -58,8 +58,8 @@ export default function DebugPanel({ debugState }) {
     try {
       const conversationId = debugState?.conversationContext?.conversationId;
       const logs = conversationId
-        ? await base44.entities.LLMLog.filter({ conversation_id: conversationId }, '-created_date', 100)
-        : await base44.entities.LLMLog.list('-created_date', 50);
+        ? await base44.entities.LLMLog.filter({ conversation_id: conversationId }, '-created_at', 100)
+        : await base44.entities.LLMLog.list('-created_at', 50);
       setLlmLogs(logs);
     } catch (e) {
       console.error('[WC7] Failed to fetch LLMLog:', e);
@@ -140,7 +140,7 @@ export default function DebugPanel({ debugState }) {
                   <table className="text-xs w-full border-collapse">
                     <thead>
                       <tr className="bg-amber-200 text-amber-900">
-                        {['id', 'type', 'to', 'status', 'test_scenario', 'created_date'].map(col => (
+                        {['id', 'type', 'to', 'status', 'test_scenario', 'created_at'].map(col => (
                           <th key={col} className="px-2 py-1 text-left border border-amber-300 font-mono">{col}</th>
                         ))}
                       </tr>
@@ -153,7 +153,7 @@ export default function DebugPanel({ debugState }) {
                           <td className="px-2 py-1 border border-amber-200 font-mono">{log.to}</td>
                           <td className="px-2 py-1 border border-amber-200 font-mono">{log.status}</td>
                           <td className="px-2 py-1 border border-amber-200 font-mono">{log.test_scenario || '—'}</td>
-                          <td className="px-2 py-1 border border-amber-200 font-mono">{log.created_date ? new Date(log.created_date).toLocaleString() : '—'}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono">{log.created_at ? new Date(log.created_at).toLocaleString() : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -193,7 +193,7 @@ export default function DebugPanel({ debugState }) {
                           <td className="px-2 py-1 border border-amber-200 font-mono text-right">{log.token_count_out}</td>
                           <td className="px-2 py-1 border border-amber-200 font-mono max-w-48 truncate" title={log.prompt_summary}>{(log.prompt_summary || '').substring(0, 100)}</td>
                           <td className="px-2 py-1 border border-amber-200 font-mono max-w-48 truncate" title={log.response_summary}>{(log.response_summary || '').substring(0, 100)}</td>
-                          <td className="px-2 py-1 border border-amber-200 font-mono whitespace-nowrap">{log.created_date ? new Date(log.created_date).toLocaleString() : '—'}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono whitespace-nowrap">{log.created_at ? new Date(log.created_at).toLocaleString() : '—'}</td>
                         </tr>
                       ))}
                     </tbody>

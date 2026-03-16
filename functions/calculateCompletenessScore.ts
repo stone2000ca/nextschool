@@ -13,25 +13,25 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 // =============================================================================
 
 const CRITICAL_FIELDS = [
-  'name', 'description', 'dayTuition', 'lowestGrade', 'highestGrade',
-  'provinceState', 'country', 'genderPolicy', 'schoolType', 'city', 'lat', 'lng',
+  'name', 'description', 'day_tuition', 'lowest_grade', 'highest_grade',
+  'province_state', 'country', 'gender_policy', 'school_type_label', 'city', 'lat', 'lng',
 ];
 
 const HIGH_FIELDS = [
-  'enrollment', 'avgClassSize', 'studentTeacherRatio', 'curriculumType',
-  'address', 'phone', 'email', 'website', 'missionStatement',
-  'headerPhotoUrl',
+  'enrollment', 'avg_class_size', 'student_teacher_ratio', 'curriculum',
+  'address', 'phone', 'email', 'website', 'mission_statement',
+  'header_photo_url',
 ];
 
 // Fields that are system-managed, derived, or intentionally excluded from scoring
 const EXCLUDED_FIELDS = new Set([
-  'id', 'created_date', 'updated_date', 'created_by', 'created_by_id',
-  'slug', 'status', 'verified', 'claimStatus',
-  'schoolTier', 'completenessScore',
+  'id', 'created_at', 'updated_date', 'created_by', 'created_by_id',
+  'slug', 'status', 'verified', 'claim_status',
+  'school_tier', 'completenessScore',
   'adminUserId', 'is_sample', 'source', 'dataSource', 'governmentId',
   'aiEnrichedFields', 'verifiedFields', 'lastEnriched', 'importBatchId',
   // Excluded profile fields per spec
-  'gradeSystem', 'gradesServed', 'heroImage', 'tuition', 'currency',
+  'gradeSystem', 'grades_served', 'heroImage', 'tuition', 'currency',
   'tuitionMin', 'tuitionMax', 'acceptanceRate', 'internationalStudentPct',
   'campusFeel',
 ]);
@@ -39,7 +39,7 @@ const EXCLUDED_FIELDS = new Set([
 const CRITICAL_SET = new Set(CRITICAL_FIELDS);
 const HIGH_SET = new Set(HIGH_FIELDS);
 
-const GRADE_FIELDS = new Set(['lowestGrade', 'highestGrade']);
+const GRADE_FIELDS = new Set(['lowest_grade', 'highest_grade']);
 const PLACEHOLDER_STRINGS = new Set(['', 'n/a', 'not available', 'unknown', 'tbd']);
 
 function isFieldPopulated(value, fieldName) {

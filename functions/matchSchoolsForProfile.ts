@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         searchParams.city = locationParts[0];
         const inferredProvince = cityToProvinceMap[locationParts[0].toLowerCase()];
         if (inferredProvince) {
-          searchParams.provinceState = inferredProvince;
+          searchParams.province_state = inferredProvince;
         }
       }
     }
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     }
 
     // Filter and deduplicate
-    schools = schools.filter(s => s.schoolType !== 'Special Needs' && s.schoolType !== 'Public');
+    schools = schools.filter(s => s.school_type_label !== 'Special Needs' && s.school_type_label !== 'Public');
     const seen = new Set();
     const deduplicated = [];
     for (const school of schools) {

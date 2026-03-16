@@ -54,7 +54,7 @@ export async function restoreSessionFromParam(
       profileName: chatSession.profileName,
       consultantName: chatSession.consultantSelected,
       matchedSchoolsCount: chatSession.matchedSchools ? JSON.parse(chatSession.matchedSchools).length : 0,
-      createdDate: chatSession.created_date,
+      createdDate: chatSession.created_at,
       updatedDate: chatSession.updated_date
     });
 
@@ -89,12 +89,12 @@ export async function restoreSessionFromParam(
           const locationParts = locationArea.split(',').map(s => s.trim());
           if (locationParts.length >= 2) {
             searchParams.city = locationParts[0];
-            searchParams.provinceState = locationParts[1];
+            searchParams.province_state = locationParts[1];
           } else if (locationParts.length === 1) {
             searchParams.city = locationParts[0];
             const inferredProvince = cityToProvinceMap[locationParts[0].toLowerCase()];
             if (inferredProvince) {
-              searchParams.provinceState = inferredProvince;
+              searchParams.province_state = inferredProvince;
             }
           }
         }
@@ -138,7 +138,7 @@ export async function restoreSessionFromParam(
       try {
         const recentAnalyses = await base44.entities.SchoolAnalysis.filter({ userId: user.id });
         if (recentAnalyses?.length > 0) {
-          const sorted = recentAnalyses.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+          const sorted = recentAnalyses.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
           const latest = sorted[0];
           lastDeepDiveSchoolId = latest.schoolId;
           lastDeepDiveSchoolName = latest.schoolName || 'School';

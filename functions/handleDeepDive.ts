@@ -369,7 +369,7 @@ Deno.serve(async (req) => {
             if (analyses?.[0]) cachedDeepDiveAnalysis = analyses[0];
           } catch (e) { console.warn('[E30] Cache: SchoolAnalysis fetch failed:', e.message); }
           const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
-          const isPremiumSchool = selectedSchool.schoolTier === 'growth' || selectedSchool.schoolTier === 'pro';
+          const isPremiumSchool = selectedSchool.school_tier === 'growth' || selectedSchool.school_tier === 'pro';
           return Response.json({
             message: extractConciseSummary(rec.content),
             state: currentState,
@@ -424,19 +424,19 @@ Deno.serve(async (req) => {
 
     const compressedSchoolData = {
       name: selectedSchool.name,
-      tuitionFee: selectedSchool.tuition || selectedSchool.dayTuition || 'Not specified',
-      location: `${selectedSchool.city}, ${selectedSchool.provinceState || selectedSchool.country}`,
-      genderPolicy: selectedSchool.genderPolicy || 'Co-ed',
+      tuitionFee: selectedSchool.tuition || selectedSchool.day_tuition || 'Not specified',
+      location: `${selectedSchool.city}, ${selectedSchool.province_state || selectedSchool.country}`,
+      gender_policy: selectedSchool.gender_policy || 'Co-ed',
       // E26-S1: Enriched fields for deeper LLM analysis
-      curriculumType: selectedSchool.curriculumType || null,
+      curriculum: selectedSchool.curriculum || null,
       specializations: selectedSchool.specializations || [],
-      avgClassSize: selectedSchool.avgClassSize || null,
-      studentTeacherRatio: selectedSchool.studentTeacherRatio || null,
-      sportsPrograms: selectedSchool.sportsPrograms?.slice(0, 5) || [],
-      artsPrograms: selectedSchool.artsPrograms?.slice(0, 5) || [],
-      boardingAvailable: !!(selectedSchool.boardingTuition || selectedSchool.boardingAvailable),
-      financialAidAvailable: selectedSchool.financialAidAvailable || false,
-      religiousAffiliation: selectedSchool.religiousAffiliation || null,
+      avg_class_size: selectedSchool.avg_class_size || null,
+      student_teacher_ratio: selectedSchool.student_teacher_ratio || null,
+      sports_programs: selectedSchool.sports_programs?.slice(0, 5) || [],
+      arts_programs: selectedSchool.arts_programs?.slice(0, 5) || [],
+      boarding_available: !!(selectedSchool.boarding_tuition || selectedSchool.boarding_available),
+      financial_aid_available: selectedSchool.financial_aid_available || false,
+      faith_based: selectedSchool.faith_based || null,
       enrollment: selectedSchool.enrollment || null,
       description: selectedSchool.description?.substring(0, 300) || null
     };
@@ -684,16 +684,16 @@ Generate the DEEPDIVE card for this family-school match.`;
         { item: 'Teacher reference letter', status: 'pending' },
         { item: 'Standardized test scores (if available)', status: 'pending' }
       ];
-      if (selectedSchool.financialAidAvailable) {
+      if (selectedSchool.financial_aid_available) {
         docChecklist.push({ item: 'Financial aid application', status: 'pending' });
       }
 
       generatedActionPlan = {
         visitTimeline: visitWindow,
-        applicationDeadlines: {
-          deadline: selectedSchool.applicationDeadline || null,
+        day_admission_deadlines: {
+          deadline: selectedSchool.day_admission_deadline || null,
           financialAidDeadline: selectedSchool.financialAidDeadline || null,
-          isEstimated: !selectedSchool.applicationDeadline
+          isEstimated: !selectedSchool.day_admission_deadline
         },
         documentChecklist: docChecklist,
         followUpQuestions: deepDiveAnalysis.visitQuestions || [],
@@ -771,7 +771,7 @@ Generate the DEEPDIVE card for this family-school match.`;
     const finalMessage = conciseMessage + followUpPrompt;
 
     // E16a-015: Calculate tourRequestOffered
-    const isPremium = selectedSchool.schoolTier === 'growth' || selectedSchool.schoolTier === 'pro';
+    const isPremium = selectedSchool.school_tier === 'growth' || selectedSchool.school_tier === 'pro';
     const tourRequestOffered = isPremium && upcomingEvents.length > 0;
 
     console.log('[DEEPDIVE] Returning aiMessage length:', finalMessage?.length);

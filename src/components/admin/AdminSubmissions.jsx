@@ -27,7 +27,7 @@ export default function AdminSubmissions() {
     // Fetch the actual school records for those IDs
     const schoolResults = await Promise.all(schoolIds.map(id => base44.entities.School.filter({ id })));
     const schools = schoolResults.flat().filter(s => s.status === "draft" || s.status === "active" || s.status === "pending_review");
-    setSubmissions(schools.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
+    setSubmissions(schools.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
     setLoading(false);
   }
 
@@ -35,8 +35,8 @@ export default function AdminSubmissions() {
 
   async function approve(school) {
     setActionMap(m => ({ ...m, [school.id]: "approving" }));
-    // Fix 1+2: Set status, claimStatus, membershipTier together
-    await base44.entities.School.update(school.id, { status: "active", claimStatus: "claimed", membershipTier: "basic" });
+    // Fix 1+2: Set status, claim_status, membershipTier together
+    await base44.entities.School.update(school.id, { status: "active", claim_status: "claimed", membershipTier: "basic" });
     // Update associated SchoolClaim to verified (checks both statuses)
     let approvedClaim = null;
     try {
@@ -72,7 +72,7 @@ export default function AdminSubmissions() {
             claimantName: approvedClaim.claimantName || school.created_by || 'School Administrator',
             claimantEmail: approvedClaim.claimantEmail || school.created_by,
           },
-          schoolData: { id: school.id, name: school.name, claimStatus: 'claimed' },
+          schoolData: { id: school.id, name: school.name, claim_status: 'claimed' },
         });
       }
     } catch (e) {
@@ -147,10 +147,10 @@ export default function AdminSubmissions() {
                   <tr key={school.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-slate-900">{school.name}</td>
                     <td className="px-4 py-3 text-slate-600">{school.city || "—"}</td>
-                    <td className="px-4 py-3 text-slate-600">{school.provinceState || "—"}</td>
+                    <td className="px-4 py-3 text-slate-600">{school.province_state || "—"}</td>
                     <td className="px-4 py-3 text-slate-500">{school.created_by || "—"}</td>
                     <td className="px-4 py-3 text-slate-500">
-                      {school.created_date ? new Date(school.created_date).toLocaleDateString("en-CA") : "—"}
+                      {school.created_at ? new Date(school.created_at).toLocaleDateString("en-CA") : "—"}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 justify-end">

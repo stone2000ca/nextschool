@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
     // Fetch all schools
     const schools = await base44.asServiceRole.entities.School.filter({ 
       status: 'active',
-      claimStatus: 'claimed'
+      claim_status: 'claimed'
     });
 
     // Fetch all blog posts (if Blog entity exists)

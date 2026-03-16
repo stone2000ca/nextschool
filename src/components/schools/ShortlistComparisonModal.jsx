@@ -19,7 +19,7 @@ function formatGrade(grade) {
 }
 
 function formatTuition(school) {
-  const val = school.dayTuition ?? school.tuition;
+  const val = school.day_tuition ?? school.tuition;
   if (!val) return 'Contact school';
   const symbol = school.currency === 'USD' ? 'US$' : school.currency === 'GBP' ? '£' : '$';
   return `${symbol}${val.toLocaleString()}`;
@@ -53,11 +53,11 @@ function buildRowsFromProfiles(schools, familyProfile) {
 
 function getCellForRow(rowId, school, familyProfile) {
   if (rowId === '_location') {
-    const loc = [school.city, school.provinceState].filter(Boolean).join(', ');
+    const loc = [school.city, school.province_state].filter(Boolean).join(', ');
     return { status: 'info', detail: loc || '—' };
   }
   if (rowId === '_grades') {
-    const f = formatGrade(school.lowestGrade), t = formatGrade(school.highestGrade);
+    const f = formatGrade(school.lowest_grade), t = formatGrade(school.highest_grade);
     return { status: 'info', detail: f && t ? `${f}–${t}` : '—' };
   }
   if (rowId === '_tuition') {
@@ -150,7 +150,7 @@ export default function ShortlistComparisonModal({ schools, familyProfile, onClo
                   <th key={school.id} className="p-0 border-b border-slate-100 border-l border-l-slate-100">
                     <div className="relative h-24 bg-slate-100 overflow-hidden">
                       <HeaderPhotoDisplay
-                        headerPhotoUrl={school.headerPhotoUrl}
+                        header_photo_url={school.header_photo_url}
                         heroImage={school.heroImage}
                         schoolName={school.name}
                         height="h-24"

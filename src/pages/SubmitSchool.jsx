@@ -57,12 +57,12 @@ const COUNTRIES = ["Canada", "United States", "United Kingdom", "Australia", "Ot
 const INITIAL_FORM = {
   name: "",
   city: "",
-  provinceState: "",
+  province_state: "",
   country: "Canada",
-  schoolType: "",
-  lowestGrade: "",
-  highestGrade: "",
-  genderPolicy: "",
+  school_type_label: "",
+  lowest_grade: "",
+  highest_grade: "",
+  gender_policy: "",
   email: "",
 };
 
@@ -105,12 +105,12 @@ export default function SubmitSchool() {
     const e = {};
     if (!form.name.trim()) e.name = "Required";
     if (!form.city.trim()) e.city = "Required";
-    if (!form.provinceState.trim()) e.provinceState = "Required";
+    if (!form.province_state.trim()) e.province_state = "Required";
     if (!form.country) e.country = "Required";
-    if (!form.schoolType) e.schoolType = "Required";
-    if (form.lowestGrade === "") e.lowestGrade = "Required";
-    if (form.highestGrade === "") e.highestGrade = "Required";
-    if (!form.genderPolicy) e.genderPolicy = "Required";
+    if (!form.school_type_label) e.school_type_label = "Required";
+    if (form.lowest_grade === "") e.lowest_grade = "Required";
+    if (form.highest_grade === "") e.highest_grade = "Required";
+    if (!form.gender_policy) e.gender_policy = "Required";
     if (!form.email.trim()) e.email = "Required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Enter a valid email";
     return e;
@@ -138,16 +138,16 @@ export default function SubmitSchool() {
     const newSchool = await base44.entities.School.create({
       name: form.name.trim(),
       city: form.city.trim(),
-      provinceState: form.provinceState.trim(),
+      province_state: form.province_state.trim(),
       country: form.country,
       region: form.country === "Canada" ? "Canada" : form.country === "United States" ? "United States" : form.country === "United Kingdom" ? "United Kingdom" : "Europe",
-      schoolType: form.schoolType,
-      lowestGrade: Number(form.lowestGrade),
-      highestGrade: Number(form.highestGrade),
-      genderPolicy: form.genderPolicy,
+      school_type_label: form.school_type_label,
+      lowest_grade: Number(form.lowest_grade),
+      highest_grade: Number(form.highest_grade),
+      gender_policy: form.gender_policy,
       slug,
       status: "draft",
-      claimStatus: "unclaimed",
+      claim_status: "unclaimed",
       source: "school_submitted",
       verified: false,
       userId: currentUser.id,
@@ -220,7 +220,7 @@ export default function SubmitSchool() {
                 <div key={d.id} className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-amber-200">
                   <div>
                     <p className="font-medium text-slate-900 text-sm">{d.name}</p>
-                    <p className="text-xs text-slate-500">{[d.city, d.provinceState].filter(Boolean).join(", ")}</p>
+                    <p className="text-xs text-slate-500">{[d.city, d.province_state].filter(Boolean).join(", ")}</p>
                   </div>
                   <Link to={createPageUrl("ClaimSchool") + `?schoolId=${d.id}`}>
                     <Button size="sm" variant="outline" className="text-teal-700 border-teal-300 gap-1">
@@ -253,8 +253,8 @@ export default function SubmitSchool() {
             <Field label="City" required error={errors.city}>
               <input type="text" value={form.city} onChange={e => set("city", e.target.value)} placeholder="Toronto" className={inputCls(errors.city)} />
             </Field>
-            <Field label="Province / State" required error={errors.provinceState}>
-              <input type="text" value={form.provinceState} onChange={e => set("provinceState", e.target.value)} placeholder="ON" className={inputCls(errors.provinceState)} />
+            <Field label="Province / State" required error={errors.province_state}>
+              <input type="text" value={form.province_state} onChange={e => set("province_state", e.target.value)} placeholder="ON" className={inputCls(errors.province_state)} />
             </Field>
           </div>
 
@@ -266,8 +266,8 @@ export default function SubmitSchool() {
           </Field>
 
           {/* School Type */}
-          <Field label="School Type" required error={errors.schoolType}>
-            <select value={form.schoolType} onChange={e => set("schoolType", e.target.value)} className={inputCls(errors.schoolType)}>
+          <Field label="School Type" required error={errors.school_type_label}>
+            <select value={form.school_type_label} onChange={e => set("school_type_label", e.target.value)} className={inputCls(errors.school_type_label)}>
               <option value="">Select type…</option>
               {SCHOOL_TYPES.map(t => <option key={t}>{t}</option>)}
             </select>
@@ -275,17 +275,17 @@ export default function SubmitSchool() {
 
           {/* Grade Range */}
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Lowest Grade" required error={errors.lowestGrade}>
-              <input type="number" value={form.lowestGrade} onChange={e => set("lowestGrade", e.target.value)} placeholder="e.g. 1" min={-2} max={12} className={inputCls(errors.lowestGrade)} />
+            <Field label="Lowest Grade" required error={errors.lowest_grade}>
+              <input type="number" value={form.lowest_grade} onChange={e => set("lowest_grade", e.target.value)} placeholder="e.g. 1" min={-2} max={12} className={inputCls(errors.lowest_grade)} />
             </Field>
-            <Field label="Highest Grade" required error={errors.highestGrade}>
-              <input type="number" value={form.highestGrade} onChange={e => set("highestGrade", e.target.value)} placeholder="e.g. 12" min={-2} max={12} className={inputCls(errors.highestGrade)} />
+            <Field label="Highest Grade" required error={errors.highest_grade}>
+              <input type="number" value={form.highest_grade} onChange={e => set("highest_grade", e.target.value)} placeholder="e.g. 12" min={-2} max={12} className={inputCls(errors.highest_grade)} />
             </Field>
           </div>
 
           {/* Gender Policy */}
-          <Field label="Gender Policy" required error={errors.genderPolicy}>
-            <select value={form.genderPolicy} onChange={e => set("genderPolicy", e.target.value)} className={inputCls(errors.genderPolicy)}>
+          <Field label="Gender Policy" required error={errors.gender_policy}>
+            <select value={form.gender_policy} onChange={e => set("gender_policy", e.target.value)} className={inputCls(errors.gender_policy)}>
               <option value="">Select…</option>
               {GENDER_POLICIES.map(g => <option key={g}>{g}</option>)}
             </select>

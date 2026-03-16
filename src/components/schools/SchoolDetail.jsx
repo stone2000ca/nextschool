@@ -16,7 +16,7 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
   const [showTourModal, setShowTourModal] = useState(false);
   const [events, setEvents] = useState([]);
   const [eventsLoaded, setEventsLoaded] = useState(false);
-  const isPremium = school?.schoolTier === 'pro';
+  const isPremium = school?.school_tier === 'pro';
   useEffect(() => {
     if (!school?.id) return;
     base44.entities.SchoolEvent.filter({ schoolId: school.id, isActive: true })
@@ -95,7 +95,7 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
       {/* Hero Image */}
       <div className="relative h-40 sm:h-48 bg-slate-200">
         <img 
-          src={school.headerPhotoUrl || school.heroImage || `https://via.placeholder.com/1200x675/e2e8f0/64748b?text=${encodeURIComponent(school.name)}`}
+          src={school.header_photo_url || school.heroImage || `https://via.placeholder.com/1200x675/e2e8f0/64748b?text=${encodeURIComponent(school.name)}`}
           alt={`${school.name} campus`}
           className="w-full h-full object-cover"
           loading="lazy"
@@ -109,12 +109,12 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
             <div className="text-slate-600 mb-1">Location</div>
             <div className="font-medium flex items-center gap-1">
               <MapPin className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{school.city}, {school.provinceState}</span>
+              <span className="truncate">{school.city}, {school.province_state}</span>
             </div>
           </div>
           <div>
             <div className="text-slate-600 mb-1">Grades</div>
-            <div className="font-medium">{formatGradeRange(school.lowestGrade, school.highestGrade)}</div>
+            <div className="font-medium">{formatGradeRange(school.lowest_grade, school.highest_grade)}</div>
           </div>
           <div>
             <div className="text-slate-600 mb-1">Tuition</div>
@@ -125,7 +125,7 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
           <div>
             <div className="text-slate-600 mb-1">Class Size</div>
             <div className="font-medium">
-              {school.avgClassSize && school.avgClassSize > 0 ? `${school.avgClassSize} students` : 'N/A'}
+              {school.avg_class_size && school.avg_class_size > 0 ? `${school.avg_class_size} students` : 'N/A'}
             </div>
           </div>
         </div>
@@ -144,10 +144,10 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
-            {school.missionStatement && (
+            {school.mission_statement && (
               <div>
                 <h3 className="font-semibold mb-2">Mission</h3>
-                <p className="text-sm text-slate-700 leading-relaxed">{school.missionStatement}</p>
+                <p className="text-sm text-slate-700 leading-relaxed">{school.mission_statement}</p>
               </div>
             )}
             
@@ -187,11 +187,11 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
               </div>
             )}
             
-            {school.curriculumType && (
+            {school.curriculum && (
               <div>
                 <h3 className="font-semibold mb-2">Curriculum</h3>
                 <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm">
-                  {school.curriculumType}
+                  {school.curriculum}
                 </span>
               </div>
             )}
@@ -218,11 +218,11 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
           </TabsContent>
 
           <TabsContent value="programs" className="space-y-4 mt-4">
-            {school.artsPrograms && school.artsPrograms.length > 0 && (
+            {school.arts_programs && school.arts_programs.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-2">Arts</h3>
                 <div className="flex flex-wrap gap-2">
-                  {school.artsPrograms.map((program, idx) => (
+                  {school.arts_programs.map((program, idx) => (
                     <span key={idx} className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs">
                       {program}
                     </span>
@@ -231,11 +231,11 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
               </div>
             )}
 
-            {school.sportsPrograms && school.sportsPrograms.length > 0 && (
+            {school.sports_programs && school.sports_programs.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-2">Sports</h3>
                 <div className="flex flex-wrap gap-2">
-                  {school.sportsPrograms.map((program, idx) => (
+                  {school.sports_programs.map((program, idx) => (
                     <span key={idx} className="px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs">
                       {program}
                     </span>
@@ -259,14 +259,14 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
           </TabsContent>
 
           <TabsContent value="admissions" className="space-y-4 mt-4">
-            {school.applicationDeadline && (
+            {school.day_admission_deadline && (
               <div>
                 <h3 className="font-semibold mb-2">Application Deadline</h3>
-                <p className="text-sm text-slate-700">{school.applicationDeadline}</p>
+                <p className="text-sm text-slate-700">{school.day_admission_deadline}</p>
               </div>
             )}
 
-            {school.financialAidAvailable && (
+            {school.financial_aid_available && (
               <div>
                 <h3 className="font-semibold mb-2">Financial Aid</h3>
                 <p className="text-sm text-teal-600">Available</p>

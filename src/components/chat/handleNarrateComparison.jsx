@@ -33,7 +33,7 @@ export async function handleNarrateComparison({
 
   // E11b: Build detailed school data for LLM evaluation
   const schoolDataForMatrix = comparedSchools.map(s => {
-    const tuition = s.dayTuition ?? s.tuition;
+    const tuition = s.day_tuition ?? s.tuition;
     const isVisited = visitedSchoolIds.has(s.id);
     return {
       id: s.id,
@@ -42,14 +42,14 @@ export async function handleNarrateComparison({
       distanceKm: s.distanceKm,
       tuition,
       currency: s.currency,
-      curriculumType: s.curriculumType,
-      genderPolicy: s.genderPolicy,
-      boardingAvailable: s.boardingAvailable,
-      avgClassSize: s.avgClassSize,
+      curriculum: s.curriculum,
+      gender_policy: s.gender_policy,
+      boarding_available: s.boarding_available,
+      avg_class_size: s.avg_class_size,
       enrollment: s.enrollment,
-      studentTeacherRatio: s.studentTeacherRatio,
-      artsPrograms: s.artsPrograms,
-      sportsPrograms: s.sportsPrograms,
+      student_teacher_ratio: s.student_teacher_ratio,
+      arts_programs: s.arts_programs,
+      sports_programs: s.sports_programs,
       universityPlacements: s.universityPlacements,
       specializations: s.specializations,
       highlights: s.highlights,
@@ -63,14 +63,14 @@ export async function handleNarrateComparison({
       s.city ? `City: ${s.city}` : '',
       s.distanceKm != null ? `Distance: ${s.distanceKm.toFixed(1)} km` : '',
       s.tuition ? `Tuition: $${s.tuition.toLocaleString()} ${s.currency || ''}` : '',
-      s.curriculumType ? `Curriculum: ${s.curriculumType}` : '',
-      s.genderPolicy ? `Gender: ${s.genderPolicy}` : '',
-      s.boardingAvailable != null ? `Boarding: ${s.boardingAvailable ? 'Yes' : 'No'}` : '',
-      s.avgClassSize ? `Avg class size: ${s.avgClassSize}` : '',
+      s.curriculum?.length ? `Curriculum: ${s.curriculum.join(', ')}` : '',
+      s.gender_policy ? `Gender: ${s.gender_policy}` : '',
+      s.boarding_available != null ? `Boarding: ${s.boarding_available ? 'Yes' : 'No'}` : '',
+      s.avg_class_size ? `Avg class size: ${s.avg_class_size}` : '',
       s.enrollment ? `Enrollment: ${s.enrollment}` : '',
-      s.studentTeacherRatio ? `Student-teacher ratio: ${s.studentTeacherRatio}` : '',
-      s.artsPrograms?.length ? `Arts: ${s.artsPrograms.join(', ')}` : '',
-      s.sportsPrograms?.length ? `Sports: ${s.sportsPrograms.join(', ')}` : '',
+      s.student_teacher_ratio ? `Student-teacher ratio: ${s.student_teacher_ratio}` : '',
+      s.arts_programs?.length ? `Arts: ${s.arts_programs.join(', ')}` : '',
+      s.sports_programs?.length ? `Sports: ${s.sports_programs.join(', ')}` : '',
       s.universityPlacements ? `University placements: ${s.universityPlacements}` : '',
       s.specializations?.length ? `Specializations: ${s.specializations.join(', ')}` : '',
       s.highlights?.length ? `Highlights: ${s.highlights.join('; ')}` : '',
@@ -184,7 +184,7 @@ ${allDimensions.map(d => `- ${d.label} (${d.source})`).join('\n')}
 Standard dimensions context:
 - Budget Fit: Compare tuition to family's max budget
 - Commute: Evaluate distance against location preference
-- Class Size: Compare avgClassSize to typical preferences
+- Class Size: Compare avg_class_size to typical preferences
 
 **CRITICAL: The comparisonMatrix.schools array MUST contain EXACTLY these ${comparedSchools.length} schools and no others. Use these school IDs: ${comparedSchools.map(s => s.id).join(', ')}**
 
