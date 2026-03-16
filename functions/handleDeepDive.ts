@@ -62,7 +62,7 @@ async function callOpenRouter(options) {
   const fullPromptStr = messages.map(m => `[${m.role}] ${m.content}`).join('\n');
 
   const controller = new AbortController();
-  const TIMEOUT_MS = 30000;
+  const TIMEOUT_MS = 12000;
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
@@ -265,19 +265,6 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { selectedSchoolId, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, userId, returningUserContextBlock, flags, conversationId } = await req.json();
 
-    // E24-S3-WC1: Resolve user tier for premium content gating
-    let isPremiumUser = false;
-    if (userId) {
-      try {
-        const userRecords = await base44.asServiceRole.entities.User.filter({ id: userId });
-        const userTier = userRecords?.[0]?.tier || 'free';
-        isPremiumUser = userTier === 'premium';
-        console.log('[E24-S3-WC1] userId:', userId, 'tier:', userTier, 'isPremium:', isPremiumUser);
-      } catch (tierErr) {
-        console.warn('[E24-S3-WC1] Failed to fetch user tier (defaulting to free):', tierErr.message);
-      }
-    }
-
     const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
     // F16 FIX: Detect school-switch intent (user wants to see a different school)
@@ -299,9 +286,8 @@ Deno.serve(async (req) => {
     const TOUR_BOOKING_RE = /\b(book|schedule|arrange|request|sign\s*up\s*for|register\s*for|set\s*up)\b.{0,30}\b(tour|visit|open\s*house|campus\s*visit|info\s*session)\b|\b(want\s+to|like\s+to|ready\s+to)\s+(visit|tour|see|check\s*out)\b|\b(can\s+(?:we|i)|how\s+(?:do\s+i|can\s+i))\s+(?:book|schedule|arrange|visit|tour)\b/i;
     if (TOUR_BOOKING_RE.test(message) && selectedSchoolId) {
       console.log('[DEEPDIVE] Tour booking intent detected, returning INITIATE_TOUR action');
-      const schoolNameForTour = selectedSchool ? selectedSchool.name : 'that school';
       return Response.json({
-        message: `Great — let me pull up the tour request form for ${schoolNameForTour}.`,
+        message: `Great — let me pull up the tour request form for that school.`,
         state: STATES.DEEP_DIVE,
         briefStatus: briefStatus,
         schools: currentSchools || [],
@@ -314,20 +300,31 @@ Deno.serve(async (req) => {
 
     console.log('[DEEPDIVE_START]', selectedSchoolId);
     let aiMessage = '';
-    let selectedSchool = null;
-    
-    if (selectedSchoolId) {
-      try {
-        const schoolResults = await base44.entities.School.filter({ id: selectedSchoolId });
-        if (schoolResults.length > 0) {
-          selectedSchool = schoolResults[0];
-          console.log('[DEEPDIVE] Loaded school:', selectedSchool.name);
-        }
-      } catch (e) {
-        console.error('[DEEPDIVE ERROR] Failed to load selected school:', e.message);
-      }
+
+    // PERF FIX: Parallelize all pre-LLM DB calls (user tier, school load, cache check, events)
+    // Previously these ran serially (~1s total), now they run concurrently (~200ms)
+    const [userRecords, schoolResults, [cachedRec, cachedPrep, cachedPlan], allEvents] = await Promise.all([
+      userId ? base44.asServiceRole.entities.User.filter({ id: userId }).catch(e => { console.warn('[E24-S3-WC1] Failed to fetch user tier:', e.message); return []; }) : Promise.resolve([]),
+      selectedSchoolId ? base44.entities.School.filter({ id: selectedSchoolId }).catch(e => { console.error('[DEEPDIVE ERROR] Failed to load school:', e.message); return []; }) : Promise.resolve([]),
+      (userId && selectedSchoolId) ? Promise.all([
+        base44.entities.GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'deep_dive_recommendation' }),
+        base44.entities.GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'visit_prep_kit' }),
+        base44.entities.GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'action_plan' })
+      ]).catch(e => { console.warn('[E30] Cache read failed:', e.message); return [[], [], []]; }) : Promise.resolve([[], [], []]),
+      selectedSchoolId ? base44.entities.SchoolEvent.filter({ school_id: selectedSchoolId, is_active: true }).catch(e => { console.warn('[DEEPDIVE] SchoolEvent fetch failed:', e.message); return []; }) : Promise.resolve([])
+    ]);
+
+    // E24-S3-WC1: Resolve user tier for premium content gating
+    const userTier = userRecords?.[0]?.tier || 'free';
+    const isPremiumUser = userTier === 'premium';
+    if (userId) console.log('[E24-S3-WC1] userId:', userId, 'tier:', userTier, 'isPremium:', isPremiumUser);
+
+    // Load school
+    let selectedSchool = schoolResults?.[0] || null;
+    if (selectedSchool) {
+      console.log('[DEEPDIVE] Loaded school:', selectedSchool.name);
     }
-    
+
     if (!selectedSchool) {
       return Response.json({
         message: "I couldn't load that school's details. Please try selecting it again.",
@@ -342,68 +339,58 @@ Deno.serve(async (req) => {
 
     // S115-WC3: E30 cache read — return early if all 3 artifacts exist with E30_V1
     if (userId && selectedSchoolId) {
-      try {
-        const [cachedRec, cachedPrep, cachedPlan] = await Promise.all([
-          base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'deep_dive_recommendation' }),
-          base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'visit_prep_kit' }),
-          base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'action_plan' })
-        ]);
-        const rec = cachedRec?.[0];
-        const prep = cachedPrep?.[0];
-        const plan = cachedPlan?.[0];
-        const allCached = rec?.metadata?.version === 'E30_V1' && prep?.metadata?.version === 'E30_V1' && plan?.metadata?.version === 'E30_V1';
-        if (allCached) {
-          console.log('[E30] Cache hit — returning from GeneratedArtifact cache for school:', selectedSchoolId);
-          let cachedVisitPrepKit = null;
-          try {
-            const fullKit = typeof prep.content === 'string' ? JSON.parse(prep.content) : prep.content;
-            cachedVisitPrepKit = isPremiumUser ? fullKit : { schoolName: fullKit.schoolName, intro: fullKit.intro, visitQuestions: (fullKit.visitQuestions || []).slice(0, 2), observations: null, redFlags: null, isLocked: true };
-          } catch (e) { console.warn('[E30] Cache: visit_prep_kit parse failed:', e.message); }
-          let cachedActionPlan = null;
-          try {
-            cachedActionPlan = isPremiumUser ? (typeof plan.content === 'string' ? JSON.parse(plan.content) : plan.content) : null;
-          } catch (e) { console.warn('[E30] Cache: action_plan parse failed:', e.message); }
-          let cachedDeepDiveAnalysis = null;
-          try {
-            const analyses = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId });
-            if (analyses?.[0]) cachedDeepDiveAnalysis = analyses[0];
-          } catch (e) { console.warn('[E30] Cache: SchoolAnalysis fetch failed:', e.message); }
-          const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
-          const isPremiumSchool = selectedSchool.school_tier === 'growth' || selectedSchool.school_tier === 'pro';
-          return Response.json({
-            message: extractConciseSummary(rec.content),
-            state: currentState,
-            briefStatus,
-            schools: currentSchools || [],
-            familyProfile: conversationFamilyProfile,
-            conversationContext: { ...(context || {}), [deepDiveFollowUpKey]: true },
-            deepDiveAnalysis: cachedDeepDiveAnalysis,
-            visitPrepKit: cachedVisitPrepKit,
-            actionPlan: cachedActionPlan,
-            tourRequestOffered: isPremiumSchool,
-            fromCache: true,
-            rawToolCalls: []
-          });
-        } else {
-          console.log('[E30] Cache miss — falling through to fresh generation');
-        }
-      } catch (cacheErr) {
-        console.warn('[E30] Cache read failed (non-blocking):', cacheErr.message);
+      const rec = cachedRec?.[0];
+      const prep = cachedPrep?.[0];
+      const plan = cachedPlan?.[0];
+      const allCached = rec?.metadata?.version === 'E30_V1' && prep?.metadata?.version === 'E30_V1' && plan?.metadata?.version === 'E30_V1';
+      if (allCached) {
+        console.log('[E30] Cache hit — returning from GeneratedArtifact cache for school:', selectedSchoolId);
+        let cachedVisitPrepKit = null;
+        try {
+          const fullKit = typeof prep.content === 'string' ? JSON.parse(prep.content) : prep.content;
+          cachedVisitPrepKit = isPremiumUser ? fullKit : { schoolName: fullKit.schoolName, intro: fullKit.intro, visitQuestions: (fullKit.visitQuestions || []).slice(0, 2), observations: null, redFlags: null, isLocked: true };
+        } catch (e) { console.warn('[E30] Cache: visit_prep_kit parse failed:', e.message); }
+        let cachedActionPlan = null;
+        try {
+          cachedActionPlan = isPremiumUser ? (typeof plan.content === 'string' ? JSON.parse(plan.content) : plan.content) : null;
+        } catch (e) { console.warn('[E30] Cache: action_plan parse failed:', e.message); }
+        let cachedDeepDiveAnalysis = null;
+        try {
+          const analyses = await base44.entities.SchoolAnalysis.filter({ user_id: userId, school_id: selectedSchoolId });
+          if (analyses?.[0]) cachedDeepDiveAnalysis = analyses[0];
+        } catch (e) { console.warn('[E30] Cache: SchoolAnalysis fetch failed:', e.message); }
+        const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
+        const isPremiumSchool = selectedSchool.school_tier === 'growth' || selectedSchool.school_tier === 'pro';
+        return Response.json({
+          message: extractConciseSummary(rec.content),
+          state: currentState,
+          briefStatus,
+          schools: currentSchools || [],
+          familyProfile: conversationFamilyProfile,
+          conversationContext: { ...(context || {}), [deepDiveFollowUpKey]: true },
+          deepDiveAnalysis: cachedDeepDiveAnalysis,
+          visitPrepKit: cachedVisitPrepKit,
+          actionPlan: cachedActionPlan,
+          tourRequestOffered: isPremiumSchool,
+          fromCache: true,
+          rawToolCalls: []
+        });
+      } else {
+        console.log('[E30] Cache miss — falling through to fresh generation');
       }
     }
 
-    // Load upcoming SchoolEvents for this school (non-blocking, best-effort)
+    // Filter upcoming events from pre-fetched results
     let upcomingEvents = [];
     try {
-      const allEvents = await base44.entities.SchoolEvent.filter({ schoolId: selectedSchoolId, isActive: true });
       const now = new Date();
-      upcomingEvents = allEvents
+      upcomingEvents = (allEvents || [])
         .filter(e => e.date && new Date(e.date).getTime() >= now.getTime())
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         .slice(0, 5);
       console.log('[DEEPDIVE] Loaded upcoming events:', upcomingEvents.length);
     } catch (evErr) {
-      console.warn('[DEEPDIVE] SchoolEvent fetch failed (non-blocking):', evErr.message);
+      console.warn('[DEEPDIVE] Event filtering failed:', evErr.message);
     }
     
     let childDisplayName = 'your child';
@@ -442,16 +429,16 @@ Deno.serve(async (req) => {
     };
 
     // Build event context string for LLM injection
-    const subscriptionTier = selectedSchool.subscriptionTier || 'free';
+    const subscriptionTier = selectedSchool.subscription_tier || 'free';
     const schoolContactEmail = selectedSchool.email || null;
 
     let eventContext = '';
     if (upcomingEvents.length > 0) {
       const eventLines = upcomingEvents.map(e => {
-        const confidenceTag = (e.isConfirmed === true) ? '[confirmed]' : '[estimated — verify with school]';
+        const confidenceTag = (e.is_confirmed === true) ? '[confirmed]' : '[estimated — verify with school]';
         const dateStr = new Date(e.date).toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-        const typeLabel = (e.eventType || '').replace(/_/g, ' ');
-        const regUrl = e.registrationUrl ? ` | Register: ${e.registrationUrl}` : '';
+        const typeLabel = (e.event_type || '').replace(/_/g, ' ');
+        const regUrl = e.registration_url ? ` | Register: ${e.registration_url}` : '';
         return `- ${e.title || typeLabel} (${typeLabel}) — ${dateStr} ${confidenceTag}${regUrl}`;
       });
       eventContext = `UPCOMING EVENTS (${upcomingEvents.length} found):\n${eventLines.join('\n')}`;
@@ -536,7 +523,7 @@ Generate the DEEPDIVE card for this family-school match.`;
           model: 'gpt_5_mini',
           response_json_schema: MERGED_RESPONSE_SCHEMA
         }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('InvokeLLM timed out after 12s')), 12000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('InvokeLLM timed out after 8s')), 8000))
       ]);
       try {
         const parsed = typeof mergedResponse === 'object' ? mergedResponse : JSON.parse(mergedResponse);
@@ -592,9 +579,9 @@ Generate the DEEPDIVE card for this family-school match.`;
     if (userId && selectedSchoolId && deepDiveAnalysis) {
       (async () => {
         try {
-          const existing = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId });
+          const existing = await base44.entities.SchoolAnalysis.filter({ user_id: userId, school_id: selectedSchoolId });
           if (existing && existing.length > 0) {
-            await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString() });
+            await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, last_analyzed_at: new Date().toISOString() });
             console.log('[DEEPDIVE] SchoolAnalysis updated:', existing[0].id);
             const prevVisitQuestions = existing[0].visitQuestions;
             if (!prevVisitQuestions || prevVisitQuestions.length === 0) {
@@ -607,7 +594,7 @@ Generate the DEEPDIVE card for this family-school match.`;
               }
             }
           } else {
-            const created = await base44.entities.SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString() });
+            const created = await base44.entities.SchoolAnalysis.create({ user_id: userId, school_id: selectedSchoolId, ...deepDiveAnalysis, last_analyzed_at: new Date().toISOString() });
             console.log('[DEEPDIVE] SchoolAnalysis created:', created.id);
             const childName = conversationFamilyProfile?.childName || null;
             const schoolName = selectedSchool.name;
@@ -676,7 +663,7 @@ Generate the DEEPDIVE card for this family-school match.`;
     if (deepDiveAnalysis && selectedSchool && userId) {
       const visitWindow = upcomingEvents && upcomingEvents.length > 0
         ? { recommendedAction: `Attend ${upcomingEvents[0].title} on ${new Date(upcomingEvents[0].date).toLocaleDateString('en-CA')}`,
-            events: upcomingEvents.map(e => ({ title: e.title, date: e.date, type: e.eventType })) }
+            events: upcomingEvents.map(e => ({ title: e.title, date: e.date, type: e.event_type })) }
         : { recommendedAction: 'Contact admissions to schedule a campus tour', events: [] };
 
       const docChecklist = [
@@ -692,7 +679,7 @@ Generate the DEEPDIVE card for this family-school match.`;
         visitTimeline: visitWindow,
         day_admission_deadlines: {
           deadline: selectedSchool.day_admission_deadline || null,
-          financialAidDeadline: selectedSchool.financialAidDeadline || null,
+          financialAidDeadline: selectedSchool.financial_aid_deadline || null,
           isEstimated: !selectedSchool.day_admission_deadline
         },
         documentChecklist: docChecklist,
@@ -705,17 +692,17 @@ Generate the DEEPDIVE card for this family-school match.`;
         const generatedAt = new Date().toISOString();
 
         const upsert = async (artifactType, fields) => {
-          const existing = await base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType });
+          const existing = await base44.entities.GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: artifactType });
           if (existing && existing.length > 0) {
-            await base44.entities.GeneratedArtifact.update(existing[0].id, { ...fields, generatedAt });
+            await base44.entities.GeneratedArtifact.update(existing[0].id, { ...fields, generated_at: generatedAt });
             console.log(`[E30] ${artifactType} updated:`, existing[0].id);
           } else {
             const created = await base44.entities.GeneratedArtifact.create({
-              userId, schoolId: selectedSchoolId,
-              conversationId: conversationId || '',
-              artifactType,
-              schoolName: selectedSchool.name,
-              generatedAt,
+              user_id: userId, school_id: selectedSchoolId,
+              conversation_id: conversationId || '',
+              artifact_type: artifactType,
+              school_name: selectedSchool.name,
+              generated_at: generatedAt,
               status: 'active',
               ...fields
             });
