@@ -177,15 +177,6 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
 
     const systemPrompt = `Extract factual data from the parent's message. Return JSON with NULL for anything not mentioned.
 
-CHILD NAME EXTRACTION (CRITICAL - top priority):
-- Extract the child's first name from ANY phrasing. Examples:
-  "my son Alex" → "Alex", "daughter named Emma" → "Emma", "I'm Jake's mom" → "Jake",
-  "looking for schools for Sarah" → "Sarah", "we have a 10-year-old, Thomas" → "Thomas",
-  "our daughter Sophia is in grade 5" → "Sophia", "I have a boy called Amir" → "Amir"
-- The name is a proper noun (capitalized first letter) referring to the CHILD, not the parent.
-- If the parent says "I'm Sarah" or "my name is John", that is the PARENT's name, NOT the child's name — do NOT return it as childName.
-- Return null for childName ONLY if no child name is mentioned at all.
-
 GENDER INFERENCE (BUG-ENT-004): Infer the child's gender from relational terms even if not stated directly:
 - "my son", "my boy", "he", "him", "his" → gender = "male"
 - "my daughter", "my girl", "she", "her" → gender = "female"
