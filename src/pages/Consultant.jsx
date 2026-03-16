@@ -1138,6 +1138,7 @@ export default function Consultant() {
     },
     onConfirmDeepDive: handleConfirmDeepDive,
     onCancelDeepDive: handleCancelDeepDive,
+    deepDiveSchoolName: pendingDeepDiveSchoolIds.size > 0 && selectedSchool ? selectedSchool.name : null,
   };
 
 

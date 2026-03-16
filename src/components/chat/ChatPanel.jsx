@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import MessageBubble from '@/components/chat/MessageBubble';
 import ChatInput from '@/components/chat/ChatInput';
 import TypingIndicator from '@/components/chat/TypingIndicator';
+import DeepDiveLoader from '@/components/chat/DeepDiveLoader';
 import DeepDiveConfirmation from '@/components/dialogs/DeepDiveConfirmation';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -47,6 +48,7 @@ const ChatPanel = forwardRef(function ChatPanel({
   onScrollDownClick = null,
   onTogglePanel = null,
   onSetExpandedSchool = null,
+  deepDiveSchoolName = null,
   // Slots
   heroContent = null,
   // Variant: 'intake' (light feedback) or 'sidebar' (dark feedback)
@@ -54,11 +56,30 @@ const ChatPanel = forwardRef(function ChatPanel({
 }, inputRef) {
 
   const messagesEndRef = useRef(null);
+  const prevMessageCountRef = useRef(0);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Bug 1 fix: When first greeting arrives (0 → 1 messages), use a longer delay
+    // so the hero card has time to render before we scroll past it
+    const isInitialGreeting = prevMessageCountRef.current === 0 && messages.length === 1;
+    const delay = isInitialGreeting ? 350 : 50;
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, delay);
+    prevMessageCountRef.current = messages.length;
+    return () => clearTimeout(timer);
   }, [messages]);
+
+  // Bug 4 fix: Auto-scroll when confirmingSchool prompt chip appears
+  useEffect(() => {
+    if (confirmingSchool) {
+      const timer = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [confirmingSchool]);
 
   const accentColor = selectedConsultant === 'Jackie' ? '#C27B8A' : '#6B9DAD';
   const accentClass = selectedConsultant === 'Jackie' ? 'text-[#C27B8A]' : 'text-[#6B9DAD]';
@@ -212,7 +233,11 @@ const ChatPanel = forwardRef(function ChatPanel({
           />
         )}
 
-        {isTyping && <TypingIndicator message={loadingStages[loadingStage]} consultantName={selectedConsultant} />}
+        {isTyping && (
+          deepDiveSchoolName
+            ? <DeepDiveLoader schoolName={deepDiveSchoolName} consultantName={selectedConsultant} />
+            : <TypingIndicator message={loadingStages[loadingStage]} consultantName={selectedConsultant} />
+        )}
 
         <div ref={messagesEndRef} />
 
