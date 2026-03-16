@@ -50,8 +50,8 @@ export default function SchoolProfile() {
       setLoadingEvents(true);
       const now = new Date().toISOString();
       base44.entities.SchoolEvent.filter({
-        school_id: schoolId,
-        is_active: true,
+        schoolId,
+        isActive: true,
         date: { $gte: now }
       })
         .then(events => {
@@ -347,8 +347,8 @@ export default function SchoolProfile() {
                          {upcomingEvents.map((event) => (
                            <div key={event.id} className="bg-white rounded-lg p-4 border border-teal-100">
                              <div className="flex items-start gap-3 mb-2">
-                               <span className={`px-2 py-0.5 rounded text-xs font-semibold ${EVENT_TYPE_COLORS[event.event_type] || 'bg-slate-100 text-slate-600'}`}>
-                                 {EVENT_TYPE_LABELS[event.event_type] || event.event_type}
+                               <span className={`px-2 py-0.5 rounded text-xs font-semibold ${EVENT_TYPE_COLORS[event.eventType] || 'bg-slate-100 text-slate-600'}`}>
+                                 {EVENT_TYPE_LABELS[event.eventType] || event.eventType}
                                </span>
                                {event.source === 'school_portal' ? (
                                  <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded">
@@ -368,8 +368,8 @@ export default function SchoolProfile() {
                              {event.description && (
                                <p className="text-sm text-slate-600 mb-3 line-clamp-2">{event.description}</p>
                              )}
-                             {event.registration_url && (
-                               <a href={event.registration_url} target="_blank" rel="noopener noreferrer">
+                             {event.registrationUrl && (
+                               <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer">
                                  <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white">
                                    Register
                                  </Button>
