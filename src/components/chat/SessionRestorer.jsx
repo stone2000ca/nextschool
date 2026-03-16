@@ -130,6 +130,25 @@ export async function restoreSessionFromParam(
       }
     }
 
+    // BUG-RN-05 FALLBACK: If messages don't contain deepDiveAnalysis, check SchoolAnalysis entity
+    if (!lastDeepDiveSchoolId && isAuthenticated && user?.id) {
+      try {
+        const recentAnalyses = await base44.entities.SchoolAnalysis.filter({ userId: user.id });
+        if (recentAnalyses?.length > 0) {
+          const sorted = recentAnalyses.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+          const latest = sorted[0];
+          lastDeepDiveSchoolId = latest.schoolId;
+          lastDeepDiveSchoolName = latest.schoolName || 'School';
+          console.log('[RESTORE] Fallback: found SchoolAnalysis for school:', lastDeepDiveSchoolId);
+          if (setDeepDiveAnalysis) {
+            setDeepDiveAnalysis(latest);
+          }
+        }
+      } catch (e) {
+        console.warn('[RESTORE] SchoolAnalysis fallback failed:', e.message);
+      }
+    }
+
     // Fetch and restore FamilyProfile
     let restoredProfile = null;
     if (chatSession.familyProfileId) {
