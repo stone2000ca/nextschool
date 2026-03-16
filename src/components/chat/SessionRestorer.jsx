@@ -160,6 +160,7 @@ export async function restoreSessionFromParam(
         if (analysisRecords && analysisRecords[0] && setDeepDiveAnalysis) {
           setDeepDiveAnalysis(analysisRecords[0]);
           setOnboardingPhase(STATES.DEEP_DIVE);
+          setCurrentView('detail');
         }
         const prepArtifacts = await base44.entities.GeneratedArtifact.filter({ userId: user.id, schoolId, artifactType: 'visit_prep_kit' });
         if (prepArtifacts && prepArtifacts[0] && setVisitPrepKit) {
@@ -178,7 +179,7 @@ export async function restoreSessionFromParam(
     if (chatHistory) {
       const restoredContext = {
         ...(chatHistory.conversationContext || {}),
-        state: STATES.RESULTS,
+        state: conversationContext.resumeView || conversationContext.state || STATES.RESULTS,
         schools: restoredSchools
       };
       // S97-WC3: Hydrate schools from matchedSchools on reload (parse JSON string and fetch full records)
@@ -198,7 +199,7 @@ export async function restoreSessionFromParam(
       setCurrentConversation(restoredConversation);
     } else {
       const restoredContext = {
-        state: STATES.RESULTS,
+        state: conversationContext.resumeView || conversationContext.state || STATES.RESULTS,
         schools: restoredSchools
       };
       // S97-WC3: Hydrate schools from matchedSchools on reload (parse JSON string and fetch full records)
@@ -227,11 +228,11 @@ export async function restoreSessionFromParam(
     };
     setMessages(prev => [...prev, welcomeMsg]);
 
-    if (skipViewOverrideRef) skipViewOverrideRef.current = false;
+    if (skipViewOverrideRef) setTimeout(() => { skipViewOverrideRef.current = false; }, 0);
     setSessionRestored(true);
   } catch (error) {
     console.error('Failed to restore session:', error);
-    if (skipViewOverrideRef) skipViewOverrideRef.current = false;
+    if (skipViewOverrideRef) setTimeout(() => { skipViewOverrideRef.current = false; }, 0);
     setSessionRestored(true);
   } finally {
     isRestoringSessionRef.current = false;
