@@ -235,6 +235,83 @@ export default function EditProfileForm({ school, onUpdate }) {
             placeholder="e.g., Catholic, Jewish, None"
           />
         </FieldWrapper>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FieldWrapper label="Lowest Grade" field="lowestGrade">
+            <Input
+              type="number"
+              value={formData.lowestGrade ?? ''}
+              onChange={(e) => handleChange('lowestGrade', e.target.value ? parseInt(e.target.value) : null)}
+              placeholder="-2=PK, -1=JK, 0=K"
+            />
+          </FieldWrapper>
+          <FieldWrapper label="Highest Grade" field="highestGrade">
+            <Input
+              type="number"
+              value={formData.highestGrade ?? ''}
+              onChange={(e) => handleChange('highestGrade', e.target.value ? parseInt(e.target.value) : null)}
+              placeholder="e.g. 12"
+            />
+          </FieldWrapper>
+        </div>
+
+        <FieldWrapper label="School Type" field="schoolTypeLabel">
+          <select
+            value={formData.schoolTypeLabel || ''}
+            onChange={(e) => handleChange('schoolTypeLabel', e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+          >
+            <option value="">Select...</option>
+            {['Independent', 'Montessori', 'Waldorf', 'International', 'Religious', 'Arts-Focused', 'STEM-Focused', 'Military', 'Special Needs', 'Online'].map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </FieldWrapper>
+
+        <FieldWrapper label="Living Arrangements" field="livingArrangements" indicator={false}>
+          <div className="flex gap-4">
+            {['Day', 'Boarding'].map(opt => (
+              <label key={opt} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={(formData.livingArrangements || []).includes(opt)}
+                  onChange={(e) => {
+                    const current = formData.livingArrangements || [];
+                    const updated = e.target.checked ? [...current, opt] : current.filter(v => v !== opt);
+                    handleChange('livingArrangements', updated);
+                  }}
+                  className="rounded"
+                />
+                <span className="text-sm">{opt}</span>
+              </label>
+            ))}
+          </div>
+        </FieldWrapper>
+
+        {(formData.livingArrangements || []).includes('Boarding') && (
+          <div className="grid grid-cols-2 gap-4 pl-4 border-l-2 border-teal-200">
+            <FieldWrapper label="Boarding Type" field="boardingType">
+              <select
+                value={formData.boardingType || ''}
+                onChange={(e) => handleChange('boardingType', e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">Select...</option>
+                <option value="full">Full Boarding</option>
+                <option value="weekly">Weekly Boarding</option>
+                <option value="flexible">Flexible (5-day)</option>
+              </select>
+            </FieldWrapper>
+            <FieldWrapper label="Boarding Tuition (Annual)" field="boardingTuition">
+              <Input
+                type="number"
+                value={formData.boardingTuition || ''}
+                onChange={(e) => handleChange('boardingTuition', e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="e.g. 45000"
+              />
+            </FieldWrapper>
+          </div>
+        )}
       </FormSection>
 
       {/* About */}
@@ -277,10 +354,10 @@ export default function EditProfileForm({ school, onUpdate }) {
           </div>
         </FieldWrapper>
 
-        <FieldWrapper label="Campus Feel" field="campus_feel">
+        <FieldWrapper label="Campus Feel" field="campusFeel">
           <select
-            value={formData.campus_feel || ''}
-            onChange={(e) => handleChange('campus_feel', e.target.value)}
+            value={formData.campusFeel || ''}
+            onChange={(e) => handleChange('campusFeel', e.target.value)}
             className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
             <option value="">Select...</option>
@@ -327,11 +404,11 @@ export default function EditProfileForm({ school, onUpdate }) {
           />
         </FieldWrapper>
 
-        <FieldWrapper label="Languages Offered" field="languages">
+        <FieldWrapper label="Languages of Instruction" field="languagesOfInstruction">
           <TagInput
-            value={formData.languages || []}
-            onChange={(value) => handleTagChange('languages', value)}
-            placeholder="e.g., French, Spanish, Mandarin"
+            value={formData.languagesOfInstruction || []}
+            onChange={(value) => handleTagChange('languagesOfInstruction', value)}
+            placeholder="e.g., English, French, Mandarin"
           />
         </FieldWrapper>
 
@@ -377,17 +454,25 @@ export default function EditProfileForm({ school, onUpdate }) {
             placeholder="e.g., Learning Support, ESL"
           />
         </FieldWrapper>
+
+        <FieldWrapper label="Specializations" field="specializations">
+          <TagInput
+            value={formData.specializations || []}
+            onChange={(value) => handleTagChange('specializations', value)}
+            placeholder="e.g., STEM, French Immersion, Gifted"
+          />
+        </FieldWrapper>
       </FormSection>
 
       {/* Tuition & Aid */}
       <FormSection title="Tuition & Financial Aid">
         <div className="grid grid-cols-3 gap-4">
-          <FieldWrapper label="Tuition Amount" field="tuition">
+          <FieldWrapper label="Day Tuition (Annual)" field="dayTuition">
             <Input
               type="number"
-              value={formData.tuition || ''}
-              onChange={(e) => handleChange('tuition', e.target.value ? parseInt(e.target.value) : null)}
-              placeholder="Amount"
+              value={formData.dayTuition || ''}
+              onChange={(e) => handleChange('dayTuition', e.target.value ? parseInt(e.target.value) : null)}
+              placeholder="e.g. 25000"
             />
           </FieldWrapper>
           <FieldWrapper label="Currency" field="currency">

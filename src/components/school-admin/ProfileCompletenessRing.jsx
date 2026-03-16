@@ -8,19 +8,19 @@ const TIERS = [
     id: 'tier1',
     label: 'Required',
     color: '#ef4444',
-    fields: ['name', 'city', 'provinceState', 'country', 'lowestGrade', 'highestGrade', 'genderPolicy', 'dayTuition', 'schoolTypeLabel', 'lat', 'lng'],
+    fields: ['name', 'city', 'provinceState', 'country', 'lowestGrade', 'highestGrade', 'genderPolicy', 'dayTuition', 'schoolTypeLabel', 'email', 'address', 'phone', 'lat', 'lng'],
   },
   {
     id: 'tier2',
     label: 'Important',
     color: '#f59e0b',
-    fields: ['description', 'website', 'boardingAvailable', 'faithBased', 'languagesOfInstruction', 'avgClassSize', 'studentTeacherRatio'],
+    fields: ['description', 'missionStatement', 'website', 'livingArrangements', 'faithBased', 'languagesOfInstruction', 'avgClassSize', 'studentTeacherRatio', 'founded', 'enrollment', 'virtualTourUrl', 'campusFeel', 'financialAidAvailable'],
   },
   {
     id: 'tier3',
     label: 'Enrichment',
     color: '#14b8a6',
-    fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations'],
+    fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations', 'specializations', 'values', 'teachingPhilosophy', 'highlights'],
   },
   {
     id: 'tier4',

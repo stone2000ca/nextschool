@@ -21,9 +21,9 @@ function isFilled(value) {
 }
 
 const TIER_WEIGHTS = [
-  { fields: ['name','city','provinceState','country','lowestGrade','highestGrade','genderPolicy','dayTuition','schoolTypeLabel','email'], weight: 50 },
-  { fields: ['description','missionStatement','website','boardingAvailable','faithBased','languagesOfInstruction','avgClassSize','studentTeacherRatio'], weight: 30 },
-  { fields: ['artsPrograms','sportsPrograms','clubs','facilities','specialEdPrograms','curriculum','accreditations','teachingPhilosophy','_testimonials'], weight: 15 },
+  { fields: ['name','city','provinceState','country','lowestGrade','highestGrade','genderPolicy','dayTuition','schoolTypeLabel','email','address','phone'], weight: 50 },
+  { fields: ['description','missionStatement','website','livingArrangements','faithBased','languagesOfInstruction','avgClassSize','studentTeacherRatio','founded','enrollment','virtualTourUrl','campusFeel','financialAidAvailable'], weight: 30 },
+  { fields: ['artsPrograms','sportsPrograms','clubs','facilities','specialEdPrograms','curriculum','accreditations','specializations','values','teachingPhilosophy','highlights','_testimonials'], weight: 15 },
   { fields: ['logoUrl','headerPhotoUrl','photoGallery'], weight: 5 }, // media fields kept for score only
 ];
 
@@ -69,7 +69,7 @@ const TIERS = [
     color: 'red',
     weight: 0.5,
     motivational: 'Essential information families need to find your school.',
-    fields: ['name', 'city', 'provinceState', 'country', 'lowestGrade', 'highestGrade', 'genderPolicy', 'dayTuition', 'schoolTypeLabel', 'email'],
+    fields: ['name', 'city', 'provinceState', 'country', 'lowestGrade', 'highestGrade', 'genderPolicy', 'dayTuition', 'schoolTypeLabel', 'email', 'address', 'phone'],
   },
   {
     id: 'tier2',
@@ -77,7 +77,7 @@ const TIERS = [
     color: 'amber',
     weight: 0.3,
     motivational: 'Schools with these fields completed appear in 3x more results.',
-    fields: ['description', 'missionStatement', 'website', 'boardingAvailable', 'faithBased', 'languagesOfInstruction', 'avgClassSize', 'studentTeacherRatio'],
+    fields: ['description', 'missionStatement', 'website', 'livingArrangements', 'faithBased', 'languagesOfInstruction', 'avgClassSize', 'studentTeacherRatio', 'founded', 'enrollment', 'virtualTourUrl', 'campusFeel', 'financialAidAvailable'],
   },
   {
     id: 'tier3',
@@ -85,7 +85,7 @@ const TIERS = [
     color: 'teal',
     weight: 0.15,
     motivational: 'Add depth to your profile with testimonials and details that set you apart.',
-    fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations', 'teachingPhilosophy', '_testimonials'],
+    fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations', 'specializations', 'values', 'teachingPhilosophy', 'highlights', '_testimonials'],
   },
 ];
 
@@ -304,6 +304,10 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
       return;
     }
     const payload = { ...dirtyFields };
+    // Derive boardingAvailable from livingArrangements for backward compatibility
+    if (payload.livingArrangements || formData.livingArrangements) {
+      payload.boardingAvailable = (payload.livingArrangements || formData.livingArrangements || []).includes('Boarding');
+    }
     if (Object.keys(verifiedFields).length > 0) {
       payload.verifiedFields = verifiedFields;
     }
@@ -358,7 +362,7 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
           <Select value={formData.schoolTypeLabel || ''} onValueChange={(val) => handleChange('schoolTypeLabel', val)}>
             <SelectTrigger className={v('schoolTypeLabel') ? 'border-red-500' : ''}><SelectValue placeholder="Select type" /></SelectTrigger>
             <SelectContent>
-              {['Day School','Boarding School','Private','Special Needs','All-Girls','General','Religious','Arts-Focused','Military','Online','All-Boys'].map(t => (
+              {['Independent','Montessori','Waldorf','International','Religious','Arts-Focused','STEM-Focused','Military','Special Needs','Online'].map(t => (
                 <SelectItem key={t} value={t}>{t}</SelectItem>
               ))}
             </SelectContent>
@@ -417,6 +421,14 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
           {v('email') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
           <p className="text-xs text-slate-500 mt-1">Tour requests and parent inquiries will be sent to this email.</p>
         </div>
+        <div>
+          <Label>Address</Label>
+          <Input value={formData.address || ''} onChange={(e) => handleChange('address', e.target.value)} placeholder="Street address" />
+        </div>
+        <div>
+          <Label>Phone</Label>
+          <Input value={formData.phone || ''} onChange={(e) => handleChange('phone', e.target.value)} placeholder="Contact phone number" />
+        </div>
       </div>
     </>
   );
@@ -438,20 +450,36 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
         <Label>Website</Label>
         <Input value={formData.website || ''} onChange={(e) => handleChange('website', e.target.value)} placeholder="https://..." />
       </div>
-      <div className="flex items-center justify-between py-2">
-        <Label>Boarding Available</Label>
-        <Switch checked={formData.boardingAvailable || false} onCheckedChange={(val) => handleChange('boardingAvailable', val)} />
+      <div>
+        <Label>Living Arrangements</Label>
+        <div className="flex gap-4 mt-2">
+          {['Day', 'Boarding'].map(opt => (
+            <label key={opt} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={(formData.livingArrangements || []).includes(opt)}
+                onChange={(e) => {
+                  const current = formData.livingArrangements || [];
+                  const updated = e.target.checked ? [...current, opt] : current.filter(v => v !== opt);
+                  handleChange('livingArrangements', updated);
+                }}
+                className="rounded border-slate-300"
+              />
+              <span className="text-sm">{opt}</span>
+            </label>
+          ))}
+        </div>
       </div>
-      {formData.boardingAvailable && (
-        <>
+      {(formData.livingArrangements || []).includes('Boarding') && (
+        <div className="pl-4 border-l-2 border-teal-200 space-y-4">
           <div>
             <Label>Boarding Type</Label>
             <Select value={formData.boardingType || ''} onValueChange={(val) => handleChange('boardingType', val)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="full">Full Boarding</SelectItem>
                 <SelectItem value="weekly">Weekly Boarding</SelectItem>
-                <SelectItem value="day">Day School Only</SelectItem>
+                <SelectItem value="flexible">Flexible (5-day)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -459,7 +487,7 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
             <Label>Boarding Tuition (Annual)</Label>
             <Input type="number" value={formData.boardingTuition || ''} onChange={(e) => handleChange('boardingTuition', parseFloat(e.target.value))} placeholder="e.g. 45000" />
           </div>
-        </>
+        </div>
       )}
       <div>
         <Label>Religious Affiliation</Label>
@@ -476,6 +504,36 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
           <Input value={formData.studentTeacherRatio || ''} onChange={(e) => handleChange('studentTeacherRatio', e.target.value)} placeholder="e.g. 12:1" />
         </div>
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Founded</Label>
+          <Input type="number" value={formData.founded || ''} onChange={(e) => handleChange('founded', e.target.value ? parseInt(e.target.value) : null)} placeholder="e.g. 1985" />
+        </div>
+        <div>
+          <Label>Total Enrollment</Label>
+          <Input type="number" value={formData.enrollment || ''} onChange={(e) => handleChange('enrollment', e.target.value ? parseInt(e.target.value) : null)} placeholder="e.g. 450" />
+        </div>
+      </div>
+      <div>
+        <Label>Virtual Tour URL</Label>
+        <Input value={formData.virtualTourUrl || ''} onChange={(e) => handleChange('virtualTourUrl', e.target.value)} placeholder="https://..." />
+      </div>
+      <div>
+        <Label>Campus Feel</Label>
+        <Select value={formData.campusFeel || ''} onValueChange={(val) => handleChange('campusFeel', val)}>
+          <SelectTrigger><SelectValue placeholder="Select feel" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Warm and nurturing">Warm and nurturing</SelectItem>
+            <SelectItem value="Rigorous and structured">Rigorous and structured</SelectItem>
+            <SelectItem value="Progressive and creative">Progressive and creative</SelectItem>
+            <SelectItem value="Traditional and formal">Traditional and formal</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center justify-between py-2">
+        <Label>Financial Aid Available</Label>
+        <Switch checked={formData.financialAidAvailable || false} onCheckedChange={(val) => handleChange('financialAidAvailable', val)} />
+      </div>
     </div>
   );
 
@@ -491,9 +549,29 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
       <TagInput label="Special Education Programs" field="specialEdPrograms" placeholder="Add program" formData={formData} onChange={handleChange} />
       <TagInput label="Curriculum Type" field="curriculum" placeholder="e.g. IB, Montessori, AP" formData={formData} onChange={handleChange} />
       <TagInput label="Accreditations" field="accreditations" placeholder="Add accreditation" formData={formData} onChange={handleChange} />
+      <TagInput label="Specializations" field="specializations" placeholder="e.g. STEM, French Immersion, Gifted" formData={formData} onChange={handleChange} />
+      <TagInput label="School Values" field="values" placeholder="e.g. Integrity, Excellence, Diversity" formData={formData} onChange={handleChange} />
       <div>
         <Label>Teaching Philosophy</Label>
         <Textarea value={formData.teachingPhilosophy || ''} onChange={(e) => handleChange('teachingPhilosophy', e.target.value.slice(0, 500))} rows={3} maxLength={500} placeholder="Describe your teaching approach" />
+      </div>
+      <div>
+        <Label>Highlights (3 sentences, 150 chars each)</Label>
+        <div className="space-y-2 mt-2">
+          {[0, 1, 2].map((idx) => (
+            <Input
+              key={idx}
+              value={formData.highlights?.[idx] || ''}
+              onChange={(e) => {
+                const highlights = [...(formData.highlights || ['', '', ''])];
+                highlights[idx] = e.target.value.slice(0, 150);
+                handleChange('highlights', highlights);
+              }}
+              placeholder={`Highlight ${idx + 1}`}
+              maxLength={150}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
