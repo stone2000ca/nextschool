@@ -1428,39 +1428,28 @@ export default function Consultant() {
                 isPremium={isPremium}
                 onUpgrade={() => setShowUpgradeModal(true)}
                 heroContent={
-                  currentState === STATES.WELCOME && messages.length === 0 ? (
-                    <div className="text-center space-y-6 py-8">
-                      <div className="space-y-2">
-                        <h1 className="text-3xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
-                        <p className="text-[#E8E8ED]/70">Your personalized school search, simplified</p>
+                  currentState === STATES.WELCOME ? (
+                    <div className="text-center space-y-3 py-3">
+                      <div className="space-y-1">
+                        <h1 className="text-2xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
+                        <p className="text-sm text-[#E8E8ED]/70">Your personalized school search, simplified</p>
                       </div>
-                      <div className="grid gap-4 max-w-md mx-auto text-left">
-                        <div className="flex items-start gap-3">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                      <div className="grid gap-1.5 max-w-sm mx-auto text-left">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                             selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
                           }`}>1</div>
-                          <div>
-                            <h3 className="font-semibold text-[#E8E8ED]">Tell us about your child</h3>
-                            <p className="text-sm text-[#E8E8ED]/60">Grade, location, priorities</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                          <span className="text-sm text-[#E8E8ED]">Tell us about your child</span>
+                          <span className="text-xs text-[#E8E8ED]/40">→</span>
+                          <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                             selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
                           }`}>2</div>
-                          <div>
-                            <h3 className="font-semibold text-[#E8E8ED]">Review your brief</h3>
-                            <p className="text-sm text-[#E8E8ED]/60">Confirm what matters most</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                          <span className="text-sm text-[#E8E8ED]">Review your brief</span>
+                          <span className="text-xs text-[#E8E8ED]/40">→</span>
+                          <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                             selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
                           }`}>3</div>
-                          <div>
-                            <h3 className="font-semibold text-[#E8E8ED]">See your matches</h3>
-                            <p className="text-sm text-[#E8E8ED]/60">Personalized school recommendations</p>
-                          </div>
+                          <span className="text-sm text-[#E8E8ED]">See matches</span>
                         </div>
                       </div>
                     </div>
