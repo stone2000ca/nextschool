@@ -299,13 +299,17 @@ export const useMessageHandler = ({
       }
 
       // CRITICAL FIX: Merge backend's full context (including extractedEntities) with frontend state
+      const responseState = response.data?.state;
+      const deepDiveSchoolId = response.data?.deepDiveAnalysis?.schoolId || selectedSchool?.id || resolvedSchoolId || null;
       const updatedContext = {
         ...(currentConversation?.conversationContext || {}),
         ...(response.data?.conversationContext || {}),
-        state: response.data?.state,
+        state: responseState,
         briefStatus: newBriefStatus,
         schools: response.data?.schools || [],
-        conversationId: currentConversation?.id || null
+        conversationId: currentConversation?.id || null,
+        resumeView: responseState || null,
+        lastDeepDiveSchoolId: (responseState === 'DEEP_DIVE' || deepDiveSchoolId) ? deepDiveSchoolId : (currentConversation?.conversationContext?.lastDeepDiveSchoolId || null),
       };
 
       if (currentConversation) {
