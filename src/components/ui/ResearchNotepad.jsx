@@ -97,13 +97,14 @@ const SECTION_TINTS = {
 function CollapsibleSection({ icon, label, color, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   const tint = SECTION_TINTS[color] || {};
+  const tintBg = tint.bg || 'none';
   return (
-    <div style={{ borderTop: '1px solid #e8dfc0', marginTop: 0, borderLeft: tint.border ? `3px solid ${tint.border}` : 'none' }}>
+    <div style={{ borderTop: '1px solid #e8dfc0', marginTop: 0, borderLeft: tint.border ? `3px solid ${tint.border}` : 'none', background: open ? tintBg : 'none' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '13px 20px', background: tint.bg || 'none', border: 'none', cursor: 'pointer',
+          padding: '13px 20px', background: tintBg, border: 'none', cursor: 'pointer',
           textAlign: 'left',
         }}
       >
