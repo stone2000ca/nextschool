@@ -57,7 +57,7 @@ function applyReligiousFilter(school, familyProfile, payload) {
 }
 
 function applyGenderFilter(school, familyProfile) {
-  const gp = school.genderPolicy || null;
+  const gp = school.gender_policy || school.genderPolicy || null;
   if (gp === null) return true;
   
   // Fix A: Normalize childGender to canonical 'male' or 'female'
