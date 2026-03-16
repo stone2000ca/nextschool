@@ -29,7 +29,20 @@
 | `applicationDeadline` | `day_admission_deadline` | Name change |
 | `admissionRequirements` | `admission_requirements` | |
 | `openHouseDates` | `open_house_dates` | |
+| `teachingPhilosophy` | `teaching_philosophy` | |
+| `acceptanceRate` | `acceptance_rate` | |
+| `photoGallery` | `photo_gallery` | |
+| `virtualTourUrl` | `virtual_tour_url` | |
 | `created_date` | `created_at` | Sort param in searchSchools.ts |
+
+### SchoolEvent Entity
+
+| V1 (camelCase) | V2 (snake_case) | Special Notes |
+|---|---|---|
+| `schoolId` | `school_id` | Filter param |
+| `isActive` | `is_active` | Filter param |
+| `eventType` | `event_type` | |
+| `registrationUrl` | `registration_url` | |
 
 ## Files to Update (by category)
 
