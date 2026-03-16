@@ -421,10 +421,12 @@ async function performSearch(req) {
     // BUG-MATCH-S41 FIX: Soft penalty for grades outside range (instead of hard filter)
     if (minGrade !== undefined) {
       const targetGrade = minGrade !== undefined ? minGrade : maxGrade;
-      if (school.lowestGrade <= targetGrade && school.highestGrade >= targetGrade) {
+      const sLow = school.lowest_grade ?? school.lowestGrade;
+      const sHigh = school.highest_grade ?? school.highestGrade;
+      if (sLow <= targetGrade && sHigh >= targetGrade) {
         score += 2;
       } else {
-        const distanceOutsideRange = targetGrade < school.lowestGrade ? school.lowestGrade - targetGrade : (targetGrade > school.highestGrade ? targetGrade - school.highestGrade : 0);
+        const distanceOutsideRange = targetGrade < sLow ? sLow - targetGrade : (targetGrade > sHigh ? targetGrade - sHigh : 0);
         if (distanceOutsideRange <= 2) {
           score -= 1; // Soft penalty for grades 1-2 outside range
           console.log(`[GRADE SCORE] Soft penalty for ${school.name}: ${distanceOutsideRange} grade(s) outside range`);
