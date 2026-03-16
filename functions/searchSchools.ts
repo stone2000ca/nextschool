@@ -301,9 +301,10 @@ async function performSearch(req) {
     const normalizedProvince = fullProvinceName || toTitleCase(provinceState.trim());
     const provinceRegex = new RegExp(`^${normalizedProvince}$`, 'i');
     locationFiltered = locationFiltered.filter(s => {
-      const schoolPS = s.provinceState?.toUpperCase().trim();
-      const expandedSchoolPS = provinceAbbreviations[schoolPS] || stateAbbreviations[schoolPS] || s.provinceState;
-      return provinceRegex.test(expandedSchoolPS) || provinceRegex.test(s.provinceState);
+      const rawPS = s.province_state || s.provinceState;
+      const schoolPS = rawPS?.toUpperCase().trim();
+      const expandedSchoolPS = provinceAbbreviations[schoolPS] || stateAbbreviations[schoolPS] || rawPS;
+      return provinceRegex.test(expandedSchoolPS) || provinceRegex.test(rawPS);
     });
   }
 
