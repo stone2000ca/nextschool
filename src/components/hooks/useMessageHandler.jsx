@@ -335,6 +335,9 @@ export const useMessageHandler = ({
         if (switchTarget && setSelectedSchool) {
           setSelectedSchool(switchTarget);
         }
+        if (response.data?.deepDiveAnalysis && setDeepDiveAnalysis) {
+          setDeepDiveAnalysis({ ...response.data.deepDiveAnalysis, schoolId: responseTargetSchoolId });
+        }
       }
 
       if (!isViewingSchoolDetail && response.data?.state) {
