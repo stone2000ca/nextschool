@@ -245,11 +245,9 @@ export async function restoreSessionFromParam(
     };
     setMessages(prev => [...prev, welcomeMsg]);
 
-    if (skipViewOverrideRef) setTimeout(() => { skipViewOverrideRef.current = false; }, 0);
     setSessionRestored(true);
   } catch (error) {
     console.error('Failed to restore session:', error);
-    if (skipViewOverrideRef) setTimeout(() => { skipViewOverrideRef.current = false; }, 0);
     setSessionRestored(true);
   } finally {
     isRestoringSessionRef.current = false;

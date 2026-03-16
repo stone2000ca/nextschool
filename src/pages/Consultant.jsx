@@ -352,6 +352,7 @@ export default function Consultant() {
         console.log('[DETAIL VIEW] Setting view to detail for:', selectedSchool.name);
         setCurrentView('detail');
       }
+      if (skipViewOverrideRef.current) skipViewOverrideRef.current = false;
       return;
     }
     
