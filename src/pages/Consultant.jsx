@@ -792,10 +792,10 @@ export default function Consultant() {
 
     // E40-S4: Complete state reset for fresh conversation
     resetChatState();
-    
-        // S169-WC1: E29-RESUMPTION-FIX - skip greeting for returning users
-    if (!activeJourney?.isResuming) {
-    // Initialize first message with consultant's greeting
+
+    // S169-WC1: E29-RESUMPTION-FIX note — isResuming guard removed here because
+    // handleSelectConsultant is ONLY called from ConsultantSelection (fresh start).
+    // Session restoration uses a separate code path and never triggers this function.
     const greeting = {
       role: 'assistant',
       content: consultantName === 'Jackie'
@@ -805,7 +805,6 @@ export default function Consultant() {
     };
     setMessages([greeting]);
     setShowResponseChips(true);
-        } // end E29-RESUMPTION-FIX guard
   };
 
   const selectConversation = (convo) => {
@@ -1429,27 +1428,38 @@ export default function Consultant() {
                 onUpgrade={() => setShowUpgradeModal(true)}
                 heroContent={
                   currentState === STATES.WELCOME ? (
-                    <div className="text-center space-y-3 py-3">
-                      <div className="space-y-1">
-                        <h1 className="text-2xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
-                        <p className="text-sm text-[#E8E8ED]/70">Your personalized school search, simplified</p>
+                    <div className="text-center space-y-6 py-8">
+                      <div className="space-y-2">
+                        <h1 className="text-3xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
+                        <p className="text-[#E8E8ED]/70">Your personalized school search, simplified</p>
                       </div>
-                      <div className="grid gap-1.5 max-w-sm mx-auto text-left">
-                        <div className="flex items-center gap-2">
-                          <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      <div className="grid gap-4 max-w-md mx-auto text-left">
+                        <div className="flex items-start gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
                             selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
                           }`}>1</div>
-                          <span className="text-sm text-[#E8E8ED]">Tell us about your child</span>
-                          <span className="text-xs text-[#E8E8ED]/40">→</span>
-                          <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                          <div>
+                            <h3 className="font-semibold text-[#E8E8ED]">Tell us about your child</h3>
+                            <p className="text-sm text-[#E8E8ED]/60">Grade, location, priorities</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
                             selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
                           }`}>2</div>
-                          <span className="text-sm text-[#E8E8ED]">Review your brief</span>
-                          <span className="text-xs text-[#E8E8ED]/40">→</span>
-                          <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                          <div>
+                            <h3 className="font-semibold text-[#E8E8ED]">Review your brief</h3>
+                            <p className="text-sm text-[#E8E8ED]/60">Confirm what matters most</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
                             selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
                           }`}>3</div>
-                          <span className="text-sm text-[#E8E8ED]">See matches</span>
+                          <div>
+                            <h3 className="font-semibold text-[#E8E8ED]">See your matches</h3>
+                            <p className="text-sm text-[#E8E8ED]/60">Personalized school recommendations</p>
+                          </div>
                         </div>
                       </div>
                     </div>
