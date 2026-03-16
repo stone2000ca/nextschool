@@ -86,15 +86,24 @@ function LoadingSkeleton() {
 
 // ─── Collapsible Section ──────────────────────────────────────────────────────
 
+const SECTION_TINTS = {
+  '#0d9488': { border: '#0d9488', bg: 'linear-gradient(135deg, #f0fdfa, #e6fffa, #fff)' },  // teal — Deep Dive
+  '#ec4899': { border: '#ec4899', bg: 'linear-gradient(135deg, #fdf2f8, #fce7f3, #fff)' },  // pink — Community Pulse
+  '#ef4444': { border: '#ef4444', bg: 'linear-gradient(135deg, #fff5f5, #fee2e2, #fff)' },  // red — Key Dates
+  '#8b5cf6': { border: '#8b5cf6', bg: 'linear-gradient(135deg, #f5f3ff, #ede9fe, #fff)' },  // purple — Visit Prep
+  '#64748b': { border: '#64748b', bg: 'linear-gradient(135deg, #f8fafc, #f1f5f9, #fff)' },  // gray — Contact Log
+};
+
 function CollapsibleSection({ icon, label, color, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
+  const tint = SECTION_TINTS[color] || {};
   return (
-    <div style={{ borderTop: '1px solid #e8dfc0', marginTop: 0 }}>
+    <div style={{ borderTop: '1px solid #e8dfc0', marginTop: 0, borderLeft: tint.border ? `3px solid ${tint.border}` : 'none' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '13px 20px', background: 'none', border: 'none', cursor: 'pointer',
+          padding: '13px 20px', background: tint.bg || 'none', border: 'none', cursor: 'pointer',
           textAlign: 'left',
         }}
       >
@@ -654,12 +663,12 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
             </div>
 
             {/* ── Deep Dive Findings ─────────────────────────────── */}
-            <div>
+            <div style={{ borderLeft: '3px solid #0d9488' }}>
               <button
                 onClick={() => setDeepDiveOpen(o => !o)}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '13px 20px', background: 'none', border: 'none',
+                  padding: '13px 20px', background: 'linear-gradient(135deg, #f0fdfa, #e6fffa, #fff)', border: 'none',
                   borderBottom: deepDiveOpen ? '1px solid #e8dfc0' : 'none',
                   cursor: 'pointer', textAlign: 'left',
                 }}
