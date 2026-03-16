@@ -197,7 +197,7 @@ export async function restoreSessionFromParam(
       setCurrentConversation(restoredConversation);
     } else {
       const restoredContext = {
-        state: conversationContext.resumeView || conversationContext.state || STATES.RESULTS,
+        state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (conversationContext.resumeView || conversationContext.state || STATES.RESULTS),
         schools: restoredSchools
       };
       // S97-WC3: Hydrate schools from matchedSchools on reload (parse JSON string and fetch full records)
