@@ -1428,7 +1428,7 @@ export default function Consultant() {
                 isPremium={isPremium}
                 onUpgrade={() => setShowUpgradeModal(true)}
                 heroContent={
-                  currentState === STATES.WELCOME ? (
+                  currentState === STATES.WELCOME && messages.length === 0 ? (
                     <div className="text-center space-y-6 py-8">
                       <div className="space-y-2">
                         <h1 className="text-3xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
