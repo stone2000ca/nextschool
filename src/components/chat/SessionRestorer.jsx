@@ -147,7 +147,7 @@ export async function restoreSessionFromParam(
 
     // Check if session was in DEEP_DIVE state and restore accordingly
     const conversationContext = chatHistory?.conversationContext || {};
-    if ((conversationContext.resumeView === 'DEEP_DIVE' || conversationContext.state === 'DEEP_DIVE') && (conversationContext.lastDeepDiveSchoolId || conversationContext.selectedSchoolId) && setDeepDiveAnalysis) {
+    if ((conversationContext.lastDeepDiveSchoolId || conversationContext.selectedSchoolId) && setDeepDiveAnalysis) {
       try {
         const schoolId = conversationContext.lastDeepDiveSchoolId || conversationContext.selectedSchoolId;
         const targetSchool = restoredSchools.find(s => s.id === schoolId);
@@ -157,6 +157,7 @@ export async function restoreSessionFromParam(
         const analysisRecords = await base44.entities.SchoolAnalysis.filter({ userId: user.id, schoolId });
         if (analysisRecords && analysisRecords[0] && setDeepDiveAnalysis) {
           setDeepDiveAnalysis(analysisRecords[0]);
+          setOnboardingPhase(STATES.DEEP_DIVE);
         }
         const prepArtifacts = await base44.entities.GeneratedArtifact.filter({ userId: user.id, schoolId, artifactType: 'visit_prep_kit' });
         if (prepArtifacts && prepArtifacts[0] && setVisitPrepKit) {
@@ -166,7 +167,6 @@ export async function restoreSessionFromParam(
         if (planArtifacts && planArtifacts[0] && setActionPlan) {
           try { setActionPlan(JSON.parse(planArtifacts[0].content)); } catch(e) { /* ignore parse error */ }
         }
-        setOnboardingPhase(STATES.DEEP_DIVE);
       } catch (ddRestoreErr) {
         console.warn('[RESTORE] Deep dive restore failed (non-blocking):', ddRestoreErr.message);
         // Fall through to RESULTS state
