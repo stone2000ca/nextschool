@@ -288,18 +288,16 @@ export const useMessageHandler = ({
         setSchoolsAnimKey(k => k + 1);
       }
 
-      // CRITICAL: Update briefStatus from response immediately
-      // BUG-OVERLAY-002 FIX: Always clear briefStatus when RESULTS arrive with schools,
-      // regardless of whether the confirmation was via button or natural language.
-      // Previously only cleared for isBriefConfirmation, causing the overlay to get stuck
-      // when users typed "yes", "looks good", etc.
-      const newBriefStatus = response.data?.briefStatus || null;
-      if (response.data?.state === STATES.RESULTS && (response.data?.schools || []).length > 0) {
+      // CRITICAL: Update briefStatus from response immediately.
+      // BUG-OVERLAY-002/003 FIX: When RESULTS arrive, clear briefStatus in BOTH local
+      // state AND the context that gets stored in conversationContext. If we only clear
+      // the local state, the sync effect (Consultant.jsx FIX 17) reads 'confirmed' from
+      // context and reverses the clearing — causing the overlay to stay stuck forever.
+      let newBriefStatus = response.data?.briefStatus || null;
+      if (response.data?.state === STATES.RESULTS && ((response.data?.schools || []).length > 0 || isBriefConfirmation)) {
+        newBriefStatus = null;
         setBriefStatus(null);
-        console.log('[BRIEF STATUS] Cleared on RESULTS arrival with schools');
-      } else if (response.data?.state === STATES.RESULTS && isBriefConfirmation) {
-        setBriefStatus(null);
-        console.log('[BRIEF STATUS] Cleared on RESULTS arrival (brief confirmation)');
+        console.log('[BRIEF STATUS] Cleared on RESULTS arrival');
       } else if (newBriefStatus) {
         setBriefStatus(newBriefStatus);
         console.log('[BRIEF STATUS] Updated to:', newBriefStatus);

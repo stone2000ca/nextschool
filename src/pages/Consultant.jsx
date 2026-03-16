@@ -1624,7 +1624,7 @@ export default function Consultant() {
               onUpgrade={() => setShowUpgradeModal(true)}
             />
             </div>
-          ) : currentState === STATES.RESULTS && schools.length === 0 ? (
+          ) : (currentState === STATES.RESULTS || currentView === 'schools') && schools.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center p-6 text-center">
               <div className="max-w-md">
                 <div className="text-6xl mb-4">🔍</div>
