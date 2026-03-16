@@ -2,7 +2,7 @@
 export function validateBriefContent(text) {
   if (!text) return false;
   const words = text.trim().split(/\s+/).filter(Boolean);
-  if (words.length <= 50) return false;
+  if (words.length <= 20) return false;
   const lower = text.toLowerCase();
   const hits = [
     /\bgrade\b|\byr\s*\d|\byear\s*\d|\bgrade\s*\d/i.test(lower),
@@ -27,7 +27,6 @@ export function generateProgrammaticBrief(profile) {
 
   // Budget
   if (profile.maxTuition) lines.push(`**Budget:** Up to $${Number(profile.maxTuition).toLocaleString()}`);
-  else if (profile.budgetRange) lines.push(`**Budget:** ${profile.budgetRange.replace(/_/g, ' ')}`);
 
   // Priorities
   if (profile.priorities?.length) lines.push(`**Priorities:** ${profile.priorities.join(', ')}`);
