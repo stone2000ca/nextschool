@@ -8,7 +8,7 @@ export function useShortlist({
   user, setUser, isAuthenticated, schools, currentState,
   selectedConsultant, familyProfile, setMessages, trackEvent, setShowLoginGate,
   onConfirmDeepDive,
-  currentConversation, activeJourney,
+  currentConversation, activeJourney, extraSchools,
 }) {
   const [shortlistData, setShortlistData] = useState([]);
   const [removedSchoolIds, setRemovedSchoolIds] = useState([]);

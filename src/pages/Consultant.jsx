@@ -322,6 +322,7 @@ export default function Consultant() {
     onConfirmDeepDive: (school) => handleConfirmDeepDive(school),
     currentConversation,
     activeJourney,
+    extraSchools,
   });
 
   // Whether the Family Brief toggle should be visible
