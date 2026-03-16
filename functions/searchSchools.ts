@@ -340,11 +340,10 @@ async function performSearch(req) {
      // BUG-MATCH-S41 FIX: Grade range check moved to soft penalty (scoring) instead of hard filter.
      // Only hard-exclude if grade is MORE than 2 grades outside the range.
      if (parsedMinGrade !== null) {
-       let sLow = parseInt(school.lowestGrade);
-       let sHigh = parseInt(school.highestGrade);
+       let sLow = parseInt(school.lowest_grade ?? school.lowestGrade);
+       let sHigh = parseInt(school.highest_grade ?? school.highestGrade);
        if (!isNaN(sLow) && !isNaN(sHigh)) {
          const distanceOutsideRange = parsedMinGrade < sLow ? sLow - parsedMinGrade : (parsedMinGrade > sHigh ? parsedMinGrade - sHigh : 0);
-         // S161-WC2 FIX: exclude if grade is outside the school's range (was > 1 which allowed K-6 for Grade 7)
          if (distanceOutsideRange > 0) {
            console.log(`[GRADE FILTER] Excluded ${school.name}: grades ${sLow}-${sHigh}, need ${parsedMinGrade} (${distanceOutsideRange} grades outside range)`);
            return false;
@@ -354,7 +353,7 @@ async function performSearch(req) {
        }
      }
     
-    const schoolTuition = school.tuition || school.dayTuition || school.tuitionMin || null;
+    const schoolTuition = school.tuition || school.day_tuition || school.dayTuition || school.tuitionMin || null;
     if (maxTuition && maxTuition !== 'unlimited') {
       if (schoolTuition && schoolTuition > maxTuition) {
         console.log(`[BUDGET FILTER] Filtered out ${school.name}: tuition $${schoolTuition} exceeds budget $${maxTuition}`);
