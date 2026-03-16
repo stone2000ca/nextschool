@@ -31,13 +31,10 @@ export async function restoreSessionFromParam(
   skipViewOverrideRef
 ) {
   if (!sessionIdParam) return;
-  window.__RESTORE_DEBUG = [];
   // CRITICAL: Set flag FIRST to override isIntakePhase during restoration
   sessionParamProcessedRef.current = true;
   isRestoringSessionRef.current = true;
   if (skipViewOverrideRef) skipViewOverrideRef.current = true;
-  console.log('[RESTORE-DEBUG] Starting restore. skipViewOverride set to true');
-  window.__RESTORE_DEBUG.push('[RESTORE-DEBUG] Starting restore. skipViewOverride set to true');
   setRestoringSession(true);
   try {
     // Fetch ChatSession
@@ -228,10 +225,6 @@ export async function restoreSessionFromParam(
     };
     setMessages(prev => [...prev, welcomeMsg]);
 
-    console.log('[RESTORE-DEBUG] About to clear skipViewOverrideRef via setTimeout');
-    window.__RESTORE_DEBUG.push('[RESTORE-DEBUG] About to clear skipViewOverrideRef via setTimeout');
-    window.__RESTORE_DEBUG.push('RESTORE COMPLETE');
-    try { const d = document.createElement('div'); d.id = 'restore-debug'; d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;z-index:99999;padding:10px;font-size:11px;max-height:200px;overflow:auto;white-space:pre-wrap;'; d.textContent = window.__RESTORE_DEBUG.join('\n'); document.body.appendChild(d); } catch(e) {}
     if (skipViewOverrideRef) setTimeout(() => { skipViewOverrideRef.current = false; }, 0);
     setSessionRestored(true);
   } catch (error) {
