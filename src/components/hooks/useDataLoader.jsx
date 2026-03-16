@@ -104,15 +104,15 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
           if (linked.length > 0) {
             journey = linked.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
           } else {
-            // Step (b): Fallback — find most recent journey for user, then stamp chatHistoryId if missing
+            // Step (b): Fallback — only pick unassigned journeys (no chatHistoryId), then stamp
             const all = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
-            if (all.length > 0) {
-              journey = all.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
-              if (!journey.chatHistoryId) {
-                await base44.entities.FamilyJourney.update(journey.id, { chatHistoryId: currentConversation.id });
-                journey = { ...journey, chatHistoryId: currentConversation.id };
-              }
+            const unassigned = all.filter(j => !j.chatHistoryId);
+            if (unassigned.length > 0) {
+              journey = unassigned.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
+              await base44.entities.FamilyJourney.update(journey.id, { chatHistoryId: currentConversation.id });
+              journey = { ...journey, chatHistoryId: currentConversation.id };
             }
+            // If no unassigned journeys, journey stays null — this chat has no journey yet
           }
         } else {
           // Step (c): No conversation context — just pick most recent journey
