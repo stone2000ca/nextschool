@@ -126,6 +126,9 @@ export async function restoreSessionFromParam(
       if (msg.role === 'assistant' && msg.deepDiveAnalysis?.schoolId) {
         lastDeepDiveSchoolId = msg.deepDiveAnalysis.schoolId;
         lastDeepDiveSchoolName = msg.deepDiveAnalysis.schoolName;
+        if (setDeepDiveAnalysis && msg.deepDiveAnalysis) {
+          setDeepDiveAnalysis(msg.deepDiveAnalysis);
+        }
         break;
       }
     }

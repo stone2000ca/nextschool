@@ -1193,6 +1193,8 @@ export default function Consultant() {
   useEffect(() => {
     // Don't run while AI is still typing
     if (isTyping) return;
+    // BUG-RN-05 WC-2: Don't wipe deepDiveAnalysis during session restore
+    if (isRestoringSessionRef.current) return;
     if (!selectedSchool?.id || !messages.length) {
       setDeepDiveAnalysis(null);
       setHydrationSource(null);
