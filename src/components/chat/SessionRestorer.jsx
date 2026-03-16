@@ -145,6 +145,15 @@ export async function restoreSessionFromParam(
           console.log('[RESTORE] Fallback: found SchoolAnalysis for school:', lastDeepDiveSchoolId);
           if (setDeepDiveAnalysis) {
             setDeepDiveAnalysis(latest);
+            // WC-2: Inject analysis onto last assistant message so E39-S4a can find it
+            const injectedMsgs = [...restoredMessages];
+            for (let i = injectedMsgs.length - 1; i >= 0; i--) {
+              if (injectedMsgs[i].role === 'assistant') {
+                injectedMsgs[i] = { ...injectedMsgs[i], deepDiveAnalysis: latest };
+                break;
+              }
+            }
+            setMessages(injectedMsgs);
           }
         }
       } catch (e) {
