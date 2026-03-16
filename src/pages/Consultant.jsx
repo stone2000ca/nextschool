@@ -345,6 +345,7 @@ export default function Consultant() {
   
   // BUG-DD-001 FIX: selectedSchool is the SINGLE SOURCE OF TRUTH for detail view
   useEffect(() => {
+    if (skipViewOverrideRef.current) return;
     // CRITICAL: If a school is selected, ALWAYS maintain detail view - no exceptions
     if (selectedSchool) {
       if (currentView !== 'detail') {
@@ -521,7 +522,7 @@ export default function Consultant() {
   // WC5: Session loading from URL param
   useEffect(() => {
     if (sessionIdParam && !sessionParamProcessedRef.current && isAuthenticated && user) {
-      restoreSessionFromParam(sessionIdParam, base44, isAuthenticated, user, setSelectedConsultant, setRestoredSessionData, setMessages, setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase, setCurrentConversation, setSessionRestored, setRestoringSession, loadShortlist, isRestoringSessionRef, sessionParamProcessedRef, setDebugInfo, setDeepDiveAnalysis, setSelectedSchool, setVisitPrepKit, setActionPlan);
+      restoreSessionFromParam(sessionIdParam, base44, isAuthenticated, user, setSelectedConsultant, setRestoredSessionData, setMessages, setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase, setCurrentConversation, setSessionRestored, setRestoringSession, loadShortlist, isRestoringSessionRef, sessionParamProcessedRef, setDebugInfo, setDeepDiveAnalysis, setSelectedSchool, setVisitPrepKit, setActionPlan, skipViewOverrideRef);
     }
   }, [sessionIdParam, isAuthenticated, user?.id]);
 
