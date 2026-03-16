@@ -58,7 +58,7 @@ export default function AdminClaims() {
       await base44.entities.SchoolClaim.update(claim.id, { status: 'verified' });
       await base44.entities.School.update(claim.schoolId, {
         verified: true,
-        claim_status: 'claimed',
+        claimStatus: 'claimed',
         membershipTier: 'basic',
       });
       await base44.entities.SchoolAdmin.create({
@@ -132,7 +132,7 @@ export default function AdminClaims() {
                       <div><span className="font-medium">Claimant:</span> {claim.claimantName || 'N/A'} — {claim._userEmail}</div>
                       <div><span className="font-medium">Role at school:</span> {claim.claimantRole || 'N/A'}</div>
                       <div><span className="font-medium">Verification:</span> {claim.verificationMethod || 'N/A'}</div>
-                      <div><span className="font-medium">Submitted:</span> {new Date(claim.created_at).toLocaleDateString('en-CA')}</div>
+                      <div><span className="font-medium">Submitted:</span> {new Date(claim.createdAt).toLocaleDateString('en-CA')}</div>
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0">

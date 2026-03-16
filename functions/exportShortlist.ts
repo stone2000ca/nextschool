@@ -75,11 +75,11 @@ Deno.serve(async (req) => {
     <h2>${school.name}</h2>
     <div class="info-row">
       <span class="label">Location:</span>
-      <span>${school.city}, ${school.province_state || school.country}</span>
+      <span>${school.city}, ${school.provinceState || school.country}</span>
     </div>
     <div class="info-row">
       <span class="label">Grades:</span>
-      <span>${school.grades_served || 'N/A'}</span>
+      <span>${school.gradesServed || 'N/A'}</span>
     </div>
     <div class="info-row">
       <span class="label">Tuition:</span>
@@ -127,11 +127,11 @@ Deno.serve(async (req) => {
       </tr>
       <tr>
         <td class="label">Class Size</td>
-        ${schools.map(s => `<td>${s.avg_class_size || 'N/A'}</td>`).join('')}
+        ${schools.map(s => `<td>${s.avgClassSize || 'N/A'}</td>`).join('')}
       </tr>
       <tr>
         <td class="label">Student:Teacher</td>
-        ${schools.map(s => `<td>${s.student_teacher_ratio || 'N/A'}</td>`).join('')}
+        ${schools.map(s => `<td>${s.studentTeacherRatio || 'N/A'}</td>`).join('')}
       </tr>
       <tr>
         <td class="label">Curriculum</td>
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
       </tr>
       <tr>
         <td class="label">Financial Aid</td>
-        ${schools.map(s => `<td>${s.financial_aid_available ? 'Yes' : 'No'}</td>`).join('')}
+        ${schools.map(s => `<td>${s.financialAidAvailable ? 'Yes' : 'No'}</td>`).join('')}
       </tr>
     </tbody>
   </table>

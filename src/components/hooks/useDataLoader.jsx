@@ -35,7 +35,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
 
       // E30-007: Build schoolAnalyses map with full record (excluding internal metadata)
       const analysesMap = {};
-      const METADATA_KEYS = new Set(['id', 'created_at', 'updated_date', 'created_by']);
+      const METADATA_KEYS = new Set(['id', 'createdAt', 'updated_date', 'created_by']);
       for (const analysis of analyses) {
         if (analysis.schoolId) {
           const entry = {};
@@ -57,7 +57,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
     if (!user?.id || !currentConversation?.id) return;
 
     // Guard: if familyProfile already has meaningful data from orchestrateConversation, skip DB fetch
-    const METADATA_KEYS = ['id', 'userId', 'conversationId', 'created_at', 'updated_date', 'created_by'];
+    const METADATA_KEYS = ['id', 'userId', 'conversationId', 'createdAt', 'updated_date', 'created_by'];
     const hasRealData = familyProfile && Object.entries(familyProfile).some(
       ([k, v]) => !METADATA_KEYS.includes(k) && v != null && v !== '' && !(Array.isArray(v) && v.length === 0)
     );
@@ -102,13 +102,13 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
           // Step (a): Try to find journey specifically linked to this chat
           const linked = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false, chatHistoryId: currentConversation.id });
           if (linked.length > 0) {
-            journey = linked.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+            journey = linked.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
           } else {
             // Step (b): Fallback — only pick unassigned journeys (no chatHistoryId), then stamp
             const all = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
             const unassigned = all.filter(j => !j.chatHistoryId);
             if (unassigned.length > 0) {
-              journey = unassigned.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+              journey = unassigned.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
               await base44.entities.FamilyJourney.update(journey.id, { chatHistoryId: currentConversation.id });
               journey = { ...journey, chatHistoryId: currentConversation.id };
             }
@@ -118,7 +118,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
           // Step (c): No conversation context — just pick most recent journey
           const all = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
           if (all.length > 0) {
-            journey = all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+            journey = all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
           }
         }
 

@@ -21,10 +21,10 @@ function isFilled(value) {
 }
 
 const TIER_WEIGHTS = [
-  { fields: ['name','city','province_state','country','lowest_grade','highest_grade','gender_policy','day_tuition','school_type_label','email'], weight: 50 },
-  { fields: ['description','mission_statement','website','boarding_available','faith_based','languages_of_instruction','avg_class_size','student_teacher_ratio'], weight: 30 },
-  { fields: ['arts_programs','sports_programs','clubs','facilities','special_ed_programs','curriculum','accreditations','teaching_philosophy','_testimonials'], weight: 15 },
-  { fields: ['logo_url','header_photo_url','photo_gallery'], weight: 5 }, // media fields kept for score only
+  { fields: ['name','city','provinceState','country','lowestGrade','highestGrade','genderPolicy','dayTuition','schoolTypeLabel','email'], weight: 50 },
+  { fields: ['description','missionStatement','website','boardingAvailable','faithBased','languagesOfInstruction','avgClassSize','studentTeacherRatio'], weight: 30 },
+  { fields: ['artsPrograms','sportsPrograms','clubs','facilities','specialEdPrograms','curriculum','accreditations','teachingPhilosophy','_testimonials'], weight: 15 },
+  { fields: ['logoUrl','headerPhotoUrl','photoGallery'], weight: 5 }, // media fields kept for score only
 ];
 
 function calcWeightedScore(data, testimonialCount = 0) {
@@ -69,7 +69,7 @@ const TIERS = [
     color: 'red',
     weight: 0.5,
     motivational: 'Essential information families need to find your school.',
-    fields: ['name', 'city', 'province_state', 'country', 'lowest_grade', 'highest_grade', 'gender_policy', 'day_tuition', 'school_type_label', 'email'],
+    fields: ['name', 'city', 'provinceState', 'country', 'lowestGrade', 'highestGrade', 'genderPolicy', 'dayTuition', 'schoolTypeLabel', 'email'],
   },
   {
     id: 'tier2',
@@ -77,7 +77,7 @@ const TIERS = [
     color: 'amber',
     weight: 0.3,
     motivational: 'Schools with these fields completed appear in 3x more results.',
-    fields: ['description', 'mission_statement', 'website', 'boarding_available', 'faith_based', 'languages_of_instruction', 'avg_class_size', 'student_teacher_ratio'],
+    fields: ['description', 'missionStatement', 'website', 'boardingAvailable', 'faithBased', 'languagesOfInstruction', 'avgClassSize', 'studentTeacherRatio'],
   },
   {
     id: 'tier3',
@@ -85,7 +85,7 @@ const TIERS = [
     color: 'teal',
     weight: 0.15,
     motivational: 'Add depth to your profile with testimonials and details that set you apart.',
-    fields: ['arts_programs', 'sports_programs', 'clubs', 'facilities', 'special_ed_programs', 'curriculum', 'accreditations', 'teaching_philosophy', '_testimonials'],
+    fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations', 'teachingPhilosophy', '_testimonials'],
   },
 ];
 
@@ -242,7 +242,7 @@ function ImageUploadField({ label, field, hint, formData, onChange }) {
           <img
             src={preview || currentUrl}
             alt={label}
-            className={field === 'logo_url' ? 'w-24 h-24 object-contain border rounded-lg bg-white p-2' : 'w-full h-40 object-cover rounded-lg'}
+            className={field === 'logoUrl' ? 'w-24 h-24 object-contain border rounded-lg bg-white p-2' : 'w-full h-40 object-cover rounded-lg'}
           />
         </div>
       )}
@@ -277,7 +277,7 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
     setDirtyFields({});
     setVerifiedFields(school?.verifiedFields || {});
     if (school?.id) {
-      base44.entities.Testimonial.filter({ school_id: school.id })
+      base44.entities.Testimonial.filter({ schoolId: school.id })
         .then(list => setTestimonialCount(list.length))
         .catch(() => {});
     }
@@ -345,8 +345,8 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
         </div>
         <div>
           <FieldLabel required>Province/State</FieldLabel>
-          <Input value={formData.province_state || ''} onChange={(e) => handleChange('province_state', e.target.value)} className={v('province_state') ? 'border-red-500' : ''} />
-          {v('province_state') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
+          <Input value={formData.provinceState || ''} onChange={(e) => handleChange('provinceState', e.target.value)} className={v('provinceState') ? 'border-red-500' : ''} />
+          {v('provinceState') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
         </div>
         <div>
           <FieldLabel required>Country</FieldLabel>
@@ -355,30 +355,30 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
         </div>
         <div>
           <FieldLabel required>School Type</FieldLabel>
-          <Select value={formData.school_type_label || ''} onValueChange={(val) => handleChange('school_type_label', val)}>
-            <SelectTrigger className={v('school_type_label') ? 'border-red-500' : ''}><SelectValue placeholder="Select type" /></SelectTrigger>
+          <Select value={formData.schoolTypeLabel || ''} onValueChange={(val) => handleChange('schoolTypeLabel', val)}>
+            <SelectTrigger className={v('schoolTypeLabel') ? 'border-red-500' : ''}><SelectValue placeholder="Select type" /></SelectTrigger>
             <SelectContent>
               {['Day School','Boarding School','Private','Special Needs','All-Girls','General','Religious','Arts-Focused','Military','Online','All-Boys'].map(t => (
                 <SelectItem key={t} value={t}>{t}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {v('school_type_label') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
+          {v('schoolTypeLabel') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
         </div>
         <div>
           <FieldLabel required>Lowest Grade</FieldLabel>
-          <Input type="number" value={formData.lowest_grade ?? ''} onChange={(e) => handleChange('lowest_grade', parseInt(e.target.value))} placeholder="-2 = PK, -1 = JK, 0 = K" className={v('lowest_grade') ? 'border-red-500' : ''} />
-          {v('lowest_grade') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
+          <Input type="number" value={formData.lowestGrade ?? ''} onChange={(e) => handleChange('lowestGrade', parseInt(e.target.value))} placeholder="-2 = PK, -1 = JK, 0 = K" className={v('lowestGrade') ? 'border-red-500' : ''} />
+          {v('lowestGrade') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
         </div>
         <div>
           <FieldLabel required>Highest Grade</FieldLabel>
-          <Input type="number" value={formData.highest_grade ?? ''} onChange={(e) => handleChange('highest_grade', parseInt(e.target.value))} className={v('highest_grade') ? 'border-red-500' : ''} />
-          {v('highest_grade') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
+          <Input type="number" value={formData.highestGrade ?? ''} onChange={(e) => handleChange('highestGrade', parseInt(e.target.value))} className={v('highestGrade') ? 'border-red-500' : ''} />
+          {v('highestGrade') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
         </div>
         <div>
           <FieldLabel required>Gender Policy</FieldLabel>
-          <Select value={formData.gender_policy || ''} onValueChange={(val) => handleChange('gender_policy', val)}>
-            <SelectTrigger className={v('gender_policy') ? 'border-red-500' : ''}><SelectValue placeholder="Select policy" /></SelectTrigger>
+          <Select value={formData.genderPolicy || ''} onValueChange={(val) => handleChange('genderPolicy', val)}>
+            <SelectTrigger className={v('genderPolicy') ? 'border-red-500' : ''}><SelectValue placeholder="Select policy" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Co-ed">Co-ed</SelectItem>
               <SelectItem value="All-Boys">All-Boys</SelectItem>
@@ -386,12 +386,12 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
               <SelectItem value="Co-ed with single-gender classes">Co-ed with single-gender classes</SelectItem>
             </SelectContent>
           </Select>
-          {v('gender_policy') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
+          {v('genderPolicy') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
         </div>
         <div>
           <FieldLabel required>Day Tuition (Annual)</FieldLabel>
-          <Input type="number" value={formData.day_tuition || ''} onChange={(e) => handleChange('day_tuition', parseFloat(e.target.value))} placeholder="e.g. 25000" className={v('day_tuition') ? 'border-red-500' : ''} />
-          {v('day_tuition') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
+          <Input type="number" value={formData.dayTuition || ''} onChange={(e) => handleChange('dayTuition', parseFloat(e.target.value))} placeholder="e.g. 25000" className={v('dayTuition') ? 'border-red-500' : ''} />
+          {v('dayTuition') && <p className="text-xs text-red-500 mt-1">This field is required</p>}
         </div>
         <div>
           <Label>Currency</Label>
@@ -431,8 +431,8 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
         <Textarea value={formData.description || ''} onChange={(e) => handleChange('description', e.target.value)} rows={4} className={isAI('description') ? 'bg-blue-50 border-blue-200' : ''} />
       </div>
       <div>
-        <FieldLabel aiEnriched={isAI('mission_statement')}>Mission Statement</FieldLabel>
-        <Textarea value={formData.mission_statement || ''} onChange={(e) => handleChange('mission_statement', e.target.value.slice(0, 500))} rows={3} maxLength={500} placeholder="Describe your school's mission" className={isAI('mission_statement') ? 'bg-blue-50 border-blue-200' : ''} />
+        <FieldLabel aiEnriched={isAI('missionStatement')}>Mission Statement</FieldLabel>
+        <Textarea value={formData.missionStatement || ''} onChange={(e) => handleChange('missionStatement', e.target.value.slice(0, 500))} rows={3} maxLength={500} placeholder="Describe your school's mission" className={isAI('missionStatement') ? 'bg-blue-50 border-blue-200' : ''} />
       </div>
       <div>
         <Label>Website</Label>
@@ -440,13 +440,13 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
       </div>
       <div className="flex items-center justify-between py-2">
         <Label>Boarding Available</Label>
-        <Switch checked={formData.boarding_available || false} onCheckedChange={(val) => handleChange('boarding_available', val)} />
+        <Switch checked={formData.boardingAvailable || false} onCheckedChange={(val) => handleChange('boardingAvailable', val)} />
       </div>
-      {formData.boarding_available && (
+      {formData.boardingAvailable && (
         <>
           <div>
             <Label>Boarding Type</Label>
-            <Select value={formData.boarding_type || ''} onValueChange={(val) => handleChange('boarding_type', val)}>
+            <Select value={formData.boardingType || ''} onValueChange={(val) => handleChange('boardingType', val)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="full">Full Boarding</SelectItem>
@@ -457,23 +457,23 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
           </div>
           <div>
             <Label>Boarding Tuition (Annual)</Label>
-            <Input type="number" value={formData.boarding_tuition || ''} onChange={(e) => handleChange('boarding_tuition', parseFloat(e.target.value))} placeholder="e.g. 45000" />
+            <Input type="number" value={formData.boardingTuition || ''} onChange={(e) => handleChange('boardingTuition', parseFloat(e.target.value))} placeholder="e.g. 45000" />
           </div>
         </>
       )}
       <div>
         <Label>Religious Affiliation</Label>
-        <Input value={formData.faith_based || ''} onChange={(e) => handleChange('faith_based', e.target.value)} placeholder="e.g. Non-denominational, Catholic" />
+        <Input value={formData.faithBased || ''} onChange={(e) => handleChange('faithBased', e.target.value)} placeholder="e.g. Non-denominational, Catholic" />
       </div>
-      <TagInput label="Languages of Instruction" field="languages_of_instruction" placeholder="e.g. English, French" formData={formData} onChange={handleChange} />
+      <TagInput label="Languages of Instruction" field="languagesOfInstruction" placeholder="e.g. English, French" formData={formData} onChange={handleChange} />
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Average Class Size</Label>
-          <Input type="number" value={formData.avg_class_size || ''} onChange={(e) => handleChange('avg_class_size', parseInt(e.target.value))} />
+          <Input type="number" value={formData.avgClassSize || ''} onChange={(e) => handleChange('avgClassSize', parseInt(e.target.value))} />
         </div>
         <div>
           <Label>Student-Teacher Ratio</Label>
-          <Input value={formData.student_teacher_ratio || ''} onChange={(e) => handleChange('student_teacher_ratio', e.target.value)} placeholder="e.g. 12:1" />
+          <Input value={formData.studentTeacherRatio || ''} onChange={(e) => handleChange('studentTeacherRatio', e.target.value)} placeholder="e.g. 12:1" />
         </div>
       </div>
     </div>
@@ -484,16 +484,16 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
   // ==========================================================================
   const tier3Content = (
     <div className="space-y-4">
-      <TagInput label="Arts Programs" field="arts_programs" placeholder="Add arts program" formData={formData} onChange={handleChange} />
-      <TagInput label="Sports Programs" field="sports_programs" placeholder="Add sports program" formData={formData} onChange={handleChange} />
+      <TagInput label="Arts Programs" field="artsPrograms" placeholder="Add arts program" formData={formData} onChange={handleChange} />
+      <TagInput label="Sports Programs" field="sportsPrograms" placeholder="Add sports program" formData={formData} onChange={handleChange} />
       <TagInput label="Clubs & Activities" field="clubs" placeholder="Add club" formData={formData} onChange={handleChange} />
       <TagInput label="Facilities" field="facilities" placeholder="e.g. Pool, Theatre, Lab" formData={formData} onChange={handleChange} />
-      <TagInput label="Special Education Programs" field="special_ed_programs" placeholder="Add program" formData={formData} onChange={handleChange} />
+      <TagInput label="Special Education Programs" field="specialEdPrograms" placeholder="Add program" formData={formData} onChange={handleChange} />
       <TagInput label="Curriculum Type" field="curriculum" placeholder="e.g. IB, Montessori, AP" formData={formData} onChange={handleChange} />
       <TagInput label="Accreditations" field="accreditations" placeholder="Add accreditation" formData={formData} onChange={handleChange} />
       <div>
         <Label>Teaching Philosophy</Label>
-        <Textarea value={formData.teaching_philosophy || ''} onChange={(e) => handleChange('teaching_philosophy', e.target.value.slice(0, 500))} rows={3} maxLength={500} placeholder="Describe your teaching approach" />
+        <Textarea value={formData.teachingPhilosophy || ''} onChange={(e) => handleChange('teachingPhilosophy', e.target.value.slice(0, 500))} rows={3} maxLength={500} placeholder="Describe your teaching approach" />
       </div>
     </div>
   );

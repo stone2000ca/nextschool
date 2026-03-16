@@ -8,25 +8,25 @@ const TIERS = [
     id: 'tier1',
     label: 'Required',
     color: '#ef4444',
-    fields: ['name', 'city', 'province_state', 'country', 'lowest_grade', 'highest_grade', 'gender_policy', 'day_tuition', 'school_type_label', 'lat', 'lng'],
+    fields: ['name', 'city', 'provinceState', 'country', 'lowestGrade', 'highestGrade', 'genderPolicy', 'dayTuition', 'schoolTypeLabel', 'lat', 'lng'],
   },
   {
     id: 'tier2',
     label: 'Important',
     color: '#f59e0b',
-    fields: ['description', 'website', 'boarding_available', 'faith_based', 'languages_of_instruction', 'avg_class_size', 'student_teacher_ratio'],
+    fields: ['description', 'website', 'boardingAvailable', 'faithBased', 'languagesOfInstruction', 'avgClassSize', 'studentTeacherRatio'],
   },
   {
     id: 'tier3',
     label: 'Enrichment',
     color: '#14b8a6',
-    fields: ['arts_programs', 'sports_programs', 'clubs', 'facilities', 'special_ed_programs', 'curriculum', 'accreditations'],
+    fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations'],
   },
   {
     id: 'tier4',
     label: 'Media',
     color: '#6366f1',
-    fields: ['logo_url', 'header_photo_url', 'photo_gallery'],
+    fields: ['logoUrl', 'headerPhotoUrl', 'photoGallery'],
   },
 ];
 

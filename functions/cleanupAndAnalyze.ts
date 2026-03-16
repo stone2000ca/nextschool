@@ -7,8 +7,8 @@ Deno.serve(async (req) => {
     // Fetch all schools
     const allSchools = await base44.asServiceRole.entities.School.list('-updated_date', 1000);
     
-    // Check for missing header_photo_url
-    const missingPhotos = allSchools.filter(s => !s.header_photo_url);
+    // Check for missing headerPhotoUrl
+    const missingPhotos = allSchools.filter(s => !s.headerPhotoUrl);
     
     // Deduplicate by name + address (exact match)
     const seenKeys = new Set();

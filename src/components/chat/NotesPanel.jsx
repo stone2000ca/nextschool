@@ -139,7 +139,7 @@ export default function NotesPanel({ userId, onClose }) {
                       <p className="text-sm text-slate-700 mb-2">{note.content}</p>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">
-                          {new Date(note.created_at).toLocaleDateString()}
+                          {new Date(note.createdAt).toLocaleDateString()}
                         </span>
                         <div className="flex gap-1">
                           <Button

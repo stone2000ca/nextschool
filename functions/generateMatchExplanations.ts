@@ -33,15 +33,15 @@ Deal Breakers: ${familyProfile.dealbreakers?.join(', ') || 'None mentioned'}
 `;
 
     const schoolsList = schools.map(s => `
-- ${s.name} (${s.city}, ${s.province_state})
+- ${s.name} (${s.city}, ${s.provinceState})
   Curriculum: ${s.curriculum}
   Tuition: $${s.tuition}
   Specializations: ${s.specializations?.join(', ') || 'General'}
-  Gender Policy: ${s.gender_policy || 'Not specified'}
-  Class Size: ${s.avg_class_size || 'Not specified'}
-  Financial Aid: ${s.financial_aid_available ? 'Yes' : 'No'}
-  Sports: ${s.sports_programs?.slice(0, 3).join(', ') || 'Not specified'}
-  Arts: ${s.arts_programs?.slice(0, 3).join(', ') || 'Not specified'}
+  Gender Policy: ${s.genderPolicy || 'Not specified'}
+  Class Size: ${s.avgClassSize || 'Not specified'}
+  Financial Aid: ${s.financialAidAvailable ? 'Yes' : 'No'}
+  Sports: ${s.sportsPrograms?.slice(0, 3).join(', ') || 'Not specified'}
+  Arts: ${s.artsPrograms?.slice(0, 3).join(', ') || 'Not specified'}
   Distance: ${s.distanceKm ? s.distanceKm.toFixed(1) + ' km' : 'Not calculated'}
 `).join('\n');
 

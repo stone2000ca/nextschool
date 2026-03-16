@@ -42,9 +42,9 @@ function applyReligiousFilter(school, dealbreakers) {
   );
   if (!hasReligiousDealbreaker) return true;
 
-  const affiliationNorm = (school.faith_based || '').toLowerCase().trim();
-  if (school.faith_based && !nonReligiousAffiliations.has(affiliationNorm)) {
-    console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: affiliation (${school.faith_based})`);
+  const affiliationNorm = (school.faithBased || '').toLowerCase().trim();
+  if (school.faithBased && !nonReligiousAffiliations.has(affiliationNorm)) {
+    console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: affiliation (${school.faithBased})`);
     return false;
   }
   const nameLower = school.name?.toLowerCase() || '';
@@ -56,7 +56,7 @@ function applyReligiousFilter(school, dealbreakers) {
 }
 
 function applyGenderFilter(school, familyGender, schoolGenderExclusions, schoolGenderPreference) {
-  const gp = school.gender_policy || null;
+  const gp = school.genderPolicy || null;
   if (gp === null) return true;
 
   const exclusions = schoolGenderExclusions || [];
@@ -129,7 +129,7 @@ async function performSearch(req) {
   // 1. Fetch all active schools
   let allSchools = [];
   try {
-    allSchools = await base44.entities.School.filter({}, '-created_at', 1000);
+    allSchools = await base44.entities.School.filter({}, '-createdAt', 1000);
   } catch (err) {
     console.error('[getNearbySchools] School fetch failed:', err.message);
     return Response.json({ schools: [], hasMore: false, totalRemaining: 0 });
@@ -145,8 +145,8 @@ async function performSearch(req) {
     const grade = parseInt(gradeMin);
     if (!isNaN(grade)) {
       schools = schools.filter(school => {
-        const sLow = parseInt(school.lowest_grade);
-        const sHigh = parseInt(school.highest_grade);
+        const sLow = parseInt(school.lowestGrade);
+        const sHigh = parseInt(school.highestGrade);
         if (isNaN(sLow) || isNaN(sHigh)) return true;
         const outside = grade < sLow ? sLow - grade : grade > sHigh ? grade - sHigh : 0;
         return outside <= 2;
@@ -160,7 +160,7 @@ async function performSearch(req) {
     if (!isNaN(budget)) {
       const cap = budget * 1.5;
       schools = schools.filter(school => {
-        const tuition = school.tuition || school.day_tuition || school.tuitionMin;
+        const tuition = school.tuition || school.dayTuition || school.tuitionMin;
         if (!tuition) return true;
         return tuition <= cap;
       });
@@ -199,26 +199,26 @@ async function performSearch(req) {
     name: s.name,
     slug: s.slug,
     city: s.city,
-    province_state: s.province_state,
-    grades_served: `${s.lowest_grade}-${s.highest_grade}`,
-    lowest_grade: s.lowest_grade,
-    highest_grade: s.highest_grade,
+    provinceState: s.provinceState,
+    gradesServed: `${s.lowestGrade}-${s.highestGrade}`,
+    lowestGrade: s.lowestGrade,
+    highestGrade: s.highestGrade,
     tuition: s.tuition,
-    day_tuition: s.day_tuition,
+    dayTuition: s.dayTuition,
     currency: s.currency,
     curriculum: s.curriculum,
-    gender_policy: s.gender_policy,
+    genderPolicy: s.genderPolicy,
     region: s.region,
     specializations: s.specializations,
     distanceKm: s.distanceKm,
-    school_type_label: s.school_type_label,
-    header_photo_url: s.header_photo_url,
-    logo_url: s.logo_url,
-    arts_programs: s.arts_programs?.slice(0, 5) || [],
-    sports_programs: s.sports_programs?.slice(0, 5) || [],
-    avg_class_size: s.avg_class_size || null,
-    school_tier: s.school_tier || null,
-    claim_status: s.claim_status || null,
+    schoolTypeLabel: s.schoolTypeLabel,
+    headerPhotoUrl: s.headerPhotoUrl,
+    logoUrl: s.logoUrl,
+    artsPrograms: s.artsPrograms?.slice(0, 5) || [],
+    sportsPrograms: s.sportsPrograms?.slice(0, 5) || [],
+    avgClassSize: s.avgClassSize || null,
+    schoolTier: s.schoolTier || null,
+    claimStatus: s.claimStatus || null,
     relaxedMatch: false,
   }));
 

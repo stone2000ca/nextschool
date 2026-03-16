@@ -15,12 +15,12 @@ Deno.serve(async (req) => {
     const summaryPrompt = `Create a 2-3 sentence compelling summary for this school:
 
 ${school.name}
-Location: ${school.city}, ${school.province_state}, ${school.region}
-Grades: ${school.grades_served}
+Location: ${school.city}, ${school.provinceState}, ${school.region}
+Grades: ${school.gradesServed}
 Curriculum: ${school.curriculum}
 Specializations: ${school.specializations?.join(', ')}
-Mission: ${school.mission_statement}
-Programs: ${school.arts_programs?.length || 0} arts, ${school.sports_programs?.length || 0} sports, ${school.clubs?.length || 0} clubs
+Mission: ${school.missionStatement}
+Programs: ${school.artsPrograms?.length || 0} arts, ${school.sportsPrograms?.length || 0} sports, ${school.clubs?.length || 0} clubs
 
 Write in a warm, informative tone highlighting what makes this school unique.`;
 

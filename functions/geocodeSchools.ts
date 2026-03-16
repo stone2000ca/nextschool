@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
           const parts = [
             school.address,
             school.city,
-            school.province_state,
+            school.provinceState,
             school.country
           ].filter(p => p && p.trim());
           

@@ -16,7 +16,7 @@ export default function DisputeForm({ schoolId, schoolName, onCancel }) {
     }
     setSubmitting(true);
     await base44.entities.DisputeRequest.create({
-      school_id: schoolId,
+      schoolId: schoolId,
       requester_name: form.name,
       requester_role: form.role,
       requester_email: form.email,

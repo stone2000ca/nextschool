@@ -6,19 +6,19 @@ export function isClearbitUrl(url) {
   return url.includes('clearbit.com') || url.includes('logo.clearbit');
 }
 
-export function HeaderPhotoDisplay({ header_photo_url, heroImage, schoolName = '', height = 'h-96' }) {
+export function HeaderPhotoDisplay({ headerPhotoUrl, heroImage, schoolName = '', height = 'h-96' }) {
   const [showFallback, setShowFallback] = useState(false);
   
-  const isHeaderPhotoClearbit = isClearbitUrl(header_photo_url);
+  const isHeaderPhotoClearbit = isClearbitUrl(headerPhotoUrl);
   const isHeroImageClearbit = isClearbitUrl(heroImage);
-  const hasValidHeaderPhoto = header_photo_url && !isHeaderPhotoClearbit;
+  const hasValidHeaderPhoto = headerPhotoUrl && !isHeaderPhotoClearbit;
   const hasValidHeroImage = heroImage && !isHeroImageClearbit;
 
-  // BUG FIX #7: Check both header_photo_url and heroImage for Clearbit
+  // BUG FIX #7: Check both headerPhotoUrl and heroImage for Clearbit
   if (hasValidHeaderPhoto && !showFallback) {
     return (
       <img 
-        src={header_photo_url} 
+        src={headerPhotoUrl} 
         alt={schoolName}
         className={`w-full ${height} object-cover`}
         onError={() => setShowFallback(true)}
@@ -52,14 +52,14 @@ export function HeaderPhotoDisplay({ header_photo_url, heroImage, schoolName = '
   );
 }
 
-export function LogoDisplay({ logo_url, schoolName = '', schoolWebsite, size = 'h-12 w-12' }) {
+export function LogoDisplay({ logoUrl, schoolName = '', schoolWebsite, size = 'h-12 w-12' }) {
   const [imageError, setImageError] = useState(false);
   
-  // Try logo_url first
-  if (logo_url && !imageError) {
+  // Try logoUrl first
+  if (logoUrl && !imageError) {
     return (
       <img 
-        src={logo_url} 
+        src={logoUrl} 
         alt={schoolName}
         className={`${size} rounded-lg object-cover bg-white/10 flex-shrink-0`}
         onError={() => setImageError(true)}

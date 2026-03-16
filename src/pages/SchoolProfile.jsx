@@ -39,7 +39,7 @@ export default function SchoolProfile() {
 
   useEffect(() => {
     if (schoolId) {
-      base44.entities.Testimonial.filter({ school_id: schoolId, is_visible: true })
+      base44.entities.Testimonial.filter({ schoolId: schoolId, is_visible: true })
         .then(setTestimonials)
         .catch(() => {});
     }
@@ -67,7 +67,7 @@ export default function SchoolProfile() {
     if (!school) return;
 
     // Set meta tags for SEO
-    const gradeRange = school.grades_served || '';
+    const gradeRange = school.gradesServed || '';
     document.title = `${school.name} - Grades ${gradeRange}, Tuition, Programs | NextSchool`;
     
     let metaDesc = document.querySelector('meta[name="description"]');
@@ -76,14 +76,14 @@ export default function SchoolProfile() {
       metaDesc.name = 'description';
       document.head.appendChild(metaDesc);
     }
-    const desc = (school.mission_statement || school.teaching_philosophy || '').substring(0, 155);
+    const desc = (school.missionStatement || school.teachingPhilosophy || '').substring(0, 155);
     metaDesc.content = desc || `${school.name} - Private school in ${school.city}`;
 
     // OG Tags
     const ogTags = {
       'og:title': `${school.name} - Grades ${gradeRange} | NextSchool`,
       'og:description': desc || `Discover ${school.name} in ${school.city}`,
-      'og:image': school.logo_url || school.header_photo_url || '/logo.png',
+      'og:image': school.logoUrl || school.headerPhotoUrl || '/logo.png',
       'og:url': `https://nextschool.ca/SchoolProfile?id=${schoolId}`,
       'og:type': 'place',
       'og:site_name': 'NextSchool'
@@ -109,15 +109,15 @@ export default function SchoolProfile() {
         '@type': 'PostalAddress',
         streetAddress: school.address || '',
         addressLocality: school.city || '',
-        addressRegion: school.province_state || '',
+        addressRegion: school.provinceState || '',
         addressCountry: school.country || 'CA'
       },
       telephone: school.phone || '',
       email: school.email || '',
-      description: school.mission_statement || '',
+      description: school.missionStatement || '',
       ...(school.enrollment && { numberOfStudents: school.enrollment }),
       priceRange: school.tuition ? `${school.currency || 'CAD'} ${school.tuition}` : '',
-      image: school.logo_url || school.header_photo_url || '',
+      image: school.logoUrl || school.headerPhotoUrl || '',
       ...(school.website && { sameAs: school.website.startsWith('http') ? school.website : `https://${school.website}` })
     };
 
@@ -221,18 +221,18 @@ export default function SchoolProfile() {
       {/* Hero Section */}
       <div className="relative h-56 sm:h-80 lg:h-96 bg-slate-200">
         <img 
-          src={school.header_photo_url || school.heroImage || `https://via.placeholder.com/1200x675/e2e8f0/64748b?text=${encodeURIComponent(school.name)}`}
+          src={school.headerPhotoUrl || school.heroImage || `https://via.placeholder.com/1200x675/e2e8f0/64748b?text=${encodeURIComponent(school.name)}`}
           alt={`${school.name} campus`}
           className="w-full h-full object-cover"
           loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         {/* School Logo - Overlapping Bottom Left */}
-        {school.logo_url && !isClearbitUrl(school.header_photo_url) && (
+        {school.logoUrl && !isClearbitUrl(school.headerPhotoUrl) && (
           <div className="absolute bottom-0 left-0 p-4 sm:p-8 pb-0">
             <div className="transform translate-y-1/2">
               <img 
-                src={school.logo_url} 
+                src={school.logoUrl} 
                 alt={`${school.name} logo`}
                 className="h-16 sm:h-24 w-16 sm:w-24 rounded-lg bg-white p-2 shadow-lg object-contain"
                 loading="eager"
@@ -246,9 +246,9 @@ export default function SchoolProfile() {
               {badge.emoji} {school.region}
             </div>
             <div className="flex items-center gap-2 sm:gap-3 mb-2">
-              {school.logo_url && isClearbitUrl(school.header_photo_url) && (
+              {school.logoUrl && isClearbitUrl(school.headerPhotoUrl) && (
                 <img 
-                  src={school.logo_url} 
+                  src={school.logoUrl} 
                   alt={`${school.name} logo`}
                   className="h-8 sm:h-12 w-8 sm:w-12 rounded-lg bg-white p-1 sm:p-2 shadow-lg object-contain"
                   loading="eager"
@@ -259,7 +259,7 @@ export default function SchoolProfile() {
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
-                <span className="truncate">{school.city}, {school.province_state}</span>
+                <span className="truncate">{school.city}, {school.provinceState}</span>
               </span>
               {school.verified && (
                 <span className="flex items-center gap-1 bg-teal-600 px-2 py-1 rounded">
@@ -278,7 +278,7 @@ export default function SchoolProfile() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
             <div>
               <div className="text-xs sm:text-sm text-slate-600 mb-1">Grades</div>
-              <div className="text-base sm:text-xl font-bold truncate">{school.grades_served}</div>
+              <div className="text-base sm:text-xl font-bold truncate">{school.gradesServed}</div>
             </div>
             <div>
               <div className="text-xs sm:text-sm text-slate-600 mb-1">Enrollment</div>
@@ -287,12 +287,12 @@ export default function SchoolProfile() {
             <div>
               <div className="text-xs sm:text-sm text-slate-600 mb-1">Annual Tuition</div>
               <div className="text-base sm:text-xl font-bold truncate">
-                {school.day_tuition ? `${getCurrencySymbol(school.currency)}${school.day_tuition.toLocaleString()}` : 'N/A'}
+                {school.dayTuition ? `${getCurrencySymbol(school.currency)}${school.dayTuition.toLocaleString()}` : 'N/A'}
               </div>
             </div>
             <div>
               <div className="text-xs sm:text-sm text-slate-600 mb-1">Class Size</div>
-              <div className="text-base sm:text-xl font-bold">{school.avg_class_size || 'N/A'}</div>
+              <div className="text-base sm:text-xl font-bold">{school.avgClassSize || 'N/A'}</div>
             </div>
           </div>
         </div>
@@ -336,7 +336,7 @@ export default function SchoolProfile() {
                    </Card>
                  )}
 
-                {!loadingEvents && (upcomingEvents.length > 0 || school.virtual_tour_url) && (
+                {!loadingEvents && (upcomingEvents.length > 0 || school.virtualTourUrl) && (
                    <Card className="p-6 border-teal-200 bg-teal-50">
                      <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                        <Calendar className="h-5 w-5 text-teal-600" />
@@ -378,10 +378,10 @@ export default function SchoolProfile() {
                            </div>
                          ))}
                        </div>
-                     ) : school.virtual_tour_url ? (
+                     ) : school.virtualTourUrl ? (
                        <div className="text-center py-4">
                          <p className="text-slate-600 mb-3">No upcoming in-person events listed.</p>
-                         <a href={school.virtual_tour_url} target="_blank" rel="noopener noreferrer">
+                         <a href={school.virtualTourUrl} target="_blank" rel="noopener noreferrer">
                            <Button size="sm" variant="outline" className="gap-2">
                              <Eye className="h-4 w-4" />
                              Take a Virtual Tour
@@ -392,18 +392,18 @@ export default function SchoolProfile() {
                    </Card>
                  )}
 
-                {school.mission_statement && (
+                {school.missionStatement && (
                   <Card className="p-6">
                     <h2 className="text-xl font-bold mb-3">Mission Statement</h2>
-                    <p className="text-slate-700 leading-relaxed">{school.mission_statement}</p>
+                    <p className="text-slate-700 leading-relaxed">{school.missionStatement}</p>
                   </Card>
                 )}
 
-                {(school.teaching_philosophy || school.curriculum) && (
+                {(school.teachingPhilosophy || school.curriculum) && (
                   <Card className="p-6">
                     <h2 className="text-xl font-bold mb-3">Teaching Philosophy</h2>
-                    {school.teaching_philosophy && (
-                      <p className="text-slate-700 mb-4">{school.teaching_philosophy}</p>
+                    {school.teachingPhilosophy && (
+                      <p className="text-slate-700 mb-4">{school.teachingPhilosophy}</p>
                     )}
                     {school.curriculum && (
                       <div>
@@ -455,7 +455,7 @@ export default function SchoolProfile() {
                   </Card>
                 )}
 
-                {(school.founded || school.student_teacher_ratio || school.financial_aid_available !== null || school.faith_based) && (
+                {(school.founded || school.studentTeacherRatio || school.financialAidAvailable !== null || school.faithBased) && (
                   <Card className="p-6">
                     <h2 className="text-xl font-bold mb-4">Key Facts</h2>
                     <div className="space-y-3">
@@ -465,22 +465,22 @@ export default function SchoolProfile() {
                           <span className="font-medium">{school.founded}</span>
                         </div>
                       )}
-                      {school.student_teacher_ratio && (
+                      {school.studentTeacherRatio && (
                         <div className="flex justify-between">
                           <span className="text-slate-600">Student:Teacher Ratio</span>
-                          <span className="font-medium">{school.student_teacher_ratio}</span>
+                          <span className="font-medium">{school.studentTeacherRatio}</span>
                         </div>
                       )}
-                      {school.financial_aid_available !== null && (
+                      {school.financialAidAvailable !== null && (
                         <div className="flex justify-between">
                           <span className="text-slate-600">Financial Aid</span>
-                          <span className="font-medium">{school.financial_aid_available ? 'Available' : 'Not Available'}</span>
+                          <span className="font-medium">{school.financialAidAvailable ? 'Available' : 'Not Available'}</span>
                         </div>
                       )}
-                      {school.faith_based && (
+                      {school.faithBased && (
                         <div className="flex justify-between">
                           <span className="text-slate-600">Religious Affiliation</span>
-                          <span className="font-medium">{school.faith_based}</span>
+                          <span className="font-medium">{school.faithBased}</span>
                         </div>
                       )}
                     </div>
@@ -499,22 +499,22 @@ export default function SchoolProfile() {
                         <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{Array.isArray(school.curriculum) ? school.curriculum.join(', ') : school.curriculum}</span>
                       </div>
                     )}
-                    {school.lowest_grade !== null && school.highest_grade !== null && (
+                    {school.lowestGrade !== null && school.highestGrade !== null && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">Grade Levels</span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.grades_served}</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.gradesServed}</span>
                       </div>
                     )}
-                    {school.avg_class_size && (
+                    {school.avgClassSize && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">Average Class Size</span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.avg_class_size} students</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.avgClassSize} students</span>
                       </div>
                     )}
-                    {school.student_teacher_ratio && (
+                    {school.studentTeacherRatio && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">Student-Teacher Ratio</span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.student_teacher_ratio}</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{school.studentTeacherRatio}</span>
                       </div>
                     )}
                   </div>
@@ -544,11 +544,11 @@ export default function SchoolProfile() {
                   </Card>
                 )}
 
-                {school.arts_programs && school.arts_programs.length > 0 && (
+                {school.artsPrograms && school.artsPrograms.length > 0 && (
                   <Card className="p-6">
                     <h2 className="text-lg font-bold mb-3">Arts Programs</h2>
                     <div className="flex flex-wrap gap-2">
-                      {school.arts_programs.map((program, index) => (
+                      {school.artsPrograms.map((program, index) => (
                         <span key={index} className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
                           {program}
                         </span>
@@ -557,11 +557,11 @@ export default function SchoolProfile() {
                   </Card>
                 )}
 
-                {school.sports_programs && school.sports_programs.length > 0 && (
+                {school.sportsPrograms && school.sportsPrograms.length > 0 && (
                   <Card className="p-6">
                     <h2 className="text-lg font-bold mb-3">Sports Programs</h2>
                     <div className="flex flex-wrap gap-2">
-                      {school.sports_programs.map((program, index) => (
+                      {school.sportsPrograms.map((program, index) => (
                         <span key={index} className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm">
                           {program}
                         </span>
@@ -600,33 +600,33 @@ export default function SchoolProfile() {
               <TabsContent value="admissions" className="space-y-6">
                 <Card className="p-6">
                   <h2 className="text-xl font-bold mb-4">Admissions Information</h2>
-                  {school.day_admission_deadline && (
+                  {school.dayAdmissionDeadline && (
                     <div className="mb-4">
                       <span className="text-slate-600 font-medium">Application Deadline:</span>
-                      <span className="ml-2">{school.day_admission_deadline}</span>
+                      <span className="ml-2">{school.dayAdmissionDeadline}</span>
                     </div>
                   )}
-                  {school.acceptance_rate && (
+                  {school.acceptanceRate && (
                     <div className="mb-4">
                       <span className="text-slate-600 font-medium">Acceptance Rate:</span>
-                      <span className="ml-2">{school.acceptance_rate}%</span>
+                      <span className="ml-2">{school.acceptanceRate}%</span>
                     </div>
                   )}
-                  {school.admission_requirements && school.admission_requirements.length > 0 && (
+                  {school.admissionRequirements && school.admissionRequirements.length > 0 && (
                     <div className="mb-4">
                       <span className="text-slate-600 font-medium mb-2 block">Requirements:</span>
                       <ul className="list-disc ml-6 text-slate-700 space-y-1">
-                        {school.admission_requirements.map((req, index) => (
+                        {school.admissionRequirements.map((req, index) => (
                           <li key={index}>{req}</li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  {school.open_house_dates && school.open_house_dates.length > 0 && (
+                  {school.openHouseDates && school.openHouseDates.length > 0 && (
                     <div>
                       <span className="text-slate-600 font-medium mb-2 block">Open House Dates:</span>
                       <div className="space-y-1 text-slate-700">
-                        {school.open_house_dates.map((date, index) => (
+                        {school.openHouseDates.map((date, index) => (
                           <div key={index} className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-teal-600" />
                             {date}
@@ -641,9 +641,9 @@ export default function SchoolProfile() {
               <TabsContent value="photos" className="space-y-6">
                 <Card className="p-4 sm:p-6">
                   <h2 className="text-lg sm:text-xl font-bold mb-4">Gallery</h2>
-                  {school.photo_gallery && school.photo_gallery.length > 0 ? (
+                  {school.photoGallery && school.photoGallery.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      {school.photo_gallery.map((photo, index) => (
+                      {school.photoGallery.map((photo, index) => (
                         <img 
                           key={index} 
                           src={photo} 
@@ -681,19 +681,19 @@ export default function SchoolProfile() {
               </Button>
 
               {/* Claim Button / Badge */}
-              {(!school.claim_status || school.claim_status === 'unclaimed') && (
+              {(!school.claimStatus || school.claimStatus === 'unclaimed') && (
                 <Link to={`${createPageUrl('ClaimSchool')}?schoolId=${schoolId}`} className="block w-full">
                   <Button className="w-full bg-blue-600 hover:bg-blue-700 mb-4">
                     Claim This School
                   </Button>
                 </Link>
               )}
-              {school.claim_status === 'pending' && (
+              {school.claimStatus === 'pending' && (
                 <div className="w-full px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm text-center mb-4">
                   Claim in Progress
                 </div>
               )}
-              {school.claim_status === 'claimed' && (
+              {school.claimStatus === 'claimed' && (
                 <div className="w-full px-3 py-2 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-sm text-center mb-4">
                   ✓ Managed by school
                 </div>

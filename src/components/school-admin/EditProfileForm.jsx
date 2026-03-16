@@ -154,10 +154,10 @@ export default function EditProfileForm({ school, onUpdate }) {
               placeholder="City"
             />
           </FieldWrapper>
-          <FieldWrapper label="Province/State" field="province_state">
+          <FieldWrapper label="Province/State" field="provinceState">
             <Input
-              value={formData.province_state || ''}
-              onChange={(e) => handleChange('province_state', e.target.value)}
+              value={formData.provinceState || ''}
+              onChange={(e) => handleChange('provinceState', e.target.value)}
               placeholder="Province/State"
             />
           </FieldWrapper>
@@ -214,10 +214,10 @@ export default function EditProfileForm({ school, onUpdate }) {
           />
         </FieldWrapper>
 
-        <FieldWrapper label="Gender Policy" field="gender_policy">
+        <FieldWrapper label="Gender Policy" field="genderPolicy">
           <select
-            value={formData.gender_policy || ''}
-            onChange={(e) => handleChange('gender_policy', e.target.value)}
+            value={formData.genderPolicy || ''}
+            onChange={(e) => handleChange('genderPolicy', e.target.value)}
             className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
             <option value="">Select...</option>
@@ -228,10 +228,10 @@ export default function EditProfileForm({ school, onUpdate }) {
           </select>
         </FieldWrapper>
 
-        <FieldWrapper label="Religious Affiliation" field="faith_based">
+        <FieldWrapper label="Religious Affiliation" field="faithBased">
           <Input
-            value={formData.faith_based || ''}
-            onChange={(e) => handleChange('faith_based', e.target.value)}
+            value={formData.faithBased || ''}
+            onChange={(e) => handleChange('faithBased', e.target.value)}
             placeholder="e.g., Catholic, Jewish, None"
           />
         </FieldWrapper>
@@ -239,20 +239,20 @@ export default function EditProfileForm({ school, onUpdate }) {
 
       {/* About */}
       <FormSection title="About">
-        <FieldWrapper label="Mission Statement (500 chars max)" field="mission_statement">
+        <FieldWrapper label="Mission Statement (500 chars max)" field="missionStatement">
           <Textarea
-            value={formData.mission_statement || ''}
-            onChange={(e) => handleChange('mission_statement', e.target.value.slice(0, 500))}
+            value={formData.missionStatement || ''}
+            onChange={(e) => handleChange('missionStatement', e.target.value.slice(0, 500))}
             placeholder="Describe your school's mission"
             maxLength={500}
             rows={3}
           />
         </FieldWrapper>
 
-        <FieldWrapper label="Teaching Philosophy (500 chars max)" field="teaching_philosophy">
+        <FieldWrapper label="Teaching Philosophy (500 chars max)" field="teachingPhilosophy">
           <Textarea
-            value={formData.teaching_philosophy || ''}
-            onChange={(e) => handleChange('teaching_philosophy', e.target.value.slice(0, 500))}
+            value={formData.teachingPhilosophy || ''}
+            onChange={(e) => handleChange('teachingPhilosophy', e.target.value.slice(0, 500))}
             placeholder="Describe your teaching approach"
             maxLength={500}
             rows={3}
@@ -310,19 +310,19 @@ export default function EditProfileForm({ school, onUpdate }) {
           />
         </FieldWrapper>
 
-        <FieldWrapper label="Average Class Size" field="avg_class_size">
+        <FieldWrapper label="Average Class Size" field="avgClassSize">
           <Input
             type="number"
-            value={formData.avg_class_size || ''}
-            onChange={(e) => handleChange('avg_class_size', e.target.value ? parseInt(e.target.value) : null)}
+            value={formData.avgClassSize || ''}
+            onChange={(e) => handleChange('avgClassSize', e.target.value ? parseInt(e.target.value) : null)}
             placeholder="e.g., 20"
           />
         </FieldWrapper>
 
-        <FieldWrapper label="Student-Teacher Ratio" field="student_teacher_ratio">
+        <FieldWrapper label="Student-Teacher Ratio" field="studentTeacherRatio">
           <Input
-            value={formData.student_teacher_ratio || ''}
-            onChange={(e) => handleChange('student_teacher_ratio', e.target.value)}
+            value={formData.studentTeacherRatio || ''}
+            onChange={(e) => handleChange('studentTeacherRatio', e.target.value)}
             placeholder="e.g., 1:10"
           />
         </FieldWrapper>
@@ -346,18 +346,18 @@ export default function EditProfileForm({ school, onUpdate }) {
 
       {/* Programs */}
       <FormSection title="Programs">
-        <FieldWrapper label="Arts Programs" field="arts_programs">
+        <FieldWrapper label="Arts Programs" field="artsPrograms">
           <TagInput
-            value={formData.arts_programs || []}
-            onChange={(value) => handleTagChange('arts_programs', value)}
+            value={formData.artsPrograms || []}
+            onChange={(value) => handleTagChange('artsPrograms', value)}
             placeholder="e.g., Music, Theater, Visual Arts"
           />
         </FieldWrapper>
 
-        <FieldWrapper label="Sports Programs" field="sports_programs">
+        <FieldWrapper label="Sports Programs" field="sportsPrograms">
           <TagInput
-            value={formData.sports_programs || []}
-            onChange={(value) => handleTagChange('sports_programs', value)}
+            value={formData.sportsPrograms || []}
+            onChange={(value) => handleTagChange('sportsPrograms', value)}
             placeholder="e.g., Basketball, Soccer, Tennis"
           />
         </FieldWrapper>
@@ -370,10 +370,10 @@ export default function EditProfileForm({ school, onUpdate }) {
           />
         </FieldWrapper>
 
-        <FieldWrapper label="Special Education Programs" field="special_ed_programs">
+        <FieldWrapper label="Special Education Programs" field="specialEdPrograms">
           <TagInput
-            value={formData.special_ed_programs || []}
-            onChange={(value) => handleTagChange('special_ed_programs', value)}
+            value={formData.specialEdPrograms || []}
+            onChange={(value) => handleTagChange('specialEdPrograms', value)}
             placeholder="e.g., Learning Support, ESL"
           />
         </FieldWrapper>
@@ -403,12 +403,12 @@ export default function EditProfileForm({ school, onUpdate }) {
               <option value="GBP">GBP</option>
             </select>
           </FieldWrapper>
-          <FieldWrapper label="Financial Aid Available" field="financial_aid_available" indicator={false}>
+          <FieldWrapper label="Financial Aid Available" field="financialAidAvailable" indicator={false}>
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={formData.financial_aid_available || false}
-                onChange={(e) => handleChange('financial_aid_available', e.target.checked)}
+                checked={formData.financialAidAvailable || false}
+                onChange={(e) => handleChange('financialAidAvailable', e.target.checked)}
                 className="rounded"
               />
               <span className="text-sm">Yes</span>

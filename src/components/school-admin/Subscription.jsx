@@ -55,7 +55,7 @@ export default function Subscription({ school, onUpdate }) {
   ];
 
   // Normalize legacy tier names to new names for display logic
-  const rawTier = school.school_tier || 'free';
+  const rawTier = school.schoolTier || 'free';
   const currentPlan = rawTier === 'basic' ? 'growth' : rawTier === 'premium' ? 'professional' : rawTier;
 
   const handleUpgrade = (planId) => {

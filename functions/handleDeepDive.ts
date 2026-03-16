@@ -16,7 +16,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 async function callOpenRouter(options) {
   // callOpenRouter v2.0 -- E32-002a: v1→v2 upgrade (tools/toolChoice/returnRaw/_logContext)
   const { systemPrompt, userPrompt, responseSchema, maxTokens = 1000, temperature = 0.7, _logContext, tools, toolChoice, returnRaw = false } = options;
-  // _logContext = { base44, conversation_id, phase, is_test } — optional, used for LLMLog only
+  // _logContext = { base44, conversationId, phase, is_test } — optional, used for LLMLog only
 
   const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
   if (!OPENROUTER_API_KEY) {
@@ -89,7 +89,7 @@ async function callOpenRouter(options) {
       if (_logContext?.base44) {
         const isTest = _logContext.is_test === true;
         _logContext.base44.asServiceRole.entities.LLMLog.create({
-          conversation_id: _logContext.conversation_id || 'unknown',
+          conversationId: _logContext.conversationId || 'unknown',
           phase: _logContext.phase || 'unknown',
           model: 'unknown',
           prompt_summary: fullPromptStr.substring(0, 500),
@@ -118,7 +118,7 @@ async function callOpenRouter(options) {
     if (_logContext?.base44) {
       const isTest = _logContext.is_test === true;
       _logContext.base44.asServiceRole.entities.LLMLog.create({
-        conversation_id: _logContext.conversation_id || 'unknown',
+        conversationId: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: data.model || 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -158,7 +158,7 @@ async function callOpenRouter(options) {
     if (isNetworkError && _logContext?.base44) {
       const isTest = _logContext.is_test === true;
       _logContext.base44.asServiceRole.entities.LLMLog.create({
-        conversation_id: _logContext.conversation_id || 'unknown',
+        conversationId: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -360,7 +360,7 @@ Deno.serve(async (req) => {
           if (analyses?.[0]) cachedDeepDiveAnalysis = analyses[0];
         } catch (e) { console.warn('[E30] Cache: SchoolAnalysis fetch failed:', e.message); }
         const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
-        const isPremiumSchool = selectedSchool.school_tier === 'growth' || selectedSchool.school_tier === 'pro';
+        const isPremiumSchool = selectedSchool.schoolTier === 'growth' || selectedSchool.schoolTier === 'pro';
         return Response.json({
           message: extractConciseSummary(rec.content),
           state: currentState,
@@ -411,19 +411,19 @@ Deno.serve(async (req) => {
 
     const compressedSchoolData = {
       name: selectedSchool.name,
-      tuitionFee: selectedSchool.tuition || selectedSchool.day_tuition || 'Not specified',
-      location: `${selectedSchool.city}, ${selectedSchool.province_state || selectedSchool.country}`,
-      gender_policy: selectedSchool.gender_policy || 'Co-ed',
+      tuitionFee: selectedSchool.tuition || selectedSchool.dayTuition || 'Not specified',
+      location: `${selectedSchool.city}, ${selectedSchool.provinceState || selectedSchool.country}`,
+      genderPolicy: selectedSchool.genderPolicy || 'Co-ed',
       // E26-S1: Enriched fields for deeper LLM analysis
       curriculum: selectedSchool.curriculum || null,
       specializations: selectedSchool.specializations || [],
-      avg_class_size: selectedSchool.avg_class_size || null,
-      student_teacher_ratio: selectedSchool.student_teacher_ratio || null,
-      sports_programs: selectedSchool.sports_programs?.slice(0, 5) || [],
-      arts_programs: selectedSchool.arts_programs?.slice(0, 5) || [],
-      boarding_available: !!(selectedSchool.boarding_tuition || selectedSchool.boarding_available),
-      financial_aid_available: selectedSchool.financial_aid_available || false,
-      faith_based: selectedSchool.faith_based || null,
+      avgClassSize: selectedSchool.avgClassSize || null,
+      studentTeacherRatio: selectedSchool.studentTeacherRatio || null,
+      sportsPrograms: selectedSchool.sportsPrograms?.slice(0, 5) || [],
+      artsPrograms: selectedSchool.artsPrograms?.slice(0, 5) || [],
+      boardingAvailable: !!(selectedSchool.boardingTuition || selectedSchool.boardingAvailable),
+      financialAidAvailable: selectedSchool.financialAidAvailable || false,
+      faithBased: selectedSchool.faithBased || null,
       enrollment: selectedSchool.enrollment || null,
       description: selectedSchool.description?.substring(0, 300) || null
     };
@@ -671,16 +671,16 @@ Generate the DEEPDIVE card for this family-school match.`;
         { item: 'Teacher reference letter', status: 'pending' },
         { item: 'Standardized test scores (if available)', status: 'pending' }
       ];
-      if (selectedSchool.financial_aid_available) {
+      if (selectedSchool.financialAidAvailable) {
         docChecklist.push({ item: 'Financial aid application', status: 'pending' });
       }
 
       generatedActionPlan = {
         visitTimeline: visitWindow,
-        day_admission_deadlines: {
-          deadline: selectedSchool.day_admission_deadline || null,
+        dayAdmissionDeadlines: {
+          deadline: selectedSchool.dayAdmissionDeadline || null,
           financialAidDeadline: selectedSchool.financialAidDeadline || null,
-          isEstimated: !selectedSchool.day_admission_deadline
+          isEstimated: !selectedSchool.dayAdmissionDeadline
         },
         documentChecklist: docChecklist,
         followUpQuestions: deepDiveAnalysis.visitQuestions || [],
@@ -758,7 +758,7 @@ Generate the DEEPDIVE card for this family-school match.`;
     const finalMessage = conciseMessage + followUpPrompt;
 
     // E16a-015: Calculate tourRequestOffered
-    const isPremium = selectedSchool.school_tier === 'growth' || selectedSchool.school_tier === 'pro';
+    const isPremium = selectedSchool.schoolTier === 'growth' || selectedSchool.schoolTier === 'pro';
     const tourRequestOffered = isPremium && upcomingEvents.length > 0;
 
     console.log('[DEEPDIVE] Returning aiMessage length:', finalMessage?.length);

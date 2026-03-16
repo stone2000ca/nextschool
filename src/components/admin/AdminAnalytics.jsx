@@ -14,24 +14,24 @@ export default function AdminAnalytics() {
 
   const loadAnalytics = async () => {
     try {
-      const users = await base44.entities.User.list('-created_at');
+      const users = await base44.entities.User.list('-createdAt');
 
       let conversations = [];
       try {
-        conversations = await base44.entities.ChatHistory.list('-created_at');
+        conversations = await base44.entities.ChatHistory.list('-createdAt');
       } catch (e) {
         console.error('Failed to load ChatHistory:', e);
       }
 
       let transactions = [];
       try {
-        transactions = await base44.entities.TokenTransaction.list('-created_at', 1000);
+        transactions = await base44.entities.TokenTransaction.list('-createdAt', 1000);
       } catch (e) {
         console.error('Failed to load TokenTransaction:', e);
       }
 
-      const weeklyUsers = calculateWeeklyData(users, 'created_at', 6);
-      const dailyConversations = calculateDailyData(conversations, 'created_at', 7);
+      const weeklyUsers = calculateWeeklyData(users, 'createdAt', 6);
+      const dailyConversations = calculateDailyData(conversations, 'createdAt', 7);
 
       // Calculate period-over-period token trend (30-day windows)
       const now = new Date();
@@ -41,10 +41,10 @@ export default function AdminAnalytics() {
       previousStart.setDate(currentStart.getDate() - 30);
 
       const currentTokens = transactions
-        .filter(t => new Date(t.created_at) >= currentStart)
+        .filter(t => new Date(t.createdAt) >= currentStart)
         .reduce((sum, t) => sum + t.tokensDeducted, 0);
       const previousTokens = transactions
-        .filter(t => new Date(t.created_at) >= previousStart && new Date(t.created_at) < currentStart)
+        .filter(t => new Date(t.createdAt) >= previousStart && new Date(t.createdAt) < currentStart)
         .reduce((sum, t) => sum + t.tokensDeducted, 0);
 
       let tokenTrend = 'Insufficient data';

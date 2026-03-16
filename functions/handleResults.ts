@@ -73,7 +73,7 @@ function resolveLocationCoords(locationArea) {
 async function callOpenRouter(options) {
   // callOpenRouter v2.0 -- E32-002a: v1→v2 upgrade (tools/toolChoice/returnRaw/_logContext)
   const { systemPrompt, userPrompt, responseSchema, maxTokens = 1000, temperature = 0.7, _logContext, tools, toolChoice, returnRaw = false } = options;
-  // _logContext = { base44, conversation_id, phase, is_test } — optional, used for LLMLog only
+  // _logContext = { base44, conversationId, phase, is_test } — optional, used for LLMLog only
 
   const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
   if (!OPENROUTER_API_KEY) {
@@ -146,7 +146,7 @@ async function callOpenRouter(options) {
       if (_logContext?.base44) {
         const isTest = _logContext.is_test === true;
         _logContext.base44.asServiceRole.entities.LLMLog.create({
-          conversation_id: _logContext.conversation_id || 'unknown',
+          conversationId: _logContext.conversationId || 'unknown',
           phase: _logContext.phase || 'unknown',
           model: 'unknown',
           prompt_summary: fullPromptStr.substring(0, 500),
@@ -175,7 +175,7 @@ async function callOpenRouter(options) {
     if (_logContext?.base44) {
       const isTest = _logContext.is_test === true;
       _logContext.base44.asServiceRole.entities.LLMLog.create({
-        conversation_id: _logContext.conversation_id || 'unknown',
+        conversationId: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: data.model || 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -214,7 +214,7 @@ async function callOpenRouter(options) {
     if (isNetworkError && _logContext?.base44) {
       const isTest = _logContext.is_test === true;
       _logContext.base44.asServiceRole.entities.LLMLog.create({
-        conversation_id: _logContext.conversation_id || 'unknown',
+        conversationId: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -587,12 +587,12 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
         const locationParts = conversationFamilyProfile.locationArea.split(',').map(s => s.trim());
         if (locationParts.length >= 2) {
           searchParams.city = locationParts[0];
-          searchParams.province_state = locationParts[1];
+          searchParams.provinceState = locationParts[1];
         } else if (locationParts.length === 1) {
           searchParams.city = locationParts[0];
           const inferredProvince = cityToProvinceMap[locationParts[0].toLowerCase()];
           if (inferredProvince) {
-            searchParams.province_state = inferredProvince;
+            searchParams.provinceState = inferredProvince;
             console.log(`[AUTO-INFER] City "${locationParts[0]}" → Province "${inferredProvince}"`);
           }
         }
@@ -663,7 +663,7 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
       });
     }
 
-    schools = schools.filter(s => s.school_type_label !== 'Special Needs' && s.school_type_label !== 'Public');
+    schools = schools.filter(s => s.schoolTypeLabel !== 'Special Needs' && s.schoolTypeLabel !== 'Public');
 
     const seen = new Set();
     const deduplicated = [];
@@ -693,7 +693,7 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
         const schoolContext = `\n\nSCHOOLS (${matchingSchools.length}):\n` +
           matchingSchools.map(s => {
             const tuitionStr = s.tuition ? `$${s.tuition}` : 'N/A';
-            return `${s.name} | ${s.city} | Grade ${s.lowest_grade}-${s.highest_grade} | Tuition: ${tuitionStr}`;
+            return `${s.name} | ${s.city} | Grade ${s.lowestGrade}-${s.highestGrade} | Tuition: ${tuitionStr}`;
           }).join('\n');
 
         const autoRefreshEntitiesStr = Object.keys(extractedEntities || {}).filter(k =>
@@ -822,7 +822,7 @@ ${schoolIdContext}`;
           tools: ACTION_TOOL_SCHEMA,
           toolChoice: 'auto',
           returnRaw: true,
-          _logContext: { base44, conversation_id: conversationId, phase: 'RESULTS', is_test: false }
+          _logContext: { base44, conversationId: conversationId, phase: 'RESULTS', is_test: false }
         });
         let rawContent = llmResult.content || '';
         try { const parsed = JSON.parse(rawContent); aiMessage = parsed.message || rawContent || "Here are your matches."; } catch { aiMessage = rawContent || "Here are your matches."; }

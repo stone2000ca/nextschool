@@ -13,21 +13,21 @@ export default function AdminDisputes() {
   async function load() {
     setLoading(true);
     const raw = await base44.entities.DisputeRequest.filter({ status: "pending" });
-    raw.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    raw.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // Enrich with school name + current owner from SchoolAdmin
     const enrichedRows = await Promise.all(raw.map(async (d) => {
-      let schoolName = d.school_id;
+      let schoolName = d.schoolId;
       let ownerEmail = "—";
       let ownerName = "—";
 
       try {
-        const schools = await base44.entities.School.filter({ id: d.school_id });
+        const schools = await base44.entities.School.filter({ id: d.schoolId });
         if (schools[0]) schoolName = schools[0].name;
       } catch (_) {}
 
       try {
-        const admins = await base44.entities.SchoolAdmin.filter({ schoolId: d.school_id, role: "owner", isActive: true });
+        const admins = await base44.entities.SchoolAdmin.filter({ schoolId: d.schoolId, role: "owner", isActive: true });
         if (admins[0]) {
           ownerEmail = admins[0].userId || "—";
           // Try to get user email by userId
@@ -62,7 +62,7 @@ export default function AdminDisputes() {
     const newUserId = users[0].id;
 
     // Save existing owner IDs for rollback
-    const existingAdmins = await base44.entities.SchoolAdmin.filter({ schoolId: dispute.school_id, role: "owner" });
+    const existingAdmins = await base44.entities.SchoolAdmin.filter({ schoolId: dispute.schoolId, role: "owner" });
     const deactivatedOwnerIds = [];
 
     try {
@@ -74,7 +74,7 @@ export default function AdminDisputes() {
 
       // Create new owner SchoolAdmin record
       await base44.entities.SchoolAdmin.create({
-        schoolId: dispute.school_id,
+        schoolId: dispute.schoolId,
         userId: newUserId,
         role: "owner",
         isActive: true,
@@ -145,7 +145,7 @@ export default function AdminDisputes() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-900 text-base">{d.schoolName}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Submitted {d.created_at ? new Date(d.created_at).toLocaleDateString("en-CA") : "—"}
+                      Submitted {d.createdAt ? new Date(d.createdAt).toLocaleDateString("en-CA") : "—"}
                     </p>
 
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -206,7 +206,7 @@ export default function Consultant() {
       try {
         const journeys = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
         if (!journeys.length) { setSchoolJourney(null); return; }
-        const journey = journeys.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+        const journey = journeys.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
         const schoolJourneys = await base44.entities.SchoolJourney.filter({ familyJourneyId: journey.id, schoolId: selectedSchool.id });
         const sj = schoolJourneys[0] || null;
         setSchoolJourney(sj);
@@ -246,9 +246,9 @@ export default function Consultant() {
     if (!selectedSchool?.id || !user?.id) return;
     const existing = await base44.entities.ResearchNote.filter({ userId: user.id, schoolId: selectedSchool.id });
     if (existing.length > 0) {
-      await base44.entities.ResearchNote.update(existing[0].id, { notes: researchNotes, updated_at: new Date().toISOString() });
+      await base44.entities.ResearchNote.update(existing[0].id, { notes: researchNotes, updatedAt: new Date().toISOString() });
     } else {
-      await base44.entities.ResearchNote.create({ userId: user.id, schoolId: selectedSchool.id, notes: researchNotes, updated_at: new Date().toISOString() });
+      await base44.entities.ResearchNote.create({ userId: user.id, schoolId: selectedSchool.id, notes: researchNotes, updatedAt: new Date().toISOString() });
     }
   };
 
@@ -261,7 +261,7 @@ export default function Consultant() {
     base44.entities.SchoolInquiry.filter({ schoolId: selectedSchool.id }).then(inquiries => {
       setContactLog(inquiries.map(inq => ({
         type: inq.inquiryType === 'tour_request' ? 'Tour Request' : 'General Inquiry',
-        date: new Date(inq.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }),
+        date: new Date(inq.createdAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }),
         status: inq.tourStatus || inq.status || 'pending',
         note: inq.specialRequests || '',
       })));
@@ -329,7 +329,7 @@ export default function Consultant() {
   // Whether the Family Brief toggle should be visible
   const isBriefState = true; // T045: FamilyBrief visible in all states
   const hasFamilyProfileData = familyProfile && Object.entries(familyProfile).some(
-    ([k, v]) => !['id', 'userId', 'conversationId', 'created_at', 'updated_date', 'created_by', 'onboardingPhase', 'onboardingComplete'].includes(k)
+    ([k, v]) => !['id', 'userId', 'conversationId', 'createdAt', 'updated_date', 'created_by', 'onboardingPhase', 'onboardingComplete'].includes(k)
       && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0) && v !== ''
   );
   const showBriefToggle = isBriefState && hasFamilyProfileData;
@@ -721,7 +721,7 @@ export default function Consultant() {
       // Find oldest active conversation
       const oldestConvo = conversations
         .filter(c => c.isActive)
-        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
       
       if (oldestConvo) {
         // Archive it
@@ -1212,7 +1212,7 @@ export default function Consultant() {
       if (
         msg.role === 'assistant' &&
         msg.deepDiveAnalysis &&
-        (msg.deepDiveAnalysis.schoolId === selectedSchool.id || msg.deepDiveAnalysis.schoolName === (selectedSchool?.name || selectedSchool?.school_name))
+        (msg.deepDiveAnalysis.schoolId === selectedSchool.id || msg.deepDiveAnalysis.schoolName === (selectedSchool?.name || selectedSchool?.schoolName))
       ) {
         console.log('[E39-S4a] Rehydrating deepDiveAnalysis from message', i);
         setHydrationSource('HYDRATED_MSG');
@@ -1234,7 +1234,7 @@ export default function Consultant() {
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'assistant' && msg.visitPrepKit && (msg.visitPrepKit.schoolId === selectedSchool.id || msg.visitPrepKit.schoolName === (selectedSchool?.name || selectedSchool?.school_name))) {
+      if (msg.role === 'assistant' && msg.visitPrepKit && (msg.visitPrepKit.schoolId === selectedSchool.id || msg.visitPrepKit.schoolName === (selectedSchool?.name || selectedSchool?.schoolName))) {
         console.log('[E39-S4b] Rehydrating visitPrepKit from message', i);
         setHydrationSource('HYDRATED_MSG');
         setVisitPrepKit(msg.visitPrepKit);
@@ -1255,7 +1255,7 @@ export default function Consultant() {
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'assistant' && msg.actionPlan && (msg.actionPlan.schoolId === selectedSchool.id || msg.actionPlan.schoolName === (selectedSchool?.name || selectedSchool?.school_name))) {
+      if (msg.role === 'assistant' && msg.actionPlan && (msg.actionPlan.schoolId === selectedSchool.id || msg.actionPlan.schoolName === (selectedSchool?.name || selectedSchool?.schoolName))) {
         console.log('[E39-S4c] Rehydrating actionPlan from message', i);
         setHydrationSource('HYDRATED_MSG');
         setActionPlan(msg.actionPlan);
@@ -1276,7 +1276,7 @@ export default function Consultant() {
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'assistant' && msg.fitReEvaluation && (msg.fitReEvaluation.schoolId === selectedSchool.id || msg.fitReEvaluation.schoolName === (selectedSchool?.name || selectedSchool?.school_name))) {
+      if (msg.role === 'assistant' && msg.fitReEvaluation && (msg.fitReEvaluation.schoolId === selectedSchool.id || msg.fitReEvaluation.schoolName === (selectedSchool?.name || selectedSchool?.schoolName))) {
         console.log('[E39-S4d] Rehydrating fitReEvaluation from message', i);
         setHydrationSource('HYDRATED_MSG');
         setFitReEvaluation(msg.fitReEvaluation);
@@ -1577,11 +1577,11 @@ export default function Consultant() {
                 <ResearchNotepad
                   schoolData={{
                     name: selectedSchool.name || selectedSchool.schoolName || 'Unknown School',
-                    location: `${selectedSchool.city || ''}, ${selectedSchool.province_state || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
-                    grades: selectedSchool.grades_served || `${selectedSchool.lowest_grade || 'K'}-${selectedSchool.highest_grade || '12'}`,
-                    type: selectedSchool.gender_policy || selectedSchool.school_type_label || '',
+                    location: `${selectedSchool.city || ''}, ${selectedSchool.provinceState || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
+                    grades: selectedSchool.gradesServed || `${selectedSchool.lowestGrade || 'K'}-${selectedSchool.highestGrade || '12'}`,
+                    type: selectedSchool.genderPolicy || selectedSchool.schoolTypeLabel || '',
                     students: selectedSchool.enrollment || 0,
-                    teacherRatio: selectedSchool.student_teacher_ratio || '',
+                    teacherRatio: selectedSchool.studentTeacherRatio || '',
                     tuition: selectedSchool.tuitionDomesticDay ? `$${Number(selectedSchool.tuitionDomesticDay).toLocaleString()}` : 'Contact school',
                   }}
                   fitScore={deepDiveAnalysis.fitScore}
@@ -1599,7 +1599,7 @@ export default function Consultant() {
                   lastDeepDiveAt={(() => {
                     for (let i = messages.length - 1; i >= 0; i--) {
                       if (messages[i]?.deepDiveAnalysis?.schoolId === deepDiveAnalysis?.schoolId) {
-                        return messages[i]?.created_at || messages[i]?.timestamp || new Date().toISOString();
+                        return messages[i]?.createdAt || messages[i]?.timestamp || new Date().toISOString();
                       }
                     }
                     return null;

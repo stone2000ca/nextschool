@@ -9,7 +9,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
   const [uploading, setUploading] = useState(null);
   const [formData, setFormData] = useState({
     videoUrl: school?.videos?.[0] || '',
-    virtual_tour_url: school?.virtual_tour_url || '',
+    virtualTourUrl: school?.virtualTourUrl || '',
   });
 
   const recalculateScore = () => {
@@ -24,10 +24,10 @@ export default function PhotosMediaSection({ school, onUpdate }) {
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       
-      if (field === 'logo_url') {
-        await base44.entities.School.update(school.id, { logo_url: file_url });
-      } else if (field === 'header_photo_url') {
-        await base44.entities.School.update(school.id, { header_photo_url: file_url });
+      if (field === 'logoUrl') {
+        await base44.entities.School.update(school.id, { logoUrl: file_url });
+      } else if (field === 'headerPhotoUrl') {
+        await base44.entities.School.update(school.id, { headerPhotoUrl: file_url });
       }
       
       onUpdate && onUpdate(field, file_url);
@@ -47,9 +47,9 @@ export default function PhotosMediaSection({ school, onUpdate }) {
     setUploading('gallery');
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const newGallery = [...(school?.photo_gallery || []), file_url];
-      await base44.entities.School.update(school.id, { photo_gallery: newGallery });
-      onUpdate && onUpdate('photo_gallery', newGallery);
+      const newGallery = [...(school?.photoGallery || []), file_url];
+      await base44.entities.School.update(school.id, { photoGallery: newGallery });
+      onUpdate && onUpdate('photoGallery', newGallery);
       toast.success('Photo added to gallery');
       recalculateScore();
     } catch (error) {
@@ -62,16 +62,16 @@ export default function PhotosMediaSection({ school, onUpdate }) {
 
   const handleRemovePhoto = async (field, url) => {
     try {
-      if (field === 'logo_url') {
-        await base44.entities.School.update(school.id, { logo_url: null });
-        onUpdate && onUpdate('logo_url', null);
-      } else if (field === 'header_photo_url') {
-        await base44.entities.School.update(school.id, { header_photo_url: null });
-        onUpdate && onUpdate('header_photo_url', null);
+      if (field === 'logoUrl') {
+        await base44.entities.School.update(school.id, { logoUrl: null });
+        onUpdate && onUpdate('logoUrl', null);
+      } else if (field === 'headerPhotoUrl') {
+        await base44.entities.School.update(school.id, { headerPhotoUrl: null });
+        onUpdate && onUpdate('headerPhotoUrl', null);
       } else if (field === 'gallery') {
-        const newGallery = school.photo_gallery.filter(u => u !== url);
-        await base44.entities.School.update(school.id, { photo_gallery: newGallery });
-        onUpdate && onUpdate('photo_gallery', newGallery);
+        const newGallery = school.photoGallery.filter(u => u !== url);
+        await base44.entities.School.update(school.id, { photoGallery: newGallery });
+        onUpdate && onUpdate('photoGallery', newGallery);
       }
       toast.success('Photo removed');
       recalculateScore();
@@ -87,8 +87,8 @@ export default function PhotosMediaSection({ school, onUpdate }) {
     const updateData = {};
     if (field === 'videoUrl') {
       updateData.videos = value ? [value] : [];
-    } else if (field === 'virtual_tour_url') {
-      updateData.virtual_tour_url = value;
+    } else if (field === 'virtualTourUrl') {
+      updateData.virtualTourUrl = value;
     }
 
     try {
@@ -106,13 +106,13 @@ export default function PhotosMediaSection({ school, onUpdate }) {
       <div>
         <h3 className="font-semibold text-slate-900 mb-4">School Logo</h3>
         <p className="text-xs text-slate-600 mb-4">Recommended: Square, 400x400px, PNG/JPG</p>
-        {school?.logo_url && (
+        {school?.logoUrl && (
           <div className="mb-4 flex items-center gap-4">
-            <img src={school.logo_url} alt="Logo" className="h-24 w-24 rounded-lg border object-cover" />
+            <img src={school.logoUrl} alt="Logo" className="h-24 w-24 rounded-lg border object-cover" />
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => handleRemovePhoto('logo_url', school.logo_url)}
+              onClick={() => handleRemovePhoto('logoUrl', school.logoUrl)}
             >
               <X className="h-3 w-3 mr-1" />
               Remove
@@ -123,12 +123,12 @@ export default function PhotosMediaSection({ school, onUpdate }) {
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => handleFileUpload('logo_url', e.target.files?.[0])}
-            disabled={uploading === 'logo_url'}
+            onChange={(e) => handleFileUpload('logoUrl', e.target.files?.[0])}
+            disabled={uploading === 'logoUrl'}
             className="hidden"
           />
-          <Button variant="outline" disabled={uploading === 'logo_url'} asChild>
-            {uploading === 'logo_url' ? (
+          <Button variant="outline" disabled={uploading === 'logoUrl'} asChild>
+            {uploading === 'logoUrl' ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 Uploading...
@@ -147,13 +147,13 @@ export default function PhotosMediaSection({ school, onUpdate }) {
       <div>
         <h3 className="font-semibold text-slate-900 mb-4">Header Photo</h3>
         <p className="text-xs text-slate-600 mb-4">Recommended: Landscape, 1200x400px</p>
-        {school?.header_photo_url && (
+        {school?.headerPhotoUrl && (
           <div className="mb-4 flex flex-col gap-3">
-            <img src={school.header_photo_url} alt="Header" className="h-32 w-full rounded-lg border object-cover" />
+            <img src={school.headerPhotoUrl} alt="Header" className="h-32 w-full rounded-lg border object-cover" />
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => handleRemovePhoto('header_photo_url', school.header_photo_url)}
+              onClick={() => handleRemovePhoto('headerPhotoUrl', school.headerPhotoUrl)}
               className="w-fit"
             >
               <X className="h-3 w-3 mr-1" />
@@ -165,12 +165,12 @@ export default function PhotosMediaSection({ school, onUpdate }) {
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => handleFileUpload('header_photo_url', e.target.files?.[0])}
-            disabled={uploading === 'header_photo_url'}
+            onChange={(e) => handleFileUpload('headerPhotoUrl', e.target.files?.[0])}
+            disabled={uploading === 'headerPhotoUrl'}
             className="hidden"
           />
-          <Button variant="outline" disabled={uploading === 'header_photo_url'} asChild>
-            {uploading === 'header_photo_url' ? (
+          <Button variant="outline" disabled={uploading === 'headerPhotoUrl'} asChild>
+            {uploading === 'headerPhotoUrl' ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 Uploading...
@@ -189,11 +189,11 @@ export default function PhotosMediaSection({ school, onUpdate }) {
       <div>
         <h3 className="font-semibold text-slate-900 mb-2">Photo Gallery</h3>
         <p className="text-xs text-slate-600 mb-4">
-          {(school?.photo_gallery?.length || 0)} of 3 minimum for complete profile
+          {(school?.photoGallery?.length || 0)} of 3 minimum for complete profile
         </p>
-        {(school?.photo_gallery || []).length > 0 && (
+        {(school?.photoGallery || []).length > 0 && (
           <div className="mb-4 grid grid-cols-3 gap-4">
-            {school.photo_gallery.map((url, idx) => (
+            {school.photoGallery.map((url, idx) => (
               <div key={idx} className="relative">
                 <img src={url} alt={`Gallery ${idx + 1}`} className="h-32 w-full rounded-lg border object-cover" />
                 <button
@@ -246,8 +246,8 @@ export default function PhotosMediaSection({ school, onUpdate }) {
         <h3 className="font-semibold text-slate-900 mb-2">Virtual Tour URL</h3>
         <p className="text-xs text-slate-600 mb-3">Link to virtual tour (optional)</p>
         <Input
-          value={formData.virtual_tour_url}
-          onChange={(e) => handleUrlChange('virtual_tour_url', e.target.value)}
+          value={formData.virtualTourUrl}
+          onChange={(e) => handleUrlChange('virtualTourUrl', e.target.value)}
           placeholder="https://example.com/tour"
         />
       </div>

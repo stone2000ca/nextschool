@@ -31,14 +31,14 @@ function stripHtml(html) {
 // The enrichable School fields and their LLM response schema
 // =============================================================================
 const ENRICHABLE_FIELDS = [
-  'name', 'description', 'day_tuition', 'boarding_tuition', 'enrollment',
-  'avg_class_size', 'student_teacher_ratio', 'curriculum', 'address', 'city',
-  'province_state', 'country', 'phone', 'email', 'website', 'mission_statement',
-  'teachingPhilosophy', 'specializations', 'arts_programs', 'sports_programs',
-  'clubs', 'languages', 'faith_based', 'gender_policy', 'school_type_label',
-  'facilities', 'financial_aid_available', 'financialAidDetails',
-  'day_admission_deadline', 'admission_requirements', 'entranceRequirements',
-  'lowest_grade', 'highest_grade'
+  'name', 'description', 'dayTuition', 'boardingTuition', 'enrollment',
+  'avgClassSize', 'studentTeacherRatio', 'curriculum', 'address', 'city',
+  'provinceState', 'country', 'phone', 'email', 'website', 'missionStatement',
+  'teachingPhilosophy', 'specializations', 'artsPrograms', 'sportsPrograms',
+  'clubs', 'languages', 'faithBased', 'genderPolicy', 'schoolTypeLabel',
+  'facilities', 'financialAidAvailable', 'financialAidDetails',
+  'dayAdmissionDeadline', 'admissionRequirements', 'entranceRequirements',
+  'lowestGrade', 'highestGrade'
 ];
 
 // Builds the JSON schema for the LLM response — each field is { value, confidence }
