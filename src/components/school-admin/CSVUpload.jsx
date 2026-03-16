@@ -53,8 +53,8 @@ export default function CSVUpload({ school, onUpdate }) {
       const schema = {
         type: 'object',
         properties: {
-          arts_programs: { type: 'array', items: { type: 'string' } },
-          sports_programs: { type: 'array', items: { type: 'string' } },
+          artsPrograms: { type: 'array', items: { type: 'string' } },
+          sportsPrograms: { type: 'array', items: { type: 'string' } },
           clubs: { type: 'array', items: { type: 'string' } },
           languages: { type: 'array', items: { type: 'string' } },
           values: { type: 'array', items: { type: 'string' } },
@@ -95,7 +95,7 @@ export default function CSVUpload({ school, onUpdate }) {
   };
 
   const downloadTemplate = () => {
-    const template = `arts_programs,sports_programs,clubs,languages,values,facilities,accreditations
+    const template = `artsPrograms,sportsPrograms,clubs,languages,values,facilities,accreditations
 "Drama;Music;Visual Arts","Soccer;Basketball;Swimming","Debate Club;Robotics;Chess","French;Spanish;Mandarin","Excellence;Integrity;Community","Library;Science Labs;Sports Complex","IB;CAIS;NAIS"`;
     
     const blob = new Blob([template], { type: 'text/csv' });

@@ -1,4 +1,4 @@
-// MIGRATION — DELETE AFTER RUNNING — Purpose: Remove unsplash URLs from header_photo_url field in School entity
+// MIGRATION — DELETE AFTER RUNNING — Purpose: Remove unsplash URLs from headerPhotoUrl field in School entity
 // Function: migration_2026-02-26_remove-unsplash-urls
 // Entities: School
 // Last Modified: 2026-02-26
@@ -19,13 +19,13 @@ Deno.serve(async (req) => {
     const failures = [];
     
     for (const school of schools) {
-      if (school.header_photo_url && school.header_photo_url.includes('unsplash')) {
+      if (school.headerPhotoUrl && school.headerPhotoUrl.includes('unsplash')) {
         try {
           await base44.asServiceRole.entities.School.update(school.id, {
-            header_photo_url: null
+            headerPhotoUrl: null
           });
           updated++;
-          console.log(`[MIGRATION] Cleared header_photo_url for: ${school.name}`);
+          console.log(`[MIGRATION] Cleared headerPhotoUrl for: ${school.name}`);
         } catch (error) {
           failures.push({ schoolId: school.id, schoolName: school.name, error: error.message });
           console.error(`[MIGRATION] Failed to update ${school.name}:`, error.message);

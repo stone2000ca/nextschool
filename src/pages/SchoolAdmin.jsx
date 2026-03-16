@@ -107,7 +107,7 @@ export default function SchoolAdmin() {
         try {
           const claims = await base44.entities.SchoolClaim.filter({ userId: userData.id });
           if (claims && claims.length > 0) {
-            const latest = claims.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+            const latest = claims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
             setPendingClaim(latest);
             if (latest.schoolId) {
               const schoolData = await base44.entities.School.filter({ id: latest.schoolId });
@@ -212,7 +212,7 @@ export default function SchoolAdmin() {
             <h2 className="text-2xl font-bold text-blue-900 mb-2">Submission Under Review</h2>
             <p className="text-blue-700 text-sm">
               Your submission for <span className="font-semibold">{pendingSchool?.name || 'your school'}</span> was received on{' '}
-              {new Date(pendingClaim.created_at).toLocaleDateString('en-CA')}.
+              {new Date(pendingClaim.createdAt).toLocaleDateString('en-CA')}.
             </p>
             <p className="text-blue-600 text-sm mt-2">We're reviewing your submission. You'll get access once approved.</p>
           </div>
@@ -267,7 +267,7 @@ export default function SchoolAdmin() {
   };
 
   const TIER_MIGRATION = { free: 'standard', basic: 'growth', premium: 'pro', professional: 'pro' };
-  const tier = TIER_MIGRATION[school.school_tier] || school.school_tier || 'standard';
+  const tier = TIER_MIGRATION[school.schoolTier] || school.schoolTier || 'standard';
   const hasTourFeatures = tier === 'growth' || tier === 'pro';
   const hasAllFeatures = tier === 'pro';
 

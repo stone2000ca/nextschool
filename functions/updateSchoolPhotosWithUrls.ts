@@ -43,22 +43,22 @@ Deno.serve(async (req) => {
     const updated = [];
     
     for (const schoolData of schools) {
-      let header_photo_url = null;
+      let headerPhotoUrl = null;
       const { schoolId, website } = schoolData;
 
       // Try to fetch og:image from provided website
       if (website) {
-        header_photo_url = await tryFetchOgImage(website);
+        headerPhotoUrl = await tryFetchOgImage(website);
       }
 
       // Fallback to Clearbit if og:image not found
-      if (!header_photo_url && website) {
+      if (!headerPhotoUrl && website) {
         const clearbitUrl = getClearbitUrl(website);
         if (clearbitUrl) {
           try {
             const response = await fetch(clearbitUrl, { redirect: 'follow' });
             if (response.ok && response.status === 200) {
-              header_photo_url = clearbitUrl;
+              headerPhotoUrl = clearbitUrl;
             }
           } catch (e) {
             console.error(`Clearbit fetch failed for ${website}`);
@@ -67,17 +67,17 @@ Deno.serve(async (req) => {
       }
 
       // Update school
-      if (header_photo_url) {
+      if (headerPhotoUrl) {
         try {
           await base44.asServiceRole.entities.School.update(schoolId, {
-            header_photo_url,
+            headerPhotoUrl,
             website
           });
           
           updated.push({
             schoolId,
             website,
-            source: header_photo_url.includes('clearbit') ? 'clearbit' : 'og:image'
+            source: headerPhotoUrl.includes('clearbit') ? 'clearbit' : 'og:image'
           });
         } catch (e) {
           console.error(`Update failed for ${schoolId}:`, e);

@@ -123,7 +123,7 @@ export default function ClaimSchool() {
         const s = schools[0];
         setSchool(s);
         // Check if already claimed by another user
-        if (s.claim_status === 'claimed') {
+        if (s.claimStatus === 'claimed') {
           const admins = await base44.entities.SchoolAdmin.filter({ schoolId: schoolId, role: 'owner', isActive: true });
           if (admins.length > 0 && admins[0].userId) {
             const users = await base44.entities.User.filter({ id: admins[0].userId });
@@ -328,7 +328,7 @@ export default function ClaimSchool() {
 
       // Update School claim status to pending
       await base44.entities.School.update(schoolId, {
-        claim_status: 'pending'
+        claimStatus: 'pending'
       });
 
       // Send document received email
@@ -364,7 +364,7 @@ export default function ClaimSchool() {
     try {
       await base44.entities.SchoolClaim.update(existingClaim.id, { status: 'cancelled' });
       if (existingClaim.status === 'pending_review') {
-        await base44.entities.School.update(existingClaim.schoolId, { claim_status: null });
+        await base44.entities.School.update(existingClaim.schoolId, { claimStatus: null });
       }
       setExistingClaim(null);
       setShowCancelConfirm(false);
@@ -420,7 +420,7 @@ export default function ClaimSchool() {
                   >
                     <div className="flex flex-col">
                       <span className="font-medium text-slate-800">{result.name}</span>
-                      <span className="text-sm text-slate-500">{result.city}, {result.province_state}</span>
+                      <span className="text-sm text-slate-500">{result.city}, {result.provinceState}</span>
                     </div>
                   </Button>
                 ))}
@@ -508,9 +508,9 @@ export default function ClaimSchool() {
                   {STATUS_LABELS[existingClaim.status]}
                 </span>
               </div>
-              {existingClaim.created_at && (
+              {existingClaim.createdAt && (
                 <p className="text-xs text-slate-500 mt-1">
-                  Submitted {new Date(existingClaim.created_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  Submitted {new Date(existingClaim.createdAt).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               )}
               <p className="text-xs text-slate-500 mt-2">Most claims are reviewed within 1–2 business days.</p>

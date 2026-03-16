@@ -31,7 +31,7 @@ export default function AdminUsers() {
 
   const loadUsers = async () => {
     try {
-      const data = await base44.entities.User.list('-created_at');
+      const data = await base44.entities.User.list('-createdAt');
       setUsers(data);
     } catch (error) {
       console.error('Failed to load users:', error);
@@ -103,7 +103,7 @@ export default function AdminUsers() {
       subscriptionPlan: edits.subscriptionPlan,
       tokenBalance: Number(edits.tokenBalance),
       updated_by: currentUser?.email,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
     setUsers(prev => prev.map(u =>
@@ -257,7 +257,7 @@ export default function AdminUsers() {
                     </td>
 
                     <td className="p-4 text-sm text-slate-600">
-                      {new Date(user.created_at).toLocaleDateString()}
+                      {new Date(user.createdAt).toLocaleDateString()}
                     </td>
 
                     {/* Actions */}

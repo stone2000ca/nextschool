@@ -40,10 +40,10 @@ export default function AddSchoolPanel({ onClose, onToggleShortlist, shortlisted
   };
 
   const gradeRange = (school) => {
-    if (school.lowest_grade != null && school.highest_grade != null) {
-      return `Gr ${school.lowest_grade}–${school.highest_grade}`;
+    if (school.lowestGrade != null && school.highestGrade != null) {
+      return `Gr ${school.lowestGrade}–${school.highestGrade}`;
     }
-    return school.grades_served || '';
+    return school.gradesServed || '';
   };
 
   return (
@@ -102,7 +102,7 @@ export default function AddSchoolPanel({ onClose, onToggleShortlist, shortlisted
               <div className="flex-1 min-w-0">
                 <p className="text-white text-xs font-medium truncate">{school.name}</p>
                 <p className="text-white/40 text-xs truncate">
-                  {[school.city, school.province_state].filter(Boolean).join(', ')}
+                  {[school.city, school.provinceState].filter(Boolean).join(', ')}
                   {gradeRange(school) ? ` · ${gradeRange(school)}` : ''}
                 </p>
               </div>

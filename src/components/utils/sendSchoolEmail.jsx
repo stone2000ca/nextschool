@@ -32,7 +32,7 @@ export async function sendSchoolEmail({
   test_scenario = null,
 }) {
   const schoolId = school?.id;
-  const claim_status = school?.claim_status;
+  const claimStatus = school?.claimStatus;
 
   // E18b-001: Test mode check - block email and log as test_blocked
   if (test_mode) {
@@ -46,7 +46,7 @@ export async function sendSchoolEmail({
         userId,
         inquiryId,
         conversationId,
-        claim_status,
+        claimStatus,
         status: 'blocked_test',
         is_test: true,
         test_scenario,
@@ -58,7 +58,7 @@ export async function sendSchoolEmail({
   }
 
   // WC4: Block emails to unclaimed schools (first layer check)
-  if (school && school.claim_status !== 'claimed') {
+  if (school && school.claimStatus !== 'claimed') {
     try {
       await base44.entities.EmailLog.create({
         type,
@@ -69,7 +69,7 @@ export async function sendSchoolEmail({
         userId,
         inquiryId,
         conversationId,
-        claim_status,
+        claimStatus,
         status: 'blocked_unclaimed',
         is_test: false,
         test_scenario: null,
@@ -100,7 +100,7 @@ export async function sendSchoolEmail({
         userId,
         inquiryId,
         conversationId,
-        claim_status,
+        claimStatus,
         status: 'sent',
         is_test: false,
         test_scenario: null,
@@ -122,7 +122,7 @@ export async function sendSchoolEmail({
         userId,
         inquiryId,
         conversationId,
-        claim_status,
+        claimStatus,
         status: 'failed',
         errorMessage: error.message,
         is_test: false,

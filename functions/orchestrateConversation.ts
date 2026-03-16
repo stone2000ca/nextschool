@@ -14,7 +14,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 async function callOpenRouter(options) {
   // callOpenRouter v1.1 -- E32-001: added tools/toolChoice/returnRaw
   const { systemPrompt, userPrompt, responseSchema, maxTokens = 1000, temperature = 0.5, _logContext, tools, toolChoice, returnRaw = false } = options;
-  // _logContext = { base44, conversation_id, phase, is_test } — optional, used for LLMLog only
+  // _logContext = { base44, conversationId, phase, is_test } — optional, used for LLMLog only
 
   const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
   if (!OPENROUTER_API_KEY) {
@@ -88,7 +88,7 @@ async function callOpenRouter(options) {
       if (_logContext?.base44) {
         const isTest = _logContext.is_test === true;
         _logContext.base44.asServiceRole.entities.LLMLog.create({
-          conversation_id: _logContext.conversation_id || 'unknown',
+          conversationId: _logContext.conversationId || 'unknown',
           phase: _logContext.phase || 'unknown',
           model: 'unknown',
           prompt_summary: fullPromptStr.substring(0, 500),
@@ -117,7 +117,7 @@ async function callOpenRouter(options) {
     if (_logContext?.base44) {
       const isTest = _logContext.is_test === true;
       _logContext.base44.asServiceRole.entities.LLMLog.create({
-        conversation_id: _logContext.conversation_id || 'unknown',
+        conversationId: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: data.model || 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -157,7 +157,7 @@ async function callOpenRouter(options) {
     if (isNetworkError && _logContext?.base44) {
       const isTest = _logContext.is_test === true;
       _logContext.base44.asServiceRole.entities.LLMLog.create({
-        conversation_id: _logContext.conversation_id || 'unknown',
+        conversationId: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -202,7 +202,7 @@ function validateActions(rawToolCalls, validSchoolIds, base44Client, conversatio
 }
 
 async function logDroppedAction(base44Client, conversationId, action, reason) {
-  try { await base44Client.entities.LLMLog.create({ conversation_id: conversationId || 'unknown', phase: 'ACTION_VALIDATION', status: 'ACTION_DROPPED', prompt_summary: JSON.stringify(action).substring(0, 100), response_summary: reason }); } catch (e) { console.error('[E32] Failed to log dropped action:', e.message); }
+  try { await base44Client.entities.LLMLog.create({ conversationId: conversationId || 'unknown', phase: 'ACTION_VALIDATION', status: 'ACTION_DROPPED', prompt_summary: JSON.stringify(action).substring(0, 100), response_summary: reason }); } catch (e) { console.error('[E32] Failed to log dropped action:', e.message); }
 }
 
 // =============================================================================
@@ -523,10 +523,10 @@ function lightweightExtract(message, existingProfile) {
   }
 
   // S111-WC3: School type extraction
-  if (!existingProfile?.school_type_label) {
-    if (/\b(?:co-?ed|coed)\b/i.test(message)) bridgeProfile.school_type_label = 'co-ed';
-    else if (/\ball[- ]?boys\b/i.test(message)) bridgeProfile.school_type_label = 'all-boys';
-    else if (/\ball[- ]?girls\b/i.test(message)) bridgeProfile.school_type_label = 'all-girls';
+  if (!existingProfile?.schoolTypeLabel) {
+    if (/\b(?:co-?ed|coed)\b/i.test(message)) bridgeProfile.schoolTypeLabel = 'co-ed';
+    else if (/\ball[- ]?boys\b/i.test(message)) bridgeProfile.schoolTypeLabel = 'all-boys';
+    else if (/\ball[- ]?girls\b/i.test(message)) bridgeProfile.schoolTypeLabel = 'all-girls';
   }
 
   // S111-WC3: Interests extraction (verb-anchored)
@@ -663,7 +663,7 @@ YOU ARE LIAM - Senior education strategist, 10+ years in private school placemen
       userPrompt: discoveryUserPrompt,
       maxTokens: 300,
       temperature: 0.7,
-      _logContext: { base44, conversation_id: context.conversationId || 'unknown', phase: 'DISCOVERY', is_test: false }
+      _logContext: { base44, conversationId: context.conversationId || 'unknown', phase: 'DISCOVERY', is_test: false }
     });
     console.log('[DISCOVERY] Response via callOpenRouter (primary)');
   } catch (openRouterError) {
@@ -1253,7 +1253,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
             if (journeyContext?.briefSnapshot) {
               try {
                 const snapshot = typeof journeyContext.briefSnapshot === 'string' ? JSON.parse(journeyContext.briefSnapshot) : journeyContext.briefSnapshot;
-                const seedFields = ['childName','childGrade','childGender','gender','locationArea','maxTuition','interests','priorities','dealbreakers','curriculumPreference','school_type_label','academicStrengths'];
+                const seedFields = ['childName','childGrade','childGender','gender','locationArea','maxTuition','interests','priorities','dealbreakers','curriculumPreference','schoolTypeLabel','academicStrengths'];
                 const seedData: Record<string, any> = {};
                 for (const key of seedFields) {
                   if (snapshot[key] != null && !conversationFamilyProfile[key]) {
@@ -1408,7 +1408,7 @@ Object.assign(context, safeUpdatedContext);
         priorities: workingProfile?.priorities || [],
         dealbreakers: workingProfile?.dealbreakers || [],
         curriculum: workingProfile?.curriculumPreference || [],
-        school_type_label: workingProfile?.school_type_label || null
+        schoolTypeLabel: workingProfile?.schoolTypeLabel || null
       };
       
       const turnCount = (conversationHistory?.filter(m => m.role === 'user').length || 0) + 1;

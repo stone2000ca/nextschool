@@ -17,11 +17,11 @@ function countCompleteFields(school) {
   let count = 0;
   const data = school;
   const fields = [
-    'name', 'address', 'city', 'province_state', 'phone', 'email',
-    'website', 'day_tuition', 'boarding_tuition', 'currency', 'founded',
-    'enrollment', 'studentCount', 'mission_statement', 'description',
-    'logo_url', 'header_photo_url', 'curriculum', 'faith_based',
-    'financial_aid_available', 'gender_policy', 'school_type_label'
+    'name', 'address', 'city', 'provinceState', 'phone', 'email',
+    'website', 'dayTuition', 'boardingTuition', 'currency', 'founded',
+    'enrollment', 'studentCount', 'missionStatement', 'description',
+    'logoUrl', 'headerPhotoUrl', 'curriculum', 'faithBased',
+    'financialAidAvailable', 'genderPolicy', 'schoolTypeLabel'
   ];
   for (const field of fields) {
     const val = data[field];
@@ -35,7 +35,7 @@ function countCompleteFields(school) {
 // Determine primary school (best candidate to keep)
 function selectPrimary(schools) {
   // Priority 1: claimed status
-  const claimed = schools.find(s => s.claim_status === 'claimed');
+  const claimed = schools.find(s => s.claimStatus === 'claimed');
   if (claimed) return claimed;
 
   // Priority 2: manual source (user-created)
@@ -53,7 +53,7 @@ function mergeRecords(primary, duplicate) {
   const merged = { ...primary };
   
   for (const [key, value] of Object.entries(duplicate)) {
-    if (value && !merged[key] && key !== 'id' && key !== 'created_at' && key !== 'created_by' && key !== 'updated_date') {
+    if (value && !merged[key] && key !== 'id' && key !== 'createdAt' && key !== 'created_by' && key !== 'updated_date') {
       merged[key] = value;
     } else if (Array.isArray(value) && Array.isArray(merged[key])) {
       // Merge arrays, avoiding duplicates

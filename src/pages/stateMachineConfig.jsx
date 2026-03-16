@@ -62,7 +62,7 @@ export const checkTier1 = (entities) => {
   const hasLocation = !!entities.locationArea;
   const hasGradeOrCurriculum = !!entities.childGrade || 
                                entities.curriculumPreference?.length > 0 || 
-                               !!entities.school_type_label;
+                               !!entities.schoolTypeLabel;
   
   return hasLocation && hasGradeOrCurriculum;
 };
@@ -98,7 +98,7 @@ export const getProgress = (entities) => {
   }
   
   // Curriculum or school type
-  if (entities.curriculumPreference?.length > 0 || entities.school_type_label) {
+  if (entities.curriculumPreference?.length > 0 || entities.schoolTypeLabel) {
     progress += PROGRESS_WEIGHTS.curriculumOrType;
   }
   

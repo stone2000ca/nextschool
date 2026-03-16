@@ -52,8 +52,8 @@ export function useSchoolFiltering(schools, conversationContext) {
           const gradeNum = typeof childGrade === 'number' ? childGrade : parseInt(String(childGrade));
           if (!isNaN(gradeNum)) {
             filtered = filtered.filter(school => {
-              if (!school?.highest_grade && school?.highest_grade !== 0) return true;
-              return school.highest_grade >= gradeNum;
+              if (!school?.highestGrade && school?.highestGrade !== 0) return true;
+              return school.highestGrade >= gradeNum;
             });
             console.log('[FILTER] Grade:', gradeNum, 'Schools:', filtered.length);
           }
@@ -65,7 +65,7 @@ export function useSchoolFiltering(schools, conversationContext) {
           const budgetNum = typeof maxBudget === 'number' ? maxBudget : parseInt(String(maxBudget));
           if (!isNaN(budgetNum)) {
             filtered = filtered.filter(school => {
-              const tuition = school?.tuition || school?.day_tuition;
+              const tuition = school?.tuition || school?.dayTuition;
               if (!tuition) return true;
               return tuition <= budgetNum;
             });

@@ -205,8 +205,8 @@ export default function AdminSchools() {
                   <td className="p-4 text-sm text-slate-600">{school.city}</td>
                   <td className="p-4 text-sm text-slate-600">{school.region}</td>
                   <td className="p-4">
-                    <Badge className={tierColors[school.school_tier || 'free']}>
-                      {(school.school_tier || 'free').toUpperCase()}
+                    <Badge className={tierColors[school.schoolTier || 'free']}>
+                      {(school.schoolTier || 'free').toUpperCase()}
                     </Badge>
                   </td>
                   <td className="p-4">

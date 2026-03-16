@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
       schools: schools.map(s => ({
         id: s.id,
         name: s.name,
-        heroImage: s.header_photo_url || s.heroImage || null,
+        heroImage: s.headerPhotoUrl || s.heroImage || null,
         city: s.city,
         region: s.region
       })),
@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
         {
           name: 'Basic Info',
           rows: [
-            { label: 'Location', values: schools.map(s => `${s.city}, ${s.province_state}`) },
-            { label: 'Grades', values: schools.map(s => s.grades_served || (s.lowest_grade && s.highest_grade ? s.lowest_grade + '-' + s.highest_grade : 'N/A')) },
+            { label: 'Location', values: schools.map(s => `${s.city}, ${s.provinceState}`) },
+            { label: 'Grades', values: schools.map(s => s.gradesServed || (s.lowestGrade && s.highestGrade ? s.lowestGrade + '-' + s.highestGrade : 'N/A')) },
             { label: 'Enrollment', values: schools.map(s => s.enrollment?.toLocaleString()) },
             { label: 'Founded', values: schools.map(s => s.founded) },
             { label: 'Curriculum', values: schools.map(s => s.curriculum) }
@@ -81,8 +81,8 @@ Deno.serve(async (req) => {
         {
           name: 'Academics',
           rows: [
-            { label: 'Avg Class Size', values: schools.map(s => s.avg_class_size) },
-            { label: 'Student:Teacher', values: schools.map(s => s.student_teacher_ratio) },
+            { label: 'Avg Class Size', values: schools.map(s => s.avgClassSize) },
+            { label: 'Student:Teacher', values: schools.map(s => s.studentTeacherRatio) },
             { label: 'Specializations', values: schools.map(s => s.specializations?.join(', ') || 'None') }
           ]
         },
@@ -95,15 +95,15 @@ Deno.serve(async (req) => {
             },
             { 
               label: 'Financial Aid', 
-              values: schools.map(s => s.financial_aid_available ? 'Available' : 'Not available') 
+              values: schools.map(s => s.financialAidAvailable ? 'Available' : 'Not available') 
             }
           ]
         },
         {
           name: 'Programs',
           rows: [
-            { label: 'Arts', values: schools.map(s => s.arts_programs?.slice(0, 3).join(', ') || 'None') },
-            { label: 'Sports', values: schools.map(s => s.sports_programs?.slice(0, 3).join(', ') || 'None') },
+            { label: 'Arts', values: schools.map(s => s.artsPrograms?.slice(0, 3).join(', ') || 'None') },
+            { label: 'Sports', values: schools.map(s => s.sportsPrograms?.slice(0, 3).join(', ') || 'None') },
             { label: 'Languages', values: schools.map(s => s.languages?.join(', ') || 'None') }
           ]
         }
@@ -171,9 +171,9 @@ School ${i + 1}: ${s.name}
 - Location: ${s.city}, ${s.region}
 - Tuition: ${s.currency} ${s.tuition}
 - Curriculum: ${s.curriculum}
-- Class size: ${s.avg_class_size}
+- Class size: ${s.avgClassSize}
 - Specializations: ${s.specializations?.join(', ')}
-- Programs: Arts (${s.arts_programs?.length}), Sports (${s.sports_programs?.length})
+- Programs: Arts (${s.artsPrograms?.length}), Sports (${s.sportsPrograms?.length})
 `).join('\n')}
 
 Return JSON with array of insights (each 1-2 sentences highlighting key differences):`;

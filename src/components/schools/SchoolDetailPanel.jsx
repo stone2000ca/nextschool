@@ -21,21 +21,21 @@ function calculateMatchScore(school, familyProfile) {
   // Grade match
   const childGrade = familyProfile.childGrade;
   if (childGrade !== null && childGrade !== undefined) {
-    const schoolServes = childGrade >= school.lowest_grade && childGrade <= school.highest_grade;
+    const schoolServes = childGrade >= school.lowestGrade && childGrade <= school.highestGrade;
     if (schoolServes) score += 2;
   }
   
   // Budget match
-  if (familyProfile.maxTuition && school.day_tuition) {
-    if (school.day_tuition <= familyProfile.maxTuition) score += 2;
-    else if (school.day_tuition <= familyProfile.maxTuition * 1.2) score += 1;
+  if (familyProfile.maxTuition && school.dayTuition) {
+    if (school.dayTuition <= familyProfile.maxTuition) score += 2;
+    else if (school.dayTuition <= familyProfile.maxTuition * 1.2) score += 1;
   }
   
   // Gender match
-  if (familyProfile.gender && school.gender_policy) {
-    const isSingleGender = school.gender_policy.includes(familyProfile.gender === 'male' ? 'Boy' : 'Girl');
+  if (familyProfile.gender && school.genderPolicy) {
+    const isSingleGender = school.genderPolicy.includes(familyProfile.gender === 'male' ? 'Boy' : 'Girl');
     if (isSingleGender && familyProfile.boardingPreference === 'no') score += 1;
-    if (school.gender_policy === 'Co-ed' && !isSingleGender) score += 1;
+    if (school.genderPolicy === 'Co-ed' && !isSingleGender) score += 1;
   }
   
   // Priority matches
@@ -62,13 +62,13 @@ function getMatchReasons(school, familyProfile) {
   
   // Grade
   const childGrade = familyProfile.childGrade;
-  if (childGrade !== null && childGrade !== undefined && childGrade >= school.lowest_grade && childGrade <= school.highest_grade) {
+  if (childGrade !== null && childGrade !== undefined && childGrade >= school.lowestGrade && childGrade <= school.highestGrade) {
     reasons.push(`Serves Grade ${gradeLabel(childGrade)}`);
   }
   
   // Budget
-  if (familyProfile.maxTuition && school.day_tuition && school.day_tuition <= familyProfile.maxTuition) {
-    reasons.push(`Within budget ($${school.day_tuition.toLocaleString()})`);
+  if (familyProfile.maxTuition && school.dayTuition && school.dayTuition <= familyProfile.maxTuition) {
+    reasons.push(`Within budget ($${school.dayTuition.toLocaleString()})`);
   }
   
   // Specializations matching priorities
@@ -84,7 +84,7 @@ function getMatchReasons(school, familyProfile) {
   }
   
   // Boarding
-  if (familyProfile.boardingPreference?.includes('boarding') && school.boarding_available) {
+  if (familyProfile.boardingPreference?.includes('boarding') && school.boardingAvailable) {
     reasons.push('Boarding available');
   }
   
@@ -97,9 +97,9 @@ function HeroTier({ school, familyProfile, matchScore, matchReasons }) {
   
   return (
     <div className="relative h-96 bg-gradient-to-br from-slate-900 to-slate-800 overflow-hidden">
-      {school.header_photo_url || school.heroImage ? (
+      {school.headerPhotoUrl || school.heroImage ? (
         <img
-          src={school.header_photo_url || school.heroImage}
+          src={school.headerPhotoUrl || school.heroImage}
           alt={school.name}
           className="w-full h-full object-cover opacity-70"
         />
@@ -111,10 +111,10 @@ function HeroTier({ school, familyProfile, matchScore, matchReasons }) {
         <div>
           <h1 className="text-4xl font-bold">{school.name}</h1>
           <div className="flex items-center gap-4 mt-2 text-sm">
-            <span>{school.city}, {school.province_state}</span>
-            {school.school_type_label && <span className="px-3 py-1 bg-white/20 rounded-full">{school.school_type_label}</span>}
-            {school.grades_served && <span className="px-3 py-1 bg-white/20 rounded-full">Grades {school.grades_served}</span>}
-            {school.gender_policy && <span className="px-3 py-1 bg-white/20 rounded-full">{school.gender_policy}</span>}
+            <span>{school.city}, {school.provinceState}</span>
+            {school.schoolTypeLabel && <span className="px-3 py-1 bg-white/20 rounded-full">{school.schoolTypeLabel}</span>}
+            {school.gradesServed && <span className="px-3 py-1 bg-white/20 rounded-full">Grades {school.gradesServed}</span>}
+            {school.genderPolicy && <span className="px-3 py-1 bg-white/20 rounded-full">{school.genderPolicy}</span>}
           </div>
         </div>
         
@@ -143,18 +143,18 @@ function HeroTier({ school, familyProfile, matchScore, matchReasons }) {
 function DataGridTier({ school, familyProfile }) {
   const gridItems = [
     { label: 'Enrollment', value: school.enrollment?.toLocaleString() || 'Not available', key: 'enrollment' },
-    { label: 'Class Size', value: school.avg_class_size ? String(school.avg_class_size) : 'Not available', key: 'classSize' },
-    { label: 'Student-Teacher Ratio', value: school.student_teacher_ratio || 'Not available', key: 'ratio' },
-    { label: 'Tuition (Day)', value: school.day_tuition ? `$${school.day_tuition.toLocaleString()}` : 'Not available', key: 'day_tuition' },
-    { label: 'Tuition (Boarding)', value: school.boarding_tuition ? `$${school.boarding_tuition.toLocaleString()}` : 'Not available', key: 'boarding_tuition' },
-    { label: 'Boarding', value: school.boarding_available ? 'Available' : 'Day Only', key: 'boarding' },
-    { label: 'Religion', value: school.faith_based || 'Non-religious', key: 'religion' },
-    { label: 'Language', value: school.languages_of_instruction || 'English', key: 'language' },
+    { label: 'Class Size', value: school.avgClassSize ? String(school.avgClassSize) : 'Not available', key: 'classSize' },
+    { label: 'Student-Teacher Ratio', value: school.studentTeacherRatio || 'Not available', key: 'ratio' },
+    { label: 'Tuition (Day)', value: school.dayTuition ? `$${school.dayTuition.toLocaleString()}` : 'Not available', key: 'dayTuition' },
+    { label: 'Tuition (Boarding)', value: school.boardingTuition ? `$${school.boardingTuition.toLocaleString()}` : 'Not available', key: 'boardingTuition' },
+    { label: 'Boarding', value: school.boardingAvailable ? 'Available' : 'Day Only', key: 'boarding' },
+    { label: 'Religion', value: school.faithBased || 'Non-religious', key: 'religion' },
+    { label: 'Language', value: school.languagesOfInstruction || 'English', key: 'language' },
     { label: 'Founded', value: school.founded ? String(school.founded) : 'Not available', key: 'founded' },
   ];
   
   const isPriority = (key) => {
-    if (key === 'day_tuition' && familyProfile?.maxTuition) return true;
+    if (key === 'dayTuition' && familyProfile?.maxTuition) return true;
     if (key === 'boarding' && familyProfile?.boardingPreference) return true;
     return false;
   };
@@ -180,12 +180,12 @@ function DetailedSectionsTier({ school }) {
       {/* About */}
       <div>
         <h3 className="text-lg font-bold text-white mb-3">About</h3>
-        {school.mission_statement ? (
-          <p className="text-sm text-slate-300 mb-3 italic">"{school.mission_statement}"</p>
+        {school.missionStatement ? (
+          <p className="text-sm text-slate-300 mb-3 italic">"{school.missionStatement}"</p>
         ) : null}
         {school.description ? (
           <p className="text-sm text-slate-400">{school.description}</p>
-        ) : !school.mission_statement ? noData : null}
+        ) : !school.missionStatement ? noData : null}
       </div>
       
       {/* Curriculum */}
@@ -217,21 +217,21 @@ function DetailedSectionsTier({ school }) {
       <div>
         <h3 className="text-lg font-bold text-white mb-3">Programs & Activities</h3>
         <div className="space-y-3">
-          {school.arts_programs?.length > 0 && (
+          {school.artsPrograms?.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-teal-300 mb-2">Arts</p>
               <div className="flex flex-wrap gap-2">
-                {school.arts_programs.slice(0, 6).map((prog, idx) => (
+                {school.artsPrograms.slice(0, 6).map((prog, idx) => (
                   <span key={idx} className="text-xs text-slate-400">{prog}</span>
                 ))}
               </div>
             </div>
           )}
-          {school.sports_programs?.length > 0 && (
+          {school.sportsPrograms?.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-amber-300 mb-2">Sports</p>
               <div className="flex flex-wrap gap-2">
-                {school.sports_programs.slice(0, 6).map((prog, idx) => (
+                {school.sportsPrograms.slice(0, 6).map((prog, idx) => (
                   <span key={idx} className="text-xs text-slate-400">{prog}</span>
                 ))}
               </div>
@@ -247,7 +247,7 @@ function DetailedSectionsTier({ school }) {
               </div>
             </div>
           )}
-          {!school.arts_programs?.length && !school.sports_programs?.length && !school.clubs?.length ? noData : null}
+          {!school.artsPrograms?.length && !school.sportsPrograms?.length && !school.clubs?.length ? noData : null}
         </div>
       </div>
       
@@ -255,23 +255,23 @@ function DetailedSectionsTier({ school }) {
       <div>
         <h3 className="text-lg font-bold text-white mb-3">Admissions</h3>
         <div className="space-y-2 text-sm text-slate-400">
-          {school.day_admission_deadline ? (
-            <p><span className="font-semibold text-slate-300">Deadline:</span> {school.day_admission_deadline}</p>
+          {school.dayAdmissionDeadline ? (
+            <p><span className="font-semibold text-slate-300">Deadline:</span> {school.dayAdmissionDeadline}</p>
           ) : null}
-          {school.admission_requirements?.length > 0 ? (
+          {school.admissionRequirements?.length > 0 ? (
             <div>
               <p className="font-semibold text-slate-300">Requirements:</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                {school.admission_requirements.slice(0, 4).map((req, idx) => (
+                {school.admissionRequirements.slice(0, 4).map((req, idx) => (
                   <li key={idx}>{req}</li>
                 ))}
               </ul>
             </div>
           ) : null}
-          {school.open_house_dates?.length > 0 ? (
-            <p><span className="font-semibold text-slate-300">Open House Dates:</span> {school.open_house_dates.join(', ')}</p>
+          {school.openHouseDates?.length > 0 ? (
+            <p><span className="font-semibold text-slate-300">Open House Dates:</span> {school.openHouseDates.join(', ')}</p>
           ) : null}
-          {!school.day_admission_deadline && !school.admission_requirements?.length && !school.open_house_dates?.length ? noData : null}
+          {!school.dayAdmissionDeadline && !school.admissionRequirements?.length && !school.openHouseDates?.length ? noData : null}
         </div>
       </div>
     </div>
@@ -307,7 +307,7 @@ function CtaBar({ school, isShortlisted, onToggleShortlist, onCompare, hasTourFe
           <CalendarDays className="h-4 w-4" />
           Request a Tour
         </Button>
-      ) : school.claim_status !== 'claimed' ? (
+      ) : school.claimStatus !== 'claimed' ? (
         school.website ? (
           <a href={school.website} target="_blank" rel="noopener noreferrer" className="block w-full">
             <Button variant="outline" className="w-full flex items-center justify-center gap-2">
@@ -387,8 +387,8 @@ export default function SchoolDetailPanel({
 
   if (!school) return null;
 
-  const hasTourFeatures = school.school_tier === 'growth' || school.school_tier === 'pro';
-  const hasAllFeatures = school.school_tier === 'pro';
+  const hasTourFeatures = school.schoolTier === 'growth' || school.schoolTier === 'pro';
+  const hasAllFeatures = school.schoolTier === 'pro';
   const matchScore = calculateMatchScore(school, familyProfile);
   const matchReasons = getMatchReasons(school, familyProfile);
 

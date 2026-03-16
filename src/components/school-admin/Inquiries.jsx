@@ -93,7 +93,7 @@ function TourRequestCard({ inquiry, onTourStatusChange }) {
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <Badge className="bg-teal-100 text-teal-700 font-semibold">Tour Request</Badge>
           <Badge className={cfg.color}>{cfg.label}</Badge>
-          <span className="ml-auto text-xs text-slate-400">{formatDate(inquiry.created_at)}</span>
+          <span className="ml-auto text-xs text-slate-400">{formatDate(inquiry.createdAt)}</span>
         </div>
 
         {/* Parent info */}
@@ -220,7 +220,7 @@ function GeneralInquiryCard({ inquiry, expandedId, onToggleExpand, responses, on
               {statusCfg.label}
             </Badge>
           </div>
-          <span className="text-xs text-slate-400 flex-shrink-0 ml-2">{formatDate(inquiry.created_at)}</span>
+          <span className="text-xs text-slate-400 flex-shrink-0 ml-2">{formatDate(inquiry.createdAt)}</span>
         </div>
         <p className="text-slate-700 text-sm line-clamp-2">{inquiry.message}</p>
       </button>
@@ -295,7 +295,7 @@ export default function Inquiries({ schoolId }) {
   const loadInquiries = async () => {
     try {
       const data = await base44.entities.SchoolInquiry.filter({ schoolId });
-      setInquiries(data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+      setInquiries(data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (error) {
       console.error('Failed to load inquiries:', error);
     } finally {

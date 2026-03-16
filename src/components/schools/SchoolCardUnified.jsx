@@ -38,23 +38,23 @@ export default function SchoolCardUnified({
 
   // Tuition display logic
   const renderTuition = () => {
-    if (school.day_tuition && school.boarding_tuition) {
+    if (school.dayTuition && school.boardingTuition) {
       return (
         <span className="text-xs sm:text-sm">
-          {getCurrencySymbol(school.currency)}{school.day_tuition.toLocaleString()} (day) / {getCurrencySymbol(school.currency)}{school.boarding_tuition.toLocaleString()} (boarding)
+          {getCurrencySymbol(school.currency)}{school.dayTuition.toLocaleString()} (day) / {getCurrencySymbol(school.currency)}{school.boardingTuition.toLocaleString()} (boarding)
         </span>
       );
-    } else if (school.day_tuition) {
+    } else if (school.dayTuition) {
       return (
         <>
-          {getCurrencySymbol(school.currency)}{school.day_tuition.toLocaleString()}
+          {getCurrencySymbol(school.currency)}{school.dayTuition.toLocaleString()}
           <span className="text-xs text-slate-500 font-normal ml-1">(day)</span>
         </>
       );
-    } else if (school.boarding_tuition) {
+    } else if (school.boardingTuition) {
       return (
         <>
-          {getCurrencySymbol(school.currency)}{school.boarding_tuition.toLocaleString()}
+          {getCurrencySymbol(school.currency)}{school.boardingTuition.toLocaleString()}
           <span className="text-xs text-slate-500 font-normal ml-1">(boarding)</span>
         </>
       );
@@ -114,7 +114,7 @@ export default function SchoolCardUnified({
         <div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-400" />
         <div className="absolute inset-0 group-hover:scale-105 transition-transform duration-300">
           <HeaderPhotoDisplay 
-            header_photo_url={school.header_photo_url}
+            headerPhotoUrl={school.headerPhotoUrl}
             heroImage={school.heroImage}
             schoolName={school.name}
             height={isCompact ? "h-32" : isFeatured ? "h-56" : "h-48"}
@@ -122,7 +122,7 @@ export default function SchoolCardUnified({
         </div>
         
         {/* Managed badge */}
-        {school.claim_status === 'claimed' && (
+        {school.claimStatus === 'claimed' && (
           <div className="absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium bg-teal-600 text-white flex items-center gap-1">
             <Award className="h-3 w-3" />
             Managed by school
@@ -133,7 +133,7 @@ export default function SchoolCardUnified({
       {/* Content */}
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-start gap-2 mb-2">
-          <LogoDisplay logo_url={school.logo_url} schoolName={school.name} schoolWebsite={school.website} size="h-5 w-5" />
+          <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-5 w-5" />
           <h3 className={`font-bold ${isCompact ? 'text-base' : 'text-lg'} line-clamp-2 flex-1`}>
             {school.name}
           </h3>
@@ -141,7 +141,7 @@ export default function SchoolCardUnified({
         
         <div className="flex items-center gap-1 text-sm text-slate-600 mb-3">
           <MapPin className="h-3 w-3 flex-shrink-0" />
-          <span className="line-clamp-1">{school.city}, {school.province_state}</span>
+          <span className="line-clamp-1">{school.city}, {school.provinceState}</span>
         </div>
         
         {/* Distance badge */}
@@ -156,14 +156,14 @@ export default function SchoolCardUnified({
 
         {/* Badges */}
         <div className="flex flex-wrap gap-2 mb-3 text-xs">
-          {formatGradeRange(school.lowest_grade, school.highest_grade) && (
+          {formatGradeRange(school.lowestGrade, school.highestGrade) && (
             <Badge variant="secondary" className="bg-slate-100 text-slate-700">
-              Gr {formatGradeRange(school.lowest_grade, school.highest_grade)}
+              Gr {formatGradeRange(school.lowestGrade, school.highestGrade)}
             </Badge>
           )}
-          {school.gender_policy && (
+          {school.genderPolicy && (
             <Badge variant="secondary" className="bg-slate-100 text-slate-700">
-              {school.gender_policy}
+              {school.genderPolicy}
             </Badge>
           )}
           {school.curriculum && (

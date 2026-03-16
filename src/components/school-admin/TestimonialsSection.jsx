@@ -16,7 +16,7 @@ export default function TestimonialsSection({ school }) {
 
   useEffect(() => {
     if (school?.id) {
-      base44.entities.Testimonial.filter({ school_id: school.id })
+      base44.entities.Testimonial.filter({ schoolId: school.id })
         .then(setTestimonials)
         .catch(() => {})
         .finally(() => setLoading(false));
@@ -43,7 +43,7 @@ export default function TestimonialsSection({ school }) {
     const updated = [];
     for (const t of testimonials) {
       const payload = {
-        school_id: school.id,
+        schoolId: school.id,
         author_first_name: t.author_first_name.slice(0, 50),
         author_role: t.author_role,
         quote_text: t.quote_text.slice(0, 500),
