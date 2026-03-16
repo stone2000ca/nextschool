@@ -1213,7 +1213,7 @@ export default function Consultant() {
       if (
         msg.role === 'assistant' &&
         msg.deepDiveAnalysis &&
-        (msg.deepDiveAnalysis.schoolId === selectedSchool.id || msg.deepDiveAnalysis.schoolName === (selectedSchool?.name || selectedSchool?.schoolName))
+        msg.deepDiveAnalysis.schoolId === selectedSchool.id
       ) {
         console.log('[E39-S4a] Rehydrating deepDiveAnalysis from message', i);
         setHydrationSource('HYDRATED_MSG');
@@ -1235,7 +1235,7 @@ export default function Consultant() {
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'assistant' && msg.visitPrepKit && (msg.visitPrepKit.schoolId === selectedSchool.id || msg.visitPrepKit.schoolName === (selectedSchool?.name || selectedSchool?.schoolName))) {
+      if (msg.role === 'assistant' && msg.visitPrepKit && msg.visitPrepKit.schoolId === selectedSchool.id) {
         console.log('[E39-S4b] Rehydrating visitPrepKit from message', i);
         setHydrationSource('HYDRATED_MSG');
         setVisitPrepKit(msg.visitPrepKit);
@@ -1256,7 +1256,7 @@ export default function Consultant() {
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'assistant' && msg.actionPlan && (msg.actionPlan.schoolId === selectedSchool.id || msg.actionPlan.schoolName === (selectedSchool?.name || selectedSchool?.schoolName))) {
+      if (msg.role === 'assistant' && msg.actionPlan && msg.actionPlan.schoolId === selectedSchool.id) {
         console.log('[E39-S4c] Rehydrating actionPlan from message', i);
         setHydrationSource('HYDRATED_MSG');
         setActionPlan(msg.actionPlan);
@@ -1277,7 +1277,7 @@ export default function Consultant() {
     }
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
-      if (msg.role === 'assistant' && msg.fitReEvaluation && (msg.fitReEvaluation.schoolId === selectedSchool.id || msg.fitReEvaluation.schoolName === (selectedSchool?.name || selectedSchool?.schoolName))) {
+      if (msg.role === 'assistant' && msg.fitReEvaluation && msg.fitReEvaluation.schoolId === selectedSchool.id) {
         console.log('[E39-S4d] Rehydrating fitReEvaluation from message', i);
         setHydrationSource('HYDRATED_MSG');
         setFitReEvaluation(msg.fitReEvaluation);
@@ -1593,6 +1593,8 @@ export default function Consultant() {
                   journeySteps={journeySteps}
                   keyDates={keyDates}
                   visitPrepKit={visitPrepKit}
+                  actionPlan={actionPlan}
+                  communityPulse={deepDiveAnalysis.communityPulse || null}
                   contactLog={contactLog}
                   researchNotes={researchNotes}
                   onNotesChange={setResearchNotes}

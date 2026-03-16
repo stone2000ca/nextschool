@@ -174,7 +174,7 @@ const PRIORITY_TAG_STYLE = {
   low:    { background: '#dcfce7', color: '#15803d' },
 };
 
-function VisitPrepKitContent({ visitPrepKit }) {
+function VisitPrepKitContent({ visitPrepKit, schoolData, actionPlan }) {
   if (!visitPrepKit) {
     return (
       <div style={{ fontSize: 12.5, color: '#a89060', fontStyle: 'italic' }}>
@@ -185,27 +185,74 @@ function VisitPrepKitContent({ visitPrepKit }) {
 
   const { visitQuestions = [], observations = [], redFlags = [], isLocked = false } = visitPrepKit;
 
+  // Derive logistics grid data from schoolData and actionPlan
+  const location = schoolData?.location || '';
+  const tourEvent = actionPlan?.visitTimeline?.events?.[0];
+  const tourDateStr = tourEvent?.date ? new Date(tourEvent.date).toLocaleDateString('en-CA', { weekday: 'long', month: 'short', day: 'numeric' }) : null;
+
+  const gridItems = [
+    { icon: '📍', title: 'Getting There', text: location || 'Address not available' },
+    { icon: '🕐', title: 'Tour Details', text: tourDateStr ? `${tourDateStr}${tourEvent?.title ? ` — ${tourEvent.title}` : ''}` : 'No tour scheduled yet' },
+    { icon: '👥', title: "Who You'll Meet", text: 'Admissions team & current parent ambassador' },
+    { icon: '💡', title: 'Tips', text: 'Arrive 10 min early\nKids welcome on tour\nBring your questions list' },
+  ];
+
+  const documents = [
+    'Report cards (last 2 years)',
+    'Birth certificate copy',
+    'Immunization records',
+    'Any IEP/assessment docs',
+  ];
+
   return (
     <div style={{ fontSize: 12.5, color: '#5a4030', lineHeight: 1.7 }}>
+      {/* 2×2 Logistics Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+        {gridItems.map((item, i) => (
+          <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#1e293b', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+              {item.icon} {item.title}
+            </div>
+            <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5, whiteSpace: 'pre-line' }}>{item.text}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Documents to Bring */}
+      <div style={{ marginBottom: 12, padding: '10px 12px', background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#5b21b6', marginBottom: 4 }}>📄 Documents to Bring</div>
+        <ul style={{ listStyle: 'none', fontSize: 11, lineHeight: 1.8, color: '#64748b', padding: 0, margin: 0 }}>
+          {documents.map((doc, i) => (
+            <li key={i}>☐ {doc}</li>
+          ))}
+        </ul>
+      </div>
+
       {/* Questions to Ask */}
       {visitQuestions.length > 0 && (
         <>
-          <div style={{ marginBottom: 8, fontWeight: 600, color: '#6d28d9' }}>Questions to Ask</div>
-          {visitQuestions.map((q, i) => {
-            const tag = q.priorityTag || 'medium';
-            const tagStyle = PRIORITY_TAG_STYLE[tag] || PRIORITY_TAG_STYLE.medium;
-            return (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 7 }}>
-                <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>→</span>
-                <span style={{ flex: 1 }}>{q.question}</span>
-                <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, flexShrink: 0, ...tagStyle }}>{tag}</span>
-              </div>
-            );
-          })}
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: 0.5, marginBottom: 6, marginTop: 12 }}>
+            Questions to Ask on Tour
+          </div>
+          <ul style={{ listStyle: 'none', padding: '0 0 0 20px', fontSize: 12, lineHeight: 1.8, margin: 0 }}>
+            {visitQuestions.map((q, i) => {
+              const tag = (typeof q === 'string') ? 'medium' : (q.priorityTag || 'medium');
+              const question = (typeof q === 'string') ? q : q.question;
+              const tagColors = { high: { background: '#fecaca', color: '#991b1b' }, medium: { background: '#fef3c7', color: '#92400e' }, low: { background: '#d1fae5', color: '#065f46' } };
+              const tagStyle = tagColors[tag] || tagColors.medium;
+              const tagLabel = tag.toUpperCase();
+              return (
+                <li key={i}>
+                  <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, fontWeight: 700, marginRight: 6, ...tagStyle }}>{tagLabel}</span>
+                  {question}
+                </li>
+              );
+            })}
+          </ul>
         </>
       )}
 
-      {/* Observations */}
+      {/* Things to Notice — premium gated */}
       {(observations?.length > 0 || isLocked) && (
         <div style={{ marginTop: 12, position: 'relative' }}>
           <div style={{ marginBottom: 8, fontWeight: 600, color: '#6d28d9', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -224,7 +271,7 @@ function VisitPrepKitContent({ visitPrepKit }) {
         </div>
       )}
 
-      {/* Red Flags */}
+      {/* Red Flags — premium gated */}
       {(redFlags?.length > 0 || isLocked) && (
         <div style={{ marginTop: 12, position: 'relative' }}>
           <div style={{ marginBottom: 8, fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -240,6 +287,92 @@ function VisitPrepKitContent({ visitPrepKit }) {
             ))}
           </div>
           {isLocked && <PremiumLockBadge />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const ChatBubbleIcon = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+    stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+
+const THEME_CHIP_STYLE = {
+  positive: { background: '#d1fae5', color: '#065f46' },
+  neutral:  { background: '#fef3c7', color: '#92400e' },
+  negative: { background: '#fecaca', color: '#991b1b' },
+};
+
+function CommunityPulseContent({ communityPulse }) {
+  if (!communityPulse) {
+    return (
+      <div style={{ fontSize: 12.5, color: '#a89060', fontStyle: 'italic' }}>
+        No community reviews available yet.
+      </div>
+    );
+  }
+
+  const { themes = [], sentimentBreakdown = {}, parentPerspective, reviewCount = 0 } = communityPulse;
+  const pos = sentimentBreakdown.positive || 0;
+  const neu = sentimentBreakdown.neutral || 0;
+  const neg = sentimentBreakdown.negative || 0;
+
+  return (
+    <div style={{ fontSize: 12.5, color: '#5a4030', lineHeight: 1.6 }}>
+      {/* AI-Distilled Themes */}
+      {themes.length > 0 && (
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: 0.5, marginBottom: 8 }}>
+            AI-Distilled Themes
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            {themes.map((t, i) => {
+              const chipStyle = THEME_CHIP_STYLE[t.sentiment] || THEME_CHIP_STYLE.neutral;
+              return (
+                <span key={i} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 12, fontWeight: 500, ...chipStyle }}>
+                  {t.label}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Sentiment Bar */}
+      {(pos > 0 || neu > 0 || neg > 0) && (
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: 0.5, marginBottom: 6 }}>
+            Sentiment
+          </div>
+          <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 4 }}>
+            {pos > 0 && <div style={{ width: `${pos}%`, background: '#0d9488' }} />}
+            {neu > 0 && <div style={{ width: `${neu}%`, background: '#d4a017' }} />}
+            {neg > 0 && <div style={{ width: `${neg}%`, background: '#ef4444' }} />}
+          </div>
+          <div style={{ display: 'flex', fontSize: 10, gap: 0 }}>
+            <div style={{ width: `${pos}%`, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0d9488', flexShrink: 0 }} />
+              <span style={{ color: '#64748b' }}>{pos}% Positive</span>
+            </div>
+            <div style={{ width: `${neu}%`, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#d4a017', flexShrink: 0 }} />
+              <span style={{ color: '#64748b' }}>{neu}% Neutral</span>
+            </div>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+              <span style={{ color: '#64748b' }}>{neg}% Negative</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Parent Perspective */}
+      {parentPerspective && (
+        <div style={{ marginTop: 10, padding: '10px 12px', background: '#fdf2f8', border: '1px solid #fce7f3', borderRadius: 8, fontSize: 12, lineHeight: 1.6, color: '#831843' }}>
+          {parentPerspective}
         </div>
       )}
     </div>
@@ -316,7 +449,7 @@ function timeAgo(isoString) {
   return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 }
 
-export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, priorityMatches, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive }) {
+export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, priorityMatches, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive, communityPulse, actionPlan }) {
   const school = schoolData || null;
   const lastSchoolNameRef = useRef(null);
   if (school?.name && school.name !== 'School') {
@@ -544,23 +677,23 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                 <div style={{ padding: '18px 20px' }}>
 
                   {/* Fit Score + Chat Bubbles row */}
-                  <div style={{ display: 'flex', gap: 18, marginBottom: 18, alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', gap: 16, marginBottom: 18, alignItems: 'flex-start' }}>
 
                     {/* Conic-gradient fit score circle */}
                     <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                       <div style={{
-                        width: 72, height: 72, borderRadius: '50%',
+                        width: 52, height: 52, borderRadius: '50%',
                         background: `conic-gradient(#0d9488 0deg ${fitDeg}deg, #e8dfc0 ${fitDeg}deg 360deg)`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: '0 2px 8px rgba(13,148,136,0.2)',
                         position: 'relative',
                       }}>
                         <div style={{
-                          width: 54, height: 54, borderRadius: '50%', background: '#fffdf5',
+                          width: 38, height: 38, borderRadius: '50%', background: '#fffdf5',
                           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                         }}>
-                          <span style={{ fontSize: 18, fontWeight: 800, color: hasAnalysis ? '#0d9488' : '#a89060', lineHeight: 1 }}>{hasAnalysis ? `${fitPct}%` : '—'}</span>
-                          <span style={{ fontSize: 8.5, color: '#a89060', fontWeight: 600 }}>FIT</span>
+                          <span style={{ fontSize: 15, fontWeight: 800, color: hasAnalysis ? '#0d9488' : '#a89060', lineHeight: 1 }}>{hasAnalysis ? `${fitPct}%` : '—'}</span>
+                          <span style={{ fontSize: 7.5, color: '#a89060', fontWeight: 600 }}>FIT</span>
                         </div>
                       </div>
                       <span style={{ fontSize: 10, fontWeight: 700, color: '#0d9488', letterSpacing: 0.5 }}>
@@ -568,44 +701,99 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                       </span>
                     </div>
 
-                  </div>
-
-                  <div className="rounded-xl border bg-card p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold">How It Fits Your Brief</span>
-                      {priorityList.length > 0 && (
-                        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                          {priorityList.length} priorities
-                        </span>
-                      )}
-                    </div>
-                    {priorityList.length > 0 ? (
-                      <div className="space-y-2">
-                        {priorityList.map((item, index) => {
-                          const statusVal = item.status || 'partial';
-                          const dotBg = statusVal === 'match' ? 'bg-emerald-500' : statusVal === 'flag' ? 'bg-red-500' : 'bg-amber-500';
-                          const textColor = statusVal === 'match' ? 'text-emerald-600' : statusVal === 'flag' ? 'text-red-600' : 'text-amber-600';
-                          const statusLabel = statusVal === 'match' ? 'Match' : statusVal === 'flag' ? 'Flag' : 'Partial';
+                    {/* AI Chat Bubbles — derived from tradeOffs */}
+                    {tradeOffs && tradeOffs.length > 0 && (
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {tradeOffs.slice(0, 3).map((t, i) => {
+                          const isWarning = !!t.concern && !t.strength;
+                          const text = t.strength || t.concern || `${t.dimension}: ${t.strength || t.concern}`;
+                          const bubbleStyle = isWarning
+                            ? { background: '#fffbeb', border: '1px solid #fef3c7' }
+                            : { background: '#f0fdfa', border: '1px solid #d1fae5' };
                           return (
-                            <div key={index} className="flex items-start gap-2">
-                              <span className={`mt-1 inline-flex h-2.5 w-2.5 rounded-full ${dotBg}`} />
-                              <div className="flex-1 space-y-0.5">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-xs font-medium">{item.priority}</span>
-                                  <span className={`text-[11px] font-medium ${textColor}`}>{statusLabel}</span>
-                                </div>
-                                {item.detail && (
-                                  <p className="text-xs text-muted-foreground">{item.detail}</p>
-                                )}
+                            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                              <div style={{
+                                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                                background: 'linear-gradient(135deg, #0d9488, #14b8a6)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}>
+                                <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>NS</span>
+                              </div>
+                              <div style={{
+                                ...bubbleStyle,
+                                borderRadius: '2px 10px 10px 10px',
+                                padding: '10px 12px',
+                                fontSize: 12.5, lineHeight: 1.6, color: '#1e293b',
+                                flex: 1,
+                              }}>
+                                {t.strength && t.concern ? (
+                                  <>
+                                    <span>{t.strength}</span>
+                                    {t.concern && <span style={{ display: 'block', marginTop: 4, color: '#92400e', fontSize: 12 }}>⚠ {t.concern}</span>}
+                                  </>
+                                ) : text}
                               </div>
                             </div>
                           );
                         })}
                       </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Run a Deep Dive to see how this school lines up with your Brief priorities.
-                      </p>
+                    )}
+
+                  </div>
+
+                  {/* How it fits your preferences — two-column layout */}
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: 0.5, marginBottom: 8 }}>
+                      How it fits your preferences
+                    </div>
+                    {priorityList.length > 0 ? (() => {
+                      const matches = priorityList.filter(p => p.status === 'match');
+                      const flags = priorityList.filter(p => p.status === 'flag' || p.status === 'partial');
+                      return (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+                          {/* LEFT: Matches */}
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: '#065f46', marginBottom: 6, paddingBottom: 4, borderBottom: '1px solid #f1f5f9' }}>
+                              ✓ Matches
+                            </div>
+                            {matches.length > 0 ? matches.map((item, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '5px 0', fontSize: 12 }}>
+                                <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#d1fae5', color: '#065f46', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, flexShrink: 0 }}>✓</div>
+                                <div>
+                                  <div style={{ fontWeight: 600, color: '#1e293b' }}>{item.priority}</div>
+                                  {item.detail && <div style={{ color: '#64748b', fontSize: 11 }}>{item.detail}</div>}
+                                </div>
+                              </div>
+                            )) : (
+                              <div style={{ fontSize: 11, color: '#a89060', fontStyle: 'italic' }}>No strong matches identified yet.</div>
+                            )}
+                          </div>
+                          {/* RIGHT: Flags */}
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: '#92400e', marginBottom: 6, paddingBottom: 4, borderBottom: '1px solid #f1f5f9' }}>
+                              ⚠ Flags
+                            </div>
+                            {flags.length > 0 ? flags.map((item, i) => {
+                              const isFlag = item.status === 'flag';
+                              return (
+                                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '5px 0', fontSize: 12 }}>
+                                  <div style={{ width: 20, height: 20, borderRadius: '50%', background: isFlag ? '#fecaca' : '#fef3c7', color: isFlag ? '#991b1b' : '#92400e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, flexShrink: 0 }}>{isFlag ? '✗' : '!'}</div>
+                                  <div>
+                                    <div style={{ fontWeight: 600, color: '#1e293b' }}>{item.priority}</div>
+                                    {item.detail && <div style={{ color: '#64748b', fontSize: 11 }}>{item.detail}</div>}
+                                  </div>
+                                </div>
+                              );
+                            }) : (
+                              <div style={{ fontSize: 11, color: '#a89060', fontStyle: 'italic' }}>No flags identified.</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })() : (
+                      <div style={{ fontSize: 12.5, color: '#a89060', fontStyle: 'italic' }}>
+                        Run a Deep Dive to see how this school lines up with your preferences.
+                      </div>
                     )}
                   </div>
 
@@ -617,7 +805,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                     <div style={{ flexShrink: 0, marginTop: 1 }}><NsDiamond /></div>
                     <div>
                       <div style={{ fontSize: 10.5, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4 }}>
-                        AI Insight
+                        Fit Trade-Off Analysis
                       </div>
                       <div style={{ fontSize: 12.5, color: insight ? '#134e4a' : '#a89060', lineHeight: 1.55, fontStyle: insight ? 'normal' : 'italic' }}>
                         {insight || 'Run a Deep Dive to see AI insight'}
@@ -628,6 +816,13 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
               )}
             </div>
 
+            {/* ── Community Pulse ──────────────────────────────── */}
+            {communityPulse && (
+              <CollapsibleSection icon={<ChatBubbleIcon />} label={`Community Pulse${communityPulse.reviewCount ? ` (${communityPulse.reviewCount} reviews)` : ''}`} color="#ec4899">
+                <CommunityPulseContent communityPulse={communityPulse} />
+              </CollapsibleSection>
+            )}
+
             {/* ── Key Dates ─────────────────────────────────────── */}
             <CollapsibleSection icon={<CalendarIcon />} label="Key Dates" color="#ef4444">
               <KeyDatesContent keyDates={keyDates} />
@@ -635,7 +830,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
 
             {/* ── Visit Prep Kit ────────────────────────────────── */}
             <CollapsibleSection icon={<BookIcon />} label="Visit Prep Kit" color="#8b5cf6">
-              <VisitPrepKitContent visitPrepKit={visitPrepKit} />
+              <VisitPrepKitContent visitPrepKit={visitPrepKit} schoolData={school} actionPlan={actionPlan} />
             </CollapsibleSection>
 
             {/* ── Contact Log ───────────────────────────────────── */}
