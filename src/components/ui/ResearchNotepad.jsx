@@ -558,8 +558,8 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                           <span style={{ fontSize: 8.5, color: '#a89060', fontWeight: 600 }}>FIT</span>
                         </div>
                       </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        {label || 'No analysis yet'}
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#0d9488', letterSpacing: 0.5 }}>
+                        {FIT_BADGE[label?.toLowerCase()]?.label || label?.replace(/_/g, ' ') || 'No analysis yet'}
                       </span>
                     </div>
 
