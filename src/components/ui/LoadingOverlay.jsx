@@ -76,6 +76,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
   const minReady = useRef(false);
   const pending = useRef(false);
   const wasVisible = useRef(false);
+  const briefConfirmTimeRef = useRef(null);
   const onCompleteRef = useRef(onTransitionComplete);
   onCompleteRef.current = onTransitionComplete;
 
@@ -85,16 +86,32 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
   useEffect(() => {
     if (!isVisible) {
       if (wasVisible.current) {
-        if (minReady.current) { 
+        if (minReady.current) {
           setFlashActive(true);
           setTimeout(() => { onCompleteRef.current?.(); setFlashActive(false); wasVisible.current = false; }, 700);
         }
 
-        else { pending.current = true; }
+        else {
+          // BUG-OVERLAY-001 FIX: The cleanup from the previous effect already cleared all
+          // timers (including MIN_LOADER_MS). Schedule a new timer to handle the pending
+          // dismissal instead of relying on the now-dead timer.
+          pending.current = true;
+          const remainingMs = Math.max(0, MIN_LOADER_MS - (Date.now() - (briefConfirmTimeRef.current || Date.now())));
+          const pendingTimer = setTimeout(() => {
+            minReady.current = true;
+            if (pending.current) {
+              pending.current = false;
+              setFlashActive(true);
+              setTimeout(() => { onCompleteRef.current?.(); setFlashActive(false); wasVisible.current = false; }, 700);
+            }
+          }, remainingMs);
+          return () => clearTimeout(pendingTimer);
+        }
       }
       return;
     }
     wasVisible.current = true;
+    briefConfirmTimeRef.current = Date.now();
     pending.current = false;
     minReady.current = false;
     setFlashActive(false);

@@ -289,10 +289,17 @@ export const useMessageHandler = ({
       }
 
       // CRITICAL: Update briefStatus from response immediately
+      // BUG-OVERLAY-002 FIX: Always clear briefStatus when RESULTS arrive with schools,
+      // regardless of whether the confirmation was via button or natural language.
+      // Previously only cleared for isBriefConfirmation, causing the overlay to get stuck
+      // when users typed "yes", "looks good", etc.
       const newBriefStatus = response.data?.briefStatus || null;
-      if (response.data?.state === STATES.RESULTS && isBriefConfirmation) {
+      if (response.data?.state === STATES.RESULTS && (response.data?.schools || []).length > 0) {
         setBriefStatus(null);
-        console.log('[BRIEF STATUS] Cleared on RESULTS arrival (P0 overlay fix)');
+        console.log('[BRIEF STATUS] Cleared on RESULTS arrival with schools');
+      } else if (response.data?.state === STATES.RESULTS && isBriefConfirmation) {
+        setBriefStatus(null);
+        console.log('[BRIEF STATUS] Cleared on RESULTS arrival (brief confirmation)');
       } else if (newBriefStatus) {
         setBriefStatus(newBriefStatus);
         console.log('[BRIEF STATUS] Updated to:', newBriefStatus);
