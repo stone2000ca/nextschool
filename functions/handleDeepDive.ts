@@ -594,7 +594,7 @@ Generate the DEEPDIVE card for this family-school match.`;
         try {
           const existing = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId });
           if (existing && existing.length > 0) {
-            await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString() });
+            await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, schoolName: selectedSchool.name, lastAnalyzedAt: new Date().toISOString() });
             console.log('[DEEPDIVE] SchoolAnalysis updated:', existing[0].id);
             const prevVisitQuestions = existing[0].visitQuestions;
             if (!prevVisitQuestions || prevVisitQuestions.length === 0) {
@@ -607,7 +607,7 @@ Generate the DEEPDIVE card for this family-school match.`;
               }
             }
           } else {
-            const created = await base44.entities.SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString() });
+            const created = await base44.entities.SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, schoolName: selectedSchool.name, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString() });
             console.log('[DEEPDIVE] SchoolAnalysis created:', created.id);
             const childName = conversationFamilyProfile?.childName || null;
             const schoolName = selectedSchool.name;
