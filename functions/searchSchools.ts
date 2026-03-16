@@ -222,7 +222,7 @@ async function performSearch(req) {
   // TODO: migrate to paginated/server-filtered query when school count exceeds 1000
   let allSchools = [];
   try {
-    allSchools = await base44.entities.School.filter({}, '-created_date', 1000);
+    allSchools = await base44.entities.School.filter({}, '-created_at', 1000);
     if (allSchools.length === 1000) {
       console.warn('[searchSchools] WARNING: School count hit limit (1000). Results may be incomplete.');
     }
