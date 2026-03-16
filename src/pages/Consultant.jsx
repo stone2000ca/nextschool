@@ -1184,11 +1184,21 @@ export default function Consultant() {
       const schoolName = lastMsg.deepDiveAnalysis.schoolName || schoolAnalyses?.[schoolId]?.schoolName || 'School';
       toast(`${schoolName} added to your shortlist`, { duration: 3000 });
     }
-    setTimeout(() => {
-      // E39-S10: Navigate to school profile instead of shortlist panel
+    setTimeout(async () => {
+      // E39-S10: Navigate to school profile — fetch full record to avoid placeholder data
       const schoolName = lastMsg.deepDiveAnalysis.schoolName || schoolAnalyses?.[schoolId]?.schoolName || 'School';
-      const minimalSchool = { id: schoolId, name: schoolName };
-      setSelectedSchool(minimalSchool);
+      let fullSchool = schools.find(s => s.id === schoolId)
+        || shortlistData.find(s => s.id === schoolId)
+        || extraSchools.find(s => s.id === schoolId);
+      if (!fullSchool || (!fullSchool.description && !fullSchool.website)) {
+        try {
+          const fullRecords = await base44.entities.School.filter({ id: schoolId });
+          if (fullRecords[0]) fullSchool = fullRecords[0];
+        } catch (e) {
+          console.warn('[DEEPDIVE] Failed to fetch full school record:', e.message);
+        }
+      }
+      setSelectedSchool(fullSchool || { id: schoolId, name: schoolName });
       setCurrentView('detail');
       setActivePanel(null);
     }, DOSSIER_AUTO_OPEN_DELAY_MS);
