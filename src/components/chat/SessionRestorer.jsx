@@ -144,12 +144,23 @@ export async function restoreSessionFromParam(
           lastDeepDiveSchoolName = latest.schoolName || 'School';
           console.log('[RESTORE] Fallback: found SchoolAnalysis for school:', lastDeepDiveSchoolId);
           if (setDeepDiveAnalysis) {
-            setDeepDiveAnalysis(latest);
+            // WC-3: Map SchoolAnalysis fields to expected deepDiveAnalysis shape
+            const mappedAnalysis = {
+              schoolId: latest.schoolId,
+              schoolName: latest.schoolName || 'School',
+              fitScore: latest.fitScore,
+              fitLabel: latest.fitLabel,
+              priorityMatches: latest.priorityMatches || [],
+              aiInsight: latest.aiInsight || latest.insight || null,
+              tradeOffs: latest.tradeOffs || latest.tradeoffs || [],
+              ...latest
+            };
+            setDeepDiveAnalysis(mappedAnalysis);
             // WC-2: Inject analysis onto last assistant message so E39-S4a can find it
             const injectedMsgs = [...restoredMessages];
             for (let i = injectedMsgs.length - 1; i >= 0; i--) {
               if (injectedMsgs[i].role === 'assistant') {
-                injectedMsgs[i] = { ...injectedMsgs[i], deepDiveAnalysis: latest };
+                injectedMsgs[i] = { ...injectedMsgs[i], deepDiveAnalysis: mappedAnalysis };
                 break;
               }
             }
@@ -199,8 +210,18 @@ export async function restoreSessionFromParam(
       if (targetSchool) {
         setSelectedSchool(targetSchool);
       } else {
-        // School not in search results - create minimal object for hydration
-        setSelectedSchool({ id: lastDeepDiveSchoolId, name: lastDeepDiveSchoolName || 'School' });
+        // School not in search results - fetch full record from entity
+        try {
+          const fullSchools = await base44.entities.School.filter({ id: lastDeepDiveSchoolId });
+          if (fullSchools && fullSchools.length > 0) {
+            setSelectedSchool(fullSchools[0]);
+          } else {
+            setSelectedSchool({ id: lastDeepDiveSchoolId, name: lastDeepDiveSchoolName || 'School' });
+          }
+        } catch (e) {
+          console.warn('[RESTORE] Failed to fetch full school record:', e.message);
+          setSelectedSchool({ id: lastDeepDiveSchoolId, name: lastDeepDiveSchoolName || 'School' });
+        }
       }
       setOnboardingPhase(STATES.DEEP_DIVE);
       setCurrentView('detail');
