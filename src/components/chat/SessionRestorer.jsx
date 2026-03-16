@@ -120,6 +120,19 @@ export async function restoreSessionFromParam(
       }
     }
 
+    // BUG-RN-05 FIX: Scan restored messages for last deep-dived school
+    const restoredMessages = chatHistory?.messages || [];
+    let lastDeepDiveSchoolId = null;
+    let lastDeepDiveSchoolName = null;
+    for (let i = restoredMessages.length - 1; i >= 0; i--) {
+      const msg = restoredMessages[i];
+      if (msg.role === 'assistant' && msg.deepDiveAnalysis?.schoolId) {
+        lastDeepDiveSchoolId = msg.deepDiveAnalysis.schoolId;
+        lastDeepDiveSchoolName = msg.deepDiveAnalysis.schoolName;
+        break;
+      }
+    }
+
     // Fetch and restore FamilyProfile
     let restoredProfile = null;
     if (chatSession.familyProfileId) {
