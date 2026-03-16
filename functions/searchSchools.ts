@@ -386,8 +386,8 @@ async function performSearch(req) {
     schoolsToRank = locationFiltered.filter(school => {
       const parsedMinGrade = minGrade !== undefined && minGrade !== null ? parseInt(minGrade) : null;
       if (parsedMinGrade !== null) {
-        let sLow = parseInt(school.lowestGrade);
-        let sHigh = parseInt(school.highestGrade);
+        let sLow = parseInt(school.lowest_grade ?? school.lowestGrade);
+        let sHigh = parseInt(school.highest_grade ?? school.highestGrade);
         if (!isNaN(sLow) && !isNaN(sHigh)) {
           // In relaxed mode, allow grades up to 1 outside range (borderline cases only)
           const distanceOutsideRange = parsedMinGrade < sLow ? sLow - parsedMinGrade : (parsedMinGrade > sHigh ? parsedMinGrade - sHigh : 0);
