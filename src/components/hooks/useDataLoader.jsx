@@ -99,7 +99,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
         const journeyFilter = { userId: user.id, isArchived: false };
         if (currentConversation?.id) { journeyFilter.chatHistoryId = currentConversation.id; }
         const journeys = await base44.entities.FamilyJourney.filter(journeyFilter);
-        if (journeys.length === 0) return;
+        if (journeys.length === 0) { setActiveJourney(null); return; }
 
         const journey = journeys.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
         const schoolJourneys = await base44.entities.SchoolJourney.filter({ familyJourneyId: journey.id });
