@@ -42,9 +42,9 @@ export function applyReligiousFilter(school, familyProfile, payload) {
     typeof d === 'string' && religiousDealbreakTerms.some(term => d.toLowerCase().includes(term))
   );
   if (hasReligiousDealbreaker) {
-    const affiliationNorm = (school.religiousAffiliation || '').toLowerCase().trim();
-    if (school.religiousAffiliation && !nonReligiousAffiliations.has(affiliationNorm)) {
-      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation (${school.religiousAffiliation})`);
+    const affiliationNorm = (school.faith_based || '').toLowerCase().trim();
+    if (school.faith_based && !nonReligiousAffiliations.has(affiliationNorm)) {
+      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation (${school.faith_based})`);
       return false;
     }
     const schoolNameLower = school.name?.toLowerCase() || '';
@@ -61,7 +61,7 @@ export function applyReligiousFilter(school, familyProfile, payload) {
  * Aligned with server-side version in searchSchools.ts.
  */
 export function applyGenderFilter(school, familyProfile) {
-  const gp = school.genderPolicy || null;
+  const gp = school.gender_policy || null;
   if (gp === null) return true;
   const exclusions = familyProfile?.schoolGenderExclusions || [];
   if (Array.isArray(exclusions) && exclusions.length > 0) {
@@ -73,7 +73,7 @@ export function applyGenderFilter(school, familyProfile) {
       if (exL === 'co-ed') return gpLower === 'co-ed' || gpLower === 'co-ed with single-gender classes';
       return false;
     });
-    if (excluded) { console.log(`[GENDER] Excluded (exclusion) ${school.name}: genderPolicy="${gp}"`); return false; }
+    if (excluded) { console.log(`[GENDER] Excluded (exclusion) ${school.name}: gender_policy="${gp}"`); return false; }
   }
   const genderPref = familyProfile?.schoolGenderPreference || null;
   if (genderPref) {
@@ -83,7 +83,7 @@ export function applyGenderFilter(school, familyProfile) {
     if (prefLower === 'all-girls') matches = gpLower === 'all-girls';
     else if (prefLower === 'all-boys') matches = gpLower === 'all-boys';
     else if (prefLower === 'co-ed') matches = gpLower === 'co-ed' || gpLower === 'co-ed with single-gender classes';
-    if (!matches) { console.log(`[GENDER] Excluded (pref=${genderPref}) ${school.name}: genderPolicy="${gp}"`); return false; }
+    if (!matches) { console.log(`[GENDER] Excluded (pref=${genderPref}) ${school.name}: gender_policy="${gp}"`); return false; }
   }
   if (!genderPref) {
     const childGender = familyProfile?.childGender || null;

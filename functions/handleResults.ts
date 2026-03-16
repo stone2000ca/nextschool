@@ -587,12 +587,12 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
         const locationParts = conversationFamilyProfile.locationArea.split(',').map(s => s.trim());
         if (locationParts.length >= 2) {
           searchParams.city = locationParts[0];
-          searchParams.provinceState = locationParts[1];
+          searchParams.province_state = locationParts[1];
         } else if (locationParts.length === 1) {
           searchParams.city = locationParts[0];
           const inferredProvince = cityToProvinceMap[locationParts[0].toLowerCase()];
           if (inferredProvince) {
-            searchParams.provinceState = inferredProvince;
+            searchParams.province_state = inferredProvince;
             console.log(`[AUTO-INFER] City "${locationParts[0]}" → Province "${inferredProvince}"`);
           }
         }
@@ -663,7 +663,7 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
       });
     }
 
-    schools = schools.filter(s => s.schoolType !== 'Special Needs' && s.schoolType !== 'Public');
+    schools = schools.filter(s => s.school_type_label !== 'Special Needs' && s.school_type_label !== 'Public');
 
     const seen = new Set();
     const deduplicated = [];
@@ -693,7 +693,7 @@ Example output: "Emma is a creative Grade 5 student who thrives in smaller, nurt
         const schoolContext = `\n\nSCHOOLS (${matchingSchools.length}):\n` +
           matchingSchools.map(s => {
             const tuitionStr = s.tuition ? `$${s.tuition}` : 'N/A';
-            return `${s.name} | ${s.city} | Grade ${s.lowestGrade}-${s.highestGrade} | Tuition: ${tuitionStr}`;
+            return `${s.name} | ${s.city} | Grade ${s.lowest_grade}-${s.highest_grade} | Tuition: ${tuitionStr}`;
           }).join('\n');
 
         const autoRefreshEntitiesStr = Object.keys(extractedEntities || {}).filter(k =>

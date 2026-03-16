@@ -206,7 +206,7 @@ export default function Consultant() {
       try {
         const journeys = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
         if (!journeys.length) { setSchoolJourney(null); return; }
-        const journey = journeys.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
+        const journey = journeys.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
         const schoolJourneys = await base44.entities.SchoolJourney.filter({ familyJourneyId: journey.id, schoolId: selectedSchool.id });
         const sj = schoolJourneys[0] || null;
         setSchoolJourney(sj);
@@ -261,7 +261,7 @@ export default function Consultant() {
     base44.entities.SchoolInquiry.filter({ schoolId: selectedSchool.id }).then(inquiries => {
       setContactLog(inquiries.map(inq => ({
         type: inq.inquiryType === 'tour_request' ? 'Tour Request' : 'General Inquiry',
-        date: new Date(inq.created_date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }),
+        date: new Date(inq.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }),
         status: inq.tourStatus || inq.status || 'pending',
         note: inq.specialRequests || '',
       })));
@@ -329,7 +329,7 @@ export default function Consultant() {
   // Whether the Family Brief toggle should be visible
   const isBriefState = true; // T045: FamilyBrief visible in all states
   const hasFamilyProfileData = familyProfile && Object.entries(familyProfile).some(
-    ([k, v]) => !['id', 'userId', 'conversationId', 'created_date', 'updated_date', 'created_by', 'onboardingPhase', 'onboardingComplete'].includes(k)
+    ([k, v]) => !['id', 'userId', 'conversationId', 'created_at', 'updated_date', 'created_by', 'onboardingPhase', 'onboardingComplete'].includes(k)
       && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0) && v !== ''
   );
   const showBriefToggle = isBriefState && hasFamilyProfileData;
@@ -721,7 +721,7 @@ export default function Consultant() {
       // Find oldest active conversation
       const oldestConvo = conversations
         .filter(c => c.isActive)
-        .sort((a, b) => new Date(a.created_date) - new Date(b.created_date))[0];
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
       
       if (oldestConvo) {
         // Archive it
@@ -1572,11 +1572,11 @@ export default function Consultant() {
                 <ResearchNotepad
                   schoolData={{
                     name: selectedSchool.name || selectedSchool.schoolName || 'Unknown School',
-                    location: `${selectedSchool.city || ''}, ${selectedSchool.provinceState || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
-                    grades: selectedSchool.gradesServed || `${selectedSchool.lowestGrade || 'K'}-${selectedSchool.highestGrade || '12'}`,
-                    type: selectedSchool.genderPolicy || selectedSchool.schoolType || '',
+                    location: `${selectedSchool.city || ''}, ${selectedSchool.province_state || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
+                    grades: selectedSchool.grades_served || `${selectedSchool.lowest_grade || 'K'}-${selectedSchool.highest_grade || '12'}`,
+                    type: selectedSchool.gender_policy || selectedSchool.school_type_label || '',
                     students: selectedSchool.enrollment || 0,
-                    teacherRatio: selectedSchool.studentTeacherRatio || '',
+                    teacherRatio: selectedSchool.student_teacher_ratio || '',
                     tuition: selectedSchool.tuitionDomesticDay ? `$${Number(selectedSchool.tuitionDomesticDay).toLocaleString()}` : 'Contact school',
                   }}
                   fitScore={deepDiveAnalysis.fitScore}
@@ -1594,7 +1594,7 @@ export default function Consultant() {
                   lastDeepDiveAt={(() => {
                     for (let i = messages.length - 1; i >= 0; i--) {
                       if (messages[i]?.deepDiveAnalysis?.schoolId === deepDiveAnalysis?.schoolId) {
-                        return messages[i]?.created_date || messages[i]?.timestamp || new Date().toISOString();
+                        return messages[i]?.created_at || messages[i]?.timestamp || new Date().toISOString();
                       }
                     }
                     return null;

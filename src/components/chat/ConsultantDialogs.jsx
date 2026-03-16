@@ -55,7 +55,7 @@ export default function ConsultantDialogs({
               {conversations.length > 0 && (
                 <>
                   You've reached your profile limit for your <strong>{user?.subscriptionPlan || 'free'}</strong> plan. Would you like to archive{' '}
-                  <strong>"{conversations.sort((a, b) => new Date(a.created_date) - new Date(b.created_date))[0]?.title || 'oldest profile'}"</strong> to create a new one?
+                  <strong>"{conversations.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]?.title || 'oldest profile'}"</strong> to create a new one?
                 </>
               )}
             </AlertDialogDescription>

@@ -50,7 +50,7 @@ function SchoolCard({ school }) {
           <h3 className="text-white font-semibold text-base leading-tight">{school.name}</h3>
           <div className="flex items-center gap-1 text-slate-400 text-xs mt-1">
             <MapPin className="h-3 w-3 flex-shrink-0" />
-            <span>{[school.city, school.provinceState].filter(Boolean).join(', ')}</span>
+            <span>{[school.city, school.province_state].filter(Boolean).join(', ')}</span>
           </div>
         </div>
 

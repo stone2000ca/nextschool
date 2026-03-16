@@ -132,7 +132,7 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName, ex
           <Field label="Location" value={fp.locationArea || extractedEntities?.locationArea} />
           <Field label="Budget" value={formatBudget(fp.maxTuition || extractedEntities?.maxTuition)} />
           {fp.learningStyle && <Field label="Learning Style" value={fp.learningStyle} />}
-          {fp.schoolType && <Field label="School Type" value={formatSchoolType(fp.schoolType)} />}
+          {fp.school_type_label && <Field label="School Type" value={formatSchoolType(fp.school_type_label)} />}
         </section>
 
         <div className="border-t border-white/8" />

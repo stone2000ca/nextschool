@@ -523,10 +523,10 @@ function lightweightExtract(message, existingProfile) {
   }
 
   // S111-WC3: School type extraction
-  if (!existingProfile?.schoolType) {
-    if (/\b(?:co-?ed|coed)\b/i.test(message)) bridgeProfile.schoolType = 'co-ed';
-    else if (/\ball[- ]?boys\b/i.test(message)) bridgeProfile.schoolType = 'all-boys';
-    else if (/\ball[- ]?girls\b/i.test(message)) bridgeProfile.schoolType = 'all-girls';
+  if (!existingProfile?.school_type_label) {
+    if (/\b(?:co-?ed|coed)\b/i.test(message)) bridgeProfile.school_type_label = 'co-ed';
+    else if (/\ball[- ]?boys\b/i.test(message)) bridgeProfile.school_type_label = 'all-boys';
+    else if (/\ball[- ]?girls\b/i.test(message)) bridgeProfile.school_type_label = 'all-girls';
   }
 
   // S111-WC3: Interests extraction (verb-anchored)
@@ -1253,7 +1253,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
             if (journeyContext?.briefSnapshot) {
               try {
                 const snapshot = typeof journeyContext.briefSnapshot === 'string' ? JSON.parse(journeyContext.briefSnapshot) : journeyContext.briefSnapshot;
-                const seedFields = ['childName','childGrade','childGender','gender','locationArea','maxTuition','interests','priorities','dealbreakers','curriculumPreference','schoolType','academicStrengths'];
+                const seedFields = ['childName','childGrade','childGender','gender','locationArea','maxTuition','interests','priorities','dealbreakers','curriculumPreference','school_type_label','academicStrengths'];
                 const seedData: Record<string, any> = {};
                 for (const key of seedFields) {
                   if (snapshot[key] != null && !conversationFamilyProfile[key]) {
@@ -1408,7 +1408,7 @@ Object.assign(context, safeUpdatedContext);
         priorities: workingProfile?.priorities || [],
         dealbreakers: workingProfile?.dealbreakers || [],
         curriculum: workingProfile?.curriculumPreference || [],
-        schoolType: workingProfile?.schoolType || null
+        school_type_label: workingProfile?.school_type_label || null
       };
       
       const turnCount = (conversationHistory?.filter(m => m.role === 'user').length || 0) + 1;

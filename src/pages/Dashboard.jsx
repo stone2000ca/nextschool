@@ -57,9 +57,9 @@ export default function Dashboard() {
         userId: userData.id
       });
       
-      // Sort by created_date descending (most recent first)
+      // Sort by created_at descending (most recent first)
       const sorted = chatSessions.sort((a, b) => 
-        new Date(b.created_date) - new Date(a.created_date)
+        new Date(b.created_at) - new Date(a.created_at)
       );
       
       setSessions(sorted);

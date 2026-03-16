@@ -54,28 +54,28 @@ Deno.serve(async (req) => {
       );
     } else {
       schools = await base44.asServiceRole.entities.School.filter({});
-      schools = schools.filter(s => !s.headerPhotoUrl).slice(0, batchSize);
+      schools = schools.filter(s => !s.header_photo_url).slice(0, batchSize);
     }
 
     const updated = [];
     
     for (const school of schools) {
-      let headerPhotoUrl = null;
+      let header_photo_url = null;
       let websiteUrl = school.website;
 
       // Step 1: Try to fetch og:image from known website
       if (websiteUrl) {
-        headerPhotoUrl = await tryFetchOgImage(websiteUrl);
+        header_photo_url = await tryFetchOgImage(websiteUrl);
       }
 
       // Step 2: If no website or og:image, try possible domain patterns
-      if (!headerPhotoUrl) {
+      if (!header_photo_url) {
         const slug = school.slug || school.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
         const possibleDomains = generatePossibleDomains(school.name, slug);
         
         for (const domain of possibleDomains) {
-          headerPhotoUrl = await tryFetchOgImage(domain);
-          if (headerPhotoUrl) {
+          header_photo_url = await tryFetchOgImage(domain);
+          if (header_photo_url) {
             websiteUrl = domain;
             break;
           }
@@ -83,13 +83,13 @@ Deno.serve(async (req) => {
       }
 
       // Step 3: Try Clearbit logo as last resort for real image
-      if (!headerPhotoUrl && websiteUrl) {
+      if (!header_photo_url && websiteUrl) {
         try {
           const domain = new URL(websiteUrl).hostname;
           const clearbitUrl = `https://logo.clearbit.com/${domain}`;
           const response = await fetch(clearbitUrl, { redirect: 'follow' });
           if (response.ok && response.status === 200) {
-            headerPhotoUrl = clearbitUrl;
+            header_photo_url = clearbitUrl;
           }
         } catch (e) {
           // Clearbit fetch failed
@@ -97,16 +97,16 @@ Deno.serve(async (req) => {
       }
 
       // Step 4: Update school only if we found a real image
-      if (headerPhotoUrl) {
+      if (header_photo_url) {
         try {
           await base44.asServiceRole.entities.School.update(school.id, {
-            headerPhotoUrl,
+            header_photo_url,
             website: websiteUrl || school.website
           });
           
           updated.push({
             name: school.name,
-            source: headerPhotoUrl.includes('clearbit') ? 'clearbit' : 'og:image'
+            source: header_photo_url.includes('clearbit') ? 'clearbit' : 'og:image'
           });
         } catch (e) {
           console.error(`Update failed for ${school.name}`);

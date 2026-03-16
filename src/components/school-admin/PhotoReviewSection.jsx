@@ -60,8 +60,8 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
       });
 
       if (approvedAs === 'headerPhoto') {
-        await base44.entities.School.update(school.id, { headerPhotoUrl: candidate.imageUrl });
-        onUpdate && onUpdate('headerPhotoUrl', candidate.imageUrl);
+        await base44.entities.School.update(school.id, { header_photo_url: candidate.imageUrl });
+        onUpdate && onUpdate('header_photo_url', candidate.imageUrl);
       } else {
         const gallery = Array.isArray(school.photoGallery) ? school.photoGallery : [];
         if (!gallery.includes(candidate.imageUrl)) {

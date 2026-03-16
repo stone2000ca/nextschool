@@ -8,7 +8,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 // ─── Tuition Band ─────────────────────────────────────────────────────────────
 function getTuitionBand(school) {
-  const val = school.dayTuition ?? school.tuition;
+  const val = school.day_tuition ?? school.tuition;
   if (val == null) return 'Contact school';
   if (val < 15000) return 'Under $15K';
   if (val < 25000) return '$15K–$25K';
@@ -27,8 +27,8 @@ function buildCheckmarks(school, familyProfile) {
 
   if (familyProfile?.childGrade != null) {
     const grade = Number(familyProfile.childGrade);
-    const lo = school.lowestGrade != null ? Number(school.lowestGrade) : null;
-    const hi = school.highestGrade != null ? Number(school.highestGrade) : null;
+    const lo = school.lowest_grade != null ? Number(school.lowest_grade) : null;
+    const hi = school.highest_grade != null ? Number(school.highest_grade) : null;
     if (lo != null && hi != null) {
       const match = grade >= lo && grade <= hi;
       rows.push({ label: 'Grade', status: match ? 'match' : 'mismatch', detail: match ? `Gr ${lo}–${hi} ✓` : `School: Gr ${lo}–${hi}` });
@@ -37,7 +37,7 @@ function buildCheckmarks(school, familyProfile) {
 
   if (familyProfile?.maxTuition) {
     const budget = Number(familyProfile.maxTuition);
-    const tuitionVal = school.dayTuition ?? school.tuition;
+    const tuitionVal = school.day_tuition ?? school.tuition;
     if (tuitionVal == null) {
       rows.push({ label: 'Budget', status: 'unknown', detail: 'Contact school' });
     } else {
@@ -46,7 +46,7 @@ function buildCheckmarks(school, familyProfile) {
   }
 
   if (familyProfile?.gender) {
-    const gp = school.genderPolicy;
+    const gp = school.gender_policy;
     if (gp) {
       let match = true;
       if (gp === 'All-Boys') match = familyProfile.gender === 'male';
@@ -57,15 +57,15 @@ function buildCheckmarks(school, familyProfile) {
 
   if (familyProfile?.curriculumPreference?.length > 0) {
     const prefs = familyProfile.curriculumPreference.map(p => p.toLowerCase());
-    const ct = (school.curriculumType || '').toLowerCase();
+    const ct = (school.curriculum || '').toLowerCase();
     if (ct) {
-      rows.push({ label: 'Curriculum', status: prefs.some(p => ct.includes(p) || p.includes(ct)) ? 'match' : 'mismatch', detail: school.curriculumType });
+      rows.push({ label: 'Curriculum', status: prefs.some(p => ct.includes(p) || p.includes(ct)) ? 'match' : 'mismatch', detail: school.curriculum });
     }
   }
 
   const wantsBoarding = familyProfile?.boardingPreference === 'open_to_boarding' || familyProfile?.boardingPreference === 'boarding_preferred';
-  if (wantsBoarding && school.boardingAvailable != null) {
-    rows.push({ label: 'Boarding', status: school.boardingAvailable ? 'match' : 'mismatch', detail: school.boardingAvailable ? 'Boarding available' : 'Day school only' });
+  if (wantsBoarding && school.boarding_available != null) {
+    rows.push({ label: 'Boarding', status: school.boarding_available ? 'match' : 'mismatch', detail: school.boarding_available ? 'Boarding available' : 'Day school only' });
   }
 
   return rows.slice(0, 5);
@@ -77,10 +77,10 @@ async function generateRationale(school, familyProfile) {
   if (!OPENROUTER_API_KEY) return `${school.name} is a strong match for your shortlist.`;
 
   const schoolSummary = [
-    `${school.name} in ${school.city}, ${school.provinceState || school.country}`,
-    school.curriculumType ? `Curriculum: ${school.curriculumType}` : null,
+    `${school.name} in ${school.city}, ${school.province_state || school.country}`,
+    school.curriculum ? `Curriculum: ${school.curriculum}` : null,
     school.tuition ? `Tuition: $${school.tuition.toLocaleString()}` : null,
-    school.genderPolicy ? `Gender: ${school.genderPolicy}` : null,
+    school.gender_policy ? `Gender: ${school.gender_policy}` : null,
     school.distanceKm ? `Distance: ${school.distanceKm.toFixed(1)} km` : null,
     school.specializations?.length ? `Specializations: ${school.specializations.join(', ')}` : null,
   ].filter(Boolean).join(', ');
@@ -177,9 +177,9 @@ Deno.serve(async (req) => {
       return {
         id: school.id,
         name: school.name,
-        photoUrl: school.headerPhotoUrl || school.heroImage || null,
+        photoUrl: school.header_photo_url || school.heroImage || null,
         city: school.city,
-        provinceState: school.provinceState,
+        province_state: school.province_state,
         tuitionBand,
         distanceKm: school.distanceKm ?? null,
         rationale,

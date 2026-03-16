@@ -39,9 +39,9 @@ function applyReligiousFilter(school, familyProfile, payload) {
     typeof d === 'string' && religiousDealbreakTerms.some(term => d.toLowerCase().includes(term))
   );
   if (hasReligiousDealbreaker) {
-    const schoolAffiliation = (school.religiousAffiliation || '').toLowerCase().trim().replace(/[\s-]+/g, ' ');
+    const schoolAffiliation = (school.faith_based || '').toLowerCase().trim().replace(/[\s-]+/g, ' ');
     const knownReligiousAffiliations = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'methodist', 'presbyterian', 'anglican', 'orthodox', 'evangelical', 'pentecostal', 'adventist', 'mormon', 'lds', 'quaker', 'mennonite', 'amish', 'hindu', 'buddhist', 'sikh', 'muslim'];
-    if (school.religiousAffiliation && knownReligiousAffiliations.includes(schoolAffiliation)) {
+    if (school.faith_based && knownReligiousAffiliations.includes(schoolAffiliation)) {
       console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation`);
       return false;
     }
@@ -57,7 +57,7 @@ function applyReligiousFilter(school, familyProfile, payload) {
 }
 
 function applyGenderFilter(school, familyProfile) {
-  const gp = school.genderPolicy || null;
+  const gp = school.gender_policy || null;
   if (gp === null) return true;
   
   // Fix A: Normalize childGender to canonical 'male' or 'female'
@@ -68,16 +68,16 @@ function applyGenderFilter(school, familyProfile) {
   
   const gpLower = gp.toLowerCase();
   
-  // Fix B: Expand genderPolicy matching with arrays
+  // Fix B: Expand gender_policy matching with arrays
   const isGirlsSchool = ['all-girls', 'girls only', 'girls', 'female only', 'all girls'].includes(gpLower);
   const isBoysSchool = ['all-boys', 'boys only', 'boys', 'male only', 'all boys'].includes(gpLower);
   
   if (childGender === 'male' && isGirlsSchool) {
-    console.log(`[GENDER] Excluded (childGender=male) ${school.name}: genderPolicy="${gp}"`);
+    console.log(`[GENDER] Excluded (childGender=male) ${school.name}: gender_policy="${gp}"`);
     return false;
   }
   if (childGender === 'female' && isBoysSchool) {
-    console.log(`[GENDER] Excluded (childGender=female) ${school.name}: genderPolicy="${gp}"`);
+    console.log(`[GENDER] Excluded (childGender=female) ${school.name}: gender_policy="${gp}"`);
     return false;
   }
   
@@ -90,7 +90,7 @@ function applyGenderFilter(school, familyProfile) {
       if (exL === 'co-ed') return gpLower === 'co-ed' || gpLower === 'co-ed with single-gender classes';
       return false;
     });
-    if (excluded) { console.log(`[GENDER] Excluded (exclusion) ${school.name}: genderPolicy="${gp}"`); return false; }
+    if (excluded) { console.log(`[GENDER] Excluded (exclusion) ${school.name}: gender_policy="${gp}"`); return false; }
   }
   
   const genderPref = familyProfile?.schoolGenderPreference || null;
@@ -100,7 +100,7 @@ function applyGenderFilter(school, familyProfile) {
     if (prefLower === 'all-girls') matches = gpLower === 'all-girls';
     else if (prefLower === 'all-boys') matches = gpLower === 'all-boys';
     else if (prefLower === 'co-ed') matches = gpLower === 'co-ed' || gpLower === 'co-ed with single-gender classes';
-    if (!matches) { console.log(`[GENDER] Excluded (pref=${genderPref}) ${school.name}: genderPolicy="${gp}"`); return false; }
+    if (!matches) { console.log(`[GENDER] Excluded (pref=${genderPref}) ${school.name}: gender_policy="${gp}"`); return false; }
   }
   
   return true;
@@ -116,14 +116,14 @@ async function performSearch(req) {
     region, 
     country,
     city,
-    provinceState,
+    province_state,
     minGrade, 
     maxGrade, 
     minTuition, 
     maxTuition, 
-    curriculumType,
+    curriculum,
     specializations,
-    schoolType,
+    school_type_label,
     userLat,
     userLng,
     resolvedLat,
@@ -138,7 +138,7 @@ async function performSearch(req) {
   } = payload;
 
   // BUG-SEARCH-003: Validate minimum required search params exist
-  const hasLocation = !!(region || city || provinceState || country || resolvedLat || resolvedLng);
+  const hasLocation = !!(region || city || province_state || country || resolvedLat || resolvedLng);
   const hasGrade = minGrade !== null && minGrade !== undefined;
   
   if (!hasLocation && !hasGrade) {
@@ -222,7 +222,7 @@ async function performSearch(req) {
   // TODO: migrate to paginated/server-filtered query when school count exceeds 1000
   let allSchools = [];
   try {
-    allSchools = await base44.entities.School.filter({}, '-created_date', 1000);
+    allSchools = await base44.entities.School.filter({}, '-created_at', 1000);
     if (allSchools.length === 1000) {
       console.warn('[searchSchools] WARNING: School count hit limit (1000). Results may be incomplete.');
     }
@@ -257,8 +257,8 @@ async function performSearch(req) {
     );
   } else if (aliasedProvinces.length > 0) {
     locationFiltered = locationFiltered.filter(s => {
-      if (!s.provinceState) return false;
-      const schoolPS = s.provinceState.toLowerCase();
+      if (!s.province_state) return false;
+      const schoolPS = s.province_state.toLowerCase();
       return aliasedProvinces.some(p => schoolPS === p.toLowerCase());
     });
   }
@@ -292,16 +292,16 @@ async function performSearch(req) {
     console.log(`[CITY FILTER] city="${city}" → ${locationFiltered.length} schools`);
   }
 
-  // BUG-SEARCH-002 FIX: Only apply province filter if provinceState is actually provided
-  if (provinceState && provinceState.trim() && aliasedProvinces.length === 0) {
-    const psUpper = provinceState.toUpperCase().trim();
+  // BUG-SEARCH-002 FIX: Only apply province filter if province_state is actually provided
+  if (province_state && province_state.trim() && aliasedProvinces.length === 0) {
+    const psUpper = province_state.toUpperCase().trim();
     const fullProvinceName = provinceAbbreviations[psUpper] || stateAbbreviations[psUpper];
-    const normalizedProvince = fullProvinceName || toTitleCase(provinceState.trim());
+    const normalizedProvince = fullProvinceName || toTitleCase(province_state.trim());
     const provinceRegex = new RegExp(`^${normalizedProvince}$`, 'i');
     locationFiltered = locationFiltered.filter(s => {
-      const schoolPS = s.provinceState?.toUpperCase().trim();
-      const expandedSchoolPS = provinceAbbreviations[schoolPS] || stateAbbreviations[schoolPS] || s.provinceState;
-      return provinceRegex.test(expandedSchoolPS) || provinceRegex.test(s.provinceState);
+      const schoolPS = s.province_state?.toUpperCase().trim();
+      const expandedSchoolPS = provinceAbbreviations[schoolPS] || stateAbbreviations[schoolPS] || s.province_state;
+      return provinceRegex.test(expandedSchoolPS) || provinceRegex.test(s.province_state);
     });
   }
 
@@ -337,8 +337,8 @@ async function performSearch(req) {
      // BUG-MATCH-S41 FIX: Grade range check moved to soft penalty (scoring) instead of hard filter.
      // Only hard-exclude if grade is MORE than 2 grades outside the range.
      if (parsedMinGrade !== null) {
-       let sLow = parseInt(school.lowestGrade);
-       let sHigh = parseInt(school.highestGrade);
+       let sLow = parseInt(school.lowest_grade);
+       let sHigh = parseInt(school.highest_grade);
        if (!isNaN(sLow) && !isNaN(sHigh)) {
          const distanceOutsideRange = parsedMinGrade < sLow ? sLow - parsedMinGrade : (parsedMinGrade > sHigh ? parsedMinGrade - sHigh : 0);
          // S161-WC2 FIX: exclude if grade is outside the school's range (was > 1 which allowed K-6 for Grade 7)
@@ -351,7 +351,7 @@ async function performSearch(req) {
        }
      }
     
-    const schoolTuition = school.tuition || school.dayTuition || school.tuitionMin || null;
+    const schoolTuition = school.tuition || school.day_tuition || school.tuitionMin || null;
     if (maxTuition && maxTuition !== 'unlimited') {
       if (schoolTuition && schoolTuition > maxTuition) {
         console.log(`[BUDGET FILTER] Filtered out ${school.name}: tuition $${schoolTuition} exceeds budget $${maxTuition}`);
@@ -384,8 +384,8 @@ async function performSearch(req) {
     schoolsToRank = locationFiltered.filter(school => {
       const parsedMinGrade = minGrade !== undefined && minGrade !== null ? parseInt(minGrade) : null;
       if (parsedMinGrade !== null) {
-        let sLow = parseInt(school.lowestGrade);
-        let sHigh = parseInt(school.highestGrade);
+        let sLow = parseInt(school.lowest_grade);
+        let sHigh = parseInt(school.highest_grade);
         if (!isNaN(sLow) && !isNaN(sHigh)) {
           // In relaxed mode, allow grades up to 1 outside range (borderline cases only)
           const distanceOutsideRange = parsedMinGrade < sLow ? sLow - parsedMinGrade : (parsedMinGrade > sHigh ? parsedMinGrade - sHigh : 0);
@@ -419,10 +419,10 @@ async function performSearch(req) {
     // BUG-MATCH-S41 FIX: Soft penalty for grades outside range (instead of hard filter)
     if (minGrade !== undefined) {
       const targetGrade = minGrade !== undefined ? minGrade : maxGrade;
-      if (school.lowestGrade <= targetGrade && school.highestGrade >= targetGrade) {
+      if (school.lowest_grade <= targetGrade && school.highest_grade >= targetGrade) {
         score += 2;
       } else {
-        const distanceOutsideRange = targetGrade < school.lowestGrade ? school.lowestGrade - targetGrade : (targetGrade > school.highestGrade ? targetGrade - school.highestGrade : 0);
+        const distanceOutsideRange = targetGrade < school.lowest_grade ? school.lowest_grade - targetGrade : (targetGrade > school.highest_grade ? targetGrade - school.highest_grade : 0);
         if (distanceOutsideRange <= 2) {
           score -= 1; // Soft penalty for grades 1-2 outside range
           console.log(`[GRADE SCORE] Soft penalty for ${school.name}: ${distanceOutsideRange} grade(s) outside range`);
@@ -436,11 +436,11 @@ async function performSearch(req) {
       }
     }
     
-    if (curriculumType && school.curriculumType === curriculumType) {
+    if (curriculum && school.curriculum?.includes(curriculum)) {
       score += 3;
     }
     
-    if (schoolType && school.schoolType === schoolType) {
+    if (school_type_label && school.school_type_label === school_type_label) {
       score += 2;
     }
     
@@ -464,8 +464,8 @@ async function performSearch(req) {
     // E28-S1: Arts/sports interest alignment
     if (familyProfile?.interests?.length > 0) {
       const interestLower = familyProfile.interests.map(i => i.toLowerCase());
-      const schoolArts = (school.artsPrograms || []).map(a => a.toLowerCase());
-      const schoolSports = (school.sportsPrograms || []).map(s => s.toLowerCase());
+      const schoolArts = (school.arts_programs || []).map(a => a.toLowerCase());
+      const schoolSports = (school.sports_programs || []).map(s => s.toLowerCase());
       const artMatches = interestLower.filter(i => schoolArts.some(a => a.includes(i) || i.includes(a))).length;
       const sportMatches = interestLower.filter(i => schoolSports.some(s => s.includes(i) || i.includes(s))).length;
       score += Math.min(artMatches + sportMatches, 3);
@@ -473,8 +473,8 @@ async function performSearch(req) {
 
     // E28-S1: Learning support scoring
     if (familyProfile?.academicStruggles?.length > 0 || familyProfile?.learningDifferences?.length > 0) {
-      if (school.avgClassSize && school.avgClassSize <= 18) score += 1;
-      if (school.studentTeacherRatio && parseFloat(school.studentTeacherRatio) <= 10) score += 1;
+      if (school.avg_class_size && school.avg_class_size <= 18) score += 1;
+      if (school.student_teacher_ratio && parseFloat(school.student_teacher_ratio) <= 10) score += 1;
       const supportKeywords = ['learning support', 'special needs', 'differentiated', 'individualized', 'ld support', 'resource'];
       const specLower = (school.specializations || []).map(s => s.toLowerCase());
       if (supportKeywords.some(kw => specLower.some(s => s.includes(kw)))) score += 2;
@@ -553,26 +553,26 @@ async function performSearch(req) {
     name: s.name,
     slug: s.slug,
     city: s.city,
-    provinceState: s.provinceState,
-    gradesServed: `${s.lowestGrade}-${s.highestGrade}`,
-    lowestGrade: s.lowestGrade,
-    highestGrade: s.highestGrade,
+    province_state: s.province_state,
+    grades_served: `${s.lowest_grade}-${s.highest_grade}`,
+    lowest_grade: s.lowest_grade,
+    highest_grade: s.highest_grade,
     tuition: s.tuition,
-    dayTuition: s.dayTuition,
+    day_tuition: s.day_tuition,
     currency: s.currency,
-    curriculumType: s.curriculumType,
-    genderPolicy: s.genderPolicy,
+    curriculum: s.curriculum,
+    gender_policy: s.gender_policy,
     region: s.region,
     specializations: s.specializations,
     distanceKm: s.distanceKm,
-    schoolType: s.schoolType,
-    headerPhotoUrl: s.headerPhotoUrl,
-    logoUrl: s.logoUrl,
-    artsPrograms: s.artsPrograms?.slice(0, 5) || [],
-    sportsPrograms: s.sportsPrograms?.slice(0, 5) || [],
-    avgClassSize: s.avgClassSize || null,
-    schoolTier: s.schoolTier || null,
-    claimStatus: s.claimStatus || null,
+    school_type_label: s.school_type_label,
+    header_photo_url: s.header_photo_url,
+    logo_url: s.logo_url,
+    arts_programs: s.arts_programs?.slice(0, 5) || [],
+    sports_programs: s.sports_programs?.slice(0, 5) || [],
+    avg_class_size: s.avg_class_size || null,
+    school_tier: s.school_tier || null,
+    claim_status: s.claim_status || null,
     relaxedMatch: isRelaxedPass
   }));
 
@@ -583,7 +583,7 @@ async function performSearch(req) {
       reasons: [
         s.distanceKm ? `${s.distanceKm.toFixed(1)}km away` : null,
         s.tuition && maxTuition && s.tuition <= maxTuition ? 'Within budget' : null,
-        s.curriculumType === curriculumType ? `${curriculumType} curriculum` : null,
+        s.curriculum?.includes(curriculum) ? `${curriculum} curriculum` : null,
         s.specializations?.some(spec => specializations?.includes(spec)) ? 'Matches specializations' : null
       ].filter(Boolean)
     }));
@@ -592,14 +592,14 @@ async function performSearch(req) {
       query: searchQuery || `Search for grade ${minGrade} in ${city || region || 'unspecified'}`,
       inputFilters: {
         city,
-        provinceState,
+        province_state,
         region,
         minGrade,
         maxGrade,
         maxTuition,
-        curriculumType,
+        curriculum,
         specializations,
-        schoolType,
+        school_type_label,
         maxDistanceKm,
         dealbreakers: payload.dealbreakers || familyProfile?.dealbreakers || []
       },

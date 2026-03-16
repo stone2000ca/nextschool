@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch all schools with null/empty website
-    const allSchools = await base44.asServiceRole.entities.School.list('-created_date', 5000);
+    const allSchools = await base44.asServiceRole.entities.School.list('-created_at', 5000);
     
     const schoolsNeedingWebsite = allSchools.filter(s => !s.website);
     
@@ -92,8 +92,8 @@ Deno.serve(async (req) => {
 
         // Add common Canadian TLDs based on province
         let tld = 'ca';
-        if (school.provinceState) {
-          const prov = school.provinceState.toLowerCase();
+        if (school.province_state) {
+          const prov = school.province_state.toLowerCase();
           if (prov.includes('quebec')) tld = 'qc.ca';
           else if (prov.includes('ontario')) tld = 'on.ca';
           else if (prov.includes('british')) tld = 'bc.ca';

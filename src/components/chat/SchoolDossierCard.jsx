@@ -255,7 +255,7 @@ export default function SchoolDossierCard({
   const [reEvalOpen,    setReEvalOpen]    = useState(true);
 
   const checks    = familyProfile ? buildPriorityChecks(school, familyProfile).slice(0, 4) : [];
-  const tuition   = school.dayTuition ?? school.tuition;
+  const tuition   = school.day_tuition ?? school.tuition;
   const analysis  = schoolAnalyses?.[school.id];
   const fitConfig = analysis?.fitLabel ? FIT_BADGE[analysis.fitLabel] : null;
 
@@ -332,8 +332,8 @@ export default function SchoolDossierCard({
 
       {/* ── Location + grades ── */}
       <p className="text-xs text-slate-400 mb-1">
-        {school.city}{school.provinceState ? `, ${school.provinceState}` : ''}
-        {school.lowestGrade != null && ` · Gr ${formatGradeRange(school.lowestGrade, school.highestGrade)}`}
+        {school.city}{school.province_state ? `, ${school.province_state}` : ''}
+        {school.lowest_grade != null && ` · Gr ${formatGradeRange(school.lowest_grade, school.highest_grade)}`}
       </p>
 
       {/* ── Tuition ── */}

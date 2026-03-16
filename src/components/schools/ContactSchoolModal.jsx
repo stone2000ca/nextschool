@@ -92,7 +92,7 @@ export default function ContactSchoolModal({ school, onClose }) {
   };
 
   // Unclaimed school — show website redirect instead of form
-  if (school.claimStatus !== 'claimed') {
+  if (school.claim_status !== 'claimed') {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center">

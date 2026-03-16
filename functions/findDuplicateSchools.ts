@@ -62,11 +62,11 @@ function getEditDistance(s1, s2) {
 function countCompleteFields(school) {
   let count = 0;
   const fields = [
-    'name', 'address', 'city', 'provinceState', 'phone', 'email',
-    'website', 'dayTuition', 'boardingTuition', 'currency', 'founded',
-    'enrollment', 'studentCount', 'missionStatement', 'description',
-    'logoUrl', 'headerPhotoUrl', 'curriculum', 'religiousAffiliation',
-    'financialAidAvailable', 'genderPolicy', 'schoolType'
+    'name', 'address', 'city', 'province_state', 'phone', 'email',
+    'website', 'day_tuition', 'boarding_tuition', 'currency', 'founded',
+    'enrollment', 'studentCount', 'mission_statement', 'description',
+    'logo_url', 'header_photo_url', 'curriculum', 'faith_based',
+    'financial_aid_available', 'gender_policy', 'school_type_label'
   ];
   for (const field of fields) {
     if (school.data[field] && school.data[field] !== '' && school.data[field].length > 0) {
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
           if (!merged.has(duplicate.id)) {
             // Copy non-null fields from duplicate to primary
             for (const [key, value] of Object.entries(duplicate.data)) {
-              if (value && !primary.data[key] && key !== 'id' && key !== 'created_date' && key !== 'created_by') {
+              if (value && !primary.data[key] && key !== 'id' && key !== 'created_at' && key !== 'created_by') {
                 primary.data[key] = value;
               }
             }
@@ -171,8 +171,8 @@ Deno.serve(async (req) => {
           (norm1 === norm2 && school1.data.city === school2.data.city)
         ) {
           // Check if it's related campuses (different grades)
-          const grades1 = [school1.data.lowestGrade, school1.data.highestGrade].filter(g => g !== null);
-          const grades2 = [school2.data.lowestGrade, school2.data.highestGrade].filter(g => g !== null);
+          const grades1 = [school1.data.lowest_grade, school1.data.highest_grade].filter(g => g !== null);
+          const grades2 = [school2.data.lowest_grade, school2.data.highest_grade].filter(g => g !== null);
           
           const isRelatedCampus = grades1.length > 0 && grades2.length > 0 && 
             (grades1[0] !== grades2[0] || grades1[1] !== grades2[1]);
@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
         }
         // Level 3: Possible duplicates
         else if (
-          (similarity > 70 && school1.data.provinceState === school2.data.provinceState) ||
+          (similarity > 70 && school1.data.province_state === school2.data.province_state) ||
           (school1.data.address && school2.data.address && 
            school1.data.address === school2.data.address && 
            norm1 !== norm2)
@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
             school2Id: school2.id,
             school2Name: school2.data.name,
             school2Fields: countCompleteFields(school2),
-            province: school1.data.provinceState,
+            province: school1.data.province_state,
             similarity: similarity.toFixed(2),
             reason: school1.data.address === school2.data.address ? 'same_address' : 'name_similarity'
           });

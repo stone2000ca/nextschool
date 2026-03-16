@@ -8,18 +8,18 @@ export default function ComparisonTable({ schools, onBack }) {
     { label: 'School Name', key: 'name' },
     { label: 'Location', key: 'location' },
     { label: 'Grade Range', key: 'grades' },
-    { label: 'Curriculum Type', key: 'curriculumType' },
+    { label: 'Curriculum Type', key: 'curriculum' },
     { label: 'Tuition', key: 'tuition' },
     { label: 'Student Count', key: 'enrollment' },
     { label: 'Specializations', key: 'specializations' },
-    { label: 'Arts Programs', key: 'artsPrograms' },
-    { label: 'Sports Programs', key: 'sportsPrograms' },
+    { label: 'Arts Programs', key: 'arts_programs' },
+    { label: 'Sports Programs', key: 'sports_programs' },
     { label: 'Languages', key: 'languages' },
     { label: 'Boarding', key: 'boarding' }
   ];
 
-  const getLocationText = (school) => `${school.city}, ${school.provinceState || school.region}`;
-  const getGradesText = (school) => `${school.lowestGrade || 'K'}-${school.highestGrade || '12'}`;
+  const getLocationText = (school) => `${school.city}, ${school.province_state || school.region}`;
+  const getGradesText = (school) => `${school.lowest_grade || 'K'}-${school.highest_grade || '12'}`;
   const getTuitionText = (school) => {
     if (!school.tuition) return 'N/A';
     return `${school.currency || 'CAD'} ${school.tuition.toLocaleString()}`;
@@ -35,14 +35,14 @@ export default function ComparisonTable({ schools, onBack }) {
         return getTuitionText(school);
       case 'specializations':
         return school.specializations?.join(', ') || 'N/A';
-      case 'artsPrograms':
-        return school.artsPrograms?.join(', ') || 'N/A';
-      case 'sportsPrograms':
-        return school.sportsPrograms?.join(', ') || 'N/A';
+      case 'arts_programs':
+        return school.arts_programs?.join(', ') || 'N/A';
+      case 'sports_programs':
+        return school.sports_programs?.join(', ') || 'N/A';
       case 'languages':
         return school.languages?.join(', ') || 'N/A';
       case 'boarding':
-        return school.boardingAvailable ? `${school.boardingType || 'Yes'}` : 'No';
+        return school.boarding_available ? `${school.boardingType || 'Yes'}` : 'No';
       default:
         return school[key] || 'N/A';
     }

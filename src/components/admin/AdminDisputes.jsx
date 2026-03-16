@@ -13,7 +13,7 @@ export default function AdminDisputes() {
   async function load() {
     setLoading(true);
     const raw = await base44.entities.DisputeRequest.filter({ status: "pending" });
-    raw.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+    raw.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     // Enrich with school name + current owner from SchoolAdmin
     const enrichedRows = await Promise.all(raw.map(async (d) => {
@@ -145,7 +145,7 @@ export default function AdminDisputes() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-900 text-base">{d.schoolName}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Submitted {d.created_date ? new Date(d.created_date).toLocaleDateString("en-CA") : "—"}
+                      Submitted {d.created_at ? new Date(d.created_at).toLocaleDateString("en-CA") : "—"}
                     </p>
 
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
