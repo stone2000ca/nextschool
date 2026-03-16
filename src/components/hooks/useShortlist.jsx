@@ -22,7 +22,6 @@ export function useShortlist({
     try {
       const records = await base44.entities.ChatShortlist.filter({ familyJourneyId: activeJourney.journeyId });
       if (records.length === 0) {
-        setShortlistData([]);
         return;
       }
       const schoolIds = records.map(r => r.schoolId).filter(Boolean);
