@@ -65,12 +65,35 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
 
     let extractedChildName: string | null = null;
     const namePatterns = [
+      // Possessive: "Emma's mom", "Jake's dad"
+      /\b([A-Z][a-z]{1,20})(?:'s)\s+(?:mom|dad|mother|father|parent|mum|mama|papa)\b/i,
+      // "for my son Alex", "for my daughter Emma"
+      /\bfor\s+(?:my\s+|our\s+)?(?:son|daughter|boy|girl|child|kid)\s+([A-Z][a-z]{1,20})\b/i,
+      // "have a son, Jake" / "have a 10-year-old daughter Emma"
+      /\b(?:have|got)\s+(?:a\s+)?(?:\d+[\s-]?year[\s-]?old\s+)?(?:son|daughter|boy|girl|child|kid),?\s+([A-Z][a-z]{1,20})\b/i,
+      // "my 10-year-old, Sarah"
+      /\bmy\s+(?:\d+[\s-]?year[\s-]?old),?\s+([A-Z][a-z]{1,20})\b/i,
+      // "our son Thomas", "our daughter Sophia"
+      /\bour\s+(?:son|daughter|boy|girl|child|kid)\s+([A-Z][a-z]{1,20})\b/i,
+      // "son, Alex, is" / "daughter Emma needs"
+      /\b(?:son|daughter|boy|girl|child|kid),?\s+([A-Z][a-z]{1,20}),?\s+(?:is|who|needs|wants|loves|goes|just|currently|has|will|would|started|attends)\b/i,
+      // Original patterns
       /\bmy\s+(?:son|daughter|boy|girl|child|kid)\s+([A-Z][a-z]{1,20})\b/i,
       /\b(?:son|daughter|boy|girl|child|kid)\s+(?:is\s+)?named\s+([A-Z][a-z]{1,20})\b/i,
-      /\b(?:name\s+is|named|called)\s+([A-Z][a-z]{1,20})\b/i,
-      /\b([A-Z][a-z]{1,20})\s+is\s+(?:my\s+)?(?:son|daughter|boy|girl|child|kid)\b/i,
+      /\b(?:name\s+is|name's|named|called)\s+([A-Z][a-z]{1,20})\b/i,
+      /\b([A-Z][a-z]{1,20})\s+is\s+(?:my\s+|our\s+)?(?:son|daughter|boy|girl|child|kid)\b/i,
+      // "looking for schools for Emma"
+      /\b(?:looking|searching)\s+(?:for\s+)?(?:schools?\s+)?for\s+([A-Z][a-z]{1,20})\b/i,
     ];
-    const PRONOUN_BLOCKLIST = new Set(['my', 'his', 'her', 'he', 'she', 'him', 'the', 'a', 'an', 'i', 'we', 'our', 'they', 'it', 'this', 'that']);
+    const PRONOUN_BLOCKLIST = new Set([
+      'my', 'his', 'her', 'he', 'she', 'him', 'the', 'a', 'an', 'i', 'we', 'our', 'they', 'it', 'this', 'that',
+      'not', 'but', 'and', 'also', 'just', 'very', 'really', 'some', 'any', 'all', 'both', 'each',
+      'about', 'into', 'been', 'does', 'has', 'had', 'was', 'are', 'can', 'will', 'would', 'should', 'could',
+      'there', 'here', 'what', 'when', 'how', 'where', 'why', 'who', 'which', 'their', 'your', 'its',
+      'school', 'grade', 'class', 'looking', 'need', 'help', 'find', 'search', 'want', 'like', 'love',
+      'good', 'best', 'new', 'old', 'currently', 'recently', 'maybe', 'actually', 'basically',
+      'schools', 'one', 'with', 'that', 'from', 'have', 'been', 'more', 'them', 'than', 'other'
+    ]);
     for (const pattern of namePatterns) {
       const match = message.match(pattern);
       if (match && match[1] && !PRONOUN_BLOCKLIST.has(match[1].toLowerCase())) {
@@ -153,6 +176,15 @@ async function extractEntitiesLogic(base44, message, conversationFamilyProfile, 
     }
 
     const systemPrompt = `Extract factual data from the parent's message. Return JSON with NULL for anything not mentioned.
+
+CHILD NAME EXTRACTION (CRITICAL - top priority):
+- Extract the child's first name from ANY phrasing. Examples:
+  "my son Alex" → "Alex", "daughter named Emma" → "Emma", "I'm Jake's mom" → "Jake",
+  "looking for schools for Sarah" → "Sarah", "we have a 10-year-old, Thomas" → "Thomas",
+  "our daughter Sophia is in grade 5" → "Sophia", "I have a boy called Amir" → "Amir"
+- The name is a proper noun (capitalized first letter) referring to the CHILD, not the parent.
+- If the parent says "I'm Sarah" or "my name is John", that is the PARENT's name, NOT the child's name — do NOT return it as childName.
+- Return null for childName ONLY if no child name is mentioned at all.
 
 GENDER INFERENCE (BUG-ENT-004): Infer the child's gender from relational terms even if not stated directly:
 - "my son", "my boy", "he", "him", "his" → gender = "male"
