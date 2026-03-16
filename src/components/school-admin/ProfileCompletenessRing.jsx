@@ -20,13 +20,13 @@ const TIERS = [
     id: 'tier3',
     label: 'Enrichment',
     color: '#14b8a6',
-    fields: ['arts_programs', 'sports_programs', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations'],
+    fields: ['arts_programs', 'sports_programs', 'clubs', 'facilities', 'special_ed_programs', 'curriculum', 'accreditations'],
   },
   {
     id: 'tier4',
     label: 'Media',
     color: '#6366f1',
-    fields: ['logo_url', 'header_photo_url', 'photoGallery'],
+    fields: ['logo_url', 'header_photo_url', 'photo_gallery'],
   },
 ];
 

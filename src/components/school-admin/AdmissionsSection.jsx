@@ -12,8 +12,8 @@ export default function AdmissionsSection({ school, onUpdate }) {
     rolling: false,
     open_house_dates: school?.open_house_dates || [],
     admission_requirements: school?.admission_requirements || [],
-    acceptanceRate: school?.acceptanceRate || '',
-    admissionContact: {
+    acceptance_rate: school?.acceptance_rate || '',
+    admission_contact: {
       name: '',
       role: '',
       email: '',
@@ -191,13 +191,13 @@ export default function AdmissionsSection({ school, onUpdate }) {
             type="number"
             min="0"
             max="100"
-            value={formData.acceptanceRate}
-            onChange={(e) => setFormData({ ...formData, acceptanceRate: e.target.value })}
-            onBlur={(e) => saveField('acceptanceRate', e.target.value ? parseFloat(e.target.value) : null)}
+            value={formData.acceptance_rate}
+            onChange={(e) => setFormData({ ...formData, acceptance_rate: e.target.value })}
+            onBlur={(e) => saveField('acceptance_rate', e.target.value ? parseFloat(e.target.value) : null)}
             placeholder="e.g., 25"
           />
           <span className="flex items-center text-slate-600">%</span>
-          {savingField === 'acceptanceRate' && (
+          {savingField === 'acceptance_rate' && (
             <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
           )}
         </div>
@@ -208,24 +208,24 @@ export default function AdmissionsSection({ school, onUpdate }) {
         <h3 className="font-semibold text-slate-900 mb-4">Admissions Contact (optional)</h3>
         <div className="space-y-3">
           <Input
-            value={formData.admissionContact.name}
-            onChange={(e) => setFormData({ ...formData, admissionContact: { ...formData.admissionContact, name: e.target.value } })}
+            value={formData.admission_contact.name}
+            onChange={(e) => setFormData({ ...formData, admission_contact: { ...formData.admission_contact, name: e.target.value } })}
             placeholder="Contact name"
           />
           <Input
-            value={formData.admissionContact.role}
-            onChange={(e) => setFormData({ ...formData, admissionContact: { ...formData.admissionContact, role: e.target.value } })}
+            value={formData.admission_contact.role}
+            onChange={(e) => setFormData({ ...formData, admission_contact: { ...formData.admission_contact, role: e.target.value } })}
             placeholder="Role (e.g., Director of Admissions)"
           />
           <Input
             type="email"
-            value={formData.admissionContact.email}
-            onChange={(e) => setFormData({ ...formData, admissionContact: { ...formData.admissionContact, email: e.target.value } })}
+            value={formData.admission_contact.email}
+            onChange={(e) => setFormData({ ...formData, admission_contact: { ...formData.admission_contact, email: e.target.value } })}
             placeholder="Email"
           />
           <Input
-            value={formData.admissionContact.phone}
-            onChange={(e) => setFormData({ ...formData, admissionContact: { ...formData.admissionContact, phone: e.target.value } })}
+            value={formData.admission_contact.phone}
+            onChange={(e) => setFormData({ ...formData, admission_contact: { ...formData.admission_contact, phone: e.target.value } })}
             placeholder="Phone"
           />
         </div>
