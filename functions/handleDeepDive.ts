@@ -307,11 +307,11 @@ Deno.serve(async (req) => {
       userId ? base44.asServiceRole.entities.User.filter({ id: userId }).catch(e => { console.warn('[E24-S3-WC1] Failed to fetch user tier:', e.message); return []; }) : Promise.resolve([]),
       selectedSchoolId ? base44.entities.School.filter({ id: selectedSchoolId }).catch(e => { console.error('[DEEPDIVE ERROR] Failed to load school:', e.message); return []; }) : Promise.resolve([]),
       (userId && selectedSchoolId) ? Promise.all([
-        base44.entities.GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'deep_dive_recommendation' }),
-        base44.entities.GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'visit_prep_kit' }),
-        base44.entities.GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'action_plan' })
+        base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'deep_dive_recommendation' }),
+        base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'visit_prep_kit' }),
+        base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'action_plan' })
       ]).catch(e => { console.warn('[E30] Cache read failed:', e.message); return [[], [], []]; }) : Promise.resolve([[], [], []]),
-      selectedSchoolId ? base44.entities.SchoolEvent.filter({ school_id: selectedSchoolId, is_active: true }).catch(e => { console.warn('[DEEPDIVE] SchoolEvent fetch failed:', e.message); return []; }) : Promise.resolve([])
+      selectedSchoolId ? base44.entities.SchoolEvent.filter({ schoolId: selectedSchoolId, isActive: true }).catch(e => { console.warn('[DEEPDIVE] SchoolEvent fetch failed:', e.message); return []; }) : Promise.resolve([])
     ]);
 
     // E24-S3-WC1: Resolve user tier for premium content gating
@@ -356,7 +356,7 @@ Deno.serve(async (req) => {
         } catch (e) { console.warn('[E30] Cache: action_plan parse failed:', e.message); }
         let cachedDeepDiveAnalysis = null;
         try {
-          const analyses = await base44.entities.SchoolAnalysis.filter({ user_id: userId, school_id: selectedSchoolId });
+          const analyses = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId });
           if (analyses?.[0]) cachedDeepDiveAnalysis = analyses[0];
         } catch (e) { console.warn('[E30] Cache: SchoolAnalysis fetch failed:', e.message); }
         const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
@@ -429,16 +429,16 @@ Deno.serve(async (req) => {
     };
 
     // Build event context string for LLM injection
-    const subscriptionTier = selectedSchool.subscription_tier || 'free';
+    const subscriptionTier = selectedSchool.subscriptionTier || 'free';
     const schoolContactEmail = selectedSchool.email || null;
 
     let eventContext = '';
     if (upcomingEvents.length > 0) {
       const eventLines = upcomingEvents.map(e => {
-        const confidenceTag = (e.is_confirmed === true) ? '[confirmed]' : '[estimated — verify with school]';
+        const confidenceTag = (e.isConfirmed === true) ? '[confirmed]' : '[estimated — verify with school]';
         const dateStr = new Date(e.date).toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-        const typeLabel = (e.event_type || '').replace(/_/g, ' ');
-        const regUrl = e.registration_url ? ` | Register: ${e.registration_url}` : '';
+        const typeLabel = (e.eventType || '').replace(/_/g, ' ');
+        const regUrl = e.registrationUrl ? ` | Register: ${e.registrationUrl}` : '';
         return `- ${e.title || typeLabel} (${typeLabel}) — ${dateStr} ${confidenceTag}${regUrl}`;
       });
       eventContext = `UPCOMING EVENTS (${upcomingEvents.length} found):\n${eventLines.join('\n')}`;
@@ -579,9 +579,9 @@ Generate the DEEPDIVE card for this family-school match.`;
     if (userId && selectedSchoolId && deepDiveAnalysis) {
       (async () => {
         try {
-          const existing = await base44.entities.SchoolAnalysis.filter({ user_id: userId, school_id: selectedSchoolId });
+          const existing = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId });
           if (existing && existing.length > 0) {
-            await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, last_analyzed_at: new Date().toISOString() });
+            await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString() });
             console.log('[DEEPDIVE] SchoolAnalysis updated:', existing[0].id);
             const prevVisitQuestions = existing[0].visitQuestions;
             if (!prevVisitQuestions || prevVisitQuestions.length === 0) {
@@ -594,7 +594,7 @@ Generate the DEEPDIVE card for this family-school match.`;
               }
             }
           } else {
-            const created = await base44.entities.SchoolAnalysis.create({ user_id: userId, school_id: selectedSchoolId, ...deepDiveAnalysis, last_analyzed_at: new Date().toISOString() });
+            const created = await base44.entities.SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString() });
             console.log('[DEEPDIVE] SchoolAnalysis created:', created.id);
             const childName = conversationFamilyProfile?.childName || null;
             const schoolName = selectedSchool.name;
@@ -663,7 +663,7 @@ Generate the DEEPDIVE card for this family-school match.`;
     if (deepDiveAnalysis && selectedSchool && userId) {
       const visitWindow = upcomingEvents && upcomingEvents.length > 0
         ? { recommendedAction: `Attend ${upcomingEvents[0].title} on ${new Date(upcomingEvents[0].date).toLocaleDateString('en-CA')}`,
-            events: upcomingEvents.map(e => ({ title: e.title, date: e.date, type: e.event_type })) }
+            events: upcomingEvents.map(e => ({ title: e.title, date: e.date, type: e.eventType })) }
         : { recommendedAction: 'Contact admissions to schedule a campus tour', events: [] };
 
       const docChecklist = [
@@ -679,7 +679,7 @@ Generate the DEEPDIVE card for this family-school match.`;
         visitTimeline: visitWindow,
         day_admission_deadlines: {
           deadline: selectedSchool.day_admission_deadline || null,
-          financialAidDeadline: selectedSchool.financial_aid_deadline || null,
+          financialAidDeadline: selectedSchool.financialAidDeadline || null,
           isEstimated: !selectedSchool.day_admission_deadline
         },
         documentChecklist: docChecklist,
@@ -692,17 +692,17 @@ Generate the DEEPDIVE card for this family-school match.`;
         const generatedAt = new Date().toISOString();
 
         const upsert = async (artifactType, fields) => {
-          const existing = await base44.entities.GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: artifactType });
+          const existing = await base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType });
           if (existing && existing.length > 0) {
-            await base44.entities.GeneratedArtifact.update(existing[0].id, { ...fields, generated_at: generatedAt });
+            await base44.entities.GeneratedArtifact.update(existing[0].id, { ...fields, generatedAt });
             console.log(`[E30] ${artifactType} updated:`, existing[0].id);
           } else {
             const created = await base44.entities.GeneratedArtifact.create({
-              user_id: userId, school_id: selectedSchoolId,
-              conversation_id: conversationId || '',
-              artifact_type: artifactType,
-              school_name: selectedSchool.name,
-              generated_at: generatedAt,
+              userId, schoolId: selectedSchoolId,
+              conversationId: conversationId || '',
+              artifactType,
+              schoolName: selectedSchool.name,
+              generatedAt,
               status: 'active',
               ...fields
             });
