@@ -162,6 +162,12 @@ function KeyDatesContent({ keyDates }) {
   );
 }
 
+const FIT_BADGE = {
+  strong_match: { bg: '#22c55e', label: 'Strong Match' },
+  good_match: { bg: '#14b8a6', label: 'Good Match' },
+  worth_exploring: { bg: '#64748b', label: 'Worth Exploring' },
+};
+
 const PRIORITY_TAG_STYLE = {
   high:   { background: '#fee2e2', color: '#b91c1c' },
   medium: { background: '#fef3c7', color: '#b45309' },
