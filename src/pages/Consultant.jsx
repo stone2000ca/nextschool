@@ -520,7 +520,7 @@ export default function Consultant() {
   // WC5: Session loading from URL param
   useEffect(() => {
     if (sessionIdParam && !sessionParamProcessedRef.current && isAuthenticated && user) {
-      restoreSessionFromParam(sessionIdParam, base44, isAuthenticated, user, setSelectedConsultant, setRestoredSessionData, setMessages, setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase, setCurrentConversation, setSessionRestored, setRestoringSession, loadShortlist, isRestoringSessionRef, sessionParamProcessedRef, setDebugInfo);
+      restoreSessionFromParam(sessionIdParam, base44, isAuthenticated, user, setSelectedConsultant, setRestoredSessionData, setMessages, setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase, setCurrentConversation, setSessionRestored, setRestoringSession, loadShortlist, isRestoringSessionRef, sessionParamProcessedRef, setDebugInfo, setDeepDiveAnalysis, setSelectedSchool, setVisitPrepKit, setActionPlan);
     }
   }, [sessionIdParam, isAuthenticated, user?.id]);
 
