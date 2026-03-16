@@ -39,9 +39,9 @@ function applyReligiousFilter(school, familyProfile, payload) {
     typeof d === 'string' && religiousDealbreakTerms.some(term => d.toLowerCase().includes(term))
   );
   if (hasReligiousDealbreaker) {
-    const schoolAffiliation = (school.faith_based || school.religiousAffiliation || '').toLowerCase().trim().replace(/[\s-]+/g, ' ');
+    const schoolAffiliation = (school.religiousAffiliation || '').toLowerCase().trim().replace(/[\s-]+/g, ' ');
     const knownReligiousAffiliations = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'methodist', 'presbyterian', 'anglican', 'orthodox', 'evangelical', 'pentecostal', 'adventist', 'mormon', 'lds', 'quaker', 'mennonite', 'amish', 'hindu', 'buddhist', 'sikh', 'muslim'];
-    if ((school.faith_based || school.religiousAffiliation) && knownReligiousAffiliations.includes(schoolAffiliation)) {
+    if (school.religiousAffiliation && knownReligiousAffiliations.includes(schoolAffiliation)) {
       console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation`);
       return false;
     }
@@ -57,7 +57,7 @@ function applyReligiousFilter(school, familyProfile, payload) {
 }
 
 function applyGenderFilter(school, familyProfile) {
-  const gp = school.gender_policy || school.genderPolicy || null;
+  const gp = school.genderPolicy || null;
   if (gp === null) return true;
   
   // Fix A: Normalize childGender to canonical 'male' or 'female'
@@ -116,14 +116,14 @@ async function performSearch(req) {
     region, 
     country,
     city,
-    province_state: provinceState,
+    provinceState,
     minGrade, 
     maxGrade, 
     minTuition, 
     maxTuition, 
-    curriculum,
+    curriculumType,
     specializations,
-    school_type_label: schoolType,
+    schoolType,
     userLat,
     userLng,
     resolvedLat,
@@ -136,11 +136,9 @@ async function performSearch(req) {
     userId = null,
     searchQuery = ''
   } = payload;
-  // V1 compat aliases for payload params
-  const curriculumType = payload.curriculumType || curriculum;
 
   // BUG-SEARCH-003: Validate minimum required search params exist
-  const hasLocation = !!(region || city || provinceState || country || resolvedLat || resolvedLng || payload.province_state);
+  const hasLocation = !!(region || city || provinceState || country || resolvedLat || resolvedLng);
   const hasGrade = minGrade !== null && minGrade !== undefined;
   
   if (!hasLocation && !hasGrade) {
@@ -224,7 +222,7 @@ async function performSearch(req) {
   // TODO: migrate to paginated/server-filtered query when school count exceeds 1000
   let allSchools = [];
   try {
-    allSchools = await base44.entities.School.filter({}, '-created_at', 1000);
+    allSchools = await base44.entities.School.filter({}, '-created_date', 1000);
     if (allSchools.length === 1000) {
       console.warn('[searchSchools] WARNING: School count hit limit (1000). Results may be incomplete.');
     }
@@ -259,9 +257,9 @@ async function performSearch(req) {
     );
   } else if (aliasedProvinces.length > 0) {
     locationFiltered = locationFiltered.filter(s => {
-      const ps = s.province_state || s.provinceState;
-      if (!ps) return false;
-      return aliasedProvinces.some(p => ps.toLowerCase() === p.toLowerCase());
+      if (!s.provinceState) return false;
+      const schoolPS = s.provinceState.toLowerCase();
+      return aliasedProvinces.some(p => schoolPS === p.toLowerCase());
     });
   }
 
@@ -301,10 +299,9 @@ async function performSearch(req) {
     const normalizedProvince = fullProvinceName || toTitleCase(provinceState.trim());
     const provinceRegex = new RegExp(`^${normalizedProvince}$`, 'i');
     locationFiltered = locationFiltered.filter(s => {
-      const rawPS = s.province_state || s.provinceState;
-      const schoolPS = rawPS?.toUpperCase().trim();
-      const expandedSchoolPS = provinceAbbreviations[schoolPS] || stateAbbreviations[schoolPS] || rawPS;
-      return provinceRegex.test(expandedSchoolPS) || provinceRegex.test(rawPS);
+      const schoolPS = s.provinceState?.toUpperCase().trim();
+      const expandedSchoolPS = provinceAbbreviations[schoolPS] || stateAbbreviations[schoolPS] || s.provinceState;
+      return provinceRegex.test(expandedSchoolPS) || provinceRegex.test(s.provinceState);
     });
   }
 
@@ -340,10 +337,11 @@ async function performSearch(req) {
      // BUG-MATCH-S41 FIX: Grade range check moved to soft penalty (scoring) instead of hard filter.
      // Only hard-exclude if grade is MORE than 2 grades outside the range.
      if (parsedMinGrade !== null) {
-       let sLow = parseInt(school.lowest_grade ?? school.lowestGrade);
-       let sHigh = parseInt(school.highest_grade ?? school.highestGrade);
+       let sLow = parseInt(school.lowestGrade);
+       let sHigh = parseInt(school.highestGrade);
        if (!isNaN(sLow) && !isNaN(sHigh)) {
          const distanceOutsideRange = parsedMinGrade < sLow ? sLow - parsedMinGrade : (parsedMinGrade > sHigh ? parsedMinGrade - sHigh : 0);
+         // S161-WC2 FIX: exclude if grade is outside the school's range (was > 1 which allowed K-6 for Grade 7)
          if (distanceOutsideRange > 0) {
            console.log(`[GRADE FILTER] Excluded ${school.name}: grades ${sLow}-${sHigh}, need ${parsedMinGrade} (${distanceOutsideRange} grades outside range)`);
            return false;
@@ -353,7 +351,7 @@ async function performSearch(req) {
        }
      }
     
-    const schoolTuition = school.tuition || school.day_tuition || school.dayTuition || school.tuitionMin || null;
+    const schoolTuition = school.tuition || school.dayTuition || school.tuitionMin || null;
     if (maxTuition && maxTuition !== 'unlimited') {
       if (schoolTuition && schoolTuition > maxTuition) {
         console.log(`[BUDGET FILTER] Filtered out ${school.name}: tuition $${schoolTuition} exceeds budget $${maxTuition}`);
@@ -386,8 +384,8 @@ async function performSearch(req) {
     schoolsToRank = locationFiltered.filter(school => {
       const parsedMinGrade = minGrade !== undefined && minGrade !== null ? parseInt(minGrade) : null;
       if (parsedMinGrade !== null) {
-        let sLow = parseInt(school.lowest_grade ?? school.lowestGrade);
-        let sHigh = parseInt(school.highest_grade ?? school.highestGrade);
+        let sLow = parseInt(school.lowestGrade);
+        let sHigh = parseInt(school.highestGrade);
         if (!isNaN(sLow) && !isNaN(sHigh)) {
           // In relaxed mode, allow grades up to 1 outside range (borderline cases only)
           const distanceOutsideRange = parsedMinGrade < sLow ? sLow - parsedMinGrade : (parsedMinGrade > sHigh ? parsedMinGrade - sHigh : 0);
@@ -421,12 +419,10 @@ async function performSearch(req) {
     // BUG-MATCH-S41 FIX: Soft penalty for grades outside range (instead of hard filter)
     if (minGrade !== undefined) {
       const targetGrade = minGrade !== undefined ? minGrade : maxGrade;
-      const sLow = school.lowest_grade ?? school.lowestGrade;
-      const sHigh = school.highest_grade ?? school.highestGrade;
-      if (sLow <= targetGrade && sHigh >= targetGrade) {
+      if (school.lowestGrade <= targetGrade && school.highestGrade >= targetGrade) {
         score += 2;
       } else {
-        const distanceOutsideRange = targetGrade < sLow ? sLow - targetGrade : (targetGrade > sHigh ? targetGrade - sHigh : 0);
+        const distanceOutsideRange = targetGrade < school.lowestGrade ? school.lowestGrade - targetGrade : (targetGrade > school.highestGrade ? targetGrade - school.highestGrade : 0);
         if (distanceOutsideRange <= 2) {
           score -= 1; // Soft penalty for grades 1-2 outside range
           console.log(`[GRADE SCORE] Soft penalty for ${school.name}: ${distanceOutsideRange} grade(s) outside range`);
@@ -440,15 +436,12 @@ async function performSearch(req) {
       }
     }
     
-    if (curriculumType) {
-      const sc = school.curriculum || school.curriculumType;
-      const matches = Array.isArray(sc) ? sc.some(c => c.toLowerCase() === curriculumType.toLowerCase()) : (sc || '').toLowerCase() === curriculumType.toLowerCase();
-      if (matches) score += 3;
+    if (curriculumType && school.curriculumType === curriculumType) {
+      score += 3;
     }
     
-    if (schoolType) {
-      const st = school.school_type_label || school.schoolType;
-      if (st === schoolType) score += 2;
+    if (schoolType && school.schoolType === schoolType) {
+      score += 2;
     }
     
     if (specializations && specializations.length > 0) {
