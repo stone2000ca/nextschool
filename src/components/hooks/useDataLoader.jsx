@@ -122,7 +122,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
         console.error('[E29-007] Journey detection failed:', e.message);
       }
     })();
-  }, [isAuthenticated, user?.id, currentConversation?.id]);
+  }, [isAuthenticated, user?.id]);
 
   return {
     familyProfile, setFamilyProfile,
