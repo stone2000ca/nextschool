@@ -20,7 +20,7 @@ export function useShortlist({
   const loadShortlist = async () => {
     if (!activeJourney?.journeyId) return;
     try {
-      const records = await base44.entities.ChatShortlist.filter({ familyJourneyId: activeJourney.id });
+      const records = await base44.entities.ChatShortlist.filter({ familyJourneyId: activeJourney.journeyId });
       if (records.length === 0) {
         setShortlistData([]);
         return;
@@ -104,7 +104,7 @@ export function useShortlist({
             }
           } else {
             await base44.entities.SchoolJourney.create({
-              familyJourneyId: familyJourney.id,
+              familyJourneyId: familyJourney.journeyId,
               schoolId: school?.id || schoolId,
               schoolName: school?.name || '',
               status: 'shortlisted',
@@ -151,9 +151,9 @@ export function useShortlist({
 
   // E29-012: Hydrate shortlistData from ChatShortlist on activeJourney load
   useEffect(() => {
-    if (!activeJourney?.id) return;
+    if (!activeJourney?.journeyId) return;
     loadShortlist();
-  }, [activeJourney?.id]);
+  }, [activeJourney?.journeyId]);
 
   // E30-006
   const handleDossierExpandChange = (isExpanding) =>
