@@ -70,6 +70,7 @@ export default function Consultant() {
   const [restoringSession, setRestoringSession] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
   const isRestoringSessionRef = useRef(false);
+  const skipViewOverrideRef = useRef(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
   const [showResponseChips, setShowResponseChips] = useState(false);

@@ -27,13 +27,15 @@ export async function restoreSessionFromParam(
   setDeepDiveAnalysis,
   setSelectedSchool,
   setVisitPrepKit,
-  setActionPlan
+  setActionPlan,
+  skipViewOverrideRef
 ) {
   if (!sessionIdParam) return;
   
   // CRITICAL: Set flag FIRST to override isIntakePhase during restoration
   sessionParamProcessedRef.current = true;
   isRestoringSessionRef.current = true;
+  if (skipViewOverrideRef) skipViewOverrideRef.current = true;
   setRestoringSession(true);
   try {
     // Fetch ChatSession
