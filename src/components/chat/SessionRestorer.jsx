@@ -162,45 +162,20 @@ export async function restoreSessionFromParam(
     setCurrentView('schools');
     setOnboardingPhase(STATES.RESULTS);
 
-    // Check if session was in DEEP_DIVE state and restore accordingly
+    // Restore deep dive state from message scan (BUG-RN-05)
     const conversationContext = chatHistory?.conversationContext || {};
-    console.log('[RESTORE-DEBUG] conversationContext from ChatHistory:', JSON.stringify({state: conversationContext?.state, resumeView: conversationContext?.resumeView, lastDeepDiveSchoolId: conversationContext?.lastDeepDiveSchoolId, selectedSchoolId: conversationContext?.selectedSchoolId}));
-    window.__RESTORE_DEBUG.push('[RESTORE-DEBUG] conversationContext from ChatHistory: ' + JSON.stringify({state: conversationContext?.state, resumeView: conversationContext?.resumeView, lastDeepDiveSchoolId: conversationContext?.lastDeepDiveSchoolId, selectedSchoolId: conversationContext?.selectedSchoolId}));
-    console.log('[RESTORE-DEBUG] Checking deep dive condition. lastDeepDiveSchoolId:', conversationContext?.lastDeepDiveSchoolId, 'selectedSchoolId:', conversationContext?.selectedSchoolId, 'setDeepDiveAnalysis exists:', !!setDeepDiveAnalysis);
-    window.__RESTORE_DEBUG.push('[RESTORE-DEBUG] Checking deep dive condition. lastDeepDiveSchoolId: ' + conversationContext?.lastDeepDiveSchoolId + ' selectedSchoolId: ' + conversationContext?.selectedSchoolId + ' setDeepDiveAnalysis exists: ' + !!setDeepDiveAnalysis);
-    if ((conversationContext.lastDeepDiveSchoolId || conversationContext.selectedSchoolId) && setDeepDiveAnalysis) {
-      try {
-        console.log('[RESTORE-DEBUG] Deep dive block ENTERED');
-        window.__RESTORE_DEBUG.push('[RESTORE-DEBUG] Deep dive block ENTERED');
-        const schoolId = conversationContext.lastDeepDiveSchoolId || conversationContext.selectedSchoolId;
-        const targetSchool = restoredSchools.find(s => s.id === schoolId);
-        if (targetSchool && setSelectedSchool) {
-          setSelectedSchool(targetSchool);
-        }
-        const analysisRecords = await base44.entities.SchoolAnalysis.filter({ userId: user.id, schoolId });
-        console.log('[RESTORE-DEBUG] SchoolAnalysis records found:', analysisRecords?.length);
-        window.__RESTORE_DEBUG.push('[RESTORE-DEBUG] SchoolAnalysis records found: ' + analysisRecords?.length);
-        if (analysisRecords && analysisRecords[0] && setDeepDiveAnalysis) {
-          setDeepDiveAnalysis(analysisRecords[0]);
-          setOnboardingPhase(STATES.DEEP_DIVE);
-          setCurrentView('detail');
-        }
-        const prepArtifacts = await base44.entities.GeneratedArtifact.filter({ userId: user.id, schoolId, artifactType: 'visit_prep_kit' });
-        if (prepArtifacts && prepArtifacts[0] && setVisitPrepKit) {
-          try { setVisitPrepKit(JSON.parse(prepArtifacts[0].content)); } catch(e) { /* ignore parse error */ }
-        }
-        const planArtifacts = await base44.entities.GeneratedArtifact.filter({ userId: user.id, schoolId, artifactType: 'action_plan' });
-        if (planArtifacts && planArtifacts[0] && setActionPlan) {
-          try { setActionPlan(JSON.parse(planArtifacts[0].content)); } catch(e) { /* ignore parse error */ }
-        }
-      } catch (ddRestoreErr) {
-        console.warn('[RESTORE] Deep dive restore failed (non-blocking):', ddRestoreErr.message);
-        // Fall through to RESULTS state
+    if (lastDeepDiveSchoolId && setSelectedSchool) {
+      console.log('[RESTORE] Found deep dive in messages for school:', lastDeepDiveSchoolId, lastDeepDiveSchoolName);
+      const targetSchool = restoredSchools.find(s => s.id === lastDeepDiveSchoolId);
+      if (targetSchool) {
+        setSelectedSchool(targetSchool);
+      } else {
+        // School not in search results - create minimal object for hydration
+        setSelectedSchool({ id: lastDeepDiveSchoolId, name: lastDeepDiveSchoolName || 'School' });
       }
+      setOnboardingPhase(STATES.DEEP_DIVE);
+      setCurrentView('detail');
     }
-
-    console.log('[RESTORE-DEBUG] Building restoredContext with state:', conversationContext?.resumeView || conversationContext?.state || 'RESULTS');
-    window.__RESTORE_DEBUG.push('[RESTORE-DEBUG] Building restoredContext with state: ' + (conversationContext?.resumeView || conversationContext?.state || 'RESULTS'));
     if (chatHistory) {
       const restoredContext = {
         ...(chatHistory.conversationContext || {}),
