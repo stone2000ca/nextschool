@@ -386,7 +386,7 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
             <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{formatGradeRange(school.lowestGrade, school.highestGrade)}</span>
           )}
           {school.curriculum && (
-            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{school.curriculum}</span>
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{Array.isArray(school.curriculum) ? school.curriculum.slice(0, 2).join(', ') : school.curriculum}</span>
           )}
           <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{school.genderPolicy || 'Co-ed'}</span>
         </div>
