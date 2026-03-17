@@ -288,6 +288,169 @@ export async function restoreSessionFromParam(
   }
 }
 
+/**
+ * Restore the user's most recently updated conversation when no sessionIdParam
+ * is present (e.g. plain F5 / new tab). Sets currentConversation.id so that
+ * useDataLoader can repopulate SchoolAnalysis → ResearchNotepad.
+ */
+export async function restoreMostRecentConversation(
+  base44,
+  user,
+  setMessages,
+  setSelectedConsultant,
+  setCurrentConversation,
+  setFamilyProfile,
+  setSchools,
+  setCurrentView,
+  setOnboardingPhase,
+  setDeepDiveAnalysis,
+  setSelectedSchool,
+  isRestoringSessionRef,
+  skipViewOverrideRef
+) {
+  if (!user?.id) return;
+  isRestoringSessionRef.current = true;
+  if (skipViewOverrideRef) skipViewOverrideRef.current = true;
+
+  try {
+    // 1. Fetch all active conversations for this user, pick the most recent
+    const convos = await base44.entities.ChatHistory.filter({ userId: user.id, isActive: true });
+    if (!convos || convos.length === 0) {
+      console.log('[RESTORE-LATEST] No active conversations found');
+      return;
+    }
+    const sorted = convos.sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
+    const latest = sorted[0];
+    console.log('[RESTORE-LATEST] Restoring most recent conversation:', latest.id);
+
+    // 2. Restore messages
+    if (latest.messages?.length > 0) {
+      setMessages(latest.messages);
+    }
+
+    // 3. Restore consultant from conversationContext
+    const ctx = latest.conversationContext || {};
+    if (ctx.consultant) {
+      setSelectedConsultant(ctx.consultant);
+    }
+
+    // 4. Scan messages for last deep-dive analysis (same pattern as restoreSessionFromParam)
+    let lastDeepDiveSchoolId = null;
+    const msgs = latest.messages || [];
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const msg = msgs[i];
+      if (msg.role === 'assistant' && msg.deepDiveAnalysis?.schoolId) {
+        lastDeepDiveSchoolId = msg.deepDiveAnalysis.schoolId;
+        if (setDeepDiveAnalysis) setDeepDiveAnalysis(msg.deepDiveAnalysis);
+        break;
+      }
+    }
+
+    // 4b. Fallback: check SchoolAnalysis entity if messages lack deepDiveAnalysis
+    if (!lastDeepDiveSchoolId && user.id) {
+      try {
+        const recentAnalyses = await base44.entities.SchoolAnalysis.filter({ userId: user.id, conversationId: latest.id });
+        if (recentAnalyses?.length > 0) {
+          const sortedAnalyses = recentAnalyses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          const la = sortedAnalyses[0];
+          lastDeepDiveSchoolId = la.schoolId;
+          console.log('[RESTORE-LATEST] Fallback: found SchoolAnalysis for school:', la.schoolId);
+          if (setDeepDiveAnalysis) {
+            const mappedAnalysis = {
+              schoolId: la.schoolId,
+              schoolName: la.schoolName || 'School',
+              fitScore: la.fitScore,
+              fitLabel: la.fitLabel,
+              priorityMatches: la.priorityMatches || [],
+              aiInsight: la.aiInsight || la.insight || null,
+              tradeOffs: la.tradeOffs || la.tradeoffs || [],
+              ...la
+            };
+            setDeepDiveAnalysis(mappedAnalysis);
+            // Inject onto last assistant message so downstream components find it
+            const injectedMsgs = [...msgs];
+            for (let j = injectedMsgs.length - 1; j >= 0; j--) {
+              if (injectedMsgs[j].role === 'assistant') {
+                injectedMsgs[j] = { ...injectedMsgs[j], deepDiveAnalysis: mappedAnalysis };
+                break;
+              }
+            }
+            setMessages(injectedMsgs);
+          }
+        }
+      } catch (e) {
+        console.warn('[RESTORE-LATEST] SchoolAnalysis fallback failed:', e.message);
+      }
+    }
+
+    // 5. Restore schools from conversationContext
+    let restoredSchools = ctx.schools || [];
+    if (typeof restoredSchools === 'string') {
+      try { restoredSchools = JSON.parse(restoredSchools); } catch (_) { restoredSchools = []; }
+    }
+    // If stored as IDs, fetch full records
+    if (Array.isArray(restoredSchools) && restoredSchools.length > 0 && typeof restoredSchools[0] === 'string') {
+      try {
+        restoredSchools = await base44.entities.School.filter({ id: { $in: restoredSchools } });
+      } catch (_) { /* keep as-is */ }
+    }
+    if (restoredSchools.length > 0) setSchools(restoredSchools);
+
+    // 6. Restore family profile from context if available
+    if (ctx.extractedEntities) {
+      const fp = {
+        childName: ctx.extractedEntities.childName,
+        childGrade: ctx.extractedEntities.childGrade,
+        locationArea: ctx.extractedEntities.locationArea,
+        maxTuition: ctx.extractedEntities.maxTuition,
+        priorities: ctx.extractedEntities.priorities || [],
+        learningDifferences: ctx.extractedEntities.learningDifferences || [],
+      };
+      // Only set if there's at least one meaningful value
+      if (Object.values(fp).some(v => v != null && v !== '' && !(Array.isArray(v) && v.length === 0))) {
+        setFamilyProfile(fp);
+      }
+    }
+
+    // 7. Determine correct state and set currentConversation (triggers useDataLoader)
+    const hasDeepDive = !!lastDeepDiveSchoolId;
+    const restoredState = hasDeepDive ? STATES.DEEP_DIVE : (ctx.state || ctx.resumeView || STATES.RESULTS);
+
+    if (hasDeepDive && setSelectedSchool) {
+      const target = restoredSchools.find(s => s.id === lastDeepDiveSchoolId);
+      if (target) {
+        setSelectedSchool(target);
+      } else {
+        try {
+          const fullSchools = await base44.entities.School.filter({ id: lastDeepDiveSchoolId });
+          if (fullSchools?.length > 0) setSelectedSchool(fullSchools[0]);
+        } catch (_) { /* best effort */ }
+      }
+      setCurrentView('detail');
+    } else if (restoredSchools.length > 0) {
+      setCurrentView('schools');
+    }
+    setOnboardingPhase(restoredState);
+
+    // 8. Set currentConversation — this is the key: useDataLoader watches currentConversation.id
+    setCurrentConversation({
+      ...latest,
+      conversationContext: {
+        ...ctx,
+        state: restoredState,
+        schools: restoredSchools,
+      }
+    });
+
+    console.log('[RESTORE-LATEST] Restore complete — conversation:', latest.id, 'state:', restoredState);
+  } catch (error) {
+    console.error('[RESTORE-LATEST] Failed to restore most recent conversation:', error);
+  } finally {
+    isRestoringSessionRef.current = false;
+    if (skipViewOverrideRef) skipViewOverrideRef.current = false;
+  }
+}
+
 export const restoreGuestSession = (isAuthenticated, user, currentConversation, setMessages, setSelectedConsultant, setCurrentConversation, base44) => {
   const guestData = localStorage.getItem('guestConversationData');
   if (!guestData || isAuthenticated) return;
