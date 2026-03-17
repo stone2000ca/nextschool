@@ -275,11 +275,28 @@ Deno.serve(async (req) => {
       else if (r.status === 'error') console.log(`  ${r.filename}: ERROR — ${r.error}`);
     }
 
+    const totalCreated = results.reduce((sum, r) => sum + (r.created || 0), 0);
+    const totalUpdated = results.reduce((sum, r) => sum + (r.updated || 0), 0);
+    const totalSkippedDupes = results.reduce((sum, r) => sum + (r.skippedDupes || 0), 0);
+    const totalRows = results.reduce((sum, r) => sum + (r.rowCount || 0), 0);
+
+    console.log(`\n=== GRAND TOTALS ===`);
+    console.log(`Rows processed: ${totalRows}`);
+    console.log(`Created: ${totalCreated}`);
+    console.log(`Updated: ${totalUpdated}`);
+    console.log(`Skipped (dupes): ${totalSkippedDupes}`);
+
     return Response.json({
       success: true,
       totalChunks,
       skippedChunks,
       processedChunks,
+      totals: {
+        rows: totalRows,
+        created: totalCreated,
+        updated: totalUpdated,
+        skippedDupes: totalSkippedDupes,
+      },
       results
     });
 
