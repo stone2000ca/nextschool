@@ -2,6 +2,7 @@ import { STATES, BRIEF_STATUS } from '@/pages/stateMachineConfig';
 import { validateBriefContent, generateProgrammaticBrief } from '@/components/utils/briefUtils';
 import { extractAndSaveMemories } from '@/components/utils/memoryManager';
 import { base44 } from '@/api/base44Client';
+import { useRef, useEffect } from 'react';
 
 export const useMessageHandler = ({
   messages,
@@ -54,6 +55,13 @@ export const useMessageHandler = ({
   activeJourney,
   setActiveJourney,
 }, isPremiumParam = isPremium) => {
+    // BUG-RN-PERSIST Fix 1: Ref tracks the latest conversationId immediately,
+    // bypassing React's batched state updates so deep dive closures always get the real id.
+    const conversationIdRef = useRef(currentConversation?.id || null);
+    useEffect(() => {
+      conversationIdRef.current = currentConversation?.id || null;
+    }, [currentConversation?.id]);
+
     // CRT-S109-F15: Message queue to prevent message loss during rapid input
     let isProcessing = false;
     const messageQueue = [];
@@ -187,7 +195,7 @@ export const useMessageHandler = ({
           address: userLocation.address
         } : null,
             selectedSchoolId: resolvedSchoolId || lastResolvedSchoolId || selectedSchool?.id || null,
-        conversationId: currentConversation?.id || null,
+        conversationId: conversationIdRef.current || currentConversation?.id || null,
         returningUserContext,
         ...(restoredSessionData && activeJourney ? { journeyContext: activeJourney } : {})
       });
@@ -314,7 +322,7 @@ export const useMessageHandler = ({
         state: responseState,
         briefStatus: newBriefStatus,
         schools: response.data?.schools || [],
-        conversationId: currentConversation?.id || null,
+        conversationId: conversationIdRef.current || currentConversation?.id || null,
         resumeView: responseState || null,
         lastDeepDiveSchoolId: (responseState === 'DEEP_DIVE' || deepDiveSchoolId) ? deepDiveSchoolId : (currentConversation?.conversationContext?.lastDeepDiveSchoolId || null),
       };
@@ -414,9 +422,10 @@ export const useMessageHandler = ({
                 conversationContext: updatedContext,
                 isActive: true
               });
-              // BUG-RN-PERSIST Fix A2: Patch updatedContext.conversationId with the real id
-              // so that subsequent renders (and orchestrateConversation calls) carry the correct value.
+              // BUG-RN-PERSIST Fix A2 + Fix 1: Patch both updatedContext and the ref immediately
+              // so that deep dive closures read the real id without waiting for React re-render.
               updatedContext.conversationId = chatHistoryRecord.id;
+              conversationIdRef.current = chatHistoryRecord.id;
               setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversationContext: updatedContext }));
               console.log('[SESSION] Created ChatHistory with id:', chatHistoryRecord.id);
             } catch (e) {
