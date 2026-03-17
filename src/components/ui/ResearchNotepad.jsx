@@ -99,7 +99,7 @@ function CollapsibleSection({ icon, label, color, children, defaultOpen = false 
   const tint = SECTION_TINTS[color] || {};
   const tintBg = tint.bg || 'none';
   return (
-    <div style={{ borderTop: '1px solid #e8dfc0', marginTop: 0, borderLeft: tint.border ? `3px solid ${tint.border}` : 'none', background: open ? tintBg : 'none' }}>
+    <div style={{ borderTop: '1px solid #e8dfc0', marginTop: 0, borderLeft: tint.border ? `5px solid ${tint.border}` : 'none', background: open ? tintBg : 'none' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{
@@ -664,7 +664,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
             </div>
 
             {/* ── Deep Dive Findings ─────────────────────────────── */}
-            <div style={{ borderLeft: '3px solid #0d9488' }}>
+            <div style={{ borderLeft: '5px solid #0d9488' }}>
               <button
                 onClick={() => setDeepDiveOpen(o => !o)}
                 style={{
