@@ -5,6 +5,7 @@ import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
+import SchoolProfile from './pages/SchoolProfile';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -47,6 +48,16 @@ const AuthenticatedApp = () => {
           <MainPage />
         </LayoutWrapper>
       } />
+      {/* SEO-friendly slug route for public school profiles */}
+      <Route
+        path="/schools/:slug"
+        element={
+          <LayoutWrapper currentPageName="SchoolProfile">
+            <SchoolProfile />
+          </LayoutWrapper>
+        }
+      />
+      {/* Redirect old ?id= URL to slug-based URL (handled inside SchoolProfile) */}
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}
