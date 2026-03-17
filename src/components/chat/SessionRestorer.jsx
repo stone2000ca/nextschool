@@ -136,7 +136,7 @@ export async function restoreSessionFromParam(
     // BUG-RN-05 FALLBACK: If messages don't contain deepDiveAnalysis, check SchoolAnalysis entity
     if (!lastDeepDiveSchoolId && isAuthenticated && user?.id) {
       try {
-        const recentAnalyses = await base44.entities.SchoolAnalysis.filter({ userId: user.id });
+        const recentAnalyses = await base44.entities.SchoolAnalysis.filter({ userId: user.id, conversationId: chatHistory?.id || '' });
         if (recentAnalyses?.length > 0) {
           const sorted = recentAnalyses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           const latest = sorted[0];

@@ -389,7 +389,7 @@ Deno.serve(async (req) => {
         } catch (e) { console.warn('[E30] Cache: action_plan parse failed:', e.message); }
         let cachedDeepDiveAnalysis = null;
         try {
-          const analyses = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId });
+          const analyses = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId, conversationId: conversationId || '' });
           if (analyses?.[0]) cachedDeepDiveAnalysis = analyses[0];
         } catch (e) { console.warn('[E30] Cache: SchoolAnalysis fetch failed:', e.message); }
         const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
@@ -618,7 +618,7 @@ Generate the DEEPDIVE card for this family-school match.`;
         try {
           const existing = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId });
           if (existing && existing.length > 0) {
-            await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, schoolName: selectedSchool.name, lastAnalyzedAt: new Date().toISOString() });
+            await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, schoolName: selectedSchool.name, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || '' });
             console.log('[DEEPDIVE] SchoolAnalysis updated:', existing[0].id);
             const prevVisitQuestions = existing[0].visitQuestions;
             if (!prevVisitQuestions || prevVisitQuestions.length === 0) {
@@ -631,7 +631,7 @@ Generate the DEEPDIVE card for this family-school match.`;
               }
             }
           } else {
-            const created = await base44.entities.SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, schoolName: selectedSchool.name, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString() });
+            const created = await base44.entities.SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, schoolName: selectedSchool.name, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || '' });
             console.log('[DEEPDIVE] SchoolAnalysis created:', created.id);
             const childName = conversationFamilyProfile?.childName || null;
             const schoolName = selectedSchool.name;
@@ -731,7 +731,7 @@ Generate the DEEPDIVE card for this family-school match.`;
         const upsert = async (artifactType, fields) => {
           const existing = await base44.entities.GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType });
           if (existing && existing.length > 0) {
-            await base44.entities.GeneratedArtifact.update(existing[0].id, { ...fields, generatedAt });
+            await base44.entities.GeneratedArtifact.update(existing[0].id, { ...fields, generatedAt, conversationId: conversationId || '' });
             console.log(`[E30] ${artifactType} updated:`, existing[0].id);
           } else {
             const created = await base44.entities.GeneratedArtifact.create({
