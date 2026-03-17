@@ -33,7 +33,7 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
         </button>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-w-0 [&>div>div]:!block">
         {shortlist.length === 0 ? (
           <div className="text-center py-12 px-4">
             <Heart className="w-10 h-10 mx-auto mb-3 text-slate-600" />
@@ -41,7 +41,7 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
             <p className="text-xs text-slate-500 mt-1">Click the heart on any school to save it here.</p>
           </div>
         ) : (
-          <div className="p-3 space-y-2">
+          <div className="p-3 space-y-2 min-w-0">
             {shortlist.map((school) => (
               <SchoolDossierCard
                 key={school.id}
