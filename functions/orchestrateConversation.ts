@@ -1266,7 +1266,9 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
       const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE', JOURNEY_RESUMPTION: 'JOURNEY_RESUMPTION' };
       
       let briefEditCount = context.briefEditCount || 0;
-      const conversationId = context.conversationId;
+      // BUG-RN-PERSIST Fix B2: Prefer top-level conversationId from payload over
+      // context.conversationId which may be stale/null from a previous render cycle.
+      const conversationId = conversationIdFromPayload || context.conversationId;
       
       // STEP 0: Initialize/retrieve FamilyProfile
       let conversationFamilyProfile = null;
