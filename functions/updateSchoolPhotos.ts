@@ -1,125 +1,244 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+// Function: updateSchoolPhotos
+// Purpose: For each school with a website but no headerPhotoUrl, find the best photo from PhotoCandidate (or scrape if none exist) and write it to School.headerPhotoUrl
+// Entities: School (read + write), PhotoCandidate (read + write)
+// Last Modified: 2026-03-17
+// Dependencies: Base44 SDK, school website (external HTTP fetch during scrape)
 
-async function tryFetchOgImage(url, timeout = 5000) {
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+
+// ─── Scraping helpers (inlined from scrapeSchoolPhotos) ───────────────────────
+
+const CRAWL_PATHS = ['', '/about', '/gallery', '/photos', '/campus', '/our-school', '/admissions', '/campus-life'];
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const SKIP_EXTENSIONS = /\.(svg|gif|ico)(\?|$)/i;
+const SKIP_PATTERNS = /\/(icon|logo|favicon|sprite|pixel|tracking|analytics|1x1|2x2)\b/i;
+const DATA_URI = /^data:/i;
+
+function inferType(imageUrl, altText, pageUrl) {
+  const combined = `${imageUrl} ${altText} ${pageUrl}`.toLowerCase();
+  if (/hero|banner|header|landing|home|main[-_]image/.test(combined)) return 'hero';
+  if (/classroom|learning|teaching|lesson|students[-_]in[-_]class/.test(combined)) return 'classroom';
+  if (/sport|gym|field|court|pool|athlete|soccer|hockey|basketball|tennis|track/.test(combined)) return 'sports';
+  if (/campus|building|facility|exterior|grounds|aerial|architecture/.test(combined)) return 'campus';
+  return 'general';
+}
+
+function resolveUrl(src, base) {
+  try {
+    if (DATA_URI.test(src)) return null;
+    return new URL(src, base).href;
+  } catch { return null; }
+}
+
+function normaliseBase(url) {
+  let u = url.replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  return u;
+}
+
+async function fetchPage(url) {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
-    const response = await fetch(url, { 
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      redirect: 'follow',
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (response.ok) {
-      const html = await response.text();
-      const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
-      if (ogImageMatch && ogImageMatch[1]) {
-        return ogImageMatch[1];
-      }
-    }
-  } catch (e) {
-    // Timeout or error
-  }
-  return null;
+    const timer = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(url, { headers: { 'User-Agent': BROWSER_UA }, signal: controller.signal, redirect: 'follow' });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    return await res.text();
+  } catch { return null; }
 }
 
-function generatePossibleDomains(name, slug) {
-  const domains = [];
-  const variants = [name.toLowerCase().replace(/\s+/g, '-'), slug];
-  const extensions = ['.ca', '.com', '.org', '.edu', '.co.uk'];
-  
-  for (const variant of variants) {
-    for (const ext of extensions) {
-      domains.push(`https://www.${variant}${ext}`);
-      domains.push(`https://${variant}${ext}`);
-    }
-  }
-  
-  return [...new Set(domains)]; // Remove duplicates
+async function getFileSize(url) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(url, { method: 'HEAD', headers: { 'User-Agent': BROWSER_UA }, signal: controller.signal });
+    clearTimeout(timer);
+    const len = res.headers.get('content-length');
+    return len ? parseInt(len, 10) : null;
+  } catch { return null; }
 }
+
+function extractImages(html, pageUrl, base) {
+  const results = [];
+
+  // og:image first
+  const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+    || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+  if (ogMatch) {
+    const resolved = resolveUrl(ogMatch[1], base);
+    if (resolved) results.push({ imageUrl: resolved, altText: 'og:image', widthAttr: null, heightAttr: null, pageUrl });
+  }
+
+  // <img> tags
+  const imgRegex = /<img\b([^>]*?)(?:\/>|>)/gi;
+  let match;
+  while ((match = imgRegex.exec(html)) !== null) {
+    const tag = match[1];
+    const srcMatch = tag.match(/\bsrc=["']([^"']+)["']/i);
+    if (!srcMatch) continue;
+    const resolved = resolveUrl(srcMatch[1].trim(), base);
+    if (!resolved) continue;
+    const altMatch = tag.match(/\balt=["']([^"']*)["']/i);
+    const widthMatch = tag.match(/\bwidth=["']?(\d+)["']?/i);
+    const heightMatch = tag.match(/\bheight=["']?(\d+)["']?/i);
+    results.push({
+      imageUrl: resolved,
+      altText: altMatch ? altMatch[1].trim() : '',
+      widthAttr: widthMatch ? parseInt(widthMatch[1], 10) : null,
+      heightAttr: heightMatch ? parseInt(heightMatch[1], 10) : null,
+      pageUrl,
+    });
+  }
+  return results;
+}
+
+function shouldSkip(candidate) {
+  const url = candidate.imageUrl;
+  if (DATA_URI.test(url)) return true;
+  if (SKIP_EXTENSIONS.test(url)) return true;
+  if (SKIP_PATTERNS.test(url)) return true;
+  if (/[?&](w=1|h=1|width=1|height=1)/.test(url)) return true;
+  if (candidate.widthAttr !== null && candidate.widthAttr < 400) return true;
+  if (candidate.heightAttr !== null && candidate.heightAttr < 300) return true;
+  if (/[_\-/](1x1|2x2|pixel)[_\-./]/.test(url)) return true;
+  return false;
+}
+
+// Scrape a school's website and write PhotoCandidate records; returns the created records
+async function scrapeAndStoreCandidates(base44, school) {
+  const base = normaliseBase(school.website);
+  const batchId = `${school.id}_${Date.now()}`;
+  const seen = new Set();
+  const allCandidates = [];
+
+  for (const path of CRAWL_PATHS) {
+    const pageUrl = `${base}${path}`;
+    const html = await fetchPage(pageUrl);
+    if (!html) continue;
+    for (const img of extractImages(html, pageUrl, base)) {
+      if (!seen.has(img.imageUrl)) {
+        seen.add(img.imageUrl);
+        allCandidates.push(img);
+      }
+    }
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  const now = new Date().toISOString();
+  const records = [];
+
+  for (const candidate of allCandidates) {
+    if (shouldSkip(candidate)) continue;
+    if (!/\.(jpe?g|png|webp)(\?|$)/i.test(candidate.imageUrl)) continue;
+    const fileSize = await getFileSize(candidate.imageUrl);
+    if (fileSize !== null && fileSize < 20480) continue;
+    records.push({
+      schoolId: school.id,
+      schoolName: school.name,
+      imageUrl: candidate.imageUrl,
+      pageUrl: candidate.pageUrl,
+      source: 'website',
+      altText: candidate.altText || '',
+      inferredType: inferType(candidate.imageUrl, candidate.altText || '', candidate.pageUrl),
+      widthAttr: candidate.widthAttr,
+      heightAttr: candidate.heightAttr,
+      fileSizeBytes: fileSize,
+      status: 'pending',
+      batchId,
+      createdDate: now,
+    });
+  }
+
+  const CHUNK = 20;
+  for (let i = 0; i < records.length; i += CHUNK) {
+    await base44.asServiceRole.entities.PhotoCandidate.bulkCreate(records.slice(i, i + CHUNK));
+  }
+
+  console.log(`[SCRAPE] ${school.name}: ${records.length} candidates stored`);
+  return records;
+}
+
+// Pick the best candidate: hero > campus > largest file size
+function pickBest(candidates) {
+  if (!candidates.length) return null;
+  const hero = candidates.find(c => c.inferredType === 'hero');
+  if (hero) return hero;
+  const campus = candidates.find(c => c.inferredType === 'campus');
+  if (campus) return campus;
+  return candidates.sort((a, b) => (b.fileSizeBytes || 0) - (a.fileSizeBytes || 0))[0];
+}
+
+// ─── Main handler ─────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { schoolIds, batchSize = 5 } = await req.json();
+    const user = await base44.auth.me();
+    if (!user || user.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    }
 
-    // Fetch schools to update
+    const body = await req.json().catch(() => ({}));
+    const { schoolIds } = body;
+
+    // Load target schools: specific IDs or all schools missing headerPhotoUrl with a website
     let schools = [];
     if (schoolIds && schoolIds.length > 0) {
-      schools = await Promise.all(
-        schoolIds.map(id => base44.asServiceRole.entities.School.get(id))
-      );
+      schools = await Promise.all(schoolIds.map(id => base44.asServiceRole.entities.School.get(id)));
+      schools = schools.filter(s => s && s.website && !s.headerPhotoUrl);
     } else {
-      schools = await base44.asServiceRole.entities.School.filter({});
-      schools = schools.filter(s => !s.headerPhotoUrl).slice(0, batchSize);
+      const all = await base44.asServiceRole.entities.School.filter({ status: 'active' });
+      schools = all.filter(s => s.website && !s.headerPhotoUrl);
     }
 
-    const updated = [];
-    
+    console.log(`[UPDATE PHOTOS] Processing ${schools.length} schools`);
+
+    const results = { updated: [], skipped: [], errors: [] };
+
     for (const school of schools) {
-      let headerPhotoUrl = null;
-      let websiteUrl = school.website;
+      try {
+        // Step 1: Check existing PhotoCandidates
+        let candidates = await base44.asServiceRole.entities.PhotoCandidate.filter({ schoolId: school.id });
 
-      // Step 1: Try to fetch og:image from known website
-      if (websiteUrl) {
-        headerPhotoUrl = await tryFetchOgImage(websiteUrl);
-      }
-
-      // Step 2: If no website or og:image, try possible domain patterns
-      if (!headerPhotoUrl) {
-        const slug = school.slug || school.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        const possibleDomains = generatePossibleDomains(school.name, slug);
-        
-        for (const domain of possibleDomains) {
-          headerPhotoUrl = await tryFetchOgImage(domain);
-          if (headerPhotoUrl) {
-            websiteUrl = domain;
-            break;
-          }
+        // Step 2: If none, scrape now
+        if (!candidates || candidates.length === 0) {
+          console.log(`[UPDATE PHOTOS] No candidates for ${school.name} — scraping...`);
+          candidates = await scrapeAndStoreCandidates(base44, school);
         }
-      }
 
-      // Step 3: Try Clearbit logo as last resort for real image
-      if (!headerPhotoUrl && websiteUrl) {
-        try {
-          const domain = new URL(websiteUrl).hostname;
-          const clearbitUrl = `https://logo.clearbit.com/${domain}`;
-          const response = await fetch(clearbitUrl, { redirect: 'follow' });
-          if (response.ok && response.status === 200) {
-            headerPhotoUrl = clearbitUrl;
-          }
-        } catch (e) {
-          // Clearbit fetch failed
+        // Step 3: Pick best candidate
+        const best = pickBest(candidates);
+        if (!best) {
+          console.log(`[UPDATE PHOTOS] No usable photo found for ${school.name} — skipping`);
+          results.skipped.push({ name: school.name, reason: 'no_candidates' });
+          continue;
         }
-      }
 
-      // Step 4: Update school only if we found a real image
-      if (headerPhotoUrl) {
-        try {
-          await base44.asServiceRole.entities.School.update(school.id, {
-            headerPhotoUrl,
-            website: websiteUrl || school.website
-          });
-          
-          updated.push({
-            name: school.name,
-            source: headerPhotoUrl.includes('clearbit') ? 'clearbit' : 'og:image'
-          });
-        } catch (e) {
-          console.error(`Update failed for ${school.name}`);
-        }
+        // Step 4: Write to School
+        await base44.asServiceRole.entities.School.update(school.id, {
+          headerPhotoUrl: best.imageUrl,
+        });
+
+        console.log(`[UPDATE PHOTOS] ✓ ${school.name} → ${best.inferredType} (${best.imageUrl})`);
+        results.updated.push({ name: school.name, type: best.inferredType, url: best.imageUrl });
+
+      } catch (err) {
+        console.error(`[UPDATE PHOTOS] Error on ${school.name}:`, err.message);
+        results.errors.push({ name: school.name, error: err.message });
       }
     }
 
-    return Response.json({ 
+    return Response.json({
       success: true,
-      updated: updated.length,
-      schools: updated
+      processed: schools.length,
+      updated: results.updated.length,
+      skipped: results.skipped.length,
+      errors: results.errors.length,
+      details: results,
     });
+
   } catch (error) {
+    console.error('[UPDATE PHOTOS] Fatal:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
