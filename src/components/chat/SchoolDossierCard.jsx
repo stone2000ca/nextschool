@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { X, ExternalLink, ChevronDown, Lock, Sparkles, Loader2, CheckCircle } from 'lucide-react';
+import { X, ExternalLink, ChevronDown, Lock, Loader2, CheckCircle } from 'lucide-react';
 import { buildPriorityChecks } from '@/components/schools/SchoolCard';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -250,7 +250,6 @@ export default function SchoolDossierCard({
     }
   };
   const [aiRecOpen,     setAiRecOpen]     = useState(true);
-  const [tradeOffsOpen, setTradeOffsOpen] = useState(true);
   const [visitPrepOpen, setVisitPrepOpen] = useState(true);
   const [reEvalOpen,    setReEvalOpen]    = useState(true);
 
@@ -260,10 +259,6 @@ export default function SchoolDossierCard({
   const fitConfig = analysis?.fitLabel ? FIT_BADGE[analysis.fitLabel] : null;
 
   const aiRecContent = artifactCache?.[`${school.id}_deep_dive_analysis`] || null;
-
-  const tradeOffs = Array.isArray(analysis?.tradeOffs) && analysis.tradeOffs.length > 0
-    ? analysis.tradeOffs
-    : null;
 
   let visitPrepData = null;
   const visitPrepRaw = artifactCache?.[`${school.id}_visit_prep`];
@@ -277,7 +272,7 @@ export default function SchoolDossierCard({
 
   const fitReEvaluation = artifactCache?.[`${school.id}_fit_reevaluation`] || null;
 
-  const hasExpandedContent = aiRecContent || tradeOffs || visitPrepData || fitReEvaluation;
+  const hasExpandedContent = aiRecContent || visitPrepData || fitReEvaluation;
   // Empty state: no analysis record AND no artifact content for this school
   const hasAnalysisData = !!analysis || !!hasExpandedContent;
 
@@ -290,7 +285,7 @@ export default function SchoolDossierCard({
 
   return (
     <div
-      className="rounded-lg p-3"
+      className="rounded-lg p-3 min-w-0 overflow-hidden"
       style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
     >
       {/* ── Header: name + expand toggle + remove ── */}
@@ -379,26 +374,16 @@ export default function SchoolDossierCard({
           return (
             <button
               onClick={hasDeepDive ? () => onViewSchool(school.id, true) : handleAnalyzeCTA}
-              className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded mt-2 transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded mt-2 transition-colors"
               style={hasDeepDive ? {
-                background: '#0d9488',
-                border: '1px solid #0a7560',
-                color: '#fff'
+                background: 'rgba(255,255,255,0.07)',
+                color: '#14b8a6',
               } : {
-                background: 'transparent',
-                border: '1px solid #9ca3af',
-                color: '#6b7280'
+                background: 'rgba(255,255,255,0.07)',
+                color: '#14b8a6',
               }}
-              onMouseEnter={e => {
-                if (hasDeepDive) {
-                  e.currentTarget.style.background = '#0a7560';
-                } else {
-                  e.currentTarget.style.background = 'rgba(156,163,175,0.1)';
-                }
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = hasDeepDive ? '#0d9488' : 'transparent';
-              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
             >
               {hasDeepDive ? (
                 <>
@@ -407,7 +392,7 @@ export default function SchoolDossierCard({
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3 h-3 flex-shrink-0" />
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.54 38.56" className="w-3 h-3 flex-shrink-0"><path fill="currentColor" d="M20.21,0h-11.7L0,8.48l7,10.78L0,30.05l8.52,8.52h12.76l19.26-19.3L21.28,0h-1.06ZM37.53,19.27l-16.26,16.29-.09-.09-5.7-5.7,6.06-9.34.75-1.16-.75-1.16-6.06-9.34,5.79-5.76.58.58,15.68,15.68Z"/></svg>
                   Deep Dive Analysis
                 </>
               )}
@@ -424,40 +409,6 @@ export default function SchoolDossierCard({
               <ReactMarkdown className="text-xs text-slate-300 prose prose-invert max-w-none leading-relaxed [&>p]:mb-1 [&>p:last-child]:mb-0">
                 {aiRecContent}
               </ReactMarkdown>
-            </AccordionSection>
-          )}
-
-          {tradeOffs && (
-            <AccordionSection title="Trade-offs" isOpen={tradeOffsOpen} onToggle={() => setTradeOffsOpen(v => !v)}>
-              <div className="space-y-1.5">
-                {tradeOffs.map((item, i) => {
-                  if (typeof item === 'string') {
-                    return (
-                      <div key={i} className="text-xs text-slate-400 flex items-start gap-1.5">
-                        <span className="mt-0.5 flex-shrink-0 text-slate-500">•</span>
-                        <span>{item}</span>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div
-                      key={i}
-                      className="rounded px-2 py-1.5 space-y-0.5"
-                      style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)' }}
-                    >
-                      {item.dimension && (
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{item.dimension}</p>
-                      )}
-                      {item.strength && (
-                        <p className="text-xs text-emerald-400 leading-snug">{item.strength}</p>
-                      )}
-                      {item.concern && (
-                        <p className="text-xs text-amber-400 leading-snug">{item.concern}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
             </AccordionSection>
           )}
 

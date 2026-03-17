@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 const MIN_LOADER_MS = 3000;
 const TIMEOUT_MS = 10000;
@@ -52,8 +52,7 @@ const KEYFRAMES = `
   @keyframes badgePulse{0%,100%{opacity:.85}50%{opacity:1}}
   @keyframes dotOrbitCW{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
   @keyframes dotOrbitCCW{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
-  @keyframes iconPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.08)}}
-  @keyframes iconLook{0%,100%{transform:rotate(0deg)}25%{transform:rotate(6deg)}75%{transform:rotate(-6deg)}}
+  @keyframes iconPulse{0%,100%{scale:1}50%{scale:1.08}}
   @keyframes tealFlash{0%{opacity:0}30%{opacity:1}70%{opacity:1}100%{opacity:0}}
 `;
 
@@ -79,6 +78,23 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
   const briefConfirmTimeRef = useRef(null);
   const onCompleteRef = useRef(onTransitionComplete);
   onCompleteRef.current = onTransitionComplete;
+
+  const [iconAngle, setIconAngle] = useState(0);
+
+  // Randomly rotate the NS icon to "look at" different orbiting dots
+  useEffect(() => {
+    if (!isVisible) return;
+    const pick = () => {
+      // Pick a random angle as if tracking one of the orbiting dots
+      const target = Math.floor(Math.random() * 360);
+      // Clamp to a natural head-turn range (-25 to 25 degrees)
+      const clamped = ((target % 50) - 25);
+      setIconAngle(clamped);
+    };
+    pick();
+    const iv = setInterval(pick, 1800 + Math.random() * 1200);
+    return () => clearInterval(iv);
+  }, [isVisible]);
 
   const clear = useCallback(() => { timers.current.forEach(clearTimeout); timers.current = []; }, []);
   const t = useCallback((fn, ms) => { const id = setTimeout(fn, ms); timers.current.push(id); return id; }, []);
@@ -178,8 +194,8 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
           {[100,130,160].map(d=>(<div key={d} style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:d,height:d,borderRadius:'50%',border:`1px solid rgba(24,150,138,0.3)`}}/>))}
           <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:130,height:130,borderRadius:'50%',borderTop:`2.5px solid ${TEAL}`,borderRight:`2.5px solid ${TEAL}`,borderBottom:'2.5px solid transparent',borderLeft:'2.5px solid transparent',animation:'arcCW 3s linear infinite'}}/>
           <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:160,height:160,borderRadius:'50%',borderTop:`2.5px solid ${TEAL}`,borderRight:`2.5px solid ${TEAL}`,borderBottom:'2.5px solid transparent',borderLeft:'2.5px solid transparent',animation:'arcCCW 4.5s linear infinite'}}/>
-          <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:52,height:52,borderRadius:'50%',background:'#fff',boxShadow:'0 2px 12px rgba(0,0,0,0.08)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.54 38.56" width="32" height="32"><path fill={TEAL} d="M20.21,0h-11.7L0,8.48l7,10.78L0,30.05l8.52,8.52h12.76l19.26-19.3L21.28,0h-1.06ZM37.53,19.27l-16.26,16.29-.09-.09-5.7-5.7,6.06-9.34.75-1.16-.75-1.16-6.06-9.34,5.79-5.76.58.58,15.68,15.68Z"/><polygon fill="#fff" points="15.48 8.77 21.54 18.11 22.29 19.26 21.54 20.42 15.48 29.76 21.18 35.46 21.28 35.56 37.53 19.27 21.85 3.59 21.27 3.01 15.48 8.77"/></svg>
+          <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:52,height:52,borderRadius:'50%',background:'#fff',boxShadow:'0 2px 12px rgba(0,0,0,0.08)',display:'flex',alignItems:'center',justifyContent:'center',animation:'iconPulse 2.4s ease-in-out infinite'}}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.54 38.56" width="32" height="32" style={{transform:`rotate(${iconAngle}deg)`,transition:'transform 0.6s cubic-bezier(0.34,1.56,0.64,1)'}}><path fill={TEAL} d="M20.21,0h-11.7L0,8.48l7,10.78L0,30.05l8.52,8.52h12.76l19.26-19.3L21.28,0h-1.06ZM37.53,19.27l-16.26,16.29-.09-.09-5.7-5.7,6.06-9.34.75-1.16-.75-1.16-6.06-9.34,5.79-5.76.58.58,15.68,15.68Z"/><polygon fill="#fff" points="15.48 8.77 21.54 18.11 22.29 19.26 21.54 20.42 15.48 29.76 21.18 35.46 21.28 35.56 37.53 19.27 21.85 3.59 21.27 3.01 15.48 8.77"/></svg>
           </div>
             {DOT_CONFIG.map((d,i)=>(
               <div key={i} style={{position:'absolute',top:'50%',left:'50%',width:0,height:0,animation:`dotOrbit${d.direction} ${d.duration}s linear infinite`,animationDelay:`${d.delayOffset}s`}}>
