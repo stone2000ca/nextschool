@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, ExternalLink, CheckCircle, Check, X, CalendarDays, Mail } from "lucide-react";
+import { ArrowLeft, Heart, ExternalLink, Scale, CalendarDays, Mail, Phone, Globe2, Eye } from "lucide-react";
 import TourRequestModal from './TourRequestModal';
 import { base44 } from '@/api/base44Client';
+
+// --- Helpers ---
 
 function gradeLabel(grade) {
   if (grade === null || grade === undefined) return '?';
@@ -12,351 +14,652 @@ function gradeLabel(grade) {
   return String(grade);
 }
 
+function f(school, camel, snake) {
+  return school[camel] ?? school[snake] ?? null;
+}
+
+function getCurrencySymbol(currency) {
+  const symbols = { CAD: 'CA$', USD: '$', EUR: '€', GBP: '£' };
+  return symbols[currency] || '$';
+}
+
+function formatTuition(amount, max, currency) {
+  const sym = getCurrencySymbol(currency);
+  if (!amount) return null;
+  if (max && max !== amount) return `${sym}${amount.toLocaleString()} – ${sym}${max.toLocaleString()}`;
+  return `${sym}${amount.toLocaleString()}`;
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const target = new Date(dateStr);
+  const now = new Date();
+  const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return null;
+  if (diff === 0) return 'Today';
+  if (diff === 1) return '1 day away';
+  return `${diff} days away`;
+}
+
+function parseScholarships(json) {
+  if (!json) return [];
+  if (Array.isArray(json)) return json;
+  try { return JSON.parse(json); } catch { return []; }
+}
+
+// --- Match Logic (preserved) ---
+
 function calculateMatchScore(school, familyProfile) {
   if (!familyProfile) return 'Explore';
-  
   let score = 0;
-  const maxScore = 10;
-  
-  // Grade match
   const childGrade = familyProfile.childGrade;
   if (childGrade !== null && childGrade !== undefined) {
-    const schoolServes = childGrade >= school.lowestGrade && childGrade <= school.highestGrade;
-    if (schoolServes) score += 2;
+    if (childGrade >= school.lowestGrade && childGrade <= school.highestGrade) score += 2;
   }
-  
-  // Budget match
   if (familyProfile.maxTuition && school.dayTuition) {
     if (school.dayTuition <= familyProfile.maxTuition) score += 2;
     else if (school.dayTuition <= familyProfile.maxTuition * 1.2) score += 1;
   }
-  
-  // Gender match
   if (familyProfile.gender && school.genderPolicy) {
     const isSingleGender = school.genderPolicy.includes(familyProfile.gender === 'male' ? 'Boy' : 'Girl');
     if (isSingleGender && familyProfile.boardingPreference === 'no') score += 1;
     if (school.genderPolicy === 'Co-ed' && !isSingleGender) score += 1;
   }
-  
-  // Priority matches
   if (familyProfile.priorities?.length > 0) {
     const specializations = (school.specializations || []).map(s => s.toLowerCase());
     const curriculumStr = (school.curriculum || []).join(' ').toLowerCase();
     const allStr = `${specializations.join(' ')} ${curriculumStr}`.toLowerCase();
-    
     let priorityMatches = 0;
     familyProfile.priorities.forEach(p => {
       if (allStr.includes(p.toLowerCase())) priorityMatches++;
     });
     score += Math.min(priorityMatches * 2, 3);
   }
-  
   if (score >= 8) return 'Strong';
   if (score >= 5) return 'Good';
-  return 'Good'; // default to Good Match so badge always shows positively
+  return 'Good';
 }
 
 function getMatchReasons(school, familyProfile) {
   const reasons = [];
   if (!familyProfile) return reasons;
-  
-  // Grade
   const childGrade = familyProfile.childGrade;
   if (childGrade !== null && childGrade !== undefined && childGrade >= school.lowestGrade && childGrade <= school.highestGrade) {
     reasons.push(`Serves Grade ${gradeLabel(childGrade)}`);
   }
-  
-  // Budget
   if (familyProfile.maxTuition && school.dayTuition && school.dayTuition <= familyProfile.maxTuition) {
     reasons.push(`Within budget ($${school.dayTuition.toLocaleString()})`);
   }
-  
-  // Specializations matching priorities
   if (familyProfile.priorities?.length > 0) {
     const specializations = (school.specializations || []).map(s => s.toLowerCase());
     const curriculumStr = (school.curriculum || []).join(' ').toLowerCase();
     const allStr = `${specializations.join(' ')} ${curriculumStr}`.toLowerCase();
-    
     const matchedPriorities = familyProfile.priorities.filter(p => allStr.includes(p.toLowerCase()));
     if (matchedPriorities.length > 0) {
       reasons.push(`${matchedPriorities.slice(0, 2).join(' & ')} focus`);
     }
   }
-  
-  // Boarding
   if (familyProfile.boardingPreference?.includes('boarding') && school.boardingAvailable) {
     reasons.push('Boarding available');
   }
-  
   return reasons.slice(0, 4);
 }
 
-// TIER 1: Hero Section
-function HeroTier({ school, familyProfile, matchScore, matchReasons }) {
-  const accentColor = 'teal';
-  
+// --- Section Components ---
+
+function HeroSection({ school, onBack }) {
+  const boardingType = f(school, 'boardingType', 'boarding_type') || (school.boardingAvailable ? 'Day & Boarding' : 'Day');
+  const faithBased = f(school, 'faithBased', 'faith_based');
+  const logoUrl = f(school, 'logoUrl', 'logo_url');
+  const gradeRange = school.lowestGrade != null && school.highestGrade != null
+    ? `${gradeLabel(school.lowestGrade)} – ${gradeLabel(school.highestGrade)}`
+    : school.gradesServed || null;
+
   return (
-    <div className="relative h-96 bg-gradient-to-br from-slate-900 to-slate-800 overflow-hidden">
-      {school.headerPhotoUrl || school.heroImage ? (
+    <div className="relative h-[420px] overflow-hidden">
+      {(school.headerPhotoUrl || school.heroImage) ? (
         <img
           src={school.headerPhotoUrl || school.heroImage}
           alt={school.name}
-          className="w-full h-full object-cover opacity-70"
+          className="w-full h-full object-cover"
         />
-      ) : null}
-      
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
-      
-      <div className="absolute bottom-0 left-0 right-0 p-6 text-white space-y-4">
-        <div>
-          <h1 className="text-4xl font-bold">{school.name}</h1>
-          <div className="flex items-center gap-4 mt-2 text-sm">
-            <span>{school.city}, {school.provinceState}</span>
-            {school.schoolTypeLabel && <span className="px-3 py-1 bg-white/20 rounded-full">{school.schoolTypeLabel}</span>}
-            {school.gradesServed && <span className="px-3 py-1 bg-white/20 rounded-full">Grades {school.gradesServed}</span>}
-            {school.genderPolicy && <span className="px-3 py-1 bg-white/20 rounded-full">{school.genderPolicy}</span>}
-          </div>
+      ) : (
+        <div className="w-full h-full bg-gradient-to-br from-[#1a2332] to-[#0f1419]" />
+      )}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(15,20,25,0.15) 0%, rgba(15,20,25,0.85) 100%)' }} />
+
+      {/* Back + Logo */}
+      <div className="absolute top-5 left-5 flex items-center gap-3">
+        <button
+          onClick={onBack}
+          className="bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-lg px-4 py-2 text-[13px] font-medium hover:bg-white/20 transition-colors"
+        >
+          &larr; Back to Results
+        </button>
+        {logoUrl && (
+          <img src={logoUrl} alt="" className="h-9 w-9 rounded-lg bg-white/90 p-1 object-contain" />
+        )}
+      </div>
+
+      {/* Hero Content */}
+      <div className="absolute bottom-0 left-0 right-0 px-8 pb-8">
+        <div className="flex flex-wrap gap-2.5 mb-4">
+          {boardingType && (
+            <span className="bg-white/12 backdrop-blur-sm border border-white/18 text-white text-[12px] font-semibold px-3.5 py-1 rounded-md uppercase tracking-wider">
+              {boardingType}
+            </span>
+          )}
+          {school.genderPolicy && (
+            <span className="bg-white/12 backdrop-blur-sm border border-white/18 text-white text-[12px] font-semibold px-3.5 py-1 rounded-md uppercase tracking-wider">
+              {school.genderPolicy}
+            </span>
+          )}
+          {gradeRange && (
+            <span className="bg-white/12 backdrop-blur-sm border border-white/18 text-white text-[12px] font-semibold px-3.5 py-1 rounded-md uppercase tracking-wider">
+              {gradeRange}
+            </span>
+          )}
+          {faithBased && (
+            <span className="bg-white/12 backdrop-blur-sm border border-white/18 text-white text-[12px] font-semibold px-3.5 py-1 rounded-md uppercase tracking-wider">
+              {faithBased}
+            </span>
+          )}
         </div>
-        
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            {matchReasons.length > 0 && (
-              <div className="text-xs space-y-1">
-                {matchReasons.map((reason, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-teal-300">
-                    <Check className="h-3 w-3" />
-                    {reason}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          
-        </div>
+        <h1 className="text-[42px] font-bold text-white leading-[1.1] tracking-tight mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+          {school.name}
+        </h1>
+        <p className="text-[15px] text-white/70">
+          {school.city}, {school.provinceState}
+          {school.founded ? ` · Est. ${school.founded}` : ''}
+        </p>
       </div>
     </div>
   );
 }
 
-// TIER 2: Data Grid
-function DataGridTier({ school, familyProfile }) {
-  const gridItems = [
-    { label: 'Enrollment', value: school.enrollment?.toLocaleString() || 'Not available', key: 'enrollment' },
-    { label: 'Class Size', value: school.avgClassSize ? String(school.avgClassSize) : 'Not available', key: 'classSize' },
-    { label: 'Student-Teacher Ratio', value: school.studentTeacherRatio || 'Not available', key: 'ratio' },
-    { label: 'Tuition (Day)', value: school.dayTuition ? `$${school.dayTuition.toLocaleString()}` : 'Not available', key: 'dayTuition' },
-    { label: 'Tuition (Boarding)', value: school.boardingTuition ? `$${school.boardingTuition.toLocaleString()}` : 'Not available', key: 'boardingTuition' },
-    { label: 'Boarding', value: school.boardingAvailable ? 'Available' : 'Day Only', key: 'boarding' },
-    { label: 'Religion', value: school.faithBased || 'Non-religious', key: 'religion' },
-    { label: 'Language', value: school.languagesOfInstruction || 'English', key: 'language' },
-    { label: 'Founded', value: school.founded ? String(school.founded) : 'Not available', key: 'founded' },
-  ];
-  
-  const isPriority = (key) => {
-    if (key === 'dayTuition' && familyProfile?.maxTuition) return true;
-    if (key === 'boarding' && familyProfile?.boardingPreference) return true;
-    return false;
-  };
-  
+function ScanBar({ school }) {
+  const pills = [];
+  const add = (emoji, text, highlight) => pills.push({ emoji, text, highlight });
+
+  if (school.enrollment) add('\u{1F465}', `${school.enrollment.toLocaleString()} students`);
+  if (school.avgClassSize) add('\u{1F465}', `Avg class ${school.avgClassSize}`);
+  const ratio = f(school, 'studentTeacherRatio', 'student_teacher_ratio');
+  if (ratio) add('\u{1F393}', `${ratio} ratio`);
+  const curriculum = school.curriculum;
+  if (curriculum) add('\u{1F4DA}', Array.isArray(curriculum) ? curriculum.join(' · ') : curriculum);
+  if (school.financialAidAvailable) add('\u{1F4B0}', 'Aid available', true);
+  if (school.founded) add('\u{1F3DB}', `Est. ${school.founded}`);
+  const accreditations = school.accreditations;
+  if (accreditations?.length > 0) add('\u2705', `${accreditations[0]} accredited`);
+  if (school.acceptanceRate) add('\u{1F393}', `${school.acceptanceRate}% acceptance`);
+  if (school.campusSize) add('\u{1F3E1}', `${school.campusSize}-acre campus`);
+  if (school.uniformRequired) add('\u{1F454}', 'Uniform');
+  const langs = f(school, 'languagesOfInstruction', 'languages_of_instruction');
+  if (langs) add('\u{1F310}', Array.isArray(langs) ? langs.join(' · ') : langs);
+  const intlPct = f(school, 'internationalStudentPct', 'international_student_pct');
+  if (intlPct) add('\u{1F30D}', `${intlPct}% international`);
+  const boardingPct = f(school, 'boardingPct', 'boarding_pct');
+  if (boardingPct) add('\u{1F3E0}', `${boardingPct}% boarders`);
+  const transport = f(school, 'transportationOptions', 'transportation_options');
+  if (transport) add('\u{1F68C}', Array.isArray(transport) ? transport.join(', ') : transport);
+  const awards = school.awards;
+  if (awards?.length > 0) add('\u{1F3C6}', 'Award-winning');
+
+  if (pills.length === 0) return null;
+
   return (
-    <div className="grid grid-cols-2 gap-4 p-6 border-b border-slate-700">
-      {gridItems.map((item) => (
-        <div key={item.key} className={`p-4 rounded-lg ${isPriority(item.key) ? 'bg-teal-500/10 border border-teal-500/30' : 'bg-slate-800/50'}`}>
-          <p className={`text-xs ${isPriority(item.key) ? 'text-teal-400' : 'text-slate-400'}`}>{item.label}</p>
-          <p className={`text-lg font-semibold mt-1 ${isPriority(item.key) ? 'text-teal-300' : item.value === 'Not available' ? 'text-slate-500 text-sm' : 'text-white'}`}>{item.value}</p>
+    <div className="flex gap-2.5 px-8 py-6 overflow-x-auto border-b border-white/[0.06]" style={{ scrollbarWidth: 'none' }}>
+      {pills.map((pill, i) => (
+        <div
+          key={i}
+          className={`flex items-center gap-1.5 shrink-0 rounded-full px-4 py-2 text-[13px] font-medium whitespace-nowrap border transition-colors
+            ${pill.highlight
+              ? 'bg-green-600/10 border-green-600/25 text-green-300'
+              : 'bg-white/[0.04] border-white/[0.08] text-[#b8b5af] hover:border-white/20'
+            }`}
+        >
+          <span className="text-sm">{pill.emoji}</span>
+          {pill.text}
         </div>
       ))}
     </div>
   );
 }
 
-// TIER 3: Detailed Sections
-function DetailedSectionsTier({ school }) {
-  const noData = <p className="text-sm text-slate-500 italic">Information not available</p>;
+function AboutSection({ school }) {
+  const [expanded, setExpanded] = useState(false);
+  const values = school.values;
+  const specializations = school.specializations;
+  const desc = school.description || '';
+  const isLong = desc.length > 300;
+
+  const hasMission = !!school.missionStatement;
+  const hasContent = hasMission || !!desc;
+  if (!hasContent && !values?.length && !specializations?.length) return null;
 
   return (
-    <div className="p-6 space-y-8 border-b border-slate-700">
-      {/* About */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3">About</h3>
-        {school.missionStatement ? (
-          <p className="text-sm text-slate-300 mb-3 italic">"{school.missionStatement}"</p>
-        ) : null}
-        {school.description ? (
-          <p className="text-sm text-slate-400">{school.description}</p>
-        ) : !school.missionStatement ? noData : null}
-      </div>
-      
-      {/* Curriculum */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3">Curriculum & Specializations</h3>
-        <div className="space-y-2">
-          {school.curriculum && (
-            <p className="text-sm text-slate-300"><span className="font-semibold">Type:</span> {school.curriculum}</p>
-          )}
-          {school.curriculum?.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {school.curriculum.map((curr, idx) => (
-                <span key={idx} className="px-3 py-1 bg-teal-500/20 text-teal-300 rounded-full text-xs">{curr}</span>
-              ))}
-            </div>
-          ) : null}
-          {school.specializations?.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {school.specializations.map((spec, idx) => (
-                <span key={idx} className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs">{spec}</span>
-              ))}
-            </div>
-          ) : null}
-          {!school.curriculum && !school.curriculum?.length && !school.specializations?.length ? noData : null}
-        </div>
-      </div>
-      
-      {/* Programs */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3">Programs & Activities</h3>
-        <div className="space-y-3">
-          {school.artsPrograms?.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-teal-300 mb-2">Arts</p>
-              <div className="flex flex-wrap gap-2">
-                {school.artsPrograms.slice(0, 6).map((prog, idx) => (
-                  <span key={idx} className="text-xs text-slate-400">{prog}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          {school.sportsPrograms?.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-amber-300 mb-2">Sports</p>
-              <div className="flex flex-wrap gap-2">
-                {school.sportsPrograms.slice(0, 6).map((prog, idx) => (
-                  <span key={idx} className="text-xs text-slate-400">{prog}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          {school.clubs?.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-purple-300 mb-2">Clubs</p>
-              <div className="flex flex-wrap gap-2">
-                {school.clubs.slice(0, 6).map((club, idx) => (
-                  <span key={idx} className="text-xs text-slate-400">{club}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          {!school.artsPrograms?.length && !school.sportsPrograms?.length && !school.clubs?.length ? noData : null}
-        </div>
-      </div>
-      
-      {/* Admissions */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3">Admissions</h3>
-        <div className="space-y-2 text-sm text-slate-400">
-          {school.dayAdmissionDeadline ? (
-            <p><span className="font-semibold text-slate-300">Deadline:</span> {school.dayAdmissionDeadline}</p>
-          ) : null}
-          {school.admissionRequirements?.length > 0 ? (
-            <div>
-              <p className="font-semibold text-slate-300">Requirements:</p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                {school.admissionRequirements.slice(0, 4).map((req, idx) => (
-                  <li key={idx}>{req}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {school.openHouseDates?.length > 0 ? (
-            <p><span className="font-semibold text-slate-300">Open House Dates:</span> {school.openHouseDates.join(', ')}</p>
-          ) : null}
-          {!school.dayAdmissionDeadline && !school.admissionRequirements?.length && !school.openHouseDates?.length ? noData : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// TIER 4: Reviews/Testimonials (Placeholder)
-function ReviewsTier() {
-  return (
-    <div className="p-6 border-b border-slate-700">
-      <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-        <CheckCircle className="h-5 w-5 text-amber-400" />
-        Student & Family Reviews
-      </h3>
-      <div className="bg-slate-800/50 rounded-lg p-8 text-center">
-        <p className="text-slate-400 text-sm">Reviews coming soon. Be the first to share your experience.</p>
-      </div>
-    </div>
-  );
-}
-
-
-// TIER 5: Sticky CTA Bar
-function CtaBar({ school, isShortlisted, onToggleShortlist, onCompare, hasTourFeatures, onRequestTour }) {
-  return (
-    <div className="sticky bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 p-4 space-y-2 z-40">
-      {/* Tour request row */}
-      {hasTourFeatures ? (
-        <Button
-          onClick={onRequestTour}
-          className="w-full bg-teal-600 hover:bg-teal-700 flex items-center justify-center gap-2"
-        >
-          <CalendarDays className="h-4 w-4" />
-          Request a Tour
-        </Button>
-      ) : school.claimStatus !== 'claimed' ? (
-        school.website ? (
-          <a href={school.website} target="_blank" rel="noopener noreferrer" className="block w-full">
-            <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              Visit Website
-            </Button>
-          </a>
-        ) : null
-      ) : (
-        school.email ? (
-          <a href={`mailto:${school.email}`} className="block w-full">
-            <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-              <Mail className="h-4 w-4" />
-              Contact School Directly
-            </Button>
-          </a>
-        ) : null
+    <div className="px-8 pt-10">
+      {hasMission && (
+        <blockquote className="border-l-[3px] border-[#c9a84c] pl-6 pr-4 py-5 mb-5 rounded-r-lg italic text-[17px] text-[#d4cfc5] leading-relaxed" style={{ fontFamily: "'Playfair Display', serif", background: 'rgba(201,168,76,0.04)' }}>
+          &ldquo;{school.missionStatement}&rdquo;
+        </blockquote>
       )}
-      {/* Standard actions */}
-      <div className="flex gap-3">
-        <Button
-          onClick={() => window.open(school.website, '_blank')}
-          variant="outline"
-          className="flex-1 flex items-center justify-center gap-2"
-        >
-          <ExternalLink className="h-4 w-4" />
-          Website
-        </Button>
-        <Button
-          onClick={() => onToggleShortlist(school.id)}
-          variant={isShortlisted ? 'default' : 'outline'}
-          className={`flex-1 flex items-center justify-center gap-2 ${isShortlisted ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
-        >
-          <Heart className={`h-4 w-4 ${isShortlisted ? 'fill-red-500 text-red-500' : ''}`} />
-          {isShortlisted ? 'Shortlisted' : 'Shortlist'}
-        </Button>
-        <Button onClick={() => onCompare?.(school.id)} variant="outline" className="flex-1">
-          Compare
-        </Button>
+      {values?.length > 0 && (
+        <p className="text-[13px] text-[#9a9590] italic mb-4">
+          {Array.isArray(values) ? values.join(' · ') : values}
+        </p>
+      )}
+      {desc && (
+        <p className="text-[15px] text-[#9a9590] leading-relaxed max-w-[720px]">
+          {isLong && !expanded ? desc.slice(0, 300) + '...' : desc}
+        </p>
+      )}
+      {isLong && (
+        <button onClick={() => setExpanded(!expanded)} className="text-[#c9a84c] font-semibold text-[13px] mt-3 bg-transparent border-none cursor-pointer tracking-wide">
+          {expanded ? 'Show less \u2191' : 'Read more \u2193'}
+        </button>
+      )}
+      {specializations?.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-4">
+          {specializations.map((s, i) => (
+            <span key={i} className="px-4 py-1.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-[#b8b5af] font-medium hover:border-white/[0.18] hover:text-[#e8e6e1] transition-colors">
+              {s}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Divider() {
+  return <hr className="border-0 border-t border-white/[0.06] mx-8 mt-10" />;
+}
+
+function SectionTitle({ children }) {
+  return (
+    <h2 className="text-[26px] font-bold text-[#f5f3ef] mb-6 tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
+      {children}
+    </h2>
+  );
+}
+
+function WhatToExpectSection({ school }) {
+  const items = [];
+  const add = (label, value) => { if (value) items.push({ label, value }); };
+
+  add('Academic Culture', f(school, 'academicCulture', 'academic_culture'));
+  add('Pace', f(school, 'pace', 'curriculum_pace'));
+  add('Focus', f(school, 'focus', 'school_focus'));
+  add('Math Approach', f(school, 'mathApproach', 'math_approach'));
+  add('Science', f(school, 'scienceApproach', 'science_approach'));
+  add('Homework', f(school, 'homeworkByGrade', 'homework_by_grade'));
+  add('Philosophy', f(school, 'teachingPhilosophy', 'teaching_philosophy'));
+
+  const communityVibe = f(school, 'communityVibe', 'community_vibe');
+  if (items.length === 0 && !communityVibe) return null;
+
+  return (
+    <div className="px-8 pt-10">
+      <SectionTitle>What to Expect</SectionTitle>
+      {items.length > 0 && (
+        <div className="grid grid-cols-3 gap-3.5">
+          {items.map((item, i) => (
+            <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-[10px] px-5 py-4 flex flex-col gap-1 hover:border-white/[0.12] transition-colors">
+              <span className="text-[11px] text-[#6b6560] font-medium uppercase tracking-[0.8px]">{item.label}</span>
+              <span className="text-[15px] font-semibold text-[#e8e6e1]">{item.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {communityVibe && (
+        <div className="mt-5 rounded-xl p-6 border border-[#c9a84c]/15" style={{ background: 'rgba(201,168,76,0.06)' }}>
+          <h3 className="text-[16px] font-bold text-[#c9a84c] mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>Community Vibe</h3>
+          <p className="text-[14px] text-[#9a9590] leading-relaxed">{communityVibe}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProgramsSection({ school }) {
+  const groups = [];
+  if (school.artsPrograms?.length > 0) groups.push({ label: 'Arts', items: school.artsPrograms });
+  if (school.sportsPrograms?.length > 0) groups.push({ label: 'Sports', items: school.sportsPrograms });
+  if (school.clubs?.length > 0) groups.push({ label: 'Clubs', items: school.clubs });
+
+  const specialEd = f(school, 'specialEdPrograms', 'special_ed_programs');
+  if (specialEd?.length > 0) groups.push({ label: 'Learning Support', items: specialEd });
+  const facilities = school.facilities;
+  if (facilities?.length > 0) groups.push({ label: 'Facilities', items: facilities });
+
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="px-8 pt-10">
+      <SectionTitle>Programs</SectionTitle>
+      {groups.map((group, gi) => (
+        <div key={gi} className="mb-6">
+          <h3 className="text-[13px] font-semibold text-[#7a756e] mb-2.5 uppercase tracking-[0.8px]">{group.label}</h3>
+          <div className="flex flex-wrap gap-2">
+            {group.items.map((item, i) => (
+              <span key={i} className="px-4 py-1.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-[#b8b5af] font-medium hover:border-white/[0.18] hover:text-[#e8e6e1] transition-colors">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FinancialSection({ school }) {
+  const currency = school.currency || 'CAD';
+  const dayTuition = school.dayTuition;
+  const dayMax = f(school, 'dayTuitionMax', 'day_tuition_max');
+  const boardingTuition = school.boardingTuition;
+  const boardingMax = f(school, 'boardingTuitionMax', 'boarding_tuition_max');
+  const aidAvailable = school.financialAidAvailable;
+  const aidPct = f(school, 'financialAidPct', 'financial_aid_pct');
+  const medianAid = f(school, 'medianAidAmount', 'median_aid_amount');
+  const tuitionNotes = f(school, 'tuitionNotes', 'tuition_notes');
+  const scholarships = parseScholarships(f(school, 'scholarshipsJson', 'scholarships_json'));
+
+  const hasData = dayTuition || boardingTuition || aidAvailable || aidPct || medianAid;
+  if (!hasData) return null;
+
+  const sym = getCurrencySymbol(currency);
+
+  return (
+    <div className="px-8 pt-10">
+      <SectionTitle>Financial Picture</SectionTitle>
+      <div className="grid grid-cols-2 gap-3.5">
+        {dayTuition && (
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-[10px] px-5 py-5 flex flex-col gap-1">
+            <span className="text-[11px] text-[#6b6560] font-medium uppercase tracking-[0.8px]">Day Tuition</span>
+            <span className="text-[24px] font-bold text-[#f5f3ef]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              {formatTuition(dayTuition, dayMax, currency)}<span className="text-[14px] font-normal text-[#6b6560]">/yr</span>
+            </span>
+            {currency !== 'CAD' && <span className="text-[11px] text-[#7a756e] font-medium">{currency}</span>}
+          </div>
+        )}
+        {boardingTuition && (
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-[10px] px-5 py-5 flex flex-col gap-1">
+            <span className="text-[11px] text-[#6b6560] font-medium uppercase tracking-[0.8px]">Boarding Tuition</span>
+            <span className="text-[24px] font-bold text-[#f5f3ef]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              {formatTuition(boardingTuition, boardingMax, currency)}<span className="text-[14px] font-normal text-[#6b6560]">/yr</span>
+            </span>
+          </div>
+        )}
+        {aidAvailable != null && (
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-[10px] px-5 py-5 flex flex-col gap-1">
+            <span className="text-[11px] text-[#6b6560] font-medium uppercase tracking-[0.8px]">Financial Aid</span>
+            <span className={`text-[24px] font-bold ${aidAvailable ? 'text-green-300' : 'text-[#f5f3ef]'}`} style={{ fontFamily: "'Playfair Display', serif" }}>
+              {aidAvailable ? 'Available' : 'Not Available'}
+            </span>
+          </div>
+        )}
+        {aidPct && (
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-[10px] px-5 py-5 flex flex-col gap-1">
+            <span className="text-[11px] text-[#6b6560] font-medium uppercase tracking-[0.8px]">Students on Aid</span>
+            <span className="text-[24px] font-bold text-[#f5f3ef]" style={{ fontFamily: "'Playfair Display', serif" }}>{aidPct}%</span>
+          </div>
+        )}
+        {medianAid && (
+          <div className="col-span-2 bg-white/[0.03] border border-white/[0.06] rounded-[10px] px-5 py-5 flex flex-col gap-1">
+            <span className="text-[11px] text-[#6b6560] font-medium uppercase tracking-[0.8px]">Median Package</span>
+            <span className="text-[24px] font-bold text-[#f5f3ef]" style={{ fontFamily: "'Playfair Display', serif" }}>{sym}{medianAid.toLocaleString()}</span>
+          </div>
+        )}
+      </div>
+      {scholarships.length > 0 && (
+        <div className="mt-4 bg-white/[0.03] border border-white/[0.06] rounded-[10px] px-5 py-5">
+          <span className="text-[11px] text-[#6b6560] font-medium uppercase tracking-[0.8px] block mb-3">Scholarships</span>
+          <div className="space-y-2">
+            {scholarships.map((s, i) => (
+              <div key={i} className="text-[13px] text-[#b8b5af]">
+                <span className="font-semibold text-[#e8e6e1]">{s.name || s.title || `Scholarship ${i + 1}`}</span>
+                {(s.amount || s.value) && <span className="ml-2 text-green-300">{sym}{(s.amount || s.value).toLocaleString()}</span>}
+                {s.eligibility && <span className="ml-2 text-[#6b6560]">— {s.eligibility}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {tuitionNotes && (
+        <p className="text-[12px] text-[#6b6560] italic mt-4">{tuitionNotes}</p>
+      )}
+    </div>
+  );
+}
+
+function AdmissionsSection({ school }) {
+  const dayDeadline = school.dayAdmissionDeadline;
+  const boardingDeadline = f(school, 'boardingAdmissionDeadline', 'boarding_admission_deadline');
+  const openHouse = school.openHouseDates?.[0];
+  const openHouseCountdown = daysUntil(openHouse);
+  const requirements = school.admissionRequirements || f(school, 'entranceRequirements', 'entrance_requirements') || [];
+  const applicationProcess = f(school, 'applicationProcess', 'application_process');
+  const livingArrangements = f(school, 'livingArrangements', 'living_arrangements');
+
+  const hasData = dayDeadline || boardingDeadline || openHouse || requirements.length > 0;
+  if (!hasData) return null;
+
+  return (
+    <div className="px-8 pt-10">
+      <SectionTitle>Admissions</SectionTitle>
+      <div className="grid grid-cols-2 gap-3.5">
+        {dayDeadline && (
+          <div className="rounded-xl p-5 flex flex-col gap-1.5" style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.15)' }}>
+            <span className="text-[11px] text-[#7a756e] font-medium uppercase tracking-[0.8px]">Application Deadline</span>
+            <span className="text-[20px] font-bold text-[#f5f3ef]" style={{ fontFamily: "'Playfair Display', serif" }}>{dayDeadline}</span>
+          </div>
+        )}
+        {boardingDeadline && (
+          <div className="rounded-xl p-5 flex flex-col gap-1.5" style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.15)' }}>
+            <span className="text-[11px] text-[#7a756e] font-medium uppercase tracking-[0.8px]">Boarding Deadline</span>
+            <span className="text-[20px] font-bold text-[#f5f3ef]" style={{ fontFamily: "'Playfair Display', serif" }}>{boardingDeadline}</span>
+          </div>
+        )}
+        {openHouse && (
+          <div className={`rounded-xl p-5 flex flex-col gap-1.5 ${!dayDeadline && !boardingDeadline ? 'col-span-2' : ''}`} style={{ background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.15)' }}>
+            <span className="text-[11px] text-[#7a756e] font-medium uppercase tracking-[0.8px]">Next Open House</span>
+            <span className="text-[20px] font-bold text-[#f5f3ef]" style={{ fontFamily: "'Playfair Display', serif" }}>{openHouse}</span>
+            {openHouseCountdown && (
+              <span className="inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-md w-fit" style={{ background: 'rgba(22,163,74,0.12)', color: '#86efac' }}>
+                {openHouseCountdown}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {livingArrangements?.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-4">
+          {(Array.isArray(livingArrangements) ? livingArrangements : [livingArrangements]).map((a, i) => (
+            <span key={i} className="px-4 py-1.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-[#b8b5af] font-medium">
+              {a}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {requirements.length > 0 && (
+        <>
+          <h3 className="text-[14px] font-semibold text-[#9a9590] mt-6 mb-3">Requirements</h3>
+          <div className="flex flex-wrap gap-2">
+            {(Array.isArray(requirements) ? requirements : [requirements]).map((req, i) => (
+              <span key={i} className="px-4 py-1.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-[#b8b5af] font-medium">
+                {req}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+
+      {applicationProcess && (
+        <>
+          <h3 className="text-[14px] font-semibold text-[#9a9590] mt-6 mb-3">Application Process</h3>
+          {Array.isArray(applicationProcess) ? (
+            <ol className="space-y-2 ml-1">
+              {applicationProcess.map((step, i) => (
+                <li key={i} className="flex items-start gap-3 text-[13px] text-[#b8b5af]">
+                  <span className="text-[#c9a84c] font-bold min-w-[18px]">{i + 1}.</span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-[13px] text-[#9a9590]">{applicationProcess}</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function OutcomesSection({ school }) {
+  const placements = f(school, 'universityPlacements', 'university_placements');
+  if (!placements || (Array.isArray(placements) && placements.length === 0)) return null;
+
+  const items = Array.isArray(placements) ? placements : [placements];
+
+  return (
+    <div className="px-8 pt-10">
+      <SectionTitle>Outcomes & Alumni</SectionTitle>
+      <div className="flex flex-wrap gap-2">
+        {items.map((p, i) => (
+          <span key={i} className="px-4 py-1.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[13px] text-[#b8b5af] font-medium">
+            {typeof p === 'string' ? p : p.name || p.university || JSON.stringify(p)}
+          </span>
+        ))}
       </div>
     </div>
   );
 }
 
-export default function SchoolDetailPanel({ 
-  school, 
+function CampusMediaSection({ school }) {
+  const gallery = f(school, 'photoGallery', 'photo_gallery');
+  const virtualTour = f(school, 'virtualTourUrl', 'virtual_tour_url');
+  if (!gallery?.length && !virtualTour) return null;
+
+  return (
+    <div className="px-8 pt-10">
+      <SectionTitle>Campus & Media</SectionTitle>
+      {gallery?.length > 0 && (
+        <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+          {gallery.slice(0, 6).map((url, i) => (
+            <img
+              key={i}
+              src={url}
+              alt={`${school.name} photo ${i + 1}`}
+              className="h-36 w-52 object-cover rounded-lg shrink-0"
+              loading="lazy"
+            />
+          ))}
+        </div>
+      )}
+      {virtualTour && (
+        <a href={virtualTour} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-4 text-[#c9a84c] font-semibold text-[13px] hover:underline">
+          <Eye className="h-4 w-4" />
+          Take a Virtual Tour &rarr;
+        </a>
+      )}
+    </div>
+  );
+}
+
+function ContactSection({ school }) {
+  const { website, email, phone } = school;
+  if (!website && !email && !phone) return null;
+
+  return (
+    <div className="px-8 pt-10">
+      <SectionTitle>Contact</SectionTitle>
+      <div className="space-y-3">
+        {website && (
+          <a
+            href={website.startsWith('http') ? website : `https://${website}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2.5 text-[14px] text-[#c9a84c] font-medium hover:underline"
+          >
+            <Globe2 className="h-4 w-4" />
+            Visit School Website &rarr;
+          </a>
+        )}
+        {email && (
+          <a href={`mailto:${email}`} className="flex items-center gap-2.5 text-[14px] text-[#b8b5af] hover:text-[#e8e6e1]">
+            <Mail className="h-4 w-4 text-[#6b6560]" />
+            {email}
+          </a>
+        )}
+        {phone && (
+          <a href={`tel:${phone}`} className="flex items-center gap-2.5 text-[14px] text-[#b8b5af] hover:text-[#e8e6e1]">
+            <Phone className="h-4 w-4 text-[#6b6560]" />
+            {phone}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CtaBar({ school, isShortlisted, onToggleShortlist, onCompare, hasTourFeatures, onRequestTour }) {
+  const nextOpenHouse = school.openHouseDates?.[0];
+  const countdown = daysUntil(nextOpenHouse);
+
+  return (
+    <div className="sticky bottom-0 left-0 right-0 border-t border-white/[0.06] px-6 py-4 flex gap-3 items-center z-40" style={{ background: 'rgba(20,26,31,0.95)', backdropFilter: 'blur(12px)' }}>
+      {/* Primary CTA */}
+      {nextOpenHouse && countdown ? (
+        <button className="flex-1 rounded-[10px] py-3.5 text-[14px] font-bold cursor-pointer border-none transition-colors" style={{ background: '#c9a84c', color: '#141a1f', fontFamily: "'Inter', sans-serif" }}>
+          RSVP — Open House {nextOpenHouse}
+        </button>
+      ) : hasTourFeatures ? (
+        <button onClick={onRequestTour} className="flex-1 rounded-[10px] py-3.5 text-[14px] font-bold cursor-pointer border-none transition-colors" style={{ background: '#c9a84c', color: '#141a1f', fontFamily: "'Inter', sans-serif" }}>
+          Request a Tour
+        </button>
+      ) : (
+        school.website && (
+          <a href={school.website.startsWith('http') ? school.website : `https://${school.website}`} target="_blank" rel="noopener noreferrer" className="flex-1">
+            <button className="w-full rounded-[10px] py-3 text-[13px] font-semibold cursor-pointer bg-transparent border-[1.5px] transition-colors" style={{ color: '#c9a84c', borderColor: '#c9a84c', fontFamily: "'Inter', sans-serif" }}>
+              Visit Website
+            </button>
+          </a>
+        )
+      )}
+      {/* Secondary */}
+      {hasTourFeatures && nextOpenHouse && (
+        <button onClick={onRequestTour} className="rounded-[10px] px-5 py-3 text-[13px] font-semibold cursor-pointer bg-transparent border-[1.5px] whitespace-nowrap transition-colors" style={{ color: '#c9a84c', borderColor: '#c9a84c', fontFamily: "'Inter', sans-serif" }}>
+          Request a Tour
+        </button>
+      )}
+      {/* Icon buttons */}
+      <button
+        onClick={() => onToggleShortlist(school.id)}
+        className="w-11 h-11 rounded-[10px] border border-white/10 flex items-center justify-center cursor-pointer bg-transparent shrink-0 text-[#7a756e] hover:border-white/25 hover:text-[#e8e6e1] transition-colors"
+      >
+        <Heart className={`h-[18px] w-[18px] ${isShortlisted ? 'fill-red-400 text-red-400' : ''}`} />
+      </button>
+      <button
+        onClick={() => onCompare?.(school.id)}
+        className="w-11 h-11 rounded-[10px] border border-white/10 flex items-center justify-center cursor-pointer bg-transparent shrink-0 text-[#7a756e] hover:border-white/25 hover:text-[#e8e6e1] transition-colors"
+      >
+        <Scale className="h-[18px] w-[18px]" />
+      </button>
+    </div>
+  );
+}
+
+// --- Main Component ---
+
+export default function SchoolDetailPanel({
+  school,
   familyProfile,
-  onBack, 
-  onToggleShortlist, 
+  onBack,
+  onToggleShortlist,
   onCompare,
   isShortlisted,
   actionPlan,
@@ -388,46 +691,34 @@ export default function SchoolDetailPanel({
   if (!school) return null;
 
   const hasTourFeatures = school.schoolTier === 'growth' || school.schoolTier === 'pro';
-  const hasAllFeatures = school.schoolTier === 'pro';
-  const matchScore = calculateMatchScore(school, familyProfile);
-  const matchReasons = getMatchReasons(school, familyProfile);
 
   return (
-    <div className="h-full flex flex-col bg-slate-900 text-white">
-      {/* Header with Back Button */}
-      <div className="p-4 border-b border-slate-700 flex items-center gap-2 bg-slate-800/50">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onBack}
-          className="flex items-center gap-1 text-slate-300 hover:text-white"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Results
-        </Button>
-      </div>
-      
-      {/* Content Tiers */}
+    <div className="h-full flex flex-col text-[#e8e6e1]" style={{ background: '#141a1f', fontFamily: "'Inter', -apple-system, sans-serif" }}>
+      {/* Scrollable content */}
       <div className="flex-1 overflow-auto">
-        {/* TIER 1 */}
-        <HeroTier school={school} familyProfile={familyProfile} matchScore={matchScore} matchReasons={matchReasons} />
-        
-        {/* TIER 2 */}
-        <DataGridTier school={school} familyProfile={familyProfile} />
-        
-        {/* TIER 3 */}
-        <DetailedSectionsTier school={school} />
-        
-        {/* TIER 4 */}
-        <ReviewsTier />
-
-  
+        <HeroSection school={school} onBack={onBack} />
+        <ScanBar school={school} />
+        <AboutSection school={school} />
+        <Divider />
+        <WhatToExpectSection school={school} />
+        <Divider />
+        <ProgramsSection school={school} />
+        <Divider />
+        <FinancialSection school={school} />
+        <Divider />
+        <AdmissionsSection school={school} />
+        <Divider />
+        <OutcomesSection school={school} />
+        <CampusMediaSection school={school} />
+        <ContactSection school={school} />
+        {/* Bottom padding for CTA bar */}
+        <div className="h-10" />
       </div>
-      
-      {/* TIER 5 */}
-      <CtaBar 
-        school={school} 
-        isShortlisted={isShortlisted} 
+
+      {/* Sticky CTA */}
+      <CtaBar
+        school={school}
+        isShortlisted={isShortlisted}
         onToggleShortlist={onToggleShortlist}
         onCompare={onCompare}
         hasTourFeatures={hasTourFeatures}
