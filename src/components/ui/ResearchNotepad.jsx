@@ -789,8 +789,8 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                             ? { background: '#fffbeb', border: '1px solid #fef3c7' }
                             : { background: '#f0fdfa', border: '1px solid #d1fae5' };
                           return (
-                            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                              <div style={{ flexShrink: 0, marginTop: 2 }}><NsDiamond /></div>
+                            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <div style={{ flexShrink: 0 }}><NsDiamond /></div>
                               <div style={{
                                 ...bubbleStyle,
                                 borderRadius: '2px 10px 10px 10px',
@@ -871,6 +871,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
 
                   {/* AI Insight box */}
                   <div style={{
+                    marginTop: 16,
                     background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 8,
                     padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start',
                   }}>

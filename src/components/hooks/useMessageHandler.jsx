@@ -229,10 +229,11 @@ export const useMessageHandler = ({
 
       // Visit Prep Kit: same — only set when returned, only clear when leaving DEEP_DIVE
       if (response.data?.visitPrepKit) {
+        const prepSchoolId = response.data?.visitPrepKit?.schoolId || resolvedSchoolId || explicitSchoolId || selectedSchool?.id || null;
         if (!isPremium) {
-          setVisitPrepKit({ __gated: true, schoolName: response.data.visitPrepKit.schoolName || 'this school' });
+          setVisitPrepKit({ __gated: true, schoolName: response.data.visitPrepKit.schoolName || 'this school', schoolId: prepSchoolId });
         } else {
-          setVisitPrepKit(response.data.visitPrepKit);
+          setVisitPrepKit({ ...response.data.visitPrepKit, schoolId: prepSchoolId });
         }
       } else if (response.data?.state === 'DEEP_DIVE' && response.data?.visitPrepKit === null && artifactCache && selectedSchool?.id) {
         // WC6: Hydrate from cache if no new visit prep kit in DEEP_DIVE state
@@ -240,9 +241,9 @@ export const useMessageHandler = ({
         if (artifactCache[cacheKey]) {
           console.log('[WC6] Hydrating visitPrepKit from cache');
           if (!isPremium) {
-            setVisitPrepKit({ __gated: true, schoolName: artifactCache[cacheKey].schoolName || selectedSchool?.name || 'this school' });
+            setVisitPrepKit({ __gated: true, schoolName: artifactCache[cacheKey].schoolName || selectedSchool?.name || 'this school', schoolId: selectedSchool.id });
           } else {
-            setVisitPrepKit(artifactCache[cacheKey]);
+            setVisitPrepKit({ ...artifactCache[cacheKey], schoolId: selectedSchool.id });
           }
         }
       } else if (response.data?.state !== 'DEEP_DIVE') {
