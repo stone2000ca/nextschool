@@ -414,6 +414,9 @@ export const useMessageHandler = ({
                 conversationContext: updatedContext,
                 isActive: true
               });
+              // BUG-RN-PERSIST Fix A2: Patch updatedContext.conversationId with the real id
+              // so that subsequent renders (and orchestrateConversation calls) carry the correct value.
+              updatedContext.conversationId = chatHistoryRecord.id;
               setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversationContext: updatedContext }));
               console.log('[SESSION] Created ChatHistory with id:', chatHistoryRecord.id);
             } catch (e) {
