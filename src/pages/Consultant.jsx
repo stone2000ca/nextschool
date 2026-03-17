@@ -192,6 +192,9 @@ export default function Consultant() {
   // T047: Auto-refresh animation trigger
   const [schoolsAnimKey, setSchoolsAnimKey] = useState(0);
 
+  // E41-S8: Left panel mode — 'grid' (default) or 'comparison' (inline, keeps chat visible)
+  const [leftPanelMode, setLeftPanelMode] = useState('grid');
+
   // E39-S8: Memoized set of schools with deep dive analysis
   const schoolsWithDeepDive = useMemo(() => getSchoolsWithDeepDive(messages), [messages]);
 
@@ -365,7 +368,7 @@ export default function Consultant() {
                         schools.length === 0 && 
                         currentView !== 'schools' && 
                         currentView !== 'detail' && 
-                        currentView !== 'comparison' && 
+                        leftPanelMode !== 'comparison' &&
                         currentView !== 'comparison-table' &&
                         ![STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState)
                       );
@@ -777,6 +780,7 @@ export default function Consultant() {
     setContactLog([]);
     setHydrationSource(null);
     setSchoolsAnimKey(0);
+    setLeftPanelMode('grid');
     setShowLoadingOverlay(false);
     setCurrentView('chat');
   };
@@ -1018,7 +1022,8 @@ export default function Consultant() {
       return;
     }
     setComparisonData(comparedSchools);
-    setCurrentView('comparison');
+    // E41-S8: Use leftPanelMode instead of currentView='comparison' so chat stays visible
+    setLeftPanelMode('comparison');
 
     // E11b: Fetch family-personalized comparisonMatrix from backend (non-blocking)
     try {
@@ -1339,6 +1344,41 @@ export default function Consultant() {
             }
             break;
           }
+          // E41-S6: Edit criteria — update schools with re-search results
+          case 'EDIT_CRITERIA': {
+            if (action.payload?.schools?.length > 0) {
+              setSchools(action.payload.schools);
+              setSchoolsAnimKey(k => k + 1);
+            }
+            break;
+          }
+          // E41-S7: Filter schools — apply filter overrides to grid
+          case 'FILTER_SCHOOLS': {
+            const f = action.payload?.filters || {};
+            if (f.clear) {
+              resetFilterOverrides();
+            } else {
+              const mapped = {};
+              if (f.boardingType === 'boarding') mapped.boardingOnly = true;
+              else if (f.boardingType === 'day') mapped.boardingOnly = false;
+              if (f.gender) mapped.genderFilter = f.gender === 'coed' ? 'co-ed' : f.gender;
+              if (f.curriculum) mapped.curriculum = f.curriculum;
+              setFilterOverrides(prev => ({ ...prev, ...mapped }));
+            }
+            break;
+          }
+          // E41-S10: Load more schools
+          case 'LOAD_MORE':
+            loadMoreSchools();
+            break;
+          // E41-S10: Sort schools by distance
+          case 'SORT_SCHOOLS': {
+            const sortBy = action.payload?.sortBy || 'distance';
+            if (sortBy === 'distance' && userLocation) {
+              applyDistances(userLocation, schools);
+            }
+            break;
+          }
           default:
             break;
         }
@@ -1547,7 +1587,8 @@ export default function Consultant() {
         >
 
 
-          {comparisonData ? (
+          {/* E41-S8: Comparison renders inline (leftPanelMode='comparison') — chat stays live on right */}
+          {leftPanelMode === 'comparison' && comparisonData ? (
             <ComparisonView
               schools={comparisonData}
               familyProfile={familyProfile}
@@ -1555,8 +1596,8 @@ export default function Consultant() {
               isPremium={isPremium}
               onUpgrade={() => setShowUpgradeModal(true)}
               onBack={() => {
+                setLeftPanelMode('grid');
                 setComparisonData(null);
-                setCurrentView('schools');
                 // Clear comparingSchools from context
                 const updatedContext = { ...(currentConversation?.conversationContext || {}) };
                 delete updatedContext.comparingSchools;

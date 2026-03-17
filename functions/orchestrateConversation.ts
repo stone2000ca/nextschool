@@ -178,9 +178,33 @@ async function callOpenRouter(options) {
 // =============================================================================
 // E32-001: UI Action validation helpers
 // =============================================================================
-const V1_ACTION_TYPES = ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL', 'INITIATE_TOUR'];
+// E41-S6/S7/S10: Extended action types
+const V1_ACTION_TYPES = ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL', 'INITIATE_TOUR', 'EDIT_CRITERIA', 'FILTER_SCHOOLS', 'LOAD_MORE', 'SORT_SCHOOLS'];
 const VALID_PANELS = ['shortlist', 'comparison', 'brief'];
 const ACTION_TOOL_SCHEMA = [{ type: 'function', function: { name: 'execute_ui_action', description: 'Execute UI actions alongside your text response when the user wants to add schools to shortlist, open panels, or expand school details', parameters: { type: 'object', properties: { actions: { type: 'array', items: { type: 'object', properties: { type: { type: 'string', enum: ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL'] }, schoolId: { type: 'string', description: 'School entity ID' }, panel: { type: 'string', enum: ['shortlist', 'comparison', 'brief'] } }, required: ['type'] } } }, required: ['actions'] } } }];
+
+// =============================================================================
+// E41-S2: Inline classifyIntent — regex keyword gate, no LLM (~5-50ms)
+// Mirrors functions/classifyIntent.ts — inlined because Deno functions can't import across files.
+// =============================================================================
+const CLASSIFY_INTENT_ACTION_PATTERNS: Array<{ hint: string; re: RegExp }> = [
+  { hint: 'shortlist',   re: /\b(add|shortlist|save|bookmark|keep)\b/i },
+  { hint: 'compare',     re: /\b(compare|versus|vs\.?|side[\s-]by[\s-]side)\b|difference between .+ and /i },
+  { hint: 'filter',      re: /\b(filter|only show|hide|just .+ schools?)\b/i },
+  { hint: 'edit',        re: /\b(change .+ to|budget .+ (is|now)|actually .+ not|update my|new budget|budget is now|budget changed)\b/i },
+  { hint: 'journey',     re: /\b(book .+ tour|schedule .+ (tour|visit)|apply|open house|campus visit)\b/i },
+  { hint: 'expand',      re: /\b(deep dive|tell me everything|full (report|analysis|profile))\b/i },
+  { hint: 'load-more',   re: /\b(show more|load more|more schools?|see more)\b/i },
+  { hint: 'sort',        re: /\b(sort by|closest first|sort (by )?distance|sort (by )?tuition|order by)\b/i },
+  { hint: 'open-panel',  re: /\b(open (my )?(shortlist|brief|comparison)|show (my )?(shortlist|brief))\b/i },
+];
+function classifyIntentFn(message: string): { gate: 'ACTION' | 'CONVERSATION'; actionHint?: string } {
+  if (!message || message.trim().length === 0) return { gate: 'CONVERSATION' };
+  for (const { hint, re } of CLASSIFY_INTENT_ACTION_PATTERNS) {
+    if (re.test(message)) return { gate: 'ACTION', actionHint: hint };
+  }
+  return { gate: 'CONVERSATION' };
+}
 
 function validateActions(rawToolCalls, validSchoolIds, base44Client, conversationId) {
   const validatedActions = [];
@@ -194,7 +218,14 @@ function validateActions(rawToolCalls, validSchoolIds, base44Client, conversatio
         if ((action.type === 'ADD_TO_SHORTLIST' || action.type === 'EXPAND_SCHOOL') && !validSchoolIds.has(action.schoolId)) { logDroppedAction(base44Client, conversationId, action, 'INVALID_SCHOOL_ID'); continue; }
         if (action.type === 'OPEN_PANEL' && !VALID_PANELS.includes(action.panel)) { logDroppedAction(base44Client, conversationId, action, 'INVALID_PANEL'); continue; }
         const timing = action.type === 'ADD_TO_SHORTLIST' ? 'immediate' : 'after_message';
-        validatedActions.push({ type: action.type, payload: action.type === 'OPEN_PANEL' ? { panel: action.panel } : { schoolId: action.schoolId }, timing });
+        // E41: Build payload for extended action types
+        let payload: Record<string, unknown> = { schoolId: action.schoolId };
+        if (action.type === 'OPEN_PANEL') payload = { panel: action.panel };
+        else if (action.type === 'EDIT_CRITERIA') payload = { profileDelta: action.profileDelta || {} };
+        else if (action.type === 'FILTER_SCHOOLS') payload = { filters: action.filters || {} };
+        else if (action.type === 'SORT_SCHOOLS') payload = { sortBy: action.sortBy || 'default' };
+        else if (action.type === 'LOAD_MORE') payload = {};
+        validatedActions.push({ type: action.type, payload, timing });
       }
     } catch (e) { logDroppedAction(base44Client, conversationId, tc, 'PARSE_ERROR'); }
   }
@@ -1443,13 +1474,16 @@ Object.assign(context, safeUpdatedContext);
 
       console.log('[ORCH] resolveTransition:', { nextState: currentState, intentSignal, sufficiency: resolveResult.sufficiency });
 
-      // S136-WC1: E35-REC1 — fire-and-forget for ALL states (no await, no post-merge)
-      base44.asServiceRole.functions.invoke('extractEntities', {
-        message: processMessage,
-        conversationFamilyProfile,
-        context,
-        conversationHistory
-      }).catch(e => console.error('[S136-WC1] extractEntities fire-and-forget failed:', e.message));
+      // S136-WC1: E35-REC1 — fire-and-forget for non-RESULTS states
+      // E41-S3: RESULTS state defers extraction to post-reply (with aiReply for richer context)
+      if (currentState !== STATES.RESULTS) {
+        base44.asServiceRole.functions.invoke('extractEntities', {
+          message: processMessage,
+          conversationFamilyProfile,
+          context,
+          conversationHistory
+        }).catch(e => console.error('[S136-WC1] extractEntities fire-and-forget failed:', e.message));
+      }
 
       // GIBBERISH DETECTION: Catch nonsensical input before routing to handlers
       const normalizedMsg = (processMessage || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
@@ -1620,6 +1654,10 @@ Object.assign(context, safeUpdatedContext);
         fireJourneyUpdate(base44, journeyContext, context, conversationHistory, message, 'RESULTS');
 
         const autoRefresh = context.autoRefreshed === true;
+        // E41-S3: classifyIntent pre-classification (~50ms, no LLM)
+        const intentClassification = classifyIntentFn(processMessage);
+        console.log('[E41-S3] classifyIntent:', intentClassification);
+
         const resultsResult = await base44.asServiceRole.functions.invoke('handleResults', {
           message: processMessage,
           conversationFamilyProfile: workingProfile,
@@ -1633,6 +1671,8 @@ Object.assign(context, safeUpdatedContext);
           userLocation,
           autoRefresh,
           extractedEntities: extractionResult?.extractedEntities || {},
+          gate: intentClassification.gate,
+          actionHint: intentClassification.actionHint,
           returningUserContextBlock,
           previousSchools: (currentSchools && currentSchools.length > 0) ? currentSchools : (context.lastMatchedSchools || [])
         });
@@ -1651,6 +1691,48 @@ Object.assign(context, safeUpdatedContext);
           responseData.actions = responseData.rawToolCalls ? validateActions(responseData.rawToolCalls, validSchoolIds_results, base44, conversationId) : [];
           delete responseData.rawToolCalls;
         }
+
+        // E41-S6: Handle EDIT_CRITERIA action — merge profileDelta and re-search
+        const editCriteriaAction = responseData.actions?.find(a => a.type === 'EDIT_CRITERIA');
+        if (editCriteriaAction?.payload?.profileDelta && Object.keys(editCriteriaAction.payload.profileDelta).length > 0) {
+          try {
+            const delta = editCriteriaAction.payload.profileDelta;
+            console.log('[E41-S6] EDIT_CRITERIA delta:', delta);
+            // Merge delta into workingProfile
+            Object.assign(workingProfile, delta);
+            context.accumulatedFamilyProfile = { ...(context.accumulatedFamilyProfile || {}), ...delta };
+            // Re-invoke searchSchools with updated profile
+            const searchResult = await base44.asServiceRole.functions.invoke('searchSchools', {
+              familyProfile: workingProfile,
+              conversationId,
+              userId,
+              userLocation
+            });
+            if (searchResult.data?.schools?.length > 0) {
+              responseData.schools = searchResult.data.schools;
+              editCriteriaAction.payload.schools = searchResult.data.schools;
+              console.log('[E41-S6] Re-search returned', searchResult.data.schools.length, 'schools');
+            }
+          } catch (e) {
+            console.error('[E41-S6] EDIT_CRITERIA re-search failed:', e.message);
+          }
+        }
+
+        // E41-S3: Deferred extractEntities — fire after reply, with aiReply for richer context
+        const aiReply = responseData.message || '';
+        base44.asServiceRole.functions.invoke('extractEntities', {
+          message: processMessage,
+          aiReply,
+          conversationFamilyProfile: workingProfile,
+          context,
+          conversationHistory
+        }).then((extractResult) => {
+          if (extractResult?.data?.updatedFamilyProfile) {
+            context.accumulatedFamilyProfile = { ...(context.accumulatedFamilyProfile || {}), ...extractResult.data.updatedFamilyProfile };
+            console.log('[E41-S3] Deferred extractEntities complete, updated accumulatedFamilyProfile');
+          }
+        }).catch(e => console.error('[E41-S3] Deferred extractEntities failed (non-critical):', e.message));
+
         return Response.json(responseData);
       }
 

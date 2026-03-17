@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
      }
 
     try {
-      const { childName, childGrade, locationArea, interests, priorities, dealbreakers } = localProfile;
+      const { childName, childGrade, locationArea, interests, priorities, dealbreakers, parentNotes } = localProfile;
       // BUG-ENT-005 FIX: Check context.extractedEntities for maxTuition if not in FamilyProfile
       let maxTuition = localProfile.maxTuition;
       if ((!maxTuition || maxTuition === null || maxTuition === undefined) && context.extractedEntities?.maxTuition) {
@@ -335,6 +335,13 @@ Format as a markdown bullet list with one field per line. Start the child field 
           console.log('[BRIEF] OpenRouter failed for Jackie, using programmatic fallback');
           briefMessageText = programmaticFallback;
         }
+      }
+      // E41-S9: Append "What Else We've Learned" section from parentNotes[] if populated
+      if (Array.isArray(parentNotes) && parentNotes.length > 0) {
+        const notesSection = '\n\n## What Else We\'ve Learned\n' +
+          parentNotes.map(note => `- ${note}`).join('\n');
+        briefMessageText = briefMessageText + notesSection;
+        console.log('[BRIEF] Appended parentNotes section:', parentNotes.length, 'notes');
       }
       briefMessage = briefMessageText;
     } catch (e) {
