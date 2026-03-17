@@ -2,6 +2,7 @@ import { STATES, BRIEF_STATUS } from '@/pages/stateMachineConfig';
 import { validateBriefContent, generateProgrammaticBrief } from '@/components/utils/briefUtils';
 import { extractAndSaveMemories } from '@/components/utils/memoryManager';
 import { base44 } from '@/api/base44Client';
+import { retryWithBackoff } from '@/components/utils/retryWithBackoff';
 import { useRef, useEffect } from 'react';
 
 export const useMessageHandler = ({
@@ -201,7 +202,7 @@ export const useMessageHandler = ({
           address: userLocation.address
         } : null,
             selectedSchoolId: resolvedSchoolId || lastResolvedSchoolId || selectedSchool?.id || null,
-        conversationId: conversationIdRef.current || currentConversation?.id || null,
+        conversationId: (typeof conversationIdRef.current === 'string' && conversationIdRef.current.length > 0) ? conversationIdRef.current : (() => { console.warn('[E42-GUARD] Invalid conversationIdRef.current, using null:', conversationIdRef.current); return null; })(),
         returningUserContext,
         ...(restoredSessionData && activeJourney ? { journeyContext: activeJourney } : {})
       });
@@ -340,6 +341,11 @@ export const useMessageHandler = ({
         conversationContext: updatedContext,
       }));
 
+      // E42-PERSIST: Primary conversationContext persist (non-blocking)
+      if (typeof conversationIdRef.current === 'string' && conversationIdRef.current) {
+        retryWithBackoff(() => base44.entities.ChatHistory.update(conversationIdRef.current, { conversationContext: updatedContext })).catch(err => console.error('[E42-PERSIST] Primary context save failed:', err));
+      }
+
       // BUG-DD-001 FIX: selectedSchool is SINGLE SOURCE OF TRUTH - NEVER clear it based on AI state
       const responseTargetSchoolId = response.data?.deepDiveAnalysis?.schoolId || resolvedSchoolId || explicitSchoolId;
       const isSchoolSwitch = responseTargetSchoolId && responseTargetSchoolId !== selectedSchool?.id;
@@ -434,8 +440,12 @@ export const useMessageHandler = ({
               });
               // BUG-RN-PERSIST Fix A2 + Fix 1: Patch both updatedContext and the ref immediately
               // so that deep dive closures read the real id without waiting for React re-render.
-              updatedContext.conversationId = chatHistoryRecord.id;
-              conversationIdRef.current = chatHistoryRecord.id;
+              if (typeof chatHistoryRecord.id === 'string' && chatHistoryRecord.id.length > 0) {
+                updatedContext.conversationId = chatHistoryRecord.id;
+                conversationIdRef.current = chatHistoryRecord.id;
+              } else {
+                console.warn('[E42-GUARD] Invalid chatHistoryRecord.id, skipping ref assignment:', chatHistoryRecord.id);
+              }
               setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversationContext: updatedContext }));
               console.log('[SESSION] Created ChatHistory with id:', chatHistoryRecord.id);
             } catch (e) {
@@ -605,12 +615,12 @@ export const useMessageHandler = ({
       (async () => {
         // CRITICAL: Persist messages to ChatHistory FIRST — this is the primary
         // data survival path. Must run before any other bookkeeping that might throw.
-        if (isAuthenticated && currentConversation && currentConversation.id) {
+        if (isAuthenticated && typeof currentConversation?.id === 'string' && currentConversation.id.length > 0) {
           try {
-            await base44.entities.ChatHistory.update(currentConversation.id, {
+            await retryWithBackoff(() => base44.entities.ChatHistory.update(currentConversation.id, {
               messages: finalMessages,
               conversationContext: updatedContext
-            });
+            }));
           } catch (persistErr) {
             console.error('[PERSIST] ChatHistory.update failed — messages may be lost on refresh:', persistErr);
           }
