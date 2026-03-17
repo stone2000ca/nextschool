@@ -211,7 +211,20 @@ PRIORITY vs INTEREST CLASSIFICATION:
 CRITICAL: If the user confirms the brief or says something like "that looks right", "show me schools", "yes", "confirmed", "let's see", "go ahead", set intentSignal to 'confirm-brief'.
 CRITICAL: If the user requests a Visit Prep Kit or tour preparation — phrases like "yes prepare my visit kit", "prepare the kit", "yes make it", "visit prep", "tour preparation", "prepare that", "yes please" (in context of a visit kit offer) — set intentSignal to 'visit_prep_request'.
 
-CRITICAL: If the user asks to add, save, shortlist, or bookmark a specific school — phrases like "add Howlett Academy to my shortlist", "save that school", "shortlist Rosedale", "add it", "keep that one", "I want to save this school", "add to my list" — set intentSignal to 'shortlist-action'. This takes priority over 'ask-about-school' and 'continue'.`;
+CRITICAL: If the user asks to add, save, shortlist, or bookmark a specific school — phrases like "add Howlett Academy to my shortlist", "save that school", "shortlist Rosedale", "add it", "keep that one", "I want to save this school", "add to my list" — set intentSignal to 'shortlist-action'. This takes priority over 'ask-about-school' and 'continue'.
+
+E41-CONVERSATION CAPTURE: Even when the parent is asking a question (not providing search criteria), capture any implied preferences, concerns, or family context as soft signals in parentNotes[].
+Write short, factual observations:
+- "My son has ADHD" → parentNotes: ["Child has ADHD — needs learning support"]
+- "Can we afford private on one income?" → parentNotes: ["Budget-sensitive — single income household"]
+- "Is Montessori good for shy kids?" → parentNotes: ["Exploring Montessori — child may be introverted"]
+- "What about French immersion?" → parentNotes: ["Parent interested in French immersion programs"]
+- "Worried about bullying" → parentNotes: ["Bullying prevention is a concern"]
+Also map to existing schema when applicable:
+- "French immersion" → priorities: ["French immersion"] AND parentNotes
+- "ADHD" → priorities: ["learning support"] AND parentNotes
+- "Budget is tight" → parentNotes only (no maxTuition override without a number)
+parentNotes are ADDITIVE — never remove prior notes. Deduplicate if semantically identical. Return empty array [] if nothing new to capture.`;
 
     const userPrompt = `CURRENT KNOWN DATA:
 ${JSON.stringify(knownData, null, 2)}
@@ -245,7 +258,8 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
             remove_interests: { type: 'array', items: { type: 'string' } },
             remove_dealbreakers: { type: 'array', items: { type: 'string' } },
             intentSignal: { type: 'string', enum: ['continue', 'request-brief', 'request-results', 'edit-criteria', 'ask-about-school', 'shortlist-action', 'back-to-results', 'restart', 'off-topic', 'confirm-brief', 'visit_prep_request', 'visit_debrief'] },
-            briefDelta: { type: 'object', properties: { additions: { type: 'array', items: { type: 'string' } }, updates: { type: 'array', items: { type: 'string' } }, removals: { type: 'array', items: { type: 'string' } } } }
+            briefDelta: { type: 'object', properties: { additions: { type: 'array', items: { type: 'string' } }, updates: { type: 'array', items: { type: 'string' } }, removals: { type: 'array', items: { type: 'string' } } } },
+            parentNotes: { type: 'array', items: { type: 'string' }, description: 'E41: Soft signals — implied preferences, concerns, or family context captured from CONVERSATION messages' }
           },
           required: ['intentSignal', 'briefDelta']
         },
@@ -418,11 +432,16 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { message, conversationFamilyProfile, context, conversationHistory } = await req.json();
+    const { message, aiReply, conversationFamilyProfile, context, conversationHistory } = await req.json();
 
     console.log('[EXTRACT] Processing message:', message?.substring(0, 50));
 
-    const result = await extractEntitiesLogic(base44, message, conversationFamilyProfile, context, conversationHistory);
+    // E41-S3: When aiReply is provided (RESULTS deferred extraction), append it to the user prompt for richer context
+    const effectiveMessage = aiReply
+      ? `${message}\n\n[AI CONSULTANT REPLY FOR CONTEXT: ${aiReply}]`
+      : message;
+
+    const result = await extractEntitiesLogic(base44, effectiveMessage, conversationFamilyProfile, context, conversationHistory);
 
     return Response.json(result);
   } catch (error) {

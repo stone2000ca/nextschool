@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
         personalityTraits: [],
         priorities: [],
         dealbreakers: [],
-        curriculumPreference: []
+        curriculumPreference: [],
+        parentNotes: []
       };
       const created = await base44.entities.FamilyProfile.create(profile);
       profile = created;
