@@ -612,27 +612,16 @@ Generate the DEEPDIVE card for this family-school match.`;
       }
     }
 
-    // Save to SchoolAnalysis entity (non-blocking, fire-and-forget)
+    // Save to SchoolAnalysis entity (awaited — must complete before response
+    // so that F5 immediately after deep dive can find the row)
     if (userId && selectedSchoolId && deepDiveAnalysis) {
-      (async () => {
-        try {
-          const existing = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId });
-          if (existing && existing.length > 0) {
-            await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, schoolName: selectedSchool.name, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || '' });
-            console.log('[DEEPDIVE] SchoolAnalysis updated:', existing[0].id);
-            const prevVisitQuestions = existing[0].visitQuestions;
-            if (!prevVisitQuestions || prevVisitQuestions.length === 0) {
-              const childName = conversationFamilyProfile?.childName || null;
-              const schoolName = selectedSchool.name;
-              if (consultantName === 'Jackie') {
-                aiMessage += `\n\nBy the way — I can put together a personalized Visit Prep Kit for ${schoolName}, with specific questions to ask during your tour, things to watch for, and red flags based on everything you've told me about ${childName || 'your child'}. Want me to prepare that?`;
-              } else {
-                aiMessage += `\n\nI can prepare a Visit Prep Kit for ${schoolName} — targeted questions, observation checklist, and red flags specific to your priorities. Want me to put that together?`;
-              }
-            }
-          } else {
-            const created = await base44.entities.SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, schoolName: selectedSchool.name, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || '' });
-            console.log('[DEEPDIVE] SchoolAnalysis created:', created.id);
+      try {
+        const existing = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId, conversationId: conversationId || '' });
+        if (existing && existing.length > 0) {
+          await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, schoolName: selectedSchool.name, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || '' });
+          console.log('[DEEPDIVE] SchoolAnalysis updated:', existing[0].id);
+          const prevVisitQuestions = existing[0].visitQuestions;
+          if (!prevVisitQuestions || prevVisitQuestions.length === 0) {
             const childName = conversationFamilyProfile?.childName || null;
             const schoolName = selectedSchool.name;
             if (consultantName === 'Jackie') {
@@ -641,10 +630,20 @@ Generate the DEEPDIVE card for this family-school match.`;
               aiMessage += `\n\nI can prepare a Visit Prep Kit for ${schoolName} — targeted questions, observation checklist, and red flags specific to your priorities. Want me to put that together?`;
             }
           }
-        } catch (persistError) {
-          console.warn('[DEEPDIVE] SchoolAnalysis persist failed:', persistError.message);
+        } else {
+          const created = await base44.entities.SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, schoolName: selectedSchool.name, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || '' });
+          console.log('[DEEPDIVE] SchoolAnalysis created:', created.id);
+          const childName = conversationFamilyProfile?.childName || null;
+          const schoolName = selectedSchool.name;
+          if (consultantName === 'Jackie') {
+            aiMessage += `\n\nBy the way — I can put together a personalized Visit Prep Kit for ${schoolName}, with specific questions to ask during your tour, things to watch for, and red flags based on everything you've told me about ${childName || 'your child'}. Want me to prepare that?`;
+          } else {
+            aiMessage += `\n\nI can prepare a Visit Prep Kit for ${schoolName} — targeted questions, observation checklist, and red flags specific to your priorities. Want me to put that together?`;
+          }
         }
-      })();
+      } catch (persistError) {
+        console.warn('[DEEPDIVE] SchoolAnalysis persist failed:', persistError.message);
+      }
     }
 
     const aiMessageRaw = aiMessage; // E30-001: snapshot before sanitization
