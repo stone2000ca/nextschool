@@ -30,7 +30,7 @@ import { useUserLocation } from '../components/hooks/useUserLocation';
 import { useShortlist } from '../components/hooks/useShortlist';
 import { useDataLoader } from '../components/hooks/useDataLoader';
 import { extractAndSaveMemories } from '../components/utils/memoryManager';
-import { restoreSessionFromParam } from '@/components/chat/SessionRestorer';
+import { restoreSessionFromParam, restoreMostRecentConversation } from '@/components/chat/SessionRestorer';
 import ConsultantDialogs from '@/components/chat/ConsultantDialogs';
 import ChatPanel from '@/components/chat/ChatPanel';
 import ProgressBar from '@/components/ui/progress-bar';
@@ -529,6 +529,25 @@ export default function Consultant() {
       restoreSessionFromParam(sessionIdParam, base44, isAuthenticated, user, setSelectedConsultant, setRestoredSessionData, setMessages, setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase, setCurrentConversation, setSessionRestored, setRestoringSession, loadShortlist, isRestoringSessionRef, sessionParamProcessedRef, setDebugInfo, setDeepDiveAnalysis, setSelectedSchool, setVisitPrepKit, setActionPlan, skipViewOverrideRef);
     }
   }, [sessionIdParam, isAuthenticated, user?.id]);
+
+  // Auto-restore most recent conversation on F5 / new load without sessionIdParam
+  const latestSessionRestoredRef = useRef(false);
+  useEffect(() => {
+    if (
+      !sessionIdParam &&
+      isAuthenticated &&
+      user?.id &&
+      !currentConversation?.id &&
+      !latestSessionRestoredRef.current
+    ) {
+      latestSessionRestoredRef.current = true;
+      restoreMostRecentConversation(
+        base44, user, setMessages, setSelectedConsultant, setCurrentConversation,
+        setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase,
+        setDeepDiveAnalysis, setSelectedSchool, isRestoringSessionRef, skipViewOverrideRef
+      );
+    }
+  }, [sessionIdParam, isAuthenticated, user?.id, currentConversation?.id]);
 
   // Hydrate schools from restored conversationContext (after session restore or when context first arrives)
   useEffect(() => {
