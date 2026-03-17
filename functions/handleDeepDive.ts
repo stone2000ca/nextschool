@@ -389,7 +389,9 @@ Deno.serve(async (req) => {
         } catch (e) { console.warn('[E30] Cache: action_plan parse failed:', e.message); }
         let cachedDeepDiveAnalysis = null;
         try {
-          const analyses = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId, conversationId: conversationId || '' });
+          const saFilter = { userId, schoolId: selectedSchoolId };
+          if (conversationId) saFilter.conversationId = conversationId;
+          const analyses = await base44.entities.SchoolAnalysis.filter(saFilter);
           if (analyses?.[0]) cachedDeepDiveAnalysis = analyses[0];
         } catch (e) { console.warn('[E30] Cache: SchoolAnalysis fetch failed:', e.message); }
         const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
@@ -616,9 +618,11 @@ Generate the DEEPDIVE card for this family-school match.`;
     // so that F5 immediately after deep dive can find the row)
     if (userId && selectedSchoolId && deepDiveAnalysis) {
       try {
-        const existing = await base44.entities.SchoolAnalysis.filter({ userId, schoolId: selectedSchoolId, conversationId: conversationId || '' });
+        const persistFilter = { userId, schoolId: selectedSchoolId };
+        if (conversationId) persistFilter.conversationId = conversationId;
+        const existing = await base44.entities.SchoolAnalysis.filter(persistFilter);
         if (existing && existing.length > 0) {
-          await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, schoolName: selectedSchool.name, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || '' });
+          await base44.entities.SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, schoolName: selectedSchool.name, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || null });
           console.log('[DEEPDIVE] SchoolAnalysis updated:', existing[0].id);
           const prevVisitQuestions = existing[0].visitQuestions;
           if (!prevVisitQuestions || prevVisitQuestions.length === 0) {
@@ -631,7 +635,7 @@ Generate the DEEPDIVE card for this family-school match.`;
             }
           }
         } else {
-          const created = await base44.entities.SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, schoolName: selectedSchool.name, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || '' });
+          const created = await base44.entities.SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, schoolName: selectedSchool.name, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || null });
           console.log('[DEEPDIVE] SchoolAnalysis created:', created.id);
           const childName = conversationFamilyProfile?.childName || null;
           const schoolName = selectedSchool.name;
