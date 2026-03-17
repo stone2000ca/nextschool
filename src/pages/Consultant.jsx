@@ -979,6 +979,8 @@ export default function Consultant() {
     setFilterOverrides,
     resetFilterOverrides,
     loadMoreSchools,
+    setActivePanel,
+    applyDistances,
   });
 
   const handleViewSchoolDetail = async (schoolId, skipConfirmation = false) => {
