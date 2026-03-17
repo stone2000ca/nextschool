@@ -350,7 +350,11 @@ export const useMessageHandler = ({
         }
       }
 
-      if (!isViewingSchoolDetail && response.data?.state) {
+      if (response.data?.state === STATES.RESULTS) {
+        // RESULTS always transitions view — clear any stale selectedSchool from prior session restore
+        if (setSelectedSchool) setSelectedSchool(null);
+        setCurrentView(mapStateToView(STATES.RESULTS));
+      } else if (!isViewingSchoolDetail && response.data?.state) {
         // Only update view if NOT viewing a school detail
         // CRITICAL: Do NOT call setSelectedSchool(null) here - it defeats the single source of truth
         setCurrentView(mapStateToView(response.data?.state));
@@ -365,7 +369,7 @@ export const useMessageHandler = ({
       const isDeepDivingSchool = isViewingSchoolDetail;
 
       // FIX #3: First priority - if schools are returned, display them (ONLY if not in DEEP_DIVE)
-      if ((response.data?.schools || []).length > 0 && !isDeepDivingSchool) {
+      if ((response.data?.schools || []).length > 0 && (!isDeepDivingSchool || response.data?.state === STATES.RESULTS)) {
         // Track schools shown
         trackEvent('schools_shown', { metadata: { schoolCount: (response.data?.schools || []).length } });
 
