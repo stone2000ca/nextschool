@@ -1,6 +1,6 @@
 // MIGRATION — DELETE AFTER RUNNING
 // Function: migrateSchoolArrayFields
-// Purpose: Reformat array fields in School entities stored as malformed JSON strings (e.g. '["Local","Other"]' as a string)
+// Purpose: Reformat malformed array fields in School entities (handles double-stringification, newlines, nested quotes)
 // Entities: School (read + update)
 // Last Modified: 2026-03-17
 // Dependencies: Base44 SDK
@@ -16,23 +16,68 @@ const ARRAY_FIELDS = [
   'notableAlumni', 'aiEnrichedFields',
 ];
 
+function cleanString(s) {
+  if (typeof s !== 'string') return s;
+  return s.trim().replace(/^["']+|["']+$/g, '').replace(/\\"/g, '"').trim();
+}
+
 function tryParseArray(val) {
-  if (Array.isArray(val)) return { alreadyCorrect: true };
+  // Already a proper array — recursively clean each element
+  if (Array.isArray(val)) {
+    const cleaned = val.flatMap(item => {
+      if (typeof item === 'string') {
+        const result = tryParseArray(item);
+        if (result && !result.alreadyCorrect) return result.value;
+        return [cleanString(item)];
+      }
+      return [item];
+    }).filter(item => item !== null && item !== undefined && item !== '');
+    return { alreadyCorrect: true, value: cleaned };
+  }
+
   if (typeof val !== 'string') return null;
 
-  const trimmed = val.trim();
-  if (!trimmed.startsWith('[')) return null;
+  // Normalize: remove newlines and trim
+  let s = val.replace(/[\n\r]/g, '').trim();
 
-  try {
-    let parsed = JSON.parse(trimmed);
-    if (typeof parsed === 'string') parsed = JSON.parse(parsed);
-    if (Array.isArray(parsed)) return { alreadyCorrect: false, value: parsed };
-  } catch {
-    const inner = trimmed.replace(/^\[|\]$/g, '').trim();
+  // Iteratively JSON.parse to unwrap multiple layers of stringification
+  let parsed = null;
+  for (let i = 0; i < 4; i++) {
+    try {
+      const attempt = JSON.parse(s);
+      if (Array.isArray(attempt)) {
+        parsed = attempt;
+        break;
+      }
+      if (typeof attempt === 'string') {
+        s = attempt.trim(); // unwrap one layer and try again
+      } else {
+        break;
+      }
+    } catch {
+      break;
+    }
+  }
+
+  if (Array.isArray(parsed)) {
+    const finalArray = parsed
+      .map(item => (typeof item === 'string' ? cleanString(item) : item))
+      .filter(item => item !== null && item !== undefined && item !== '');
+    return { alreadyCorrect: false, value: finalArray };
+  }
+
+  // Fallback: manually strip brackets and split
+  if (s.startsWith('[') && s.endsWith(']')) {
+    const inner = s.slice(1, -1).trim();
     if (!inner) return { alreadyCorrect: false, value: [] };
-    const items = inner.split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    // Split by comma only when not inside quotes
+    const items = inner
+      .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+      .map(cleanString)
+      .filter(Boolean);
     return { alreadyCorrect: false, value: items };
   }
+
   return null;
 }
 
@@ -44,7 +89,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    // Pass { skip: N } in body to resume after a rate limit
     const body = await req.json().catch(() => ({}));
     const skip = parseInt(body.skip || 0, 10);
     const batchSize = parseInt(body.batchSize || 500, 10);
@@ -62,8 +106,13 @@ Deno.serve(async (req) => {
 
       for (const field of ARRAY_FIELDS) {
         const result = tryParseArray(school[field]);
-        if (!result || result.alreadyCorrect) continue;
-        updates[field] = result.value;
+        if (!result) continue;
+        // For already-correct arrays, still write back if elements were cleaned
+        const current = JSON.stringify(school[field]);
+        const cleaned = JSON.stringify(result.value);
+        if (current !== cleaned) {
+          updates[field] = result.value;
+        }
       }
 
       if (Object.keys(updates).length === 0) {
