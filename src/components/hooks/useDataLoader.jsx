@@ -105,12 +105,14 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
 
       if (profiles.length > 0) {
         setFamilyProfile(profiles[0]);
-        // WC6: Load previous artifacts after family profile succeeds
-        await loadPreviousArtifacts(currentConversation.id);
       }
     } catch (error) {
       console.error('Failed to load family profile:', error);
     }
+
+    // BUG-RN-PERSIST Fix 2: Always load artifacts regardless of FamilyProfile existence.
+    // loadPreviousArtifacts handles empty results gracefully (including 800ms retry).
+    await loadPreviousArtifacts(currentConversation.id);
   }, [user?.id, currentConversation?.id, familyProfile, loadPreviousArtifacts, base44]);
 
   // Load family profile + artifacts when user + conversation are ready
