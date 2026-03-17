@@ -46,7 +46,7 @@ function applyReligiousFilter(school, familyProfile, payload) {
       return false;
     }
     // E41-FIX: Re-enabled with refined keywords (removed 'st.', 'saint', 'trinity', 'bishop' which cause false positives)
-    const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'yeshiva', 'hebrew', 'our lady', 'gospel', 'covenant', 'faith-based', 'huraira', 'mosque', 'synagogue', 'church school', 'bible', 'quaker', 'mennonite', 'amish', 'hindu', 'buddhist', 'sikh', 'muslim', 'baeck', 'heschel', 'tayyibah', 'khairul', 'wali ul'];
+    const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'yeshiva', 'hebrew', 'our lady', 'gospel', 'covenant', 'faith-based', 'huraira', 'mosque', 'synagogue', 'church school', 'bible', 'quaker', 'mennonite', 'amish', 'hindu', 'buddhist', 'sikh', 'muslim', 'baeck', 'heschel', 'tayyibah', 'khairul', 'wali ul', 'orthodox', 'mother of god'];
     const schoolNameLower = school.name?.toLowerCase() || '';
     if (religiousKeywords.some(keyword => schoolNameLower.includes(keyword))) {
       console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: name contains religious keyword`);
