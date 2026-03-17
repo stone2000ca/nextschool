@@ -91,11 +91,13 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const skip = parseInt(body.skip || 0, 10);
-    const batchSize = parseInt(body.batchSize || 500, 10);
+    const batchSize = parseInt(body.batchSize || 200, 10);
 
     console.log(`[MIGRATION] Fetching schools (skip=${skip}, batchSize=${batchSize})...`);
-    const schools = await base44.asServiceRole.entities.School.list(null, batchSize, skip);
-    console.log(`[MIGRATION] Processing ${schools.length} schools in this batch.`);
+
+    // Use 'created_date' as a stable sort field to ensure consistent pagination across batches
+    const schools = await base44.asServiceRole.entities.School.list('created_date', batchSize, skip);
+    console.log(`[MIGRATION] Got ${schools.length} schools in this batch.`);
 
     let updated = 0;
     let skipped = 0;
@@ -124,8 +126,8 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.School.update(school.id, updates);
         updated++;
         if (updated % 50 === 0) {
-          console.log(`[MIGRATION] Progress: ${updated} updated...`);
-          await new Promise(r => setTimeout(r, 200));
+          console.log(`[MIGRATION] Progress: ${updated} updated so far...`);
+          await new Promise(r => setTimeout(r, 100));
         }
       } catch (err) {
         errors.push({ schoolId: school.id, name: school.name, error: err.message });
@@ -147,7 +149,7 @@ Deno.serve(async (req) => {
       errors: errors.slice(0, 20),
       hasMore,
       nextSkip,
-      message: `${updated} updated, ${skipped} skipped.${hasMore ? ` Re-run with { skip: ${nextSkip} } for next batch.` : ' All records processed.'}`,
+      message: `${updated} updated, ${skipped} skipped.${hasMore ? ` Re-run with { "skip": ${nextSkip} } for next batch.` : ' All records processed.'}`,
     });
 
   } catch (error) {
