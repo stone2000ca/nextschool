@@ -80,20 +80,34 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
   onCompleteRef.current = onTransitionComplete;
 
   const [iconAngle, setIconAngle] = useState(0);
+  const trackedDot = useRef(0);
+  const startTime = useRef(Date.now());
 
-  // Randomly rotate the NS icon to "look at" different orbiting dots
+  // Track a randomly chosen orbiting dot, switching targets every ~2.5s
   useEffect(() => {
     if (!isVisible) return;
-    const pick = () => {
-      // Pick a random angle as if tracking one of the orbiting dots
-      const target = Math.floor(Math.random() * 360);
-      // Clamp to a natural head-turn range (-25 to 25 degrees)
-      const clamped = ((target % 50) - 25);
-      setIconAngle(clamped);
-    };
-    pick();
-    const iv = setInterval(pick, 1800 + Math.random() * 1200);
-    return () => clearInterval(iv);
+    startTime.current = Date.now();
+    trackedDot.current = Math.floor(Math.random() * DOT_CONFIG.length);
+
+    // Switch which dot we're following
+    const switchInterval = setInterval(() => {
+      let next;
+      do { next = Math.floor(Math.random() * DOT_CONFIG.length); } while (next === trackedDot.current && DOT_CONFIG.length > 1);
+      trackedDot.current = next;
+    }, 2500);
+
+    // Compute actual dot position and tilt icon toward it
+    const trackInterval = setInterval(() => {
+      const d = DOT_CONFIG[trackedDot.current];
+      const elapsed = (Date.now() - startTime.current) / 1000;
+      const dir = d.direction === 'CW' ? 1 : -1;
+      const angleDeg = dir * 360 * ((elapsed - d.delayOffset) / d.duration);
+      // Dot is at angle angleDeg on the circle; tilt icon toward it (±28°)
+      const rad = angleDeg * (Math.PI / 180);
+      setIconAngle(Math.sin(rad) * 28);
+    }, 60);
+
+    return () => { clearInterval(switchInterval); clearInterval(trackInterval); };
   }, [isVisible]);
 
   const clear = useCallback(() => { timers.current.forEach(clearTimeout); timers.current = []; }, []);
