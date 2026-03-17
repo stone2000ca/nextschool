@@ -323,16 +323,12 @@ export const useMessageHandler = ({
         lastDeepDiveSchoolId: (responseState === 'DEEP_DIVE' || deepDiveSchoolId) ? deepDiveSchoolId : (currentConversation?.conversationContext?.lastDeepDiveSchoolId || null),
       };
 
-      if (currentConversation) {
-        setCurrentConversation({ ...currentConversation, conversationContext: updatedContext });
-      } else {
-        // For guests without a conversation object, create a temporary one
-        setCurrentConversation({
-          id: null,
-          conversationContext: updatedContext,
-          messages: []
-        });
-      }
+      // BUG-RN-PERSIST Fix A: Use functional updater to avoid stale-closure overwrite
+      // of currentConversation.id that was set by the RESULTS ChatHistory.create block.
+      setCurrentConversation(prev => ({
+        ...(prev || { id: null, messages: [] }),
+        conversationContext: updatedContext,
+      }));
 
       // BUG-DD-001 FIX: selectedSchool is SINGLE SOURCE OF TRUTH - NEVER clear it based on AI state
       const responseTargetSchoolId = response.data?.deepDiveAnalysis?.schoolId || resolvedSchoolId || explicitSchoolId;

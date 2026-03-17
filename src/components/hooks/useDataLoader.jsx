@@ -13,9 +13,12 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
     if (!conversationId) return;
 
     try {
+      // BUG-RN-PERSIST Fix D: Omit conversationId from filter when falsy to handle legacy rows
+      const analysisFilter = { userId: user.id };
+      if (conversationId) analysisFilter.conversationId = conversationId;
       const [artifacts, analyses] = await Promise.all([
         base44.entities.GeneratedArtifact.filter({ conversationId }),
-        user?.id ? base44.entities.SchoolAnalysis.filter({ userId: user.id, conversationId }) : Promise.resolve([])
+        user?.id ? base44.entities.SchoolAnalysis.filter(analysisFilter) : Promise.resolve([])
       ]);
 
       // Build indexed map keyed by schoolId_artifactType
