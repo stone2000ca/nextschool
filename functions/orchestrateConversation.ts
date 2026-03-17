@@ -1410,7 +1410,12 @@ Object.assign(context, safeUpdatedContext);
       );
       const anyEntityExtracted = extractedKeys.length > 0;
       const inResultsOrDeepDive = context.state === STATES.RESULTS || context.state === STATES.DEEP_DIVE;
-      const shouldAutoRefresh = (tier1Changed || anyEntityExtracted) && inResultsOrDeepDive;
+      // BUG-E41: Gate autoRefresh on intentSignal to prevent informational questions from replacing results
+      const intentSignal = extractionResult?.intentSignal || 'continue';
+      const refreshIntents = new Set(['edit-criteria', 'request-results']);
+      const shouldAutoRefresh = (tier1Changed || anyEntityExtracted)
+        && inResultsOrDeepDive
+        && refreshIntents.has(intentSignal);
       context.resultsStale = false;
       context.autoRefreshed = shouldAutoRefresh;
       if (shouldAutoRefresh) {
