@@ -406,7 +406,7 @@ export default function SchoolDossierCard({
         <div>
           {aiRecContent && (
             <AccordionSection title="AI Recommendation" isOpen={aiRecOpen} onToggle={() => setAiRecOpen(v => !v)}>
-              <ReactMarkdown className="text-xs text-slate-300 prose prose-invert max-w-none leading-relaxed [&>p]:mb-1 [&>p:last-child]:mb-0">
+              <ReactMarkdown className="text-xs text-slate-300 prose prose-invert max-w-none leading-relaxed [&>p]:mb-1 [&>p:last-child]:mb-0 break-words overflow-hidden">
                 {aiRecContent}
               </ReactMarkdown>
             </AccordionSection>
