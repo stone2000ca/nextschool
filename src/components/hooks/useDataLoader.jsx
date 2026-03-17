@@ -48,6 +48,33 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
       setSchoolAnalyses(prev => ({ ...analysesMap, ...prev }));
       setArtifactCache(map);
       console.log('[WC6] Artifact cache loaded:', Object.keys(map).length, 'entries', '| SchoolAnalyses:', Object.keys(analysesMap).length);
+
+      // If no analyses found but we have a valid conversation, retry once after 800ms
+      // to handle the tiny window where SchoolAnalysis write may still be in flight
+      if (analyses.length === 0 && conversationId && user?.id) {
+        console.log('[WC6] No SchoolAnalyses found — scheduling one retry in 800ms');
+        setTimeout(async () => {
+          try {
+            const retryAnalyses = await base44.entities.SchoolAnalysis.filter({ userId: user.id, conversationId });
+            if (retryAnalyses.length > 0) {
+              const retryMap = {};
+              for (const analysis of retryAnalyses) {
+                if (analysis.schoolId) {
+                  const entry = {};
+                  for (const [k, v] of Object.entries(analysis)) {
+                    if (!METADATA_KEYS.has(k)) entry[k] = v;
+                  }
+                  retryMap[analysis.schoolId] = entry;
+                }
+              }
+              setSchoolAnalyses(prev => ({ ...retryMap, ...prev }));
+              console.log('[WC6] Retry found', Object.keys(retryMap).length, 'SchoolAnalyses');
+            }
+          } catch (retryErr) {
+            console.warn('[WC6] Retry failed:', retryErr.message);
+          }
+        }, 800);
+      }
     } catch (error) {
       console.error('[WC6] Failed to load artifacts:', error);
     }
