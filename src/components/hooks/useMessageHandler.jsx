@@ -57,6 +57,8 @@ export const useMessageHandler = ({
   setFilterOverrides,
   resetFilterOverrides,
   loadMoreSchools,
+  setActivePanel,
+  applyDistances,
 }, isPremiumParam = isPremium) => {
     // CRT-S109-F15: Message queue to prevent message loss during rapid input
     let isProcessing = false;
@@ -565,6 +567,17 @@ export const useMessageHandler = ({
           }
           case 'LOAD_MORE':
             loadMoreSchools?.();
+            break;
+          case 'SORT_SCHOOLS': {
+            const sortBy = action.payload?.sortBy || 'distance';
+            if (sortBy === 'distance' && userLocation && applyDistances) {
+              const sorted = applyDistances(userLocation, schools);
+              if (sorted?.length) setSchools(sorted);
+            }
+            break;
+          }
+          case 'OPEN_PANEL':
+            setActivePanel?.(action.payload?.panel);
             break;
           default:
             break;
