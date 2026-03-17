@@ -17,7 +17,7 @@ const STEPS = [
 
 
 const FACTS = [
-  "Private school students average 8 more library visits per year.",
+  "Private school students average 18 more library visits per year.",
   "Small class sizes are linked to stronger critical thinking skills.",
   "Students who feel matched to their school report 40% higher engagement.",
   "Schools with outdoor programs see improved student focus and creativity.",
