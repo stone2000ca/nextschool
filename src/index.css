@@ -86,3 +86,47 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* DeepDiveLoader: Orbit scan animation */
+@keyframes ns-orbit-spin-1 {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes ns-orbit-spin-2 {
+  from { transform: rotate(180deg); }
+  to   { transform: rotate(540deg); }
+}
+@keyframes ns-status-crossfade {
+  0%   { opacity: 0; transform: translateY(4px); }
+  15%  { opacity: 1; transform: translateY(0); }
+  85%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+
+.ns-orbit-track {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+.ns-orbit-arc {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+}
+.ns-orbit-arc-1 {
+  animation: ns-orbit-spin-1 1.6s linear infinite;
+}
+.ns-orbit-arc-2 {
+  animation: ns-orbit-spin-2 2.4s linear infinite;
+}
+.ns-orbit-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ns-status-fade {
+  animation: ns-status-crossfade 2.8s ease-in-out;
+}
