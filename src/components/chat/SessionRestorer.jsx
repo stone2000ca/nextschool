@@ -28,7 +28,8 @@ export async function restoreSessionFromParam(
   setSelectedSchool,
   setVisitPrepKit,
   setActionPlan,
-  skipViewOverrideRef
+  skipViewOverrideRef,
+  setSchoolAnalyses
 ) {
   if (!sessionIdParam) return;
   // CRITICAL: Set flag FIRST to override isIntakePhase during restoration
@@ -117,19 +118,25 @@ export async function restoreSessionFromParam(
       }
     }
 
-    // BUG-RN-05 FIX: Scan restored messages for last deep-dived school
+    // BUG-RN-05 FIX + Bug 2: Collect ALL deep dive analyses from messages (not just the last)
     const restoredMessages = chatHistory?.messages || [];
+    const allDeepDiveAnalyses = {};
     let lastDeepDiveSchoolId = null;
     let lastDeepDiveSchoolName = null;
-    for (let i = restoredMessages.length - 1; i >= 0; i--) {
-      const msg = restoredMessages[i];
+    for (const msg of restoredMessages) {
       if (msg.role === 'assistant' && msg.deepDiveAnalysis?.schoolId) {
-        lastDeepDiveSchoolId = msg.deepDiveAnalysis.schoolId;
-        lastDeepDiveSchoolName = msg.deepDiveAnalysis.schoolName;
-        if (setDeepDiveAnalysis && msg.deepDiveAnalysis) {
-          setDeepDiveAnalysis(msg.deepDiveAnalysis);
-        }
-        break;
+        allDeepDiveAnalyses[msg.deepDiveAnalysis.schoolId] = msg.deepDiveAnalysis;
+      }
+    }
+    const deepDiveSchoolIds = Object.keys(allDeepDiveAnalyses);
+    if (deepDiveSchoolIds.length > 0) {
+      const lastId = deepDiveSchoolIds[deepDiveSchoolIds.length - 1];
+      lastDeepDiveSchoolId = lastId;
+      lastDeepDiveSchoolName = allDeepDiveAnalyses[lastId].schoolName;
+      if (setDeepDiveAnalysis) setDeepDiveAnalysis(allDeepDiveAnalyses[lastId]);
+      // Merge ALL analyses into schoolAnalyses state so every notepad renders
+      if (setSchoolAnalyses) {
+        setSchoolAnalyses(prev => ({ ...prev, ...allDeepDiveAnalyses }));
       }
     }
 
@@ -141,23 +148,34 @@ export async function restoreSessionFromParam(
         if (chatHistory?.id) restoreFilter.conversationId = chatHistory.id;
         const recentAnalyses = await base44.entities.SchoolAnalysis.filter(restoreFilter);
         if (recentAnalyses?.length > 0) {
+          // Bug 2: Merge ALL analyses into schoolAnalyses, set most recent as active
+          const analysesMap = {};
+          for (const analysis of recentAnalyses) {
+            if (analysis.schoolId) {
+              const mapped = {
+                schoolId: analysis.schoolId,
+                schoolName: analysis.schoolName || 'School',
+                fitScore: analysis.fitScore,
+                fitLabel: analysis.fitLabel,
+                priorityMatches: analysis.priorityMatches || [],
+                aiInsight: analysis.aiInsight || analysis.insight || null,
+                tradeOffs: analysis.tradeOffs || analysis.tradeoffs || [],
+                ...analysis
+              };
+              analysesMap[analysis.schoolId] = mapped;
+            }
+          }
+          if (setSchoolAnalyses && Object.keys(analysesMap).length > 0) {
+            setSchoolAnalyses(prev => ({ ...prev, ...analysesMap }));
+          }
+
           const sorted = recentAnalyses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           const latest = sorted[0];
           lastDeepDiveSchoolId = latest.schoolId;
           lastDeepDiveSchoolName = latest.schoolName || 'School';
-          console.log('[RESTORE] Fallback: found SchoolAnalysis for school:', lastDeepDiveSchoolId);
+          console.log('[RESTORE] Fallback: found', recentAnalyses.length, 'SchoolAnalysis rows, active school:', lastDeepDiveSchoolId);
           if (setDeepDiveAnalysis) {
-            // WC-3: Map SchoolAnalysis fields to expected deepDiveAnalysis shape
-            const mappedAnalysis = {
-              schoolId: latest.schoolId,
-              schoolName: latest.schoolName || 'School',
-              fitScore: latest.fitScore,
-              fitLabel: latest.fitLabel,
-              priorityMatches: latest.priorityMatches || [],
-              aiInsight: latest.aiInsight || latest.insight || null,
-              tradeOffs: latest.tradeOffs || latest.tradeoffs || [],
-              ...latest
-            };
+            const mappedAnalysis = analysesMap[latest.schoolId] || latest;
             setDeepDiveAnalysis(mappedAnalysis);
             // WC-2: Inject analysis onto last assistant message so E39-S4a can find it
             const injectedMsgs = [...restoredMessages];
@@ -309,7 +327,8 @@ export async function restoreMostRecentConversation(
   setDeepDiveAnalysis,
   setSelectedSchool,
   isRestoringSessionRef,
-  skipViewOverrideRef
+  skipViewOverrideRef,
+  setSchoolAnalyses
 ) {
   if (!user?.id) return;
   isRestoringSessionRef.current = true;
@@ -337,15 +356,22 @@ export async function restoreMostRecentConversation(
       setSelectedConsultant(ctx.consultant);
     }
 
-    // 4. Scan messages for last deep-dive analysis (same pattern as restoreSessionFromParam)
+    // 4. Bug 2: Collect ALL deep dive analyses from messages, set most recent as active
     let lastDeepDiveSchoolId = null;
     const msgs = latest.messages || [];
-    for (let i = msgs.length - 1; i >= 0; i--) {
-      const msg = msgs[i];
+    const allDeepDiveAnalyses = {};
+    for (const msg of msgs) {
       if (msg.role === 'assistant' && msg.deepDiveAnalysis?.schoolId) {
-        lastDeepDiveSchoolId = msg.deepDiveAnalysis.schoolId;
-        if (setDeepDiveAnalysis) setDeepDiveAnalysis(msg.deepDiveAnalysis);
-        break;
+        allDeepDiveAnalyses[msg.deepDiveAnalysis.schoolId] = msg.deepDiveAnalysis;
+      }
+    }
+    const deepDiveSchoolIds = Object.keys(allDeepDiveAnalyses);
+    if (deepDiveSchoolIds.length > 0) {
+      const lastId = deepDiveSchoolIds[deepDiveSchoolIds.length - 1];
+      lastDeepDiveSchoolId = lastId;
+      if (setDeepDiveAnalysis) setDeepDiveAnalysis(allDeepDiveAnalyses[lastId]);
+      if (setSchoolAnalyses) {
+        setSchoolAnalyses(prev => ({ ...prev, ...allDeepDiveAnalyses }));
       }
     }
 
@@ -356,21 +382,33 @@ export async function restoreMostRecentConversation(
         if (latest.id) latestFilter.conversationId = latest.id;
         const recentAnalyses = await base44.entities.SchoolAnalysis.filter(latestFilter);
         if (recentAnalyses?.length > 0) {
+          // Bug 2: Merge ALL analyses into schoolAnalyses, set most recent as active
+          const analysesMap = {};
+          for (const analysis of recentAnalyses) {
+            if (analysis.schoolId) {
+              const mapped = {
+                schoolId: analysis.schoolId,
+                schoolName: analysis.schoolName || 'School',
+                fitScore: analysis.fitScore,
+                fitLabel: analysis.fitLabel,
+                priorityMatches: analysis.priorityMatches || [],
+                aiInsight: analysis.aiInsight || analysis.insight || null,
+                tradeOffs: analysis.tradeOffs || analysis.tradeoffs || [],
+                ...analysis
+              };
+              analysesMap[analysis.schoolId] = mapped;
+            }
+          }
+          if (setSchoolAnalyses && Object.keys(analysesMap).length > 0) {
+            setSchoolAnalyses(prev => ({ ...prev, ...analysesMap }));
+          }
+
           const sortedAnalyses = recentAnalyses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           const la = sortedAnalyses[0];
           lastDeepDiveSchoolId = la.schoolId;
-          console.log('[RESTORE-LATEST] Fallback: found SchoolAnalysis for school:', la.schoolId);
+          console.log('[RESTORE-LATEST] Fallback: found', recentAnalyses.length, 'SchoolAnalysis rows, active school:', la.schoolId);
           if (setDeepDiveAnalysis) {
-            const mappedAnalysis = {
-              schoolId: la.schoolId,
-              schoolName: la.schoolName || 'School',
-              fitScore: la.fitScore,
-              fitLabel: la.fitLabel,
-              priorityMatches: la.priorityMatches || [],
-              aiInsight: la.aiInsight || la.insight || null,
-              tradeOffs: la.tradeOffs || la.tradeoffs || [],
-              ...la
-            };
+            const mappedAnalysis = analysesMap[la.schoolId] || la;
             setDeepDiveAnalysis(mappedAnalysis);
             // Inject onto last assistant message so downstream components find it
             const injectedMsgs = [...msgs];

@@ -526,7 +526,7 @@ export default function Consultant() {
   // WC5: Session loading from URL param
   useEffect(() => {
     if (sessionIdParam && !sessionParamProcessedRef.current && isAuthenticated && user) {
-      restoreSessionFromParam(sessionIdParam, base44, isAuthenticated, user, setSelectedConsultant, setRestoredSessionData, setMessages, setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase, setCurrentConversation, setSessionRestored, setRestoringSession, loadShortlist, isRestoringSessionRef, sessionParamProcessedRef, setDebugInfo, setDeepDiveAnalysis, setSelectedSchool, setVisitPrepKit, setActionPlan, skipViewOverrideRef);
+      restoreSessionFromParam(sessionIdParam, base44, isAuthenticated, user, setSelectedConsultant, setRestoredSessionData, setMessages, setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase, setCurrentConversation, setSessionRestored, setRestoringSession, loadShortlist, isRestoringSessionRef, sessionParamProcessedRef, setDebugInfo, setDeepDiveAnalysis, setSelectedSchool, setVisitPrepKit, setActionPlan, skipViewOverrideRef, setSchoolAnalyses);
     }
   }, [sessionIdParam, isAuthenticated, user?.id]);
 
@@ -544,7 +544,8 @@ export default function Consultant() {
       restoreMostRecentConversation(
         base44, user, setMessages, setSelectedConsultant, setCurrentConversation,
         setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase,
-        setDeepDiveAnalysis, setSelectedSchool, isRestoringSessionRef, skipViewOverrideRef
+        setDeepDiveAnalysis, setSelectedSchool, isRestoringSessionRef, skipViewOverrideRef,
+        setSchoolAnalyses
       );
     }
   }, [sessionIdParam, isAuthenticated, user?.id, currentConversation?.id]);
