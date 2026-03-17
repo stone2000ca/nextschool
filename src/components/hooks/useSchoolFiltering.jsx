@@ -18,6 +18,7 @@ export function useSchoolFiltering(schools, conversationContext) {
     boardingOnly: null,
     genderFilter: null,
     maxDistanceKm: null,
+    curriculum: null,  // E41-S7
   });
 
   const resetFilterOverrides = useCallback(() => {
@@ -28,6 +29,7 @@ export function useSchoolFiltering(schools, conversationContext) {
       boardingOnly: null,
       genderFilter: null,
       maxDistanceKm: null,
+      curriculum: null,  // E41-S7
     });
   }, []);
 
@@ -84,6 +86,40 @@ export function useSchoolFiltering(schools, conversationContext) {
         } catch (religiousFilterError) {
           console.error('[RELIGIOUS FILTER] Error, skipping religious filter:', religiousFilterError);
         }
+
+        // E41-S7: boardingOnly filter
+        if (filterOverrides.boardingOnly === true) {
+          const before = filtered.length;
+          filtered = filtered.filter(s => s.boardingAvailable === true);
+          console.log('[FILTER] boardingOnly: filtered from', before, 'to', filtered.length);
+        }
+
+        // E41-S7: genderFilter
+        if (filterOverrides.genderFilter) {
+          const gf = filterOverrides.genderFilter.toLowerCase();
+          const GIRLS_KEYWORDS = ['all-girls', 'girls only', 'girls', 'female only', 'all girls'];
+          const BOYS_KEYWORDS  = ['all-boys',  'boys only',  'boys',  'male only',  'all boys'];
+          const before = filtered.length;
+          filtered = filtered.filter(s => {
+            const gp = (s.genderPolicy || '').toLowerCase();
+            if (gf === 'girls' || gf === 'all-girls') return GIRLS_KEYWORDS.some(k => gp.includes(k));
+            if (gf === 'boys'  || gf === 'all-boys')  return BOYS_KEYWORDS.some(k => gp.includes(k));
+            if (gf === 'co-ed' || gf === 'coed')      return !GIRLS_KEYWORDS.some(k => gp.includes(k)) && !BOYS_KEYWORDS.some(k => gp.includes(k));
+            return true;
+          });
+          console.log('[FILTER] genderFilter:', filterOverrides.genderFilter, 'filtered from', before, 'to', filtered.length);
+        }
+
+        // E41-S7: curriculum filter
+        if (filterOverrides.curriculum) {
+          const cf = filterOverrides.curriculum.toLowerCase();
+          const before = filtered.length;
+          filtered = filtered.filter(s =>
+            Array.isArray(s.curriculum) && s.curriculum.some(c => c.toLowerCase().includes(cf))
+          );
+          console.log('[FILTER] curriculum:', filterOverrides.curriculum, 'filtered from', before, 'to', filtered.length);
+        }
+
       } catch (filterError) {
         console.error('[FILTER] Error applying filters, showing all schools:', filterError);
         filtered = [...schools];
