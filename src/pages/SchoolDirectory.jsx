@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Search, MapPin, DollarSign, Users, Loader2, Heart, CalendarDays } from "lucide-react";
+import { Search, MapPin, DollarSign, Users, Loader2, CalendarDays, MessageCircle, GraduationCap } from "lucide-react";
 import Navbar from '@/components/navigation/Navbar';
 import Footer from '@/components/navigation/Footer';
 import { Link } from 'react-router-dom';
@@ -258,9 +258,15 @@ export default function SchoolDirectory() {
           </div>
         </div>
 
-        {/* Header */}
+        {/* Header — SEO H1 with location context */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">School Directory</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
+            {filterProvince !== 'all' && filterCountry !== 'all'
+              ? `Private Schools in ${filterProvince}`
+              : filterCountry !== 'all'
+                ? `Private Schools in ${filterCountry === 'Canada' ? 'Canada' : filterCountry === 'US' ? 'the United States' : filterCountry === 'UK' ? 'the United Kingdom' : filterCountry}`
+                : 'Private Schools Directory'}
+          </h1>
           <p className="text-sm sm:text-base text-slate-600">Browse all {allSchools.length} private schools across Canada, the US, and Europe</p>
         </div>
 
@@ -397,25 +403,21 @@ export default function SchoolDirectory() {
           <>
             {/* Schools Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              {displayedSchools.map((school) => {
-                const isShortlisted = user?.shortlist?.includes(school.id) || false;
-                
-                return (
-                  <Link 
-                    key={school.id} 
-                    to={`${createPageUrl('SchoolProfile')}?id=${school.id}`}
+              {displayedSchools.map((school) => (
+                  <Link
+                    key={school.id}
+                    to={school.slug ? `/schools/${school.slug}` : `${createPageUrl('SchoolProfile')}?id=${school.id}`}
                     className="block focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 rounded-lg"
                   >
                     <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
                       {/* Header Photo */}
                       <div className="h-32 sm:h-40 relative overflow-hidden">
-                        <HeaderPhotoDisplay 
+                        <HeaderPhotoDisplay
                           headerPhotoUrl={school.headerPhotoUrl}
                           heroImage={school.heroImage}
                           schoolName={school.name}
                           height="h-32 sm:h-40"
                         />
-                        {/* E16b-005: Has Upcoming Events badge */}
                         {schoolsWithEvents.has(school.id) && (
                           <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-amber-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
                             <CalendarDays className="h-3 w-3" />
@@ -429,11 +431,7 @@ export default function SchoolDirectory() {
                         <div className="flex gap-2 sm:gap-3 mb-2 sm:mb-3">
                           {school.logoUrl && (
                             <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
-                              <img 
-                                src={school.logoUrl} 
-                                alt={`${school.name} logo`}
-                                className="w-full h-full object-contain"
-                              />
+                              <img src={school.logoUrl} alt={`${school.name} logo`} className="w-full h-full object-contain" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
@@ -441,54 +439,68 @@ export default function SchoolDirectory() {
                           </div>
                         </div>
 
-                        {/* Location and Grades */}
-                        <div className="space-y-1 text-xs sm:text-sm text-slate-600 mb-3">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
-                            <span className="truncate">{school.city}, {school.provinceState || school.country}</span>
-                          </div>
+                        {/* Location */}
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 mb-2">
+                          <MapPin className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
+                          <span className="truncate">{school.city}, {school.provinceState || school.country}</span>
+                        </div>
+
+                        {/* Enriched chips: grades, tuition, gender, boarding, faith */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
                           {school.gradesServed && (
-                            <div className="flex items-center gap-2">
-                              <Users className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
-                              <span>Grades {school.gradesServed}</span>
-                            </div>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">
+                              <GraduationCap className="h-3 w-3" /> {school.gradesServed}
+                            </span>
                           )}
-                          {school.tuition && (
+                          {school.genderPolicy && school.genderPolicy !== 'Co-ed' && (
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">{school.genderPolicy}</span>
+                          )}
+                          {school.boardingAvailable && (
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">Boarding</span>
+                          )}
+                          {school.faithBased && (
+                            <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-medium">{school.faithBased}</span>
+                          )}
+                          {school.curriculum && Array.isArray(school.curriculum) && school.curriculum.slice(0, 2).map((c, i) => (
+                            <span key={i} className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded text-xs font-medium">{c}</span>
+                          ))}
+                          {school.specializations && school.specializations.slice(0, 2).map((s, i) => (
+                            <span key={i} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs font-medium">{s}</span>
+                          ))}
+                        </div>
+
+                        {/* Tuition + Enrollment + Founded */}
+                        <div className="space-y-1 text-xs sm:text-sm text-slate-600 mb-3">
+                          {(school.dayTuition || school.tuition) && (
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
-                              <span className="truncate">{getCurrencySymbol(school.currency)}{school.tuition.toLocaleString()}/year</span>
+                              <span className="truncate font-semibold text-slate-900">
+                                From {getCurrencySymbol(school.currency)}{(school.dayTuition || school.tuition).toLocaleString()}/yr
+                              </span>
                             </div>
+                          )}
+                          {school.enrollment && (
+                            <div className="flex items-center gap-2">
+                              <Users className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
+                              <span>{school.enrollment.toLocaleString()} students</span>
+                            </div>
+                          )}
+                          {school.acceptanceRate && (
+                            <span className="text-xs text-slate-500">{school.acceptanceRate}% acceptance</span>
+                          )}
+                          {school.founded && (
+                            <span className="text-xs text-slate-500 ml-2">Est. {school.founded}</span>
                           )}
                         </div>
 
-                        {/* Highlights */}
+                        {/* First highlight */}
                         {school.highlights && school.highlights.length > 0 && (
-                          <p className="text-xs text-slate-600 mb-4 line-clamp-2">
-                            {school.highlights[0]}
-                          </p>
+                          <p className="text-xs text-slate-600 line-clamp-2">{school.highlights[0]}</p>
                         )}
-
-                        {/* Shortlist Button */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleToggleShortlist(school.id);
-                          }}
-                          className={`w-full py-2 px-3 rounded-lg text-xs sm:text-sm font-medium transition-colors focus:ring-2 focus:ring-teal-400 focus:outline-none ${
-                            isShortlisted
-                              ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
-                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                          }`}
-                          aria-label={isShortlisted ? `Remove ${school.name} from shortlist` : `Add ${school.name} to shortlist`}
-                        >
-                          <Heart className={`h-3 sm:h-4 w-3 sm:w-4 inline mr-2 ${isShortlisted ? 'fill-current' : ''}`} />
-                          {isShortlisted ? 'Saved' : 'Save School'}
-                        </button>
                       </div>
                     </Card>
                   </Link>
-                );
-              })}
+              ))}
             </div>
 
             {/* Load More Button */}
@@ -511,6 +523,20 @@ export default function SchoolDirectory() {
             )}
           </>
         )}
+      </div>
+
+      {/* Bottom CTA */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg p-6 sm:p-8 text-white text-center">
+          <h2 className="text-xl sm:text-2xl font-bold mb-2">Find your perfect school match</h2>
+          <p className="text-teal-100 mb-4">Our AI consultant can help you narrow down the right school for your family.</p>
+          <Link to={createPageUrl('Consultant')}>
+            <Button className="bg-white text-teal-600 hover:bg-teal-50 font-semibold">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Chat with a Consultant
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Footer />

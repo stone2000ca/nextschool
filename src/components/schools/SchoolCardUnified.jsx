@@ -1,18 +1,19 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Heart, DollarSign, Users, Navigation, Check, AlertTriangle, Award } from "lucide-react";
+import { MapPin, DollarSign, Users, Navigation, Check, AlertTriangle, Award, GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { HeaderPhotoDisplay, LogoDisplay } from '@/components/schools/HeaderPhotoHelper';
 
-export default function SchoolCardUnified({ 
-  school, 
-  onViewDetails, 
-  onToggleShortlist, 
-  isShortlisted, 
-  index = 0, 
+export default function SchoolCardUnified({
+  school,
+  onViewDetails,
+  onToggleShortlist,
+  isShortlisted,
+  index = 0,
   variant = "full",
   accentColor = "#0D9488"
 }) {
+  // onToggleShortlist and isShortlisted kept in signature for backwards compat but no longer rendered
   const getCurrencySymbol = (currency) => {
     const symbols = { CAD: 'CA$', USD: '$', EUR: '€', GBP: '£' };
     return symbols[currency] || '$';
@@ -154,23 +155,36 @@ export default function SchoolCardUnified({
           </div>
         )}
 
-        {/* Badges */}
-        <div className="flex flex-wrap gap-2 mb-3 text-xs">
+        {/* Enriched chips */}
+        <div className="flex flex-wrap gap-1.5 mb-3 text-xs">
           {formatGradeRange(school.lowestGrade, school.highestGrade) && (
             <Badge variant="secondary" className="bg-slate-100 text-slate-700">
-              Gr {formatGradeRange(school.lowestGrade, school.highestGrade)}
+              <GraduationCap className="h-3 w-3 mr-1" />
+              {formatGradeRange(school.lowestGrade, school.highestGrade)}
             </Badge>
           )}
-          {school.genderPolicy && (
-            <Badge variant="secondary" className="bg-slate-100 text-slate-700">
-              {school.genderPolicy}
-            </Badge>
+          {school.genderPolicy && school.genderPolicy !== 'Co-ed' && (
+            <Badge variant="secondary" className="bg-slate-100 text-slate-700">{school.genderPolicy}</Badge>
           )}
-          {school.curriculum && (
-            <Badge variant="secondary" className="bg-slate-100 text-slate-700">
-              {school.curriculum}
-            </Badge>
+          {school.boardingAvailable && (
+            <Badge variant="secondary" className="bg-blue-50 text-blue-700">Boarding</Badge>
           )}
+          {school.faithBased && (
+            <Badge variant="secondary" className="bg-amber-50 text-amber-700">{school.faithBased}</Badge>
+          )}
+          {school.curriculum && (Array.isArray(school.curriculum) ? school.curriculum : [school.curriculum]).slice(0, 2).map((c, i) => (
+            <Badge key={i} variant="secondary" className="bg-teal-50 text-teal-700">{c}</Badge>
+          ))}
+          {school.specializations && school.specializations.slice(0, 2).map((s, i) => (
+            <Badge key={`sp-${i}`} variant="secondary" className="bg-purple-50 text-purple-700">{s}</Badge>
+          ))}
+        </div>
+
+        {/* Enrollment + Founded */}
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500 mb-3">
+          {school.enrollment && <span>{school.enrollment.toLocaleString()} students</span>}
+          {school.founded && <span>Est. {school.founded}</span>}
+          {school.acceptanceRate && <span>{school.acceptanceRate}% acceptance</span>}
         </div>
 
         {/* Tuition */}
@@ -201,24 +215,7 @@ export default function SchoolCardUnified({
         )}
       </div>
 
-      {/* Actions */}
-      {!isCompact && (
-        <div className="px-4 pb-4">
-          <Button
-            variant={isShortlisted ? "default" : "outline"}
-            size="sm"
-            className={`w-full ${isShortlisted ? 'bg-teal-600 hover:bg-teal-700' : ''}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleShortlist(school.id);
-            }}
-            aria-label={isShortlisted ? `Remove ${school.name} from shortlist` : `Add ${school.name} to shortlist`}
-          >
-            <Heart className={`h-4 w-4 mr-2 ${isShortlisted ? 'fill-current' : ''}`} />
-            {isShortlisted ? 'Shortlisted' : 'Add to Shortlist'}
-          </Button>
-        </div>
-      )}
+      {/* Card links to school profile — no action buttons on public cards */}
     </Card>
   );
 }
