@@ -15,7 +15,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
     try {
       const [artifacts, analyses] = await Promise.all([
         base44.entities.GeneratedArtifact.filter({ conversationId }),
-        user?.id ? base44.entities.SchoolAnalysis.filter({ userId: user.id }) : Promise.resolve([])
+        user?.id ? base44.entities.SchoolAnalysis.filter({ userId: user.id, conversationId }) : Promise.resolve([])
       ]);
 
       // Build indexed map keyed by schoolId_artifactType
@@ -45,7 +45,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
           analysesMap[analysis.schoolId] = entry;
         }
       }
-      setSchoolAnalyses(analysesMap);
+      setSchoolAnalyses(prev => ({ ...analysesMap, ...prev }));
       setArtifactCache(map);
       console.log('[WC6] Artifact cache loaded:', Object.keys(map).length, 'entries', '| SchoolAnalyses:', Object.keys(analysesMap).length);
     } catch (error) {
