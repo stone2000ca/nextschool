@@ -53,6 +53,10 @@ export const useMessageHandler = ({
   createPageUrl,
   activeJourney,
   setActiveJourney,
+  // E41: Action dispatch deps for S6/S7/S10
+  setFilterOverrides,
+  resetFilterOverrides,
+  loadMoreSchools,
 }, isPremiumParam = isPremium) => {
     // CRT-S109-F15: Message queue to prevent message loss during rapid input
     let isProcessing = false;
@@ -538,6 +542,38 @@ export const useMessageHandler = ({
       const finalMessages = [...updatedMessages, aiMessage];
       setMessages(finalMessages);
       setIsTyping(false);
+
+      // E41: Inline dispatch for RESULTS-state chat actions (S6/S7/S10)
+      // Fires synchronously so state updates land in the same render as setSchools/setIsTyping.
+      // Note: ADD_TO_SHORTLIST / EXPAND_SCHOOL / INITIATE_TOUR are handled in Consultant.jsx
+      // useEffect (intentionally outside this hook per E30-012 stale-closure guidance).
+      for (const action of (response.data?.actions || [])) {
+        switch (action.type) {
+          case 'EDIT_CRITERIA':
+            // setSchools already fired above from response.data.schools — just trigger animation
+            setSchoolsAnimKey(k => k + 1);
+            break;
+          case 'FILTER_SCHOOLS': {
+            const f = action.payload?.filters || {};
+            if (f.clear) {
+              resetFilterOverrides?.();
+            } else {
+              const mapped = {};
+              if (f.boardingType === 'boarding') mapped.boardingOnly = true;
+              else if (f.boardingType === 'day') mapped.boardingOnly = false;
+              if (f.gender) mapped.genderFilter = f.gender === 'coed' ? 'co-ed' : f.gender;
+              if (f.curriculum) mapped.curriculum = f.curriculum;
+              setFilterOverrides?.(prev => ({ ...prev, ...mapped }));
+            }
+            break;
+          }
+          case 'LOAD_MORE':
+            loadMoreSchools?.();
+            break;
+          default:
+            break;
+        }
+      }
 
       // Non-fatal bookkeeping — runs after user-facing response is delivered
       // Errors here are logged but never shown to the user

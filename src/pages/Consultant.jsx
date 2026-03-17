@@ -994,6 +994,10 @@ export default function Consultant() {
     createPageUrl,
     activeJourney,
     setActiveJourney,
+    // E41: Action dispatch deps for S6/S7/S10 inline dispatch in useMessageHandler
+    setFilterOverrides,
+    resetFilterOverrides,
+    loadMoreSchools,
   });
 
   const handleViewSchoolDetail = async (schoolId, skipConfirmation = false) => {
@@ -1363,34 +1367,7 @@ export default function Consultant() {
             }
             break;
           }
-          // E41-S6: Edit criteria — update schools with re-search results
-          case 'EDIT_CRITERIA': {
-            if (action.payload?.schools?.length > 0) {
-              setSchools(action.payload.schools);
-              setSchoolsAnimKey(k => k + 1);
-            }
-            break;
-          }
-          // E41-S7: Filter schools — apply filter overrides to grid
-          case 'FILTER_SCHOOLS': {
-            const f = action.payload?.filters || {};
-            if (f.clear) {
-              resetFilterOverrides();
-            } else {
-              const mapped = {};
-              if (f.boardingType === 'boarding') mapped.boardingOnly = true;
-              else if (f.boardingType === 'day') mapped.boardingOnly = false;
-              if (f.gender) mapped.genderFilter = f.gender === 'coed' ? 'co-ed' : f.gender;
-              if (f.curriculum) mapped.curriculum = f.curriculum;
-              setFilterOverrides(prev => ({ ...prev, ...mapped }));
-            }
-            break;
-          }
-          // E41-S10: Load more schools
-          case 'LOAD_MORE':
-            loadMoreSchools();
-            break;
-          // E41-S10: Sort schools by distance
+          // E41-S10: Sort schools by distance (needs applyDistances, kept here)
           case 'SORT_SCHOOLS': {
             const sortBy = action.payload?.sortBy || 'distance';
             if (sortBy === 'distance' && userLocation) {
@@ -1398,6 +1375,8 @@ export default function Consultant() {
             }
             break;
           }
+          // E41-S6: EDIT_CRITERIA / S7: FILTER_SCHOOLS / S10: LOAD_MORE
+          // dispatched inline in useMessageHandler (synchronous, no 800ms delay)
           default:
             break;
         }
