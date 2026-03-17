@@ -1616,6 +1616,62 @@ Object.assign(context, safeUpdatedContext);
               console.error('[WC10] Narrative failed (non-blocking):', e.message);
             }
           })();
+
+          // E42-PERSIST Phase 1a: Persist Family Brief as GeneratedArtifact at BRIEF→RESULTS transition
+          // The brief text lives in the last assistant message from the BRIEF state.
+          // We persist it here (not in handleBrief.ts) because conversationId is guaranteed to exist at this point.
+          if (userId && conversationId) {
+            (async () => {
+              try {
+                // Extract brief text from the last assistant message in conversation history
+                const briefText = [...(conversationHistory || [])].reverse().find(m => m.role === 'assistant')?.content || '';
+                if (!briefText) {
+                  console.warn('[E42-PERSIST] No brief text found in conversation history, skipping artifact write');
+                  return;
+                }
+                const profileSnapshot = {
+                  childName: workingProfile?.childName || null,
+                  childGrade: workingProfile?.childGrade || null,
+                  gender: workingProfile?.gender || null,
+                  locationArea: workingProfile?.locationArea || null,
+                  maxTuition: workingProfile?.maxTuition || null,
+                  priorities: workingProfile?.priorities || [],
+                  interests: workingProfile?.interests || [],
+                  dealbreakers: workingProfile?.dealbreakers || [],
+                  curriculumPreference: workingProfile?.curriculumPreference || null,
+                  learningDifferences: workingProfile?.learningDifferences || null,
+                  parentNotes: workingProfile?.parentNotes || []
+                };
+                const existing = await base44.asServiceRole.entities.GeneratedArtifact.filter({
+                  userId,
+                  conversationId,
+                  artifactType: 'family_brief'
+                });
+                const generatedAt = new Date().toISOString();
+                if (existing && existing.length > 0) {
+                  await base44.asServiceRole.entities.GeneratedArtifact.update(existing[0].id, {
+                    content: JSON.stringify({ briefText, profileSnapshot }),
+                    generatedAt,
+                    metadata: { consultantName: consultantName || 'jackie', version: 'E42_V1' }
+                  });
+                  console.log('[E42-PERSIST] family_brief updated:', existing[0].id);
+                } else {
+                  const created = await base44.asServiceRole.entities.GeneratedArtifact.create({
+                    userId,
+                    conversationId,
+                    artifactType: 'family_brief',
+                    content: JSON.stringify({ briefText, profileSnapshot }),
+                    generatedAt,
+                    status: 'active',
+                    metadata: { consultantName: consultantName || 'jackie', version: 'E42_V1' }
+                  });
+                  console.log('[E42-PERSIST] family_brief created:', created.id);
+                }
+              } catch (e) {
+                console.error('[E42-PERSIST] family_brief persistence failed (non-blocking):', e.message);
+              }
+            })();
+          }
         }
 
         // E29-003: Fire-and-forget FamilyJourney creation at Brief confirmation
@@ -1703,6 +1759,31 @@ Object.assign(context, safeUpdatedContext);
             // Merge delta into workingProfile
             Object.assign(workingProfile, delta);
             context.accumulatedFamilyProfile = { ...(context.accumulatedFamilyProfile || {}), ...delta };
+
+            // E42-PERSIST Phase 1b: Persist EDIT_CRITERIA profile changes to FamilyProfile entity
+            if (userId && conversationId) {
+              (async () => {
+                try {
+                  const PROFILE_FIELDS = ['childName','childGrade','gender','locationArea','maxTuition','priorities','interests','dealbreakers','learningDifferences','curriculumPreference','schoolTypeLabel','academicStrengths','parentNotes','schoolGenderExclusions'];
+                  const updatePayload: Record<string, any> = {};
+                  for (const key of PROFILE_FIELDS) {
+                    if (delta[key] !== undefined && delta[key] !== null) {
+                      updatePayload[key] = delta[key];
+                    }
+                  }
+                  if (Object.keys(updatePayload).length > 0) {
+                    const profiles = await base44.asServiceRole.entities.FamilyProfile.filter({ userId, conversationId });
+                    if (profiles && profiles.length > 0) {
+                      await base44.asServiceRole.entities.FamilyProfile.update(profiles[0].id, updatePayload);
+                      console.log('[E42-PERSIST] FamilyProfile updated (EDIT_CRITERIA):', profiles[0].id, Object.keys(updatePayload));
+                    }
+                  }
+                } catch (e) {
+                  console.error('[E42-PERSIST] FamilyProfile EDIT_CRITERIA upsert failed (non-blocking):', e.message);
+                }
+              })();
+            }
+
             // Re-invoke searchSchools with updated profile
             const searchResult = await base44.asServiceRole.functions.invoke('searchSchools', {
               familyProfile: workingProfile,
@@ -1728,10 +1809,36 @@ Object.assign(context, safeUpdatedContext);
           conversationFamilyProfile: workingProfile,
           context,
           conversationHistory
-        }).then((extractResult) => {
+        }).then(async (extractResult) => {
           if (extractResult?.data?.updatedFamilyProfile) {
             context.accumulatedFamilyProfile = { ...(context.accumulatedFamilyProfile || {}), ...extractResult.data.updatedFamilyProfile };
             console.log('[E41-S3] Deferred extractEntities complete, updated accumulatedFamilyProfile');
+
+            // E42-PERSIST Phase 1b: Upsert FamilyProfile entity with latest extracted fields
+            // This ensures the canonical FamilyProfile in Firestore stays in sync with conversation state.
+            if (userId && conversationId) {
+              try {
+                const delta = extractResult.data.updatedFamilyProfile;
+                const PROFILE_FIELDS = ['childName','childGrade','gender','locationArea','maxTuition','priorities','interests','dealbreakers','learningDifferences','curriculumPreference','schoolTypeLabel','academicStrengths','parentNotes','schoolGenderExclusions'];
+                const updatePayload: Record<string, any> = {};
+                for (const key of PROFILE_FIELDS) {
+                  if (delta[key] !== undefined && delta[key] !== null) {
+                    updatePayload[key] = delta[key];
+                  }
+                }
+                if (Object.keys(updatePayload).length > 0) {
+                  const profiles = await base44.asServiceRole.entities.FamilyProfile.filter({ userId, conversationId });
+                  if (profiles && profiles.length > 0) {
+                    await base44.asServiceRole.entities.FamilyProfile.update(profiles[0].id, updatePayload);
+                    console.log('[E42-PERSIST] FamilyProfile updated:', profiles[0].id, Object.keys(updatePayload));
+                  } else {
+                    console.warn('[E42-PERSIST] No FamilyProfile found for upsert, userId:', userId, 'conversationId:', conversationId);
+                  }
+                }
+              } catch (e) {
+                console.error('[E42-PERSIST] FamilyProfile upsert failed (non-blocking):', e.message);
+              }
+            }
           }
         }).catch(e => console.error('[E41-S3] Deferred extractEntities failed (non-critical):', e.message));
 
