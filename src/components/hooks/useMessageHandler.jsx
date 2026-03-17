@@ -542,30 +542,22 @@ export const useMessageHandler = ({
       // Non-fatal bookkeeping — runs after user-facing response is delivered
       // Errors here are logged but never shown to the user
       (async () => {
-        try {
-          // Deduct 1 token and persist to database (skip for premium)
-          if (isAuthenticated && user && !isPremium) {
-            const newTokenBalance = Math.max(0, tokenBalance - 1);
-            setTokenBalance(newTokenBalance);
-            await base44.auth.updateMe({ tokenBalance: newTokenBalance });
-          }
-
-          // Save AI memories with deduplication and filtering
-          if (isAuthenticated && user) {
-            await extractAndSaveMemories(messageText, response.data?.message || '', user, base44);
-          }
-
-          // Update conversation if authenticated
-          if (isAuthenticated && currentConversation && currentConversation.id) {
+        // CRITICAL: Persist messages to ChatHistory FIRST — this is the primary
+        // data survival path. Must run before any other bookkeeping that might throw.
+        if (isAuthenticated && currentConversation && currentConversation.id) {
+          try {
             await base44.entities.ChatHistory.update(currentConversation.id, {
               messages: finalMessages,
               conversationContext: updatedContext
             });
+          } catch (persistErr) {
+            console.error('[PERSIST] ChatHistory.update failed — messages may be lost on refresh:', persistErr);
+          }
 
-            // Count user messages to determine when to generate title
+          // Title generation and summarization (non-critical)
+          try {
             const userMessageCount = finalMessages.filter(m => m.role === 'user').length;
 
-            // Generate title after first user message
             if (userMessageCount === 1 && currentConversation.title === 'New Conversation') {
               try {
                 const titleResult = await base44.functions.invoke('generateConversationTitle', {
@@ -580,12 +572,29 @@ export const useMessageHandler = ({
               }
             }
 
-            // Trigger summarization every 5 user messages
             if (userMessageCount % 5 === 0) {
               await base44.functions.invoke('summarizeConversation', {
                 conversationId: currentConversation.id
               });
             }
+          } catch (metaErr) {
+            console.warn('[BOOKKEEPING] Title/summary error:', metaErr);
+          }
+        } else {
+          console.warn('[PERSIST] Skipped ChatHistory.update — no currentConversation.id:', currentConversation?.id);
+        }
+
+        try {
+          // Deduct 1 token and persist to database (skip for premium)
+          if (isAuthenticated && user && !isPremium) {
+            const newTokenBalance = Math.max(0, tokenBalance - 1);
+            setTokenBalance(newTokenBalance);
+            await base44.auth.updateMe({ tokenBalance: newTokenBalance });
+          }
+
+          // Save AI memories with deduplication and filtering
+          if (isAuthenticated && user) {
+            await extractAndSaveMemories(messageText, response.data?.message || '', user, base44);
           }
         } catch (err) {
           console.error('[BOOKKEEPING] Non-fatal error:', err);
