@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 // ─── Inline SVG Icons ─────────────────────────────────────────────────────────
 
@@ -84,6 +84,51 @@ function LoadingSkeleton() {
   );
 }
 
+// ─── Slide Toggle Hook ───────────────────────────────────────────────────────
+
+function useSlideToggle(isOpen, duration = '0.28s') {
+  const panelRef = useRef(null);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    // On first render, just set initial state without animation
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      panel.style.height = isOpen ? 'auto' : '0px';
+      panel.style.overflow = isOpen ? '' : 'hidden';
+      return;
+    }
+
+    if (isOpen) {
+      // Opening: measure scrollHeight, animate from 0 → scrollHeight, then set auto
+      panel.style.height = panel.scrollHeight + 'px';
+      panel.style.overflow = 'hidden';
+      const handler = () => {
+        panel.style.height = 'auto';
+        panel.style.overflow = '';
+        panel.removeEventListener('transitionend', handler);
+      };
+      panel.addEventListener('transitionend', handler);
+    } else {
+      // Closing: snapshot current height, force reflow, then animate to 0
+      panel.style.height = panel.scrollHeight + 'px';
+      panel.style.overflow = 'hidden';
+      panel.offsetHeight; // force reflow
+      panel.style.height = '0px';
+    }
+  }, [isOpen]);
+
+  const slideStyle = {
+    transition: `height ${duration} ease-out`,
+    overflow: 'hidden',
+  };
+
+  return { panelRef, slideStyle };
+}
+
 // ─── Collapsible Section ──────────────────────────────────────────────────────
 
 const SECTION_TINTS = {
@@ -94,10 +139,17 @@ const SECTION_TINTS = {
   '#64748b': { border: '#64748b', bg: 'linear-gradient(135deg, #f8fafc, #f1f5f9, #fff)' },  // gray — Contact Log
 };
 
-function CollapsibleSection({ icon, label, color, children, defaultOpen = false }) {
+function CollapsibleSection({ icon, label, color, children, defaultOpen = false, forceOpen }) {
   const [open, setOpen] = useState(defaultOpen);
   const tint = SECTION_TINTS[color] || {};
   const tintBg = tint.bg || 'none';
+  const { panelRef, slideStyle } = useSlideToggle(open, '0.25s');
+
+  // Allow parent to force-open (for cascade animation)
+  useEffect(() => {
+    if (forceOpen !== undefined) setOpen(forceOpen);
+  }, [forceOpen]);
+
   return (
     <div style={{ borderTop: '1px solid #e8dfc0', marginTop: 0, borderLeft: tint.border ? `5px solid ${tint.border}` : 'none', background: open ? tintBg : 'none' }}>
       <button
@@ -114,11 +166,11 @@ function CollapsibleSection({ icon, label, color, children, defaultOpen = false 
         </span>
         <span style={{ color: '#a89060' }}><ChevronIcon open={open} /></span>
       </button>
-      {open && (
+      <div ref={panelRef} style={slideStyle}>
         <div style={{ padding: '0 20px 16px' }}>
           {children}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -471,11 +523,27 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
   const priorityList = priorityMatches || [];
   const insight = aiInsight || null;
   const journey = journeySteps || [];
-  const [open, setOpen] = useState(true);
-  const [deepDiveOpen, setDeepDiveOpen] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [deepDiveOpen, setDeepDiveOpen] = useState(false);
   const [localNotes, setLocalNotes] = useState('');
   const [saved, setSaved] = useState(false);
   const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
+  const hasAnimatedRef = useRef(false);
+
+  // Slide hooks for main body and deep dive inner panel
+  const { panelRef: mainPanelRef, slideStyle: mainSlideStyle } = useSlideToggle(open, '0.28s');
+  const { panelRef: deepDivePanelRef, slideStyle: deepDiveSlideStyle } = useSlideToggle(deepDiveOpen, '0.28s');
+
+  // Auto-open cascade when notepad has existing data
+  const hasData = !!(fitScore || tradeOffs?.length || priorityMatches?.length);
+  useEffect(() => {
+    if (hasData && !hasAnimatedRef.current) {
+      hasAnimatedRef.current = true;
+      const t1 = setTimeout(() => setOpen(true), 400);
+      const t2 = setTimeout(() => setDeepDiveOpen(true), 600);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+  }, [hasData]);
 
   // Controlled vs uncontrolled: use props if provided, else local state
   const isControlled = onNotesChange != null;
@@ -609,7 +677,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
           )}
         </button>
 
-        {open && (
+        <div ref={mainPanelRef} style={mainSlideStyle}>
           <div style={{ position: 'relative', zIndex: 2 }}>
 
             {/* Journey Timeline */}
@@ -683,7 +751,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                 <span style={{ color: '#a89060' }}><ChevronIcon open={deepDiveOpen} /></span>
               </button>
 
-              {deepDiveOpen && (
+              <div ref={deepDivePanelRef} style={deepDiveSlideStyle}>
                 <div style={{ padding: '18px 20px' }}>
 
                   {/* Fit Score + Chat Bubbles row */}
@@ -817,7 +885,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* ── Community Pulse ──────────────────────────────── */}
@@ -875,7 +943,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
             </div>
 
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
