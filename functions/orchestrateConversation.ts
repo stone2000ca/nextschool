@@ -1252,6 +1252,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         context.previousState = context.state || 'BRIEF';
         context.state = 'RESULTS';
         context.briefStatus = 'confirmed';
+        briefStatus = 'confirmed'; // [E42-PERSIST] sync local var so persist gate fires
         console.log('[FIX-C] __CONFIRM_BRIEF__ sentinel: skipping BRIEF, going directly to RESULTS');
       }
 
@@ -1602,7 +1603,10 @@ Object.assign(context, safeUpdatedContext);
         }
 
         // WC10: Fire-and-forget narrative generation (non-blocking)
-        if (context.previousState === STATES.BRIEF && briefStatus === 'confirmed') {
+        const isBriefConfirmedTransition =
+          (context.previousState === STATES.BRIEF && briefStatus === 'confirmed') ||
+          isConfirmBrief;
+        if (isBriefConfirmedTransition && userId && conversationId) {
           (async () => {
             try {
               await base44.asServiceRole.functions.invoke('generateProfileNarrative', {
@@ -1672,6 +1676,14 @@ Object.assign(context, safeUpdatedContext);
               }
             })();
           }
+        } else if (context.state === STATES.RESULTS) {
+          console.warn('[E42-PERSIST] family_brief gate not met:', {
+            previousState: context.previousState,
+            briefStatus,
+            isConfirmBrief,
+            hasUserId: !!userId,
+            hasConversationId: !!conversationId
+          });
         }
 
         // E29-003: Fire-and-forget FamilyJourney creation at Brief confirmation
