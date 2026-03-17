@@ -1349,6 +1349,10 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         console.log('[RESUME-FIX] Seeded accumulatedFamilyProfile from DB FamilyProfile');
       }
       const workingProfile = mergeProfile(mergeProfile(accumulatedProfile, conversationFamilyProfile), bridgeProfile);
+      // E42-FIX: Ensure .id survives merge — Base44 entity .id may be non-enumerable/getter
+      if (conversationFamilyProfile?.id && !workingProfile.id) {
+        workingProfile.id = conversationFamilyProfile.id;
+      }
       for (const [key, val] of Object.entries(workingProfile)) {
         if (val === null || val === undefined) {
           if (accumulatedProfile[key] != null) workingProfile[key] = accumulatedProfile[key];
@@ -1627,39 +1631,25 @@ Object.assign(context, safeUpdatedContext);
           })();
 
           // E42-PERSIST Phase 1a: Persist Family Brief as GeneratedArtifact at BRIEF→RESULTS transition
-          // The brief text lives in the last assistant message from the BRIEF state.
-          // We persist it here (not in handleBrief.ts) because conversationId is guaranteed to exist at this point.
+          // Use responseData.message (the just-generated brief) — NOT conversationHistory which doesn't contain it yet.
           if (userId && conversationId) {
             (async () => {
               try {
-                // Extract brief text from the last assistant message in conversation history
-                const briefText = [...(conversationHistory || [])].reverse().find(m => m.role === 'assistant')?.content || '';
+                const briefText = responseData?.message || '';
                 if (!briefText) {
-                  console.warn('[E42-PERSIST] No brief text found in conversation history, skipping artifact write');
+                  console.warn('[E42-PERSIST] No brief text in responseData.message, skipping artifact write');
                   return;
                 }
-                const profileSnapshot = {
-                  childName: workingProfile?.childName || null,
-                  childGrade: workingProfile?.childGrade || null,
-                  gender: workingProfile?.gender || null,
-                  locationArea: workingProfile?.locationArea || null,
-                  maxTuition: workingProfile?.maxTuition || null,
-                  priorities: workingProfile?.priorities || [],
-                  interests: workingProfile?.interests || [],
-                  dealbreakers: workingProfile?.dealbreakers || [],
-                  curriculumPreference: workingProfile?.curriculumPreference || null,
-                  learningDifferences: workingProfile?.learningDifferences || null,
-                  parentNotes: workingProfile?.parentNotes || []
-                };
                 const existing = await base44.asServiceRole.entities.GeneratedArtifact.filter({
                   userId,
                   conversationId,
                   artifactType: 'family_brief'
                 });
                 const generatedAt = new Date().toISOString();
+                const artifactContent = JSON.stringify({ briefText, structuredProfile: workingProfile });
                 if (existing && existing.length > 0) {
                   await base44.asServiceRole.entities.GeneratedArtifact.update(existing[0].id, {
-                    content: JSON.stringify({ briefText, profileSnapshot }),
+                    content: artifactContent,
                     generatedAt,
                     metadata: { consultantName: consultantName || 'jackie', version: 'E42_V1' }
                   });
@@ -1669,7 +1659,7 @@ Object.assign(context, safeUpdatedContext);
                     userId,
                     conversationId,
                     artifactType: 'family_brief',
-                    content: JSON.stringify({ briefText, profileSnapshot }),
+                    content: artifactContent,
                     generatedAt,
                     status: 'active',
                     metadata: { consultantName: consultantName || 'jackie', version: 'E42_V1' }
@@ -1781,7 +1771,7 @@ Object.assign(context, safeUpdatedContext);
             if (userId && conversationId) {
               (async () => {
                 try {
-                  const PROFILE_FIELDS = ['childName','childGrade','gender','locationArea','maxTuition','priorities','interests','dealbreakers','learningDifferences','curriculumPreference','schoolTypeLabel','academicStrengths','parentNotes','schoolGenderExclusions'];
+                  const PROFILE_FIELDS = ['childName','childGrade','childGender','locationArea','maxTuition','priorities','interests','dealbreakers','learningDifferences','curriculumPreference','schoolTypeLabel','academicStrengths','parentNotes','schoolGenderExclusions','schoolGenderPreference'];
                   const updatePayload: Record<string, any> = {};
                   for (const key of PROFILE_FIELDS) {
                     if (delta[key] !== undefined && delta[key] !== null) {
@@ -1836,7 +1826,7 @@ Object.assign(context, safeUpdatedContext);
             if (userId && conversationId) {
               try {
                 const delta = extractResult.data.updatedFamilyProfile;
-                const PROFILE_FIELDS = ['childName','childGrade','gender','locationArea','maxTuition','priorities','interests','dealbreakers','learningDifferences','curriculumPreference','schoolTypeLabel','academicStrengths','parentNotes','schoolGenderExclusions'];
+                const PROFILE_FIELDS = ['childName','childGrade','childGender','locationArea','maxTuition','priorities','interests','dealbreakers','learningDifferences','curriculumPreference','schoolTypeLabel','academicStrengths','parentNotes','schoolGenderExclusions','schoolGenderPreference'];
                 const updatePayload: Record<string, any> = {};
                 for (const key of PROFILE_FIELDS) {
                   if (delta[key] !== undefined && delta[key] !== null) {
