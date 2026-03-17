@@ -45,13 +45,13 @@ function applyReligiousFilter(school, familyProfile, payload) {
       console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation`);
       return false;
     }
-    // DISABLED S150: name-keyword check too aggressive
-    // const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'saint', 'st.', 'st. ', 'holy', 'sacred', 'blessed', 'bishop', 'trinity', 'yeshiva', 'hebrew', 'our lady', 'gospel', 'covenant', 'faith'];
-    // const schoolNameLower = school.name?.toLowerCase() || '';
-    // if (religiousKeywords.some(keyword => schoolNameLower.includes(keyword))) {
-    //   console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: name contains religious keyword`);
-    //   return false;
-    // }
+    // E41-FIX: Re-enabled with refined keywords (removed 'st.', 'saint', 'trinity', 'bishop' which cause false positives)
+    const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'yeshiva', 'hebrew', 'our lady', 'gospel', 'covenant', 'faith-based', 'huraira', 'mosque', 'synagogue', 'church school', 'bible', 'quaker', 'mennonite', 'amish', 'hindu', 'buddhist', 'sikh', 'muslim', 'baeck', 'heschel', 'tayyibah', 'khairul', 'wali ul'];
+    const schoolNameLower = school.name?.toLowerCase() || '';
+    if (religiousKeywords.some(keyword => schoolNameLower.includes(keyword))) {
+      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: name contains religious keyword`);
+      return false;
+    }
   }
   return true;
 }
