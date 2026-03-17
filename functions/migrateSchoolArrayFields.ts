@@ -18,7 +18,7 @@ const ARRAY_FIELDS = [
 
 function cleanString(s) {
   if (typeof s !== 'string') return s;
-  return s.trim().replace(/^["']+|["']+$/g, '').replace(/\\"/g, '"').trim();
+  return s.trim().replace(/^[\["'\u201C\u2018]+|[\]"'\u201D\u2019]+$/g, '').replace(/\\"/g, '"').trim();
 }
 
 function tryParseArray(val) {
