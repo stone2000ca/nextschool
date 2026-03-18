@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 
 // 3-day inactivity session persistence
 const INACTIVITY_LIMIT_MS = 3 * 24 * 60 * 60 * 1000 // 3 days in ms
@@ -33,69 +32,39 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Create response — will be recreated inside setAll when tokens are refreshed
   let response = NextResponse.next({
     request,
   })
 
-  // Read the Supabase session from cookies WITHOUT triggering a server-side
-  // token refresh.  Using getUser() here consumed the refresh token, which
-  // desynchronised the middleware's cookies from the browser client's
-  // in-memory gotrue-js session.  Heavy pages like /consultant that make many
-  // concurrent Supabase calls on mount would then trigger a client-side
-  // refresh with the stale (consumed) refresh token, causing gotrue-js to
-  // clear the session entirely (SIGNED_OUT).
+  // Detect whether a Supabase auth session exists by checking cookies
+  // directly — WITHOUT creating a Supabase client or calling any auth method.
   //
-  // getSession() reads the JWT from cookies and returns the decoded session
-  // without a network call and without consuming the refresh token.  The
-  // browser client's gotrue-js auto-refresh is now the sole owner of the
-  // refresh cycle, eliminating the race condition.
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          // Update request cookies so downstream handlers see refreshed tokens
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          // Recreate the response with the updated request (carries refreshed cookies)
-          response = NextResponse.next({
-            request,
-          })
-          // Set the Set-Cookie headers on the new response
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
+  // Why: Both getUser() and getSession() can trigger a server-side token
+  // refresh when the access token is expired.  This consumes the refresh
+  // token (R1 → R2) and writes new cookies via Set-Cookie.  However, the
+  // browser's gotrue-js singleton still holds R1 in memory.  When it later
+  // attempts its own refresh it uses the consumed R1, which fails.  GoTrue
+  // then fires SIGNED_OUT and — critically — *deletes all auth cookies from
+  // storage*, including the fresh R2 the middleware just wrote.  The recovery
+  // handler in AuthContext calls getUser() but the cookies are gone, so
+  // recovery fails and the user is logged out.
+  //
+  // The middleware only needs to know IF a session cookie exists (for route
+  // protection and activity tracking).  Actual token validation and refresh
+  // are handled exclusively by the browser's gotrue-js client, which is the
+  // sole owner of the refresh cycle.
+  const hasSession = request.cookies.getAll().some(
+    ({ name }) => name.startsWith('sb-') && name.includes('-auth-token')
   )
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  const user = session?.user ?? null
-
-  // Helper: create a redirect that carries all Set-Cookie headers from the current response
   function redirectToLogin(returnPath: string) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
     loginUrl.searchParams.set('returnTo', returnPath)
-    const redirect = NextResponse.redirect(loginUrl)
-    // Copy all Set-Cookie headers (Supabase auth cookies) to the redirect
-    response.headers.getSetCookie().forEach((cookie) => {
-      redirect.headers.append('Set-Cookie', cookie)
-    })
-    return redirect
+    return NextResponse.redirect(loginUrl)
   }
 
-  if (user) {
+  if (hasSession) {
     // Check inactivity timeout
     const lastActivity = request.cookies.get(ACTIVITY_COOKIE)?.value
     if (lastActivity) {
@@ -128,7 +97,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect routes: redirect unauthenticated users to login
-  if (!user && isProtectedRoute(pathname)) {
+  if (!hasSession && isProtectedRoute(pathname)) {
     return redirectToLogin(pathname)
   }
 

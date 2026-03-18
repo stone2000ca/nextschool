@@ -180,11 +180,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Re-validate the session on every client-side navigation.  When the user
-  // navigates between routes the middleware may have refreshed the token
-  // (updating cookies) while gotrue-js still holds the old tokens in memory.
-  // Calling getUser() here forces the browser client to re-read cookies and
-  // sync its internal session, preventing stale-token refresh failures.
+  // Re-sync auth state on every client-side navigation.  Use getSession()
+  // (reads from cookie storage, no network call) instead of getUser() to
+  // avoid triggering a token refresh that could race with the middleware.
+  // The middleware no longer refreshes tokens, but getSession() is still
+  // the safer choice: it lets gotrue-js re-read cookies and update its
+  // in-memory session without consuming the refresh token.
   const isFirstRender = useRef(true)
   useEffect(() => {
     // Skip the first render (handled by checkAppState above)
@@ -192,16 +193,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       isFirstRender.current = false
       return
     }
-    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-      if (authUser) {
-        fetchUserProfile(authUser).then((profile) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchUserProfile(session.user).then((profile) => {
           setUser(profile)
           setIsAuthenticated(true)
         })
       }
       // Don't clear auth on failure here — let onAuthStateChange handle it
     }).catch(() => {
-      // Network error — leave current state unchanged
+      // Storage error — leave current state unchanged
     })
   }, [pathname])
 
