@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
 import { School, SchoolAdmin as SchoolAdminEntity, SchoolClaim, User, SchoolInquiry, EnrichmentDiff, PhotoCandidate } from '@/lib/entities';
 import { invokeFunction } from '@/lib/functions';
-import { Building2, BarChart3, Mail, CreditCard, Upload, Crown, Sparkles, Image, ImagePlus, MessageSquareQuote, User, CalendarDays, FileText, FlaskConical, Loader2, ArrowLeft, Clock, XCircle } from 'lucide-react';
+import { Building2, BarChart3, Mail, CreditCard, Upload, Crown, Sparkles, Image, ImagePlus, MessageSquareQuote, User as UserIcon, CalendarDays, FileText, FlaskConical, Loader2, ArrowLeft, Clock, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import ProfileEditor from '@/components/school-admin/ProfileEditor';

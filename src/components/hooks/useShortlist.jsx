@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getShortlistNudge } from '@/components/utils/shortlistNudges';
-import { STATES } from '@/pages/stateMachineConfig';
+import { STATES } from '@/lib/stateMachineConfig';
 import { ChatShortlist, School, SchoolJourney, FamilyJourney } from '@/lib/entities';
 
 export function useShortlist({

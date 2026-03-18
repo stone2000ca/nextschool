@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { School, SchoolJourney, ChatHistory, FamilyJourney, ResearchNote, SchoolInquiry } from '@/lib/entities';
 import { invokeFunction } from '@/lib/functions';
-import { STATES, BRIEF_STATUS } from './stateMachineConfig';
+import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
 import { restoreGuestSession } from '@/components/chat/SessionRestorer';
 import { handleNarrateComparison as narrateComparison } from '@/components/chat/handleNarrateComparison';
 

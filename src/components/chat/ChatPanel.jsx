@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { Lock } from 'lucide-react';
 import { School } from '@/lib/entities';
-import { STATES, BRIEF_STATUS } from '../../pages/stateMachineConfig';
+import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
 import { Button } from "@/components/ui/button";
 import MessageBubble from '@/components/chat/MessageBubble';
 import ChatInput from '@/components/chat/ChatInput';

@@ -90,7 +90,7 @@ export async function matchSchoolsForProfileLogic(params: { sessionId: string; f
   // Call searchSchools directly
   let schools: any[] = [];
   try {
-    const searchResult = await searchSchoolsLogic({
+    const searchResult: any = await searchSchoolsLogic({
       ...searchParams,
       conversationId: (session as any).chatHistoryId,
       userId: userId,

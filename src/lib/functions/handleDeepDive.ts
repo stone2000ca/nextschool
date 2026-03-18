@@ -152,14 +152,14 @@ export async function handleDeepDiveLogic(params: any) {
     const allCached = rec?.metadata?.version === 'E30_V1' && prep?.metadata?.version === 'E30_V1' && plan?.metadata?.version === 'E30_V1';
     if (allCached) {
       console.log('[E30] Cache hit — returning from cache for school:', selectedSchoolId);
-      let cachedVisitPrepKit = null;
+      let cachedVisitPrepKit: any = null;
       try {
         const fullKit = typeof prep.content === 'string' ? JSON.parse(prep.content) : prep.content;
         cachedVisitPrepKit = isPremiumUser ? fullKit : { schoolName: fullKit.schoolName, intro: fullKit.intro, visitQuestions: (fullKit.visitQuestions || []).slice(0, 2), observations: null, redFlags: null, isLocked: true };
       } catch (e) {}
-      let cachedActionPlan = null;
+      let cachedActionPlan: any = null;
       try { cachedActionPlan = isPremiumUser ? (typeof plan.content === 'string' ? JSON.parse(plan.content) : plan.content) : null; } catch (e) {}
-      let cachedDeepDiveAnalysis = null;
+      let cachedDeepDiveAnalysis: any = null;
       try {
         const saFilter: any = { userId, schoolId: selectedSchoolId };
         if (conversationId) saFilter.conversationId = conversationId;
@@ -325,8 +325,8 @@ Generate the DEEPDIVE card for this family-school match.`;
   const sanitizedMessage = aiMessage.split('\n').filter((line: string) => !/^(DEEPDIVE Card:|Fit Label|Why This School|What to Know|Cost Reality|Dealbreaker Check|Tone Bridge)/.test(line.trim())).join('\n').trim();
 
   // Generate visitPrepKit
-  let generatedVisitPrepKit = null;
-  let fullVisitPrepKit = null;
+  let generatedVisitPrepKit: any = null;
+  let fullVisitPrepKit: any = null;
   if (deepDiveAnalysis && selectedSchool) {
     fullVisitPrepKit = {
       schoolName: selectedSchool.name,
@@ -345,7 +345,7 @@ Generate the DEEPDIVE card for this family-school match.`;
   }
 
   // Generate action plan
-  let generatedActionPlan = null;
+  let generatedActionPlan: any = null;
   if (deepDiveAnalysis && selectedSchool && userId) {
     const visitWindow = upcomingEvents.length > 0
       ? { recommendedAction: `Attend ${upcomingEvents[0].title} on ${new Date(upcomingEvents[0].date).toLocaleDateString('en-CA')}`, events: upcomingEvents.map((e: any) => ({ title: e.title, date: e.date, type: e.eventType })) }

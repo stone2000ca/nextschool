@@ -1,3 +1,6 @@
 'use client'
-import Consultant from '@/pages/Consultant'
-export default function ConsultantPage() { return <Consultant /> }
+import { Suspense } from 'react'
+import Consultant from '@/page-components/Consultant'
+export default function ConsultantPage() {
+  return <Suspense><Consultant /></Suspense>
+}

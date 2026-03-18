@@ -1,3 +1,3 @@
 'use client'
-import Guides from '@/pages/Guides'
+import Guides from '@/page-components/Guides'
 export default function GuidesPage() { return <Guides /> }

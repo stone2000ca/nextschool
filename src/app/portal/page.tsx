@@ -1,3 +1,3 @@
 'use client'
-import Portal from '@/pages/Portal'
+import Portal from '@/page-components/Portal'
 export default function PortalPage() { return <Portal /> }

@@ -1,3 +1,3 @@
 'use client'
-import SchoolProfile from '@/pages/SchoolProfile'
+import SchoolProfile from '@/page-components/SchoolProfile'
 export default function SchoolPage() { return <SchoolProfile /> }

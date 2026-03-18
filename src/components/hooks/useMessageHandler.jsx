@@ -1,4 +1,4 @@
-import { STATES, BRIEF_STATUS } from '@/pages/stateMachineConfig';
+import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
 import { validateBriefContent, generateProgrammaticBrief } from '@/components/utils/briefUtils';
 import { extractAndSaveMemories } from '@/components/utils/memoryManager';
 import { ChatHistory, ChatSession, FamilyJourney, User } from '@/lib/entities';

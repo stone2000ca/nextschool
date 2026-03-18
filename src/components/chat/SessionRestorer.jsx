@@ -2,8 +2,8 @@
 // Purpose: Restore chat session from URL param for returning users
 // Last Modified: 2026-03-01
 
-import { STATES } from '@/pages/stateMachineConfig';
-import { STATES as STATES_FOR_GUEST } from '@/pages/stateMachineConfig';
+import { STATES } from '@/lib/stateMachineConfig';
+import { STATES as STATES_FOR_GUEST } from '@/lib/stateMachineConfig';
 import { ChatSession, ChatHistory, SchoolAnalysis, FamilyProfile, School } from '@/lib/entities';
 import { invokeFunction } from '@/lib/functions';
 
