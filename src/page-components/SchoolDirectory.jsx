@@ -406,7 +406,7 @@ export default function SchoolDirectory() {
               {displayedSchools.map((school) => (
                   <Link
                     key={school.id}
-                    href={school.slug ? `/schools/${school.slug}` : `/school?id=${school.id}`}
+                    href={school.slug ? `/school/${school.slug}` : `/school?id=${school.id}`}
                     className="block focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 rounded-lg"
                   >
                     <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
