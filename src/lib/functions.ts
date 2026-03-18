@@ -35,6 +35,7 @@ const ROUTE_MAP: Record<string, string> = {
   exportShortlist: 'export-shortlist',
   fetchSchoolProfile: 'fetch-school-profile',
   geocodeSchools: 'geocode-schools',
+  listSchools: 'list-schools',
   getNearbySchools: 'get-nearby-schools',
   scrapeSchoolPhotos: 'scrape-school-photos',
   updateSchoolPhotos: 'update-school-photos',
