@@ -167,14 +167,17 @@ function createEntity(entityName: string): EntityClient {
 
     async create(data: Record<string, any>): Promise<any> {
       const snakeData = keysToSnake(data)
+      snakeData.updated_date = new Date().toISOString()
       const { data: result, error } = await db().insert(snakeData).select().single()
       if (error) throw error
       return keysToCamel(result)
     },
 
     async bulkCreate(rows: Record<string, any>[]): Promise<any[]> {
+      const now = new Date().toISOString()
       const snakeRows = rows.map(row => {
         const snakeData = keysToSnake(row)
+        snakeData.updated_date = now
         return snakeData
       })
       const { data: result, error } = await db().insert(snakeRows).select()
@@ -184,6 +187,7 @@ function createEntity(entityName: string): EntityClient {
 
     async update(id: string, data: Record<string, any>): Promise<any> {
       const snakeData = keysToSnake(data)
+      snakeData.updated_date = new Date().toISOString()
       const { data: result, error } = await db().update(snakeData).eq('id', id).select().single()
       if (error) throw error
       return keysToCamel(result)

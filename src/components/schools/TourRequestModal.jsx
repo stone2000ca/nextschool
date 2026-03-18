@@ -129,7 +129,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         const me = authUser;
         if (!me?.id) return;
 
-        const journeys = await FamilyJourney.filter({ userId: me.id }, undefined, 1);
+        const journeys = await FamilyJourney.filter({ userId: me.id }, '-updatedDate', 1);
         if (!journeys || journeys.length === 0) return;
         const familyJourney = journeys[0];
 

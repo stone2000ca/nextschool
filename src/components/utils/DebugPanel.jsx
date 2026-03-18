@@ -58,8 +58,8 @@ export default function DebugPanel({ debugState }) {
     try {
       const conversationId = debugState?.conversationContext?.conversationId;
       const logs = conversationId
-        ? await LLMLog.filter({ conversationId: conversationId }, undefined, 100)
-        : await LLMLog.list(undefined, undefined, 50);
+        ? await LLMLog.filter({ conversationId: conversationId }, '-createdDate', 100)
+        : await LLMLog.list('-createdDate', undefined, 50);
       setLlmLogs(logs);
     } catch (e) {
       console.error('[WC7] Failed to fetch LLMLog:', e);
