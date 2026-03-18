@@ -84,7 +84,7 @@ function getTableName(entityName: string): string {
 }
 
 // ─── Filter translation ─────────────────────────────────────────────
-// Translates Base44 filter syntax to Supabase query builder calls
+// Translates legacy filter syntax to Supabase query builder calls
 
 function applyFilters(query: any, filterObj: Record<string, any>) {
   for (const [key, value] of Object.entries(filterObj)) {
