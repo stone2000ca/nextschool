@@ -129,7 +129,7 @@ export default function SchoolDirectory() {
     try {
       // Fetch ALL schools without limit
       const [schools, events] = await Promise.all([
-        School.filter({ status: 'active' }, '-updated_date', 1000),
+        School.filter({ status: 'active' }, '-updatedAt', 1000),
         SchoolEvent.filter({ isActive: true }),
       ]);
       setAllSchools(schools || []);
