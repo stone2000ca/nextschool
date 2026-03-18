@@ -12,10 +12,14 @@ export async function geocodeSchoolsLogic(params: { limit?: number }) {
   let limit = params.limit && typeof params.limit === 'number' && params.limit > 0 ? Math.min(params.limit, 100) : 50;
 
   console.log(`[geocodeSchools] Fetching schools with address but missing coordinates (limit: ${limit})`);
-  const schools = await School.filter({
-    address: { $ne: null, $ne: '' },
-    $or: [{ lat: null }, { lat: undefined }, { lat: '' }, { lng: null }, { lng: undefined }, { lng: '' }]
-  }, '-updated_date', limit);
+  // Fetch schools with addresses, then filter in JS for missing lat/lng
+  // (the Supabase filter can't easily express "has address AND missing lat/lng")
+  const allWithAddress = await School.filter({
+    address: { $ne: null }
+  }, '-updated_date', limit * 5);
+  const schools = allWithAddress.filter((s: any) =>
+    s.address && s.address.trim() !== '' && (s.lat === null || s.lat === undefined || s.lat === '' || s.lng === null || s.lng === undefined || s.lng === '')
+  ).slice(0, limit);
 
   if (schools.length === 0) {
     return { processed: 0, updated: 0, failed: 0, errors: [] };

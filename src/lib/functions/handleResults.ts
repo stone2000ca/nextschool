@@ -483,7 +483,7 @@ Commute preference: ${commuteDisplay}`;
 
   let schools: any[] = [];
   try {
-    const searchResult = await searchSchoolsLogic({ ...searchParams, conversationId, userId, searchQuery: message });
+    const searchResult: any = await searchSchoolsLogic({ ...searchParams, conversationId, userId, searchQuery: message });
     schools = searchResult.schools || [];
     if (!Array.isArray(schools)) schools = [];
   } catch (e: any) {

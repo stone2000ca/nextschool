@@ -3,20 +3,27 @@
 // Entities: School
 // Last Modified: 2026-03-01
 
-import { School } from '@/lib/entities-server'
+import { School, User } from '@/lib/entities-server'
 import { processTokenTransaction } from './processTokenTransaction'
 
 export async function exportShortlistLogic(params: { userId: string; schoolIds: string[] }) {
   const { userId, schoolIds } = params;
 
+  // Load user for token transaction
+  const users = await User.filter({ id: userId });
+  const user = users?.[0];
+  if (!user) {
+    throw Object.assign(new Error('Unauthorized'), { status: 401 });
+  }
+
   // Process token transaction
   const tokenResult = await processTokenTransaction({
     action: 'pdf_export',
     sessionId: 'shortlist_export',
-    userId
+    user
   });
 
-  if (tokenResult.needsUpgrade) {
+  if ((tokenResult as any).showUpgradePrompt) {
     throw Object.assign(new Error('Insufficient tokens'), { status: 402, needsUpgrade: true });
   }
 
