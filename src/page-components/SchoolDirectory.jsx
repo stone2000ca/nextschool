@@ -129,7 +129,7 @@ export default function SchoolDirectory() {
     try {
       // Load schools via server API (bypasses RLS) and events independently
       const [schoolsResult, eventsResult] = await Promise.allSettled([
-        invokeFunction('listSchools', { status: 'active', sort: '-updated_date', limit: 1000 }),
+        invokeFunction('listSchools', { status: 'active', sort: '-updated_at', limit: 1000 }),
         SchoolEvent.filter({}),
       ]);
 
