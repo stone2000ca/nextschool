@@ -16,7 +16,7 @@ export async function trackSessionEvent(params: {
   // Insert directly without .select().single() to avoid PGRST204 error
   // (session_events is fire-and-forget; we don't need the returned row)
   const supabase = getAdminClient()
-  const { error } = await supabase.from('session_events').insert({
+  const { error } = await (supabase.from('session_events') as any).insert({
     event_type: eventType,
     consultant_name: consultantName || null,
     session_id: sessionId,
