@@ -5,48 +5,7 @@
 // Dependencies: OpenRouter API
 
 import { ChatSession } from '@/lib/entities-server'
-
-async function callOpenRouter(options: { systemPrompt?: string; userPrompt: string; maxTokens?: number; temperature?: number }) {
-  const { systemPrompt, userPrompt, maxTokens = 1000, temperature = 0.7 } = options;
-
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-  if (!OPENROUTER_API_KEY) {
-    throw new Error('OPENROUTER_API_KEY not set');
-  }
-
-  const messages: any[] = [];
-  if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
-  messages.push({ role: 'user', content: userPrompt });
-
-  const body = {
-    models: ['google/gemini-2.5-flash', 'openai/gpt-4.1-mini'],
-    messages,
-    max_tokens: maxTokens,
-    temperature
-  };
-
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://nextschool.ca',
-      'X-OpenRouter-Title': 'NextSchool'
-    },
-    body: JSON.stringify(body)
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenRouter error: ${response.status} ${errorText}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('Empty response from OpenRouter');
-
-  return content;
-}
+import { callOpenRouter } from './callOpenRouter'
 
 export async function generateProfileNarrativeLogic(params: { sessionId: string; familyProfile: any }) {
   const { sessionId, familyProfile } = params;

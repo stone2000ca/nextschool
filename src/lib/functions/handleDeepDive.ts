@@ -4,72 +4,7 @@
 // Last Modified: 2026-03-09
 
 import { School, SchoolAnalysis, GeneratedArtifact, SchoolEvent, User, Testimonial, LLMLog } from '@/lib/entities-server'
-
-// =============================================================================
-// INLINED: callOpenRouter
-// =============================================================================
-async function callOpenRouter(options: any) {
-  const { systemPrompt, userPrompt, responseSchema, maxTokens = 1000, temperature = 0.7, _logContext, tools, toolChoice, returnRaw = false } = options;
-
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-  if (!OPENROUTER_API_KEY) {
-    console.warn('[OPENROUTER] OPENROUTER_API_KEY not set');
-    throw new Error('OPENROUTER_API_KEY not set');
-  }
-
-  const messages: any[] = [];
-  if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
-  messages.push({ role: 'user', content: userPrompt });
-
-  const models = ['google/gemini-3-flash-preview', 'openai/gpt-4.1-mini', 'google/gemini-2.5-flash'];
-  const body: any = { models, messages, max_tokens: maxTokens, temperature };
-
-  if (tools && tools.length > 0) { body.tools = tools; body.tool_choice = toolChoice || 'auto'; }
-
-  if (responseSchema) {
-    body.response_format = { type: 'json_schema', json_schema: { name: responseSchema.name || 'response', strict: true, schema: responseSchema.schema } };
-  }
-
-  const startTime = Date.now();
-  const controller = new AbortController();
-  const TIMEOUT_MS = 12000;
-  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-  try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://nextschool.ca', 'X-OpenRouter-Title': 'NextSchool' },
-      body: JSON.stringify(body),
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`OpenRouter API error: ${response.status} ${errorText}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    const toolCalls = data.choices?.[0]?.message?.tool_calls || [];
-    if (!content && toolCalls.length === 0) throw new Error('OpenRouter returned empty content');
-
-    if (responseSchema) {
-      try { return JSON.parse(content); } catch (e) {
-        console.error('[OPENROUTER] JSON parse failed, returning raw content');
-        return content;
-      }
-    }
-
-    if (returnRaw) return { content: content || '', toolCalls };
-    return content;
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    if (err.name === 'AbortError') throw new Error(`LLM request timed out after ${TIMEOUT_MS / 1000}s`);
-    throw err;
-  }
-}
+import { callOpenRouter } from './callOpenRouter'
 
 function extractConciseSummary(fullProse: string) {
   const sentences = fullProse.split(/(?<=[.!?])\s+/);
