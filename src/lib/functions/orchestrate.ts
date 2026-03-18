@@ -1567,7 +1567,7 @@ Object.assign(context, safeUpdatedContext);
             flags,
             returningUserContextBlock
           });
-          responseData = (briefResult as any).data;
+          responseData = briefResult;
           if (responseData.briefStatus) {
             context.briefStatus = responseData.briefStatus;
           }
@@ -1750,7 +1750,7 @@ Object.assign(context, safeUpdatedContext);
           returningUserContextBlock,
           previousSchools: (currentSchools && currentSchools.length > 0) ? currentSchools : (context.lastMatchedSchools || [])
         });
-        responseData = resultsResult.data;
+        responseData = resultsResult;
         responseData.conversationContext = {
           ...(responseData.conversationContext || {}),
           autoRefreshed: autoRefresh,
@@ -1901,7 +1901,7 @@ Object.assign(context, safeUpdatedContext);
           flags: resolveResult.flags,
           conversationId
         });
-        responseData = deepDiveResult.data;
+        responseData = deepDiveResult;
         responseData.extractedEntities = extractionResult?.extractedEntities || {};
         // E32-001: Validate and attach actions
         const validSchoolIds_deepdive = new Set((responseData.schools || currentSchools || []).map(s => s.id));
