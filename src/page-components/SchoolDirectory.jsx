@@ -130,7 +130,7 @@ export default function SchoolDirectory() {
       // Fetch ALL schools without limit
       const [schools, events] = await Promise.all([
         School.filter({ status: 'active' }, '-updatedAt', 1000),
-        SchoolEvent.filter({ isActive: true }),
+        SchoolEvent.filter({}),
       ]);
       setAllSchools(schools || []);
       const today = new Date().toISOString();
