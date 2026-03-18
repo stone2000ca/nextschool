@@ -127,11 +127,22 @@ export default function SchoolDirectory() {
 
   const loadSchools = async () => {
     try {
-      // Fetch ALL schools without limit
-      const [schools, events] = await Promise.all([
+      // Load schools and events independently so one failure doesn't block the other
+      const [schoolsResult, eventsResult] = await Promise.allSettled([
         School.filter({ status: 'active' }, '-updatedDate', 1000),
         SchoolEvent.filter({}),
       ]);
+
+      const schools = schoolsResult.status === 'fulfilled' ? schoolsResult.value : [];
+      const events = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
+
+      if (schoolsResult.status === 'rejected') {
+        console.error('Failed to load schools:', schoolsResult.reason);
+      }
+      if (eventsResult.status === 'rejected') {
+        console.error('Failed to load events:', eventsResult.reason);
+      }
+
       setAllSchools(schools || []);
       const today = new Date().toISOString();
       const withEvents = new Set(
