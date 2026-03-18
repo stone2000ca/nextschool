@@ -1,6 +1,7 @@
 'use client'
 
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react'
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
@@ -45,6 +46,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [appPublicSettings, setAppPublicSettings] = useState<any>(null)
 
   const supabase = createClient()
+  const pathname = usePathname()
+
+  // Track whether a logout was explicitly requested by the user (vs. an
+  // automatic SIGNED_OUT from a failed token refresh).
+  const explicitLogoutRef = useRef(false)
 
   const fetchUserProfile = useCallback(async (authUser: SupabaseUser): Promise<UserProfile | null> => {
     const { data, error } = await supabase
@@ -135,9 +141,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setIsAuthenticated(true)
           setIsLoadingAuth(false)
         } else if (event === 'SIGNED_OUT') {
-          setUser(null)
-          setIsAuthenticated(false)
-          setIsLoadingAuth(false)
+          if (explicitLogoutRef.current) {
+            // User clicked "Logout" — honour immediately
+            setUser(null)
+            setIsAuthenticated(false)
+            setIsLoadingAuth(false)
+            explicitLogoutRef.current = false
+          } else {
+            // Automatic SIGNED_OUT (e.g. failed token refresh).  Before
+            // wiping auth state, double-check whether cookies still hold a
+            // valid session.  A stale gotrue-js in-memory refresh token can
+            // trigger a spurious SIGNED_OUT even though the middleware just
+            // set fresh cookies.
+            try {
+              const { data: { user: recovered } } = await supabase.auth.getUser()
+              if (recovered) {
+                // Cookies are still valid — re-establish auth state
+                const profile = await fetchUserProfile(recovered)
+                setUser(profile)
+                setIsAuthenticated(true)
+                setIsLoadingAuth(false)
+                return
+              }
+            } catch {
+              // getUser also failed — session is truly gone
+            }
+            setUser(null)
+            setIsAuthenticated(false)
+            setIsLoadingAuth(false)
+          }
         }
       }
     )
@@ -147,6 +179,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Re-validate the session on every client-side navigation.  When the user
+  // navigates between routes the middleware may have refreshed the token
+  // (updating cookies) while gotrue-js still holds the old tokens in memory.
+  // Calling getUser() here forces the browser client to re-read cookies and
+  // sync its internal session, preventing stale-token refresh failures.
+  const isFirstRender = useRef(true)
+  useEffect(() => {
+    // Skip the first render (handled by checkAppState above)
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+      if (authUser) {
+        fetchUserProfile(authUser).then((profile) => {
+          setUser(profile)
+          setIsAuthenticated(true)
+        })
+      }
+      // Don't clear auth on failure here — let onAuthStateChange handle it
+    }).catch(() => {
+      // Network error — leave current state unchanged
+    })
+  }, [pathname])
 
   const login = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -163,6 +220,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   const logout = async (shouldRedirect = true) => {
+    explicitLogoutRef.current = true
     await supabase.auth.signOut()
     setUser(null)
     setIsAuthenticated(false)

@@ -38,7 +38,18 @@ export async function middleware(request: NextRequest) {
     request,
   })
 
-  // Refresh the Supabase session (sets cookies on response)
+  // Read the Supabase session from cookies WITHOUT triggering a server-side
+  // token refresh.  Using getUser() here consumed the refresh token, which
+  // desynchronised the middleware's cookies from the browser client's
+  // in-memory gotrue-js session.  Heavy pages like /consultant that make many
+  // concurrent Supabase calls on mount would then trigger a client-side
+  // refresh with the stale (consumed) refresh token, causing gotrue-js to
+  // clear the session entirely (SIGNED_OUT).
+  //
+  // getSession() reads the JWT from cookies and returns the decoded session
+  // without a network call and without consuming the refresh token.  The
+  // browser client's gotrue-js auto-refresh is now the sole owner of the
+  // refresh cycle, eliminating the race condition.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -66,8 +77,10 @@ export async function middleware(request: NextRequest) {
   )
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  const user = session?.user ?? null
 
   // Helper: create a redirect that carries all Set-Cookie headers from the current response
   function redirectToLogin(returnPath: string) {
@@ -88,8 +101,13 @@ export async function middleware(request: NextRequest) {
     if (lastActivity) {
       const elapsed = Date.now() - Number(lastActivity)
       if (elapsed > INACTIVITY_LIMIT_MS) {
-        // Inactive for too long — sign out
-        await supabase.auth.signOut()
+        // Inactive for too long — clear all auth cookies directly instead of
+        // calling signOut() (which needs a valid access token that may be expired)
+        request.cookies.getAll().forEach(({ name }) => {
+          if (name.startsWith('sb-')) {
+            response.cookies.set(name, '', { maxAge: 0, path: '/' })
+          }
+        })
         response.cookies.set(ACTIVITY_COOKIE, '', { maxAge: 0, path: '/' })
         return redirectToLogin(pathname)
       }
