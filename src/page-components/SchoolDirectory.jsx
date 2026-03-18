@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { School, SchoolEvent, VisitorLog } from '@/lib/entities';
+import { SchoolEvent, VisitorLog } from '@/lib/entities';
 import { invokeFunction } from '@/lib/functions';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -127,9 +127,9 @@ export default function SchoolDirectory() {
 
   const loadSchools = async () => {
     try {
-      // Load schools and events independently so one failure doesn't block the other
+      // Load schools via server API (bypasses RLS) and events independently
       const [schoolsResult, eventsResult] = await Promise.allSettled([
-        School.filter({ status: 'active' }, '-updatedDate', 1000),
+        invokeFunction('listSchools', { status: 'active', sort: '-updated_date', limit: 1000 }),
         SchoolEvent.filter({}),
       ]);
 
