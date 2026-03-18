@@ -33,8 +33,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Create a response we can modify (for session refresh cookies)
-  let response = NextResponse.next()
+  // Create a single response we will mutate throughout
+  let response = NextResponse.next({
+    request: { headers: request.headers },
+  })
 
   // Refresh the Supabase session (sets cookies on response)
   const supabase = createServerClient(
@@ -46,10 +48,14 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          // Apply Supabase auth cookies to the existing response
-          cookiesToSet.forEach(({ name, value, options }) => {
+          // Update request cookies so downstream Server Components see refreshed tokens
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
+          // Apply cookies to the EXISTING response (do NOT create a new NextResponse)
+          cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
-          })
+          )
         },
       },
     }
