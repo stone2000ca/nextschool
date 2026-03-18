@@ -88,10 +88,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoadingAuth(true)
       setAuthError(null)
 
-      const { data: { session } } = await supabase.auth.getSession()
+      // Use getUser() to validate session server-side and avoid stale token races
+      const { data: { user: authUser }, error } = await supabase.auth.getUser()
 
-      if (session?.user) {
-        const profile = await fetchUserProfile(session.user)
+      if (authUser && !error) {
+        const profile = await fetchUserProfile(authUser)
         setUser(profile)
         setIsAuthenticated(true)
       } else {
@@ -112,19 +113,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [supabase, fetchUserProfile])
 
   const refreshUser = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      const profile = await fetchUserProfile(session.user)
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (authUser) {
+      const profile = await fetchUserProfile(authUser)
       setUser(profile)
     }
   }, [supabase, fetchUserProfile])
 
   useEffect(() => {
-    checkAppState()
-
+    // Set up auth state listener FIRST, then check current state.
+    // Handle ALL events: INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT.
+    // This ensures auth persists across navigations when middleware refreshes tokens.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
+        if (
+          (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') &&
+          session?.user
+        ) {
           const profile = await fetchUserProfile(session.user)
           setUser(profile)
           setIsAuthenticated(true)
@@ -136,6 +141,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
     )
+
+    // Also run an explicit check with getUser() for server-validated session
+    checkAppState()
 
     return () => subscription.unsubscribe()
   }, [])
