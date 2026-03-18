@@ -1,3 +1,3 @@
 'use client'
-import Terms from '@/pages/Terms'
+import Terms from '@/page-components/Terms'
 export default function TermsPage() { return <Terms /> }

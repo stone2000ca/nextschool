@@ -141,10 +141,12 @@ export interface EntityClient {
 function createEntity(entityName: string): EntityClient {
   const table = getTableName(entityName)
 
+  // Helper to get a typed query builder for dynamic table names
+  const db = () => getAdminClient().from(table) as any
+
   return {
     async filter(filterObj: Record<string, any> = {}, sort?: string, limit?: number): Promise<any[]> {
-      const supabase = getAdminClient()
-      let query = supabase.from(table).select('*')
+      let query = db().select('*')
       query = applyFilters(query, filterObj)
       if (sort) query = applySortString(query, sort)
       if (limit) query = query.limit(limit)
@@ -158,46 +160,41 @@ function createEntity(entityName: string): EntityClient {
     },
 
     async get(id: string): Promise<any> {
-      const supabase = getAdminClient()
-      const { data, error } = await supabase.from(table).select('*').eq('id', id).single()
+      const { data, error } = await db().select('*').eq('id', id).single()
       if (error) throw error
       return keysToCamel(data)
     },
 
     async create(data: Record<string, any>): Promise<any> {
-      const supabase = getAdminClient()
       const snakeData = keysToSnake(data)
       snakeData.updated_date = new Date().toISOString()
-      const { data: result, error } = await supabase.from(table).insert(snakeData).select().single()
+      const { data: result, error } = await db().insert(snakeData).select().single()
       if (error) throw error
       return keysToCamel(result)
     },
 
     async bulkCreate(rows: Record<string, any>[]): Promise<any[]> {
-      const supabase = getAdminClient()
       const now = new Date().toISOString()
       const snakeRows = rows.map(row => {
         const snakeData = keysToSnake(row)
         snakeData.updated_date = now
         return snakeData
       })
-      const { data: result, error } = await supabase.from(table).insert(snakeRows).select()
+      const { data: result, error } = await db().insert(snakeRows).select()
       if (error) throw error
       return rowsToCamel(result || [])
     },
 
     async update(id: string, data: Record<string, any>): Promise<any> {
-      const supabase = getAdminClient()
       const snakeData = keysToSnake(data)
       snakeData.updated_date = new Date().toISOString()
-      const { data: result, error } = await supabase.from(table).update(snakeData).eq('id', id).select().single()
+      const { data: result, error } = await db().update(snakeData).eq('id', id).select().single()
       if (error) throw error
       return keysToCamel(result)
     },
 
     async delete(id: string): Promise<void> {
-      const supabase = getAdminClient()
-      const { error } = await supabase.from(table).delete().eq('id', id)
+      const { error } = await db().delete().eq('id', id)
       if (error) throw error
     },
   }

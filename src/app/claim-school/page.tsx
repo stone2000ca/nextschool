@@ -1,3 +1,3 @@
 'use client'
-import ClaimSchool from '@/pages/ClaimSchool'
+import ClaimSchool from '@/page-components/ClaimSchool'
 export default function ClaimSchoolPage() { return <ClaimSchool /> }

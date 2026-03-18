@@ -1,5 +1,5 @@
 import { ClipboardList, Heart, Search, CalendarDays } from 'lucide-react';
-import { STATES } from '@/pages/stateMachineConfig';
+import { STATES } from '@/lib/stateMachineConfig';
 
 // T046 Owner Override: Right-side rail, 3 icons, Family Brief as primary
 export default function IconRail({ currentState, activePanel, onTogglePanel }) {
@@ -39,10 +39,7 @@ export default function IconRail({ currentState, activePanel, onTogglePanel }) {
           onClick={() => briefEnabled && onTogglePanel('brief')}
           disabled={!briefEnabled}
           aria-label="Family Brief"
-          style={{ opacity: briefOpacity, cursor: briefEnabled ? 'pointer' : 'not-allowed' }}
           className="relative flex items-center justify-center rounded-full transition-all"
-          css-width="32px"
-          css-height="32px"
           style={{
             opacity: briefOpacity,
             cursor: briefEnabled ? 'pointer' : 'not-allowed',
