@@ -1,6 +1,6 @@
 /**
  * Entity data access layer (client-side)
- * Drop-in replacement for base44.entities.X calls
+ * Wraps Supabase queries with camelCase/snake_case translation
  * Translates camelCase field names to snake_case for Supabase
  */
 import { createClient } from '@/lib/supabase/client'

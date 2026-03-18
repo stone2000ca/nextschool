@@ -1,6 +1,6 @@
 /**
  * Function invocation helper (client-side)
- * Replaces base44.functions.invoke('name', payload)
+ * Maps function names to API routes and invokes them
  */
 
 const ROUTE_MAP: Record<string, string> = {
