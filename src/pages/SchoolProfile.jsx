@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useLocation, useParams, useNavigate, Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { usePathname, useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
+import { School as SchoolEntity, Testimonial, SchoolEvent } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { Button } from "@/components/ui/button";
 import { MapPin, Users, DollarSign, Calendar, Award, Globe2, Mail, Phone, ExternalLink, CheckCircle2, AlertCircle, Eye, ChevronRight, MessageCircle } from "lucide-react";
 import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, formatEventDate } from '@/components/utils/eventConstants';
-import { createPageUrl } from "../utils";
 import Navbar from '@/components/navigation/Navbar';
 import { LogoDisplay, isClearbitUrl } from '@/components/schools/HeaderPhotoHelper';
 
@@ -68,7 +69,7 @@ function getSchoolTypeLabel(school) {
 
 function ConsultantCTA({ school, text, variant = 'inline' }) {
   const slug = school?.slug || school?.id;
-  const href = `${createPageUrl('Consultant')}?school=${encodeURIComponent(slug)}`;
+  const href = `/consultant?school=${encodeURIComponent(slug)}`;
 
   if (variant === 'sticky') {
     return (
@@ -76,7 +77,7 @@ function ConsultantCTA({ school, text, variant = 'inline' }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
           <p className="text-sm text-slate-700 hidden sm:block">Want personalized guidance on <strong>{school.name}</strong>?</p>
           <p className="text-sm text-slate-700 sm:hidden">Need guidance?</p>
-          <Link to={href} className="flex-shrink-0">
+          <Link href={href} className="flex-shrink-0">
             <Button className="bg-teal-600 hover:bg-teal-700 text-white text-sm">
               <MessageCircle className="h-4 w-4 mr-2" />
               Chat with a Consultant
@@ -90,7 +91,7 @@ function ConsultantCTA({ school, text, variant = 'inline' }) {
   return (
     <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <p className="text-sm sm:text-base text-teal-900">{text}</p>
-      <Link to={href} className="flex-shrink-0">
+      <Link href={href} className="flex-shrink-0">
         <Button className="bg-teal-600 hover:bg-teal-700 text-white text-sm whitespace-nowrap">
           <MessageCircle className="h-4 w-4 mr-2" />
           Talk to a Consultant
@@ -491,11 +492,12 @@ function buildFAQPageSchema(faqs) {
 // ============================================================
 
 export default function SchoolProfile() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { slug } = useParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const params = useParams();
+  const slug = params?.slug;
 
-  const legacyId = new URLSearchParams(location.search).get('id');
+  const legacyId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null;
   const schoolId = slug ? null : legacyId;
 
   const [school, setSchool] = useState(null);
@@ -513,15 +515,15 @@ export default function SchoolProfile() {
       try {
         let schools;
         if (slug) {
-          schools = await base44.entities.School.filter({ slug });
+          schools = await SchoolEntity.filter({ slug });
         } else if (schoolId) {
-          schools = await base44.entities.School.filter({ id: schoolId });
+          schools = await SchoolEntity.filter({ id: schoolId });
         }
         if (schools && schools.length > 0) {
           const s = schools[0];
           setSchool(s);
           if (!slug && s.slug) {
-            navigate(`/schools/${s.slug}`, { replace: true });
+            router.replace(`/schools/${s.slug}`);
           }
         }
       } catch (error) {
@@ -536,7 +538,7 @@ export default function SchoolProfile() {
   // Track page view
   useEffect(() => {
     if (!school) return;
-    base44.functions.invoke('trackSessionEvent', {
+    invokeFunction('trackSessionEvent', {
       eventType: 'page_view',
       sessionId,
       metadata: { page: 'SchoolProfile', schoolId: school.id }
@@ -546,7 +548,7 @@ export default function SchoolProfile() {
   // Load testimonials
   useEffect(() => {
     if (!school?.id) return;
-    base44.entities.Testimonial.filter({ schoolId: school.id, is_visible: true })
+    Testimonial.filter({ schoolId: school.id, is_visible: true })
       .then(setTestimonials)
       .catch(() => {});
   }, [school?.id]);
@@ -556,7 +558,7 @@ export default function SchoolProfile() {
     if (!school?.id) return;
     setLoadingEvents(true);
     const now = new Date().toISOString();
-    base44.entities.SchoolEvent.filter({ schoolId: school.id, isActive: true, date: { $gte: now } })
+    SchoolEvent.filter({ schoolId: school.id, isActive: true, date: { $gte: now } })
       .then(events => {
         const sorted = (events || []).sort((a, b) => new Date(a.date) - new Date(b.date));
         setUpcomingEvents(sorted.slice(0, 5));
@@ -568,7 +570,7 @@ export default function SchoolProfile() {
   // Load related schools
   useEffect(() => {
     if (!school?.city) return;
-    base44.entities.School.filter({ city: school.city })
+    SchoolEntity.filter({ city: school.city })
       .then(schools => setRelatedSchools((schools || []).filter(s => s.id !== school.id).slice(0, 4)))
       .catch(() => {});
   }, [school?.city, school?.id]);
@@ -633,7 +635,7 @@ export default function SchoolProfile() {
       <div className="h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">School Not Found</h2>
-          <Link to={createPageUrl('Consultant')}>
+          <Link href="/consultant">
             <Button>Find Your Perfect School</Button>
           </Link>
         </div>
@@ -643,7 +645,7 @@ export default function SchoolProfile() {
 
   const schoolTypeLabel = getSchoolTypeLabel(school);
   const websiteUrl = school.website ? (school.website.startsWith('http') ? school.website : `https://${school.website}`) : null;
-  const consultantUrl = `${createPageUrl('Consultant')}?school=${encodeURIComponent(school.slug || school.id)}`;
+  const consultantUrl = `/consultant?school=${encodeURIComponent(school.slug || school.id)}`;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
@@ -655,19 +657,19 @@ export default function SchoolProfile() {
       <nav aria-label="Breadcrumb" className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <ol className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
-            <li><Link to="/" className="hover:text-teal-600">NextSchool</Link></li>
+            <li><Link href="/" className="hover:text-teal-600">NextSchool</Link></li>
             <li><ChevronRight className="h-3 w-3" /></li>
-            <li><Link to="/SchoolDirectory" className="hover:text-teal-600">Schools</Link></li>
+            <li><Link href="/schools" className="hover:text-teal-600">Schools</Link></li>
             {school.provinceState && (
               <>
                 <li><ChevronRight className="h-3 w-3" /></li>
-                <li><Link to={`/SchoolDirectory?province=${encodeURIComponent(school.provinceState)}`} className="hover:text-teal-600">{school.provinceState}</Link></li>
+                <li><Link href={`/SchoolDirectory?province=${encodeURIComponent(school.provinceState)}`} className="hover:text-teal-600">{school.provinceState}</Link></li>
               </>
             )}
             {school.city && (
               <>
                 <li><ChevronRight className="h-3 w-3" /></li>
-                <li><Link to={`/SchoolDirectory?city=${encodeURIComponent(school.city)}`} className="hover:text-teal-600">{school.city}</Link></li>
+                <li><Link href={`/SchoolDirectory?city=${encodeURIComponent(school.city)}`} className="hover:text-teal-600">{school.city}</Link></li>
               </>
             )}
             <li><ChevronRight className="h-3 w-3" /></li>
@@ -703,7 +705,7 @@ export default function SchoolProfile() {
               {school.faithBased ? ` · ${school.faithBased}` : ''}
               {school.founded ? ` · Est. ${school.founded}` : ''}
             </p>
-            <Link to={consultantUrl}>
+            <Link href={consultantUrl}>
               <Button className="bg-teal-600 hover:bg-teal-700 text-white shadow-lg">
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Get Expert Guidance on {school.name}
@@ -1105,7 +1107,7 @@ export default function SchoolProfile() {
                 </div>
                 <p className="mt-4 text-sm text-slate-600">
                   Have experience with {school.name}?{' '}
-                  <Link to={consultantUrl} className="text-teal-600 hover:underline font-medium">Share your thoughts with a consultant</Link>
+                  <Link href={consultantUrl} className="text-teal-600 hover:underline font-medium">Share your thoughts with a consultant</Link>
                 </p>
               </section>
             )}
@@ -1151,7 +1153,7 @@ export default function SchoolProfile() {
                 ))}
                 <p className="mt-4 text-sm text-slate-600">
                   Still have questions?{' '}
-                  <Link to={consultantUrl} className="text-teal-600 hover:underline font-medium">Our AI consultants have answers</Link>
+                  <Link href={consultantUrl} className="text-teal-600 hover:underline font-medium">Our AI consultants have answers</Link>
                 </p>
               </section>
             )}
@@ -1162,7 +1164,7 @@ export default function SchoolProfile() {
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">Similar Schools Near {school.city}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {relatedSchools.map(rs => (
-                    <Link key={rs.id} to={rs.slug ? `/schools/${rs.slug}` : `/SchoolProfile?id=${rs.id}`}
+                    <Link key={rs.id} href={rs.slug ? `/schools/${rs.slug}` : `/school?id=${rs.id}`}
                       className="block bg-slate-50 rounded-lg p-4 border border-slate-100 hover:border-teal-300 hover:shadow-sm transition-all">
                       <div className="flex items-center gap-3">
                         <LogoDisplay logoUrl={rs.logoUrl} schoolName={rs.name} schoolWebsite={rs.website} size="h-10 w-10" />
@@ -1178,7 +1180,7 @@ export default function SchoolProfile() {
                   ))}
                 </div>
                 <p className="mt-4 text-sm text-slate-600">
-                  <Link to={consultantUrl} className="text-teal-600 hover:underline font-medium">Compare schools in {school.city}</Link>
+                  <Link href={consultantUrl} className="text-teal-600 hover:underline font-medium">Compare schools in {school.city}</Link>
                 </p>
               </section>
             )}
@@ -1189,7 +1191,7 @@ export default function SchoolProfile() {
           <aside className="space-y-4 sm:space-y-6">
             <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 lg:sticky lg:top-24">
               {/* Primary CTA: Chat */}
-              <Link to={consultantUrl} className="block w-full mb-4">
+              <Link href={consultantUrl} className="block w-full mb-4">
                 <Button className="w-full bg-teal-600 hover:bg-teal-700 text-sm sm:text-base">
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Get Expert Guidance
@@ -1242,7 +1244,7 @@ export default function SchoolProfile() {
 
               {/* Compare schools link */}
               <div className="mt-6 pt-6 border-t">
-                <Link to={consultantUrl} className="text-sm text-teal-600 hover:underline font-medium">
+                <Link href={consultantUrl} className="text-sm text-teal-600 hover:underline font-medium">
                   Compare schools in {school.city}
                 </Link>
               </div>
@@ -1264,21 +1266,21 @@ export default function SchoolProfile() {
             </p>
           )}
           <p className="flex flex-wrap gap-2">
-            <Link to="/SchoolDirectory" className="text-teal-600 hover:underline">Browse all private schools</Link>
+            <Link href="/schools" className="text-teal-600 hover:underline">Browse all private schools</Link>
             <span>&middot;</span>
             {school.provinceState && (
               <>
-                <Link to={`/SchoolDirectory?province=${encodeURIComponent(school.provinceState)}`} className="text-teal-600 hover:underline">Schools in {school.provinceState}</Link>
+                <Link href={`/SchoolDirectory?province=${encodeURIComponent(school.provinceState)}`} className="text-teal-600 hover:underline">Schools in {school.provinceState}</Link>
                 <span>&middot;</span>
               </>
             )}
             {school.city && (
               <>
-                <Link to={`/SchoolDirectory?city=${encodeURIComponent(school.city)}`} className="text-teal-600 hover:underline">Schools in {school.city}</Link>
+                <Link href={`/SchoolDirectory?city=${encodeURIComponent(school.city)}`} className="text-teal-600 hover:underline">Schools in {school.city}</Link>
                 <span>&middot;</span>
               </>
             )}
-            <Link to={createPageUrl('Consultant')} className="text-teal-600 hover:underline">Find your perfect school match</Link>
+            <Link href="/consultant" className="text-teal-600 hover:underline">Find your perfect school match</Link>
           </p>
         </div>
       </footer>

@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { School, SchoolEvent, VisitorLog } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Search, MapPin, DollarSign, Users, Loader2, CalendarDays, MessageCircle, GraduationCap } from "lucide-react";
 import Navbar from '@/components/navigation/Navbar';
 import Footer from '@/components/navigation/Footer';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import Link from 'next/link';
 import { HeaderPhotoDisplay, LogoDisplay } from '@/components/schools/HeaderPhotoHelper';
 
 export default function SchoolDirectory() {
@@ -54,21 +55,22 @@ export default function SchoolDirectory() {
     return Array.from(provincesSet).sort();
   };
 
+  const { user: authUser, isAuthenticated: authIsAuthenticated, navigateToLogin, updateMe } = useAuth();
+
   useEffect(() => {
     // Log visitor event and update lastSignedOn
     const logVisitor = async () => {
       try {
-        const authenticated = await base44.auth.isAuthenticated();
+        const authenticated = authIsAuthenticated;
         let userId = null;
         if (authenticated) {
-          const userData = await base44.auth.me();
-          userId = userData.id;
+          userId = authUser?.id;
           // Update lastSignedOn timestamp
-          await base44.auth.updateMe({ lastSignedOn: new Date().toISOString() });
+          await updateMe({ lastSignedOn: new Date().toISOString() });
         }
-        
+
         // Log visitor
-        await base44.entities.VisitorLog.create({
+        await VisitorLog.create({
           userId,
           sessionId,
           timestamp: new Date().toISOString(),
@@ -82,7 +84,7 @@ export default function SchoolDirectory() {
     };
 
     // Track page view
-    base44.functions.invoke('trackSessionEvent', {
+    invokeFunction('trackSessionEvent', {
       eventType: 'page_view',
       sessionId,
       metadata: { page: 'SchoolDirectory' }
@@ -115,10 +117,8 @@ export default function SchoolDirectory() {
 
   const checkAuth = async () => {
     try {
-      const authenticated = await base44.auth.isAuthenticated();
-      if (authenticated) {
-        const userData = await base44.auth.me();
-        setUser(userData);
+      if (authIsAuthenticated) {
+        setUser(authUser);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -129,8 +129,8 @@ export default function SchoolDirectory() {
     try {
       // Fetch ALL schools without limit
       const [schools, events] = await Promise.all([
-        base44.entities.School.filter({ status: 'active' }, '-updated_date', 1000),
-        base44.entities.SchoolEvent.filter({ isActive: true }),
+        School.filter({ status: 'active' }, '-updated_date', 1000),
+        SchoolEvent.filter({ isActive: true }),
       ]);
       setAllSchools(schools || []);
       const today = new Date().toISOString();
@@ -213,7 +213,7 @@ export default function SchoolDirectory() {
 
   const handleToggleShortlist = async (schoolId) => {
     if (!user) {
-      base44.auth.redirectToLogin(window.location.pathname);
+      navigateToLogin(window.location.pathname);
       return;
     }
 
@@ -223,7 +223,7 @@ export default function SchoolDirectory() {
         ? currentShortlist.filter(id => id !== schoolId)
         : [...currentShortlist, schoolId];
 
-      await base44.auth.updateMe({ shortlist: newShortlist });
+      await updateMe({ shortlist: newShortlist });
       setUser({ ...user, shortlist: newShortlist });
     } catch (error) {
       console.error('Failed to update shortlist:', error);
@@ -250,7 +250,7 @@ export default function SchoolDirectory() {
               <h2 className="text-xl sm:text-2xl font-bold mb-2">Not sure which school is right for you?</h2>
               <p className="text-teal-100">Talk to our AI consultant and get personalized recommendations in minutes.</p>
             </div>
-            <Link to={createPageUrl('Consultant')} className="flex-shrink-0">
+            <Link href="/consultant" className="flex-shrink-0">
               <Button className="bg-white text-teal-600 hover:bg-teal-50 font-semibold">
                 Meet Your Consultant
               </Button>
@@ -406,7 +406,7 @@ export default function SchoolDirectory() {
               {displayedSchools.map((school) => (
                   <Link
                     key={school.id}
-                    to={school.slug ? `/schools/${school.slug}` : `${createPageUrl('SchoolProfile')}?id=${school.id}`}
+                    href={school.slug ? `/schools/${school.slug}` : `/school?id=${school.id}`}
                     className="block focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 rounded-lg"
                   >
                     <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
@@ -530,7 +530,7 @@ export default function SchoolDirectory() {
         <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg p-6 sm:p-8 text-white text-center">
           <h2 className="text-xl sm:text-2xl font-bold mb-2">Find your perfect school match</h2>
           <p className="text-teal-100 mb-4">Our AI consultant can help you narrow down the right school for your family.</p>
-          <Link to={createPageUrl('Consultant')}>
+          <Link href="/consultant">
             <Button className="bg-white text-teal-600 hover:bg-teal-50 font-semibold">
               <MessageCircle className="h-4 w-4 mr-2" />
               Chat with a Consultant

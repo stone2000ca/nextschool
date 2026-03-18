@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { User as UserEntity } from '@/lib/entities';
+import { useAuth } from '@/lib/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,14 +25,14 @@ export default function AdminUsers() {
     Promise.all([loadUsers(), loadCurrentUser()]);
   }, []);
 
+  const { user: authUser } = useAuth();
   const loadCurrentUser = async () => {
-    const me = await base44.auth.me();
-    setCurrentUser(me);
+    setCurrentUser(authUser);
   };
 
   const loadUsers = async () => {
     try {
-      const data = await base44.entities.User.list('-createdAt');
+      const data = await UserEntity.list('-createdAt');
       setUsers(data);
     } catch (error) {
       console.error('Failed to load users:', error);
@@ -98,7 +99,7 @@ export default function AdminUsers() {
     }
 
     setSavingId(user.id);
-    await base44.entities.User.update(user.id, {
+    await UserEntity.update(user.id, {
       role: newRole,
       subscriptionPlan: edits.subscriptionPlan,
       tokenBalance: Number(edits.tokenBalance),

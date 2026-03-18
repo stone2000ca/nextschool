@@ -1,7 +1,6 @@
 import Navbar from "@/components/navigation/Navbar";
 import Footer from "@/components/navigation/Footer";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "../utils";
+import Link from 'next/link';
 
 export default function Privacy() {
   return (
@@ -220,7 +219,7 @@ export default function Privacy() {
                   <a href="mailto:privacy@nextschool.ca" className="hover:underline">privacy@nextschool.ca</a>
                 </p>
                 <p className="text-slate-900 font-semibold mb-2">Questions or Feedback?</p>
-                <Link to={createPageUrl('Contact')} className="text-teal-600 hover:underline">
+                <Link href="/contact" className="text-teal-600 hover:underline">
                   Visit our Contact Page
                 </Link>
               </div>

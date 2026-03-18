@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { SchoolEvent } from '@/lib/entities';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { X, Heart, MapPin, Award, Mail, Phone, Globe2, ExternalLink, CalendarDays } from "lucide-react";
-import { createPageUrl } from "../../utils";
 import ContactSchoolModal from './ContactSchoolModal';
 import TourRequestModal from './TourRequestModal';
 import { HeaderPhotoDisplay, LogoDisplay, isClearbitUrl } from './HeaderPhotoHelper';
@@ -19,7 +18,7 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
   const isPremium = school?.schoolTier === 'pro';
   useEffect(() => {
     if (!school?.id) return;
-    base44.entities.SchoolEvent.filter({ schoolId: school.id, isActive: true })
+    SchoolEvent.filter({ schoolId: school.id, isActive: true })
       .then(data => {
         const upcoming = data
           .filter(e => !e.date || new Date(e.date) >= new Date())
@@ -362,7 +361,7 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
         <Button 
           variant="outline" 
           className="w-full text-sm"
-          onClick={() => window.open(createPageUrl('SchoolProfile') + '?id=' + school.id, '_blank')}
+          onClick={() => window.open('/school' + '?id=' + school.id, '_blank')}
         >
           View Full Profile
         </Button>

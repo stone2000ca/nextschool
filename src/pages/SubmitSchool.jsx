@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import Link from 'next/link';
 import { CheckCircle2, AlertTriangle, ArrowRight, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
-import { createPageUrl } from "@/utils";
+import { useAuth } from '@/lib/AuthContext';
+import { School, SchoolClaim } from '@/lib/entities';
 import Navbar from "@/components/navigation/Navbar";
 
 // --- T-SP-009: Duplicate detection helpers (shared with Portal) ---
@@ -76,15 +76,17 @@ export default function SubmitSchool() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  const { user: authUser, isAuthenticated: authIsAuthenticated, navigateToLogin } = useAuth();
+
   // Auth gate + pre-fill
   useEffect(() => {
     const init = async () => {
-      const isAuth = await base44.auth.isAuthenticated();
+      const isAuth = authIsAuthenticated;
       if (!isAuth) {
-        base44.auth.redirectToLogin(createPageUrl('SubmitSchool'));
+        navigateToLogin('/submit-school');
         return;
       }
-      const userData = await base44.auth.me();
+      const userData = authUser;
       setCurrentUser(userData);
       setAuthLoading(false);
 
@@ -123,7 +125,7 @@ export default function SubmitSchool() {
 
     // T-SP-009: Duplicate check
     setChecking(true);
-    const allSchools = await base44.entities.School.list("-updated_date", 500);
+    const allSchools = await School.list("-updated_date", 500);
     const dupes = findDuplicates(form.name, form.city, allSchools);
     setChecking(false);
 
@@ -135,7 +137,7 @@ export default function SubmitSchool() {
     // Submit
     setSubmitting(true);
     const slug = form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now();
-    const newSchool = await base44.entities.School.create({
+    const newSchool = await School.create({
       name: form.name.trim(),
       city: form.city.trim(),
       provinceState: form.provinceState.trim(),
@@ -154,7 +156,7 @@ export default function SubmitSchool() {
     });
 
     // Create SchoolClaim record
-    await base44.entities.SchoolClaim.create({
+    await SchoolClaim.create({
       schoolId: newSchool.id,
       claimantEmail: form.email,
       claimantName: form.name,
@@ -189,7 +191,7 @@ export default function SubmitSchool() {
             <p className="text-lg text-slate-600 mb-8">
               Thank you! Your school submission is under review. You'll be notified once it's approved.
             </p>
-            <Link to={createPageUrl("Portal")}>
+            <Link href={"/portal"}>
               <Button variant="outline">Back to School Search</Button>
             </Link>
           </div>
@@ -203,7 +205,7 @@ export default function SubmitSchool() {
       <Navbar minimal />
       <div className="max-w-xl mx-auto px-4 py-16">
         <div className="mb-8">
-          <Link to={createPageUrl("Portal")} className="text-sm text-teal-600 hover:underline">← Back to search</Link>
+          <Link href={"/portal"} className="text-sm text-teal-600 hover:underline">← Back to search</Link>
           <h1 className="text-3xl font-bold text-slate-900 mt-4 mb-1">Add Your School</h1>
           <p className="text-slate-500">Fill in your school's basic details. We'll review and publish your profile within a few days.</p>
         </div>
@@ -222,7 +224,7 @@ export default function SubmitSchool() {
                     <p className="font-medium text-slate-900 text-sm">{d.name}</p>
                     <p className="text-xs text-slate-500">{[d.city, d.provinceState].filter(Boolean).join(", ")}</p>
                   </div>
-                  <Link to={createPageUrl("ClaimSchool") + `?schoolId=${d.id}`}>
+                  <Link href={"/claim-school" + `?schoolId=${d.id}`}>
                     <Button size="sm" variant="outline" className="text-teal-700 border-teal-300 gap-1">
                       Claim instead <ArrowRight className="h-3 w-3" />
                     </Button>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+import { PhotoCandidate, School } from '@/lib/entities';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, ImagePlus, ExternalLink, Camera, Loader2, X } from 'lucide-react';
 
@@ -27,13 +28,12 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
   const [bulkRejecting, setBulkRejecting] = useState(false);
   const [user, setUser] = useState(null);
 
+  const { user: authUser } = useAuth();
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [u, records] = await Promise.all([
-        base44.auth.me(),
-        base44.entities.PhotoCandidate.filter({ schoolId: school.id }),
-      ]);
+      const records = await PhotoCandidate.filter({ schoolId: school.id });
+      const u = authUser;
       setUser(u);
       setCandidates(records);
     } finally {
@@ -53,20 +53,20 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
   const approveAs = async (candidate, approvedAs) => {
     setProc(candidate.id, true);
     try {
-      await base44.entities.PhotoCandidate.update(candidate.id, {
+      await PhotoCandidate.update(candidate.id, {
         status: 'approved',
         approvedAs,
         reviewedAt: new Date().toISOString(),
       });
 
       if (approvedAs === 'headerPhoto') {
-        await base44.entities.School.update(school.id, { headerPhotoUrl: candidate.imageUrl });
+        await School.update(school.id, { headerPhotoUrl: candidate.imageUrl });
         onUpdate && onUpdate('headerPhotoUrl', candidate.imageUrl);
       } else {
         const gallery = Array.isArray(school.photoGallery) ? school.photoGallery : [];
         if (!gallery.includes(candidate.imageUrl)) {
           const updated = [...gallery, candidate.imageUrl];
-          await base44.entities.School.update(school.id, { photoGallery: updated });
+          await School.update(school.id, { photoGallery: updated });
           onUpdate && onUpdate('photoGallery', updated);
         }
       }
@@ -83,7 +83,7 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
   const confirmReject = async (id, reason) => {
     setProc(id, true);
     try {
-      await base44.entities.PhotoCandidate.update(id, {
+      await PhotoCandidate.update(id, {
         status: 'rejected',
         rejectionReason: reason || '',
         reviewedAt: new Date().toISOString(),

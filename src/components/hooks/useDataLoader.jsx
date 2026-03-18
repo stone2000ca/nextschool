@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { GeneratedArtifact, SchoolAnalysis, FamilyProfile, FamilyJourney, SchoolJourney } from '@/lib/entities';
 
-export function useDataLoader({ user, currentConversation, isAuthenticated, base44 }) {
+export function useDataLoader({ user, currentConversation, isAuthenticated }) {
   const [familyProfile, setFamilyProfile] = useState(null);
   const [artifactCache, setArtifactCache] = useState(null);
   const [schoolAnalyses, setSchoolAnalyses] = useState({});
@@ -17,8 +18,8 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
       const analysisFilter = { userId: user.id };
       if (conversationId) analysisFilter.conversationId = conversationId;
       const [artifacts, analyses] = await Promise.all([
-        base44.entities.GeneratedArtifact.filter({ conversationId }),
-        user?.id ? base44.entities.SchoolAnalysis.filter(analysisFilter) : Promise.resolve([])
+        GeneratedArtifact.filter({ conversationId }),
+        user?.id ? SchoolAnalysis.filter(analysisFilter) : Promise.resolve([])
       ]);
 
       // Build indexed map keyed by schoolId_artifactType
@@ -58,7 +59,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
         console.log('[WC6] No SchoolAnalyses found — scheduling one retry in 800ms');
         setTimeout(async () => {
           try {
-            const retryAnalyses = await base44.entities.SchoolAnalysis.filter({ userId: user.id, conversationId });
+            const retryAnalyses = await SchoolAnalysis.filter({ userId: user.id, conversationId });
             if (retryAnalyses.length > 0) {
               const retryMap = {};
               for (const analysis of retryAnalyses) {
@@ -81,7 +82,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
     } catch (error) {
       console.error('[WC6] Failed to load artifacts:', error);
     }
-  }, [user?.id, base44]);
+  }, [user?.id]);
 
   const loadFamilyProfile = useCallback(async () => {
     if (!user?.id || !currentConversation?.id) return;
@@ -98,7 +99,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
     }
 
     try {
-      const profiles = await base44.entities.FamilyProfile.filter({
+      const profiles = await FamilyProfile.filter({
         userId: user.id,
         conversationId: currentConversation.id
       });
@@ -113,7 +114,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
     // BUG-RN-PERSIST Fix 2: Always load artifacts regardless of FamilyProfile existence.
     // loadPreviousArtifacts handles empty results gracefully (including 800ms retry).
     await loadPreviousArtifacts(currentConversation.id);
-  }, [user?.id, currentConversation?.id, familyProfile, loadPreviousArtifacts, base44]);
+  }, [user?.id, currentConversation?.id, familyProfile, loadPreviousArtifacts]);
 
   // Load family profile + artifacts when user + conversation are ready
   useEffect(() => {
@@ -132,23 +133,23 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
 
         if (currentConversation?.id) {
           // Step (a): Try to find journey specifically linked to this chat
-          const linked = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false, chatHistoryId: currentConversation.id });
+          const linked = await FamilyJourney.filter({ userId: user.id, isArchived: false, chatHistoryId: currentConversation.id });
           if (linked.length > 0) {
             journey = linked.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
           } else {
             // Step (b): Fallback — only pick unassigned journeys (no chatHistoryId), then stamp
-            const all = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
+            const all = await FamilyJourney.filter({ userId: user.id, isArchived: false });
             const unassigned = all.filter(j => !j.chatHistoryId);
             if (unassigned.length > 0) {
               journey = unassigned.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-              await base44.entities.FamilyJourney.update(journey.id, { chatHistoryId: currentConversation.id });
+              await FamilyJourney.update(journey.id, { chatHistoryId: currentConversation.id });
               journey = { ...journey, chatHistoryId: currentConversation.id };
             }
             // If no unassigned journeys, journey stays null — this chat has no journey yet
           }
         } else {
           // Step (c): No conversation context — just pick most recent journey
-          const all = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
+          const all = await FamilyJourney.filter({ userId: user.id, isArchived: false });
           if (all.length > 0) {
             journey = all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
           }
@@ -156,7 +157,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated, base
 
         if (!journey) { setActiveJourney(null); return; }
 
-        const schoolJourneys = await base44.entities.SchoolJourney.filter({ familyJourneyId: journey.id });
+        const schoolJourneys = await SchoolJourney.filter({ familyJourneyId: journey.id });
 
         setActiveJourney({
           id: journey.id,

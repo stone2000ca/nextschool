@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
-import { base44 } from '@/api/base44Client';
+import { useRouter } from 'next/navigation';
+import { ChatSession } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { Button } from '@/components/ui/button';
 import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
 import { CheckCircle, Copy } from 'lucide-react';
@@ -91,7 +91,7 @@ export default function SchoolSearchProfile({
   onArchive,
   isPaid = false,
 }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [isArchiving, setIsArchiving] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -108,14 +108,14 @@ export default function SchoolSearchProfile({
   });
 
   const handleViewMatches = () => {
-    navigate(createPageUrl('Consultant') + '?sessionId=' + session.id);
+    router.push('/consultant?sessionId=' + session.id);
     if (onViewMatches) onViewMatches(session);
   };
 
   const handleArchive = async () => {
     setIsArchiving(true);
     try {
-      await base44.entities.ChatSession.update(session.id, { status: 'archived' });
+      await ChatSession.update(session.id, { status: 'archived' });
       if (onArchive) onArchive();
     } catch (err) {
       console.error('Failed to archive session:', err);
@@ -135,10 +135,10 @@ export default function SchoolSearchProfile({
         priorities: editData.priorities,
         learningDifferences: editData.learningDifferences,
       };
-      await base44.entities.ChatSession.update(session.id, sessionUpdate);
+      await ChatSession.update(session.id, sessionUpdate);
 
       // Re-run school matching using the edited fields only
-      await base44.functions.invoke('matchSchoolsForProfile', {
+      await invokeFunction('matchSchoolsForProfile', {
         sessionId: session.id,
         familyProfile: {
           childGrade: editData.childGrade,
@@ -155,7 +155,7 @@ export default function SchoolSearchProfile({
       // E28-S5: Regenerate aiNarrative after profile edit (fire-and-forget)
       (async () => {
         try {
-          await base44.functions.invoke('generateProfileNarrative', { sessionId: session.id });
+          await invokeFunction('generateProfileNarrative', { sessionId: session.id });
           console.log('[E28-S5] aiNarrative regenerated after profile edit');
         } catch (narrativeErr) {
           console.warn('[E28-S5] Failed to regenerate narrative:', narrativeErr.message);
@@ -172,7 +172,7 @@ export default function SchoolSearchProfile({
     try {
       // Generate UUID for shareToken
       const shareToken = crypto.randomUUID();
-      await base44.entities.ChatSession.update(session.id, { shareToken });
+      await ChatSession.update(session.id, { shareToken });
       const url = `https://nextschool.ca/SharedProfile?token=${shareToken}`;
       setShareUrl(url);
       setShowShareModal(true);
@@ -191,7 +191,7 @@ export default function SchoolSearchProfile({
 
   const handleRemoveSharing = async () => {
     try {
-      await base44.entities.ChatSession.update(session.id, { shareToken: null });
+      await ChatSession.update(session.id, { shareToken: null });
       setShowShareModal(false);
       setShareUrl(null);
     } catch (err) {

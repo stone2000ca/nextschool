@@ -1,16 +1,17 @@
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from "@/components/ui/button";
 import { User, Sparkles, Check, X } from "lucide-react";
 
 export default function LoginGateModal({ consultantName, childName = 'your child', onClose }) {
+  const { navigateToLogin } = useAuth();
   const handleSignup = () => {
     // Redirect to signup, will return to same page after
-    base44.auth.redirectToLogin(window.location.pathname);
+    navigateToLogin(window.location.pathname);
   };
 
   const handleLogin = () => {
     // Redirect to login, will return to same page after
-    base44.auth.redirectToLogin(window.location.pathname);
+    navigateToLogin(window.location.pathname);
   };
 
   return (

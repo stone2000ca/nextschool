@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { Testimonial } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,7 +16,7 @@ export default function TestimonialsSection({ school }) {
 
   useEffect(() => {
     if (school?.id) {
-      base44.entities.Testimonial.filter({ schoolId: school.id })
+      Testimonial.filter({ schoolId: school.id })
         .then(setTestimonials)
         .catch(() => {})
         .finally(() => setLoading(false));
@@ -34,7 +34,7 @@ export default function TestimonialsSection({ school }) {
 
   const remove = async (idx) => {
     const t = testimonials[idx];
-    if (t.id) await base44.entities.Testimonial.delete(t.id);
+    if (t.id) await Testimonial.delete(t.id);
     setTestimonials(testimonials.filter((_, i) => i !== idx));
   };
 
@@ -51,9 +51,9 @@ export default function TestimonialsSection({ school }) {
         is_visible: t.is_visible !== false,
       };
       if (t.id) {
-        updated.push(await base44.entities.Testimonial.update(t.id, payload));
+        updated.push(await Testimonial.update(t.id, payload));
       } else {
-        updated.push(await base44.entities.Testimonial.create(payload));
+        updated.push(await Testimonial.create(payload));
       }
     }
     setTestimonials(updated);

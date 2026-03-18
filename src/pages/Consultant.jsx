@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
-import { base44 } from '@/api/base44Client';
-import School from '@/entities/School';
-import SchoolJourney from '@/entities/SchoolJourney';
+import { useAuth } from '@/lib/AuthContext';
+import { School, SchoolJourney, ChatHistory, FamilyJourney, ResearchNote, SchoolInquiry } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { STATES, BRIEF_STATUS } from './stateMachineConfig';
 import { restoreGuestSession } from '@/components/chat/SessionRestorer';
 import { handleNarrateComparison as narrateComparison } from '@/components/chat/handleNarrateComparison';
 
 // Import searchSchools function
-const searchSchools = (params) => base44.functions.invoke('searchSchools', params);
+const searchSchools = (params) => invokeFunction('searchSchools', params);
 import { Button } from "@/components/ui/button";
 import { Plus, Heart, FileText, Trash2, Star, ClipboardList } from "lucide-react";
 import { toast } from "sonner"; // E16a-019
@@ -34,8 +34,7 @@ import { restoreSessionFromParam, restoreMostRecentConversation } from '@/compon
 import ConsultantDialogs from '@/components/chat/ConsultantDialogs';
 import ChatPanel from '@/components/chat/ChatPanel';
 import ProgressBar from '@/components/ui/progress-bar';
-import { Link, useSearchParams } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/navigation/Navbar';
 import TourRequestModal from '../components/schools/TourRequestModal';
 import { useSchoolFiltering } from '@/components/hooks/useSchoolFiltering';
@@ -58,8 +57,9 @@ const mapStateToView = (state) => {
 export default function Consultant() {
    // Safe trackEvent definition - defaults to no-op if not defined globally
    const trackEvent = (typeof window !== 'undefined' && window.trackEvent) ? window.trackEvent : (name, data) => {};
+   const { user: authUser, isAuthenticated: authIsAuthenticated, updateMe: authUpdateMe } = useAuth();
 
-   const [searchParams] = useSearchParams();
+   const searchParams = useSearchParams();
    const sessionIdParam = searchParams.get('sessionId');
    const sessionParamProcessedRef = useRef(false);
   
@@ -207,10 +207,10 @@ export default function Consultant() {
     }
     (async () => {
       try {
-        const journeys = await base44.entities.FamilyJourney.filter({ userId: user.id, isArchived: false });
+        const journeys = await FamilyJourney.filter({ userId: user.id, isArchived: false });
         if (!journeys.length) { setSchoolJourney(null); return; }
         const journey = journeys.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-        const schoolJourneys = await base44.entities.SchoolJourney.filter({ familyJourneyId: journey.id, schoolId: selectedSchool.id });
+        const schoolJourneys = await SchoolJourney.filter({ familyJourneyId: journey.id, schoolId: selectedSchool.id });
         const sj = schoolJourneys[0] || null;
         setSchoolJourney(sj);
       } catch { setSchoolJourney(null); }
@@ -240,18 +240,18 @@ export default function Consultant() {
       setResearchNotes('');
       return;
     }
-    base44.entities.ResearchNote.filter({ userId: user.id, schoolId: selectedSchool.id }).then(results => {
+    ResearchNote.filter({ userId: user.id, schoolId: selectedSchool.id }).then(results => {
       setResearchNotes(results[0]?.notes || '');
     }).catch(() => setResearchNotes(''));
   }, [selectedSchool?.id, isAuthenticated, user?.id]);
 
   const handleSaveNotes = async () => {
     if (!selectedSchool?.id || !user?.id) return;
-    const existing = await base44.entities.ResearchNote.filter({ userId: user.id, schoolId: selectedSchool.id });
+    const existing = await ResearchNote.filter({ userId: user.id, schoolId: selectedSchool.id });
     if (existing.length > 0) {
-      await base44.entities.ResearchNote.update(existing[0].id, { notes: researchNotes, updatedAt: new Date().toISOString() });
+      await ResearchNote.update(existing[0].id, { notes: researchNotes, updatedAt: new Date().toISOString() });
     } else {
-      await base44.entities.ResearchNote.create({ userId: user.id, schoolId: selectedSchool.id, notes: researchNotes, updatedAt: new Date().toISOString() });
+      await ResearchNote.create({ userId: user.id, schoolId: selectedSchool.id, notes: researchNotes, updatedAt: new Date().toISOString() });
     }
   };
 
@@ -261,7 +261,7 @@ export default function Consultant() {
       setContactLog([]);
       return;
     }
-    base44.entities.SchoolInquiry.filter({ schoolId: selectedSchool.id }).then(inquiries => {
+    SchoolInquiry.filter({ schoolId: selectedSchool.id }).then(inquiries => {
       setContactLog(inquiries.map(inq => ({
         type: inq.inquiryType === 'tour_request' ? 'Tour Request' : 'General Inquiry',
         date: new Date(inq.createdAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -304,7 +304,7 @@ export default function Consultant() {
     loadFamilyProfile,
     loadPreviousArtifacts,
   } = useDataLoader({
-    user, currentConversation, isAuthenticated, base44,
+    user, currentConversation, isAuthenticated,
   });
 
   // Shortlist hook — must come after useDataLoader so familyProfile is defined
@@ -322,7 +322,7 @@ export default function Consultant() {
     handleDeepDiveFromDossier,
   } = useShortlist({
     user, setUser, isAuthenticated, schools, currentState,
-    selectedConsultant, familyProfile, setMessages, trackEvent, setShowLoginGate, base44,
+    selectedConsultant, familyProfile, setMessages, trackEvent, setShowLoginGate,
     onConfirmDeepDive: (school) => handleConfirmDeepDive(school),
     currentConversation,
     activeJourney,
@@ -517,7 +517,7 @@ export default function Consultant() {
     }
 
     // Track session start
-    base44.functions.invoke('trackSessionEvent', {
+    invokeFunction('trackSessionEvent', {
       eventType: 'session_start',
       sessionId
     }).catch(err => console.error('Failed to track session:', err));
@@ -526,7 +526,7 @@ export default function Consultant() {
   // WC5: Session loading from URL param
   useEffect(() => {
     if (sessionIdParam && !sessionParamProcessedRef.current && isAuthenticated && user) {
-      restoreSessionFromParam(sessionIdParam, base44, isAuthenticated, user, setSelectedConsultant, setRestoredSessionData, setMessages, setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase, setCurrentConversation, setSessionRestored, setRestoringSession, loadShortlist, isRestoringSessionRef, sessionParamProcessedRef, setDebugInfo, setDeepDiveAnalysis, setSelectedSchool, setVisitPrepKit, setActionPlan, skipViewOverrideRef, setSchoolAnalyses);
+      restoreSessionFromParam(sessionIdParam, null, isAuthenticated, user, setSelectedConsultant, setRestoredSessionData, setMessages, setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase, setCurrentConversation, setSessionRestored, setRestoringSession, loadShortlist, isRestoringSessionRef, sessionParamProcessedRef, setDebugInfo, setDeepDiveAnalysis, setSelectedSchool, setVisitPrepKit, setActionPlan, skipViewOverrideRef, setSchoolAnalyses);
     }
   }, [sessionIdParam, isAuthenticated, user?.id]);
 
@@ -542,7 +542,7 @@ export default function Consultant() {
     ) {
       latestSessionRestoredRef.current = true;
       restoreMostRecentConversation(
-        base44, user, setMessages, setSelectedConsultant, setCurrentConversation,
+        null, user, setMessages, setSelectedConsultant, setCurrentConversation,
         setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase,
         setDeepDiveAnalysis, setSelectedSchool, isRestoringSessionRef, skipViewOverrideRef,
         setSchoolAnalyses
@@ -562,7 +562,7 @@ export default function Consultant() {
       if (Array.isArray(restored) && restored.length > 0) {
         // If array of IDs, fetch full School records
         if (typeof restored[0] === 'string') {
-          const fullSchools = await base44.entities.School.filter({ id: { $in: restored } });
+          const fullSchools = await School.filter({ id: { $in: restored } });
           setSchools(fullSchools);
         } else {
           // Already full objects
@@ -585,7 +585,7 @@ export default function Consultant() {
 
 
   const handleRestoreGuestSession = () => {
-    restoreGuestSession(isAuthenticated, user, currentConversation, setMessages, setSelectedConsultant, setCurrentConversation, base44);
+    restoreGuestSession(isAuthenticated, user, currentConversation, setMessages, setSelectedConsultant, setCurrentConversation, null);
   };
 
   // Progress through loading stages
@@ -620,11 +620,11 @@ export default function Consultant() {
 
   const checkAuth = async () => {
     try {
-      const authenticated = await base44.auth.isAuthenticated();
+      const authenticated = authIsAuthenticated;
       setIsAuthenticated(authenticated);
-      
+
       if (authenticated) {
-        const userData = await base44.auth.me();
+        const userData = authUser;
         setUser(userData);
         
         // Check daily token replenishment
@@ -646,7 +646,7 @@ export default function Consultant() {
           needsUpdate = true;
           
           // Update user with new balance and renewal date
-          await base44.auth.updateMe({
+          await authUpdateMe({
             tokenBalance: newBalance,
             renewalDate: new Date().toISOString()
           });
@@ -679,7 +679,7 @@ export default function Consultant() {
 
   const loadConversations = async (userId) => {
     try {
-      const convos = await base44.entities.ChatHistory.filter({ userId, isActive: true });
+      const convos = await ChatHistory.filter({ userId, isActive: true });
       // Sort: starred first (by date), then unstarred (by date)
       const sorted = convos.sort((a, b) => {
         if (a.starred && !b.starred) return -1;
@@ -727,7 +727,7 @@ export default function Consultant() {
         isActive: true
       };
       
-      const created = await base44.entities.ChatHistory.create(newConvo);
+      const created = await ChatHistory.create(newConvo);
       
       // Load conversations to update sidebar
       await loadConversations(user.id);
@@ -748,7 +748,7 @@ export default function Consultant() {
       
       if (oldestConvo) {
         // Archive it
-        await base44.entities.ChatHistory.update(oldestConvo.id, {
+        await ChatHistory.update(oldestConvo.id, {
           isActive: false
         });
         
@@ -808,7 +808,7 @@ export default function Consultant() {
   const handleSelectConsultant = (consultantName) => {
     setSelectedConsultant(consultantName);
     // Track consultant selection
-    base44.functions.invoke('trackSessionEvent', {
+    invokeFunction('trackSessionEvent', {
       eventType: 'consultant_selected',
       consultantName: consultantName,
       sessionId
@@ -887,7 +887,7 @@ export default function Consultant() {
         conversationContext: updatedContext,
       }));
       if (currentConversation.id) {
-        await base44.entities.ChatHistory.update(currentConversation.id, {
+        await ChatHistory.update(currentConversation.id, {
           conversationContext: updatedContext,
         });
       }
@@ -921,7 +921,7 @@ export default function Consultant() {
       const extraIds = extraSchools.map(s => s.id);
       const excludeIds = [...new Set([...displayedIds, ...shortlistIds, ...extraIds])];
 
-      const result = await base44.functions.invoke('getNearbySchools', {
+      const result = await invokeFunction('getNearbySchools', {
         lat, lng, excludeIds,
         gradeMin: familyProfile?.childGrade || null,
         maxTuition: familyProfile?.maxTuition || null,
@@ -992,7 +992,6 @@ export default function Consultant() {
     trackEvent,
     mapStateToView,
     hasAutoPopulatedShortlist,
-    createPageUrl,
     activeJourney,
     setActiveJourney,
     // E41: Action dispatch deps for S6/S7/S10 inline dispatch in useMessageHandler
@@ -1007,7 +1006,7 @@ export default function Consultant() {
     let school = schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId) || extraSchools.find(s => s.id === schoolId);
     if (school && !school.description && !school.website) {
       try {
-        const fullRecords = await base44.entities.School.filter({ id: schoolId });
+        const fullRecords = await School.filter({ id: schoolId });
         if (fullRecords[0]) school = fullRecords[0];
       } catch (e) {
         console.error('[SCHOOL DETAIL] Failed to fetch full record:', e.message);
@@ -1054,7 +1053,7 @@ export default function Consultant() {
     // E11b: Fetch family-personalized comparisonMatrix from backend (non-blocking)
     try {
       const schoolIds = comparedSchools.map(s => s.id).filter(Boolean);
-      const result = await base44.functions.invoke('generateComparison', {
+      const result = await invokeFunction('generateComparison', {
         schoolIds,
         familyProfileId: familyProfile?.id || null,
         userId: user?.id || null
@@ -1070,7 +1069,7 @@ export default function Consultant() {
     };
     setCurrentConversation(prev => prev ? { ...prev, conversationContext: updatedContext } : prev);
     if (currentConversation?.id) {
-      await base44.entities.ChatHistory.update(currentConversation.id, {
+      await ChatHistory.update(currentConversation.id, {
         conversationContext: updatedContext,
       });
     }
@@ -1087,7 +1086,6 @@ export default function Consultant() {
       selectedConsultant,
       setMessages,
       setComparisonMatrix,
-      base44
     });
   };
 
@@ -1098,7 +1096,7 @@ export default function Consultant() {
     
     try {
       // Mark as inactive instead of deleting
-      await base44.entities.ChatHistory.update(conversationToDelete.id, {
+      await ChatHistory.update(conversationToDelete.id, {
         isActive: false
       });
       
@@ -1129,7 +1127,7 @@ export default function Consultant() {
   const toggleStarConversation = async (convo, e) => {
     e.stopPropagation();
     try {
-      await base44.entities.ChatHistory.update(convo.id, {
+      await ChatHistory.update(convo.id, {
         starred: !convo.starred
       });
       await loadConversations(user.id);
@@ -1223,7 +1221,7 @@ export default function Consultant() {
         || extraSchools.find(s => s.id === schoolId);
       if (!fullSchool || (!fullSchool.description && !fullSchool.website)) {
         try {
-          const fullRecords = await base44.entities.School.filter({ id: schoolId });
+          const fullRecords = await School.filter({ id: schoolId });
           if (fullRecords[0]) fullSchool = fullRecords[0];
         } catch (e) {
           console.warn('[DEEPDIVE] Failed to fetch full school record:', e.message);
@@ -1537,7 +1535,6 @@ export default function Consultant() {
                onClose={() => setActivePanel(null)}
                onToggleShortlist={handleToggleShortlist}
                shortlistedIds={shortlistData.map(s => s.id)}
-               base44={base44}
              />
            )}
            <IconRail
@@ -1788,7 +1785,7 @@ export default function Consultant() {
               onClose={() => setActivePanel(null)}
               onToggleShortlist={handleToggleShortlist}
               shortlistedIds={shortlistData.map(s => s.id)}
-              base44={base44}
+
             />
           </div>
         )}

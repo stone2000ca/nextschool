@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { SchoolEvent } from '@/lib/entities';
 import { X, CalendarDays, ChevronDown, Bell, BellRing, ExternalLink } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, formatEventDate } from '@/components/utils/eventConstants';
@@ -35,7 +35,7 @@ export default function TimelinePanel({ shortlist, onClose }) {
       try {
         const results = await Promise.all(
           shortlist.map(school =>
-            base44.entities.SchoolEvent.filter({ schoolId: school.id, isActive: true })
+            SchoolEvent.filter({ schoolId: school.id, isActive: true })
               .then(evs => evs
                 .filter(e => e.date && e.date >= today)
                 .map(e => ({ ...e, schoolName: school.name }))

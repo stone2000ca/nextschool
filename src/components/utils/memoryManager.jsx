@@ -1,5 +1,8 @@
+import { UserMemory } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
+
 // Memory Manager — Extract & deduplicate LLM facts
-export async function extractAndSaveMemories(messageText, responseMessage, user, base44) {
+export async function extractAndSaveMemories(messageText, responseMessage, user, _unused) {
   if (!user) return;
 
   try {
@@ -20,7 +23,7 @@ Facts to extract (only if user said them):
 
 Return empty array if user didn't provide any of these facts.`;
 
-    const memoryResult = await base44.integrations.Core.InvokeLLM({
+    const memoryResult = await invokeFunction('invokeLLM', {
       prompt: memoryPrompt,
       response_json_schema: {
         type: "object",
@@ -35,17 +38,17 @@ Return empty array if user didn't provide any of these facts.`;
 
     // Only update if we got new facts
     if (memoryResult.facts && memoryResult.facts.length > 0) {
-      const existingMemories = await base44.entities.UserMemory.filter({ userId: user.id });
+      const existingMemories = await UserMemory.filter({ userId: user.id });
       if (existingMemories.length > 0) {
         const existingMem = existingMemories[0];
         // Use Set to deduplicate, then convert back to array
         const dedupedMemories = [...new Set([...existingMem.memories, ...memoryResult.facts])];
-        await base44.entities.UserMemory.update(existingMem.id, {
+        await UserMemory.update(existingMem.id, {
           memories: dedupedMemories,
           lastUpdated: new Date().toISOString()
         });
       } else {
-        await base44.entities.UserMemory.create({
+        await UserMemory.create({
           userId: user.id,
           memories: memoryResult.facts,
           lastUpdated: new Date().toISOString()

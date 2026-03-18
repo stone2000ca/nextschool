@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { School } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -82,7 +82,7 @@ export default function EditProfileForm({ school, onUpdate }) {
 
     saveTimeouts.current[field] = setTimeout(async () => {
       try {
-        await base44.entities.School.update(school.id, { [field]: value });
+        await School.update(school.id, { [field]: value });
         setSavingField(null);
         setSavedField(field);
         setTimeout(() => setSavedField(null), 2000);

@@ -1,4 +1,5 @@
-import { base44 } from '@/api/base44Client';
+import { EmailLog } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 
 /**
  * Centralized email sending wrapper for school-related emails.
@@ -37,7 +38,7 @@ export async function sendSchoolEmail({
   // E18b-001: Test mode check - block email and log as test_blocked
   if (test_mode) {
     try {
-      await base44.entities.EmailLog.create({
+      await EmailLog.create({
         type,
         to,
         fromName,
@@ -60,7 +61,7 @@ export async function sendSchoolEmail({
   // WC4: Block emails to unclaimed schools (first layer check)
   if (school && school.claimStatus !== 'claimed') {
     try {
-      await base44.entities.EmailLog.create({
+      await EmailLog.create({
         type,
         to,
         fromName,
@@ -82,7 +83,7 @@ export async function sendSchoolEmail({
 
   // Attempt to send email
   try {
-    await base44.integrations.Core.SendEmail({
+    await invokeFunction('sendEmail', {
       from_name: fromName,
       to,
       subject,
@@ -91,7 +92,7 @@ export async function sendSchoolEmail({
 
     // Log success
     try {
-      await base44.entities.EmailLog.create({
+      await EmailLog.create({
         type,
         to,
         fromName,
@@ -113,7 +114,7 @@ export async function sendSchoolEmail({
   } catch (error) {
     // Log failure
     try {
-      await base44.entities.EmailLog.create({
+      await EmailLog.create({
         type,
         to,
         fromName,

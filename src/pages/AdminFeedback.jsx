@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { BetaFeedback } from '@/lib/entities';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { ThumbsUp, AlertCircle, MessageSquare } from 'lucide-react';
 import Navbar from '@/components/navigation/Navbar';
 
 export default function AdminFeedback() {
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState(null);
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ export default function AdminFeedback() {
 
   const checkAuthAndLoadData = async () => {
     try {
-      const userData = await base44.auth.me();
+      const userData = authUser;
       setUser(userData);
 
       // Check if admin
@@ -33,7 +35,7 @@ export default function AdminFeedback() {
       }
 
       // Load feedback
-      const allFeedback = await base44.entities.BetaFeedback.list('-timestamp', 1000);
+      const allFeedback = await BetaFeedback.list('-timestamp', 1000);
       setFeedback(allFeedback);
     } catch (error) {
       console.error('Failed to load data:', error);

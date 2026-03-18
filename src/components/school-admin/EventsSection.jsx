@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { SchoolEvent } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Crown, Plus, Pencil, Trash2, Calendar, Link, Video, Users, RefreshCw, MapPin } from 'lucide-react';
-import { createPageUrl } from '@/utils';
 
 const EVENT_TYPE_LABELS = {
   open_house: 'Open House',
@@ -54,7 +53,7 @@ function FreeTierTeaser({ school }) {
   const [aiEvents, setAiEvents] = useState([]);
 
   useEffect(() => {
-    base44.entities.SchoolEvent.filter({ schoolId: school.id, source: 'ai_enriched' })
+    SchoolEvent.filter({ schoolId: school.id, source: 'ai_enriched' })
       .then(setAiEvents)
       .catch(() => {});
   }, [school.id]);
@@ -108,7 +107,7 @@ function FreeTierTeaser({ school }) {
           </div>
         )}
 
-        <a href={createPageUrl('Pricing')}>
+        <a href={'/pricing'}>
           <Button className="bg-amber-500 hover:bg-amber-600 text-white gap-2">
             <Crown className="h-4 w-4" />
             Upgrade to Premium
@@ -261,7 +260,7 @@ function PremiumEventsManagement({ school }) {
 
   const loadEvents = async () => {
     setLoading(true);
-    const data = await base44.entities.SchoolEvent.filter({ schoolId: school.id });
+    const data = await SchoolEvent.filter({ schoolId: school.id });
     setEvents(data.sort((a, b) => new Date(a.date) - new Date(b.date)));
     setLoading(false);
   };
@@ -270,9 +269,9 @@ function PremiumEventsManagement({ school }) {
 
   const handleSave = async (formData) => {
     if (editing) {
-      await base44.entities.SchoolEvent.update(editing.id, { ...formData, source: 'school_portal', isConfirmed: true });
+      await SchoolEvent.update(editing.id, { ...formData, source: 'school_portal', isConfirmed: true });
     } else {
-      await base44.entities.SchoolEvent.create({ ...formData, schoolId: school.id, source: 'school_portal', isConfirmed: true, isActive: true });
+      await SchoolEvent.create({ ...formData, schoolId: school.id, source: 'school_portal', isConfirmed: true, isActive: true });
     }
     setEditing(null);
     await loadEvents();
@@ -280,7 +279,7 @@ function PremiumEventsManagement({ school }) {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this event?')) return;
-    await base44.entities.SchoolEvent.delete(id);
+    await SchoolEvent.delete(id);
     await loadEvents();
   };
 

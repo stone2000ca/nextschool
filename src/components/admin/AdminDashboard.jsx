@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { School, User as UserEntity, ChatHistory, SchoolClaim } from '@/lib/entities';
 import { Card } from '@/components/ui/card';
 import { Building2, Users, MessageSquare, ClipboardCheck, DollarSign, TrendingUp } from 'lucide-react';
 
@@ -14,8 +14,8 @@ export default function AdminDashboard({ onViewChange }) {
   const loadStats = async () => {
     try {
       const [schools, users] = await Promise.all([
-        base44.entities.School.list(),
-        base44.entities.User.list(),
+        School.list(),
+        UserEntity.list(),
       ]);
 
       // Filter out archived schools
@@ -24,7 +24,7 @@ export default function AdminDashboard({ onViewChange }) {
       // Conversations — graceful fallback if entity fails
       let activeToday = 0;
       try {
-        const conversations = await base44.entities.ChatHistory.list();
+        const conversations = await ChatHistory.list();
         const today = new Date().toDateString();
         activeToday = conversations.filter(c =>
           new Date(c.updated_date).toDateString() === today
@@ -36,7 +36,7 @@ export default function AdminDashboard({ onViewChange }) {
       // Pending claims — use SchoolClaim entity, fallback to 0
       let pendingClaims = 0;
       try {
-        const claims = await base44.entities.SchoolClaim.filter({ status: 'pending' });
+        const claims = await SchoolClaim.filter({ status: 'pending' });
         pendingClaims = claims.length;
       } catch (e) {
         console.warn('SchoolClaim unavailable:', e);

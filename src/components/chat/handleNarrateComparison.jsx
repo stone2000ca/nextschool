@@ -1,3 +1,6 @@
+import { GeneratedArtifact } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
+
 /**
  * E11b Phase 1: AI-narrated comparison synthesis with structured matrix
  * Separated from Consultant.jsx due to file size constraints
@@ -7,7 +10,6 @@
  * @param {string} selectedConsultant - Consultant name ('Jackie' or 'Liam')
  * @param {Function} setMessages - setState for chat messages
  * @param {Function} setComparisonMatrix - setState for comparison matrix
- * @param {Object} base44 - Base44 SDK instance
  */
 export async function handleNarrateComparison({
   comparedSchools,
@@ -16,7 +18,6 @@ export async function handleNarrateComparison({
   selectedConsultant,
   setMessages,
   setComparisonMatrix,
-  base44
 }) {
   const isJackie = selectedConsultant === 'Jackie';
   const persona = isJackie
@@ -200,10 +201,10 @@ For each school, identify 1-2 key trade-offs worth mentioning (e.g., "Higher cos
   setMessages(prev => [...prev, loadingMsg]);
 
   try {
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeFunction('invokeLLM', {
       prompt,
       response_json_schema
-    });
+    }).then(r => r.data || r);
 
     // result is now a parsed object with { narrative, comparisonMatrix }
     const narrativeText = result?.narrative || 'Unable to generate comparison.';
@@ -239,7 +240,7 @@ For each school, identify 1-2 key trade-offs worth mentioning (e.g., "Higher cos
       (async () => {
         try {
           const schoolIds = comparedSchools.map(s => s.id).filter(Boolean);
-          await base44.entities.GeneratedArtifact.create({
+          await GeneratedArtifact.create({
             artifactType: 'comparison',
             familyProfileId: familyProfile.id,
             content: JSON.stringify({ matrix: result.comparisonMatrix, narrative: narrativeText }),

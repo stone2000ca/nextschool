@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Lock, Compass, TrendingUp, Check } from "lucide-react";
-import { createPageUrl } from "../utils";
-import { Link } from "react-router-dom";
+import Link from 'next/link';
 import Navbar from "@/components/navigation/Navbar";
 import Footer from "@/components/navigation/Footer";
 
@@ -58,7 +57,7 @@ export default function ForSchools() {
           <p className="text-xl text-slate-300 max-w-3xl mx-auto mb-8">
             Claim your free profile on NextSchool and control how families discover your school.
           </p>
-          <Link to={createPageUrl('Portal')}>
+          <Link href="/portal">
             <Button size="lg" className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-7 text-lg">
               Find Your School & Claim Your Profile
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -145,7 +144,7 @@ export default function ForSchools() {
           <p className="text-xl text-slate-700 mb-8">
             Start with a free profile today. Upgrade anytime to unlock more features.
           </p>
-          <Link to={createPageUrl('Portal')}>
+          <Link href="/portal">
             <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-7 text-lg">
               Find Your School & Claim
               <ArrowRight className="ml-2 h-5 w-5" />

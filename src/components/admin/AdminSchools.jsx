@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { School } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ export default function AdminSchools() {
 
   const loadSchools = async () => {
     try {
-      const data = await base44.entities.School.list('-updated_date');
+      const data = await School.list('-updated_date');
       setSchools(data);
     } catch (error) {
       console.error('Failed to load schools:', error);
@@ -33,7 +34,7 @@ export default function AdminSchools() {
 
   const handleVerify = async (schoolId, verified) => {
     try {
-      await base44.entities.School.update(schoolId, { verified });
+      await School.update(schoolId, { verified });
       setSchools(schools.map(s => s.id === schoolId ? { ...s, verified } : s));
     } catch (error) {
       console.error('Failed to update verification:', error);
@@ -42,7 +43,7 @@ export default function AdminSchools() {
 
   const handleArchive = async (schoolId) => {
     try {
-      await base44.entities.School.update(schoolId, { status: 'archived' });
+      await School.update(schoolId, { status: 'archived' });
       setSchools(schools.map(s => s.id === schoolId ? { ...s, status: 'archived' } : s));
     } catch (error) {
       console.error('Failed to archive:', error);
@@ -56,7 +57,7 @@ export default function AdminSchools() {
     }
     setEnrichingSchoolId(schoolId);
     try {
-      const response = await base44.functions.invoke('enrichSchoolFromWeb', { schoolId });
+      const response = await invokeFunction('enrichSchoolFromWeb', { schoolId });
       if (response.data.status === 'success') {
         toast.success(`School enriched (${response.data.count || 0} fields updated)`);
         loadSchools();
@@ -88,7 +89,7 @@ export default function AdminSchools() {
         setEnrichmentProgress({ current: schoolIndex, total: schools.length });
         
         try {
-          await base44.functions.invoke('enrichSchoolFromWeb', { schoolId: school.id });
+          await invokeFunction('enrichSchoolFromWeb', { schoolId: school.id });
           console.log(`✓ Enriched ${school.name}`);
         } catch (error) {
           console.error(`✗ Failed to enrich ${school.name}:`, error);

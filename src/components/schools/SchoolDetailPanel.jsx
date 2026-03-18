@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart, ExternalLink, Scale, CalendarDays, Mail, Phone, Globe2, Eye } from "lucide-react";
 import TourRequestModal from './TourRequestModal';
-import { base44 } from '@/api/base44Client';
+import { SchoolEvent } from '@/lib/entities';
 
 // --- Helpers ---
 
@@ -676,7 +676,7 @@ export default function SchoolDetailPanel({
       return;
     }
     let isMounted = true;
-    base44.entities.SchoolEvent.filter({ schoolId: school.id })
+    SchoolEvent.filter({ schoolId: school.id })
       .then((data) => {
         if (!isMounted) return;
         setSchoolEvents(Array.isArray(data) ? data : []);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { SchoolInquiry } from '@/lib/entities';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,13 +19,14 @@ export default function ContactSchoolModal({ school, onClose }) {
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const { user: authUser } = useAuth();
   useEffect(() => {
     loadUser();
   }, []);
 
   const loadUser = async () => {
     try {
-      const userData = await base44.auth.me();
+      const userData = authUser;
       setUser(userData);
       setFormData({
         parentName: userData.full_name || '',
@@ -42,7 +44,7 @@ export default function ContactSchoolModal({ school, onClose }) {
     setSending(true);
 
     try {
-      const inquiry = await base44.entities.SchoolInquiry.create({
+      const inquiry = await SchoolInquiry.create({
         parentUserId: user.id,
         schoolId: school.id,
         message: `Parent: ${formData.parentName}\nEmail: ${formData.email}\nChild's Grade: ${formData.childGrade}\n\nMessage:\n${formData.message}`,

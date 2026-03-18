@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageSquare, CheckCircle2, BarChart3, BookOpen, Zap } from "lucide-react";
-import { createPageUrl } from "../utils";
-import { Link } from "react-router-dom";
+import Link from 'next/link';
 import Navbar from "@/components/navigation/Navbar";
 import Footer from "@/components/navigation/Footer";
 
@@ -105,7 +104,7 @@ export default function HowItWorks() {
           <p className="text-xl text-slate-700 mb-8">
             Start your free AI consultation today with no signup required.
           </p>
-          <Link to={createPageUrl('Consultant')}>
+          <Link href="/consultant">
             <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-7 text-lg">
               Start Your Free Consultation
               <ArrowRight className="ml-2 h-5 w-5" />

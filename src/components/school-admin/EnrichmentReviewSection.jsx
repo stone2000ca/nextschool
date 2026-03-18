@@ -3,7 +3,8 @@
 // Entities: EnrichmentDiff (read/update), School (update on approve)
 
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { EnrichmentDiff, School } from '@/lib/entities';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Zap, ExternalLink } from 'lucide-react';
 
@@ -20,6 +21,7 @@ function rowBg(confidence) {
 }
 
 export default function EnrichmentReviewSection({ school, onCountChange }) {
+  const { user: authUser } = useAuth();
   const [diffs, setDiffs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(new Set());
@@ -31,10 +33,10 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
 
   const loadData = async () => {
     setLoading(true);
-    const [allDiffs, userData] = await Promise.all([
-      base44.entities.EnrichmentDiff.filter({ schoolId: school.id }),
-      base44.auth.me(),
+    const [allDiffs] = await Promise.all([
+      EnrichmentDiff.filter({ schoolId: school.id }),
     ]);
+    const userData = authUser;
     setDiffs(allDiffs);
     setUser(userData);
     setLoading(false);
@@ -59,8 +61,8 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
     try { parsedValue = JSON.parse(diff.proposedValue); } catch (_) {}
 
     await Promise.all([
-      base44.entities.School.update(school.id, { [diff.field]: parsedValue }),
-      base44.entities.EnrichmentDiff.update(diff.id, {
+      School.update(school.id, { [diff.field]: parsedValue }),
+      EnrichmentDiff.update(diff.id, {
         status: 'approved',
         reviewedBy: user?.email || '',
         reviewedAt: new Date().toISOString(),
@@ -76,7 +78,7 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
 
   const rejectDiff = async (diff) => {
     setProcessing(p => new Set(p).add(diff.id));
-    await base44.entities.EnrichmentDiff.update(diff.id, {
+    await EnrichmentDiff.update(diff.id, {
       status: 'rejected',
       reviewedBy: user?.email || '',
       reviewedAt: new Date().toISOString(),

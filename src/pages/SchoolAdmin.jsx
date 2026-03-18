@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
-import { createPageUrl } from '@/utils';
+import Link from 'next/link';
+import { useAuth } from '@/lib/AuthContext';
+import { School, SchoolAdmin as SchoolAdminEntity, SchoolClaim, User, SchoolInquiry, EnrichmentDiff, PhotoCandidate } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { Building2, BarChart3, Mail, CreditCard, Upload, Crown, Sparkles, Image, ImagePlus, MessageSquareQuote, User, CalendarDays, FileText, FlaskConical, Loader2, ArrowLeft, Clock, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -36,9 +37,11 @@ export default function SchoolAdmin() {
     loadSchoolData();
   }, []);
 
+  const { user: authUser } = useAuth();
+
   const loadSchoolData = async () => {
     try {
-      const userData = await base44.auth.me();
+      const userData = authUser;
       setUser(userData);
 
       let resolvedSchool = null;
@@ -47,10 +50,10 @@ export default function SchoolAdmin() {
       const urlParams = new URLSearchParams(window.location.search);
       const impersonateSchoolId = urlParams.get('schoolId');
       if (impersonateSchoolId) {
-        const adminUsers = await base44.entities.User.filter({ email: userData.email });
+        const adminUsers = await User.filter({ email: userData.email });
         const isAdmin = adminUsers && adminUsers.length > 0 && adminUsers[0].role === 'admin';
         if (isAdmin) {
-          const schoolData = await base44.entities.School.filter({ id: impersonateSchoolId });
+          const schoolData = await School.filter({ id: impersonateSchoolId });
           if (schoolData && schoolData.length > 0) {
             resolvedSchool = schoolData[0];
             setSchool(resolvedSchool);
@@ -60,24 +63,24 @@ export default function SchoolAdmin() {
 
       // --- PATH A: SchoolAdmin record lookup ---
       if (!resolvedSchool) {
-        const adminRecords = await base44.entities.SchoolAdmin.filter({ userId: userData.id, isActive: true });
+        const adminRecords = await SchoolAdminEntity.filter({ userId: userData.id, isActive: true });
 
         if (adminRecords && adminRecords.length > 0) {
-          const schoolData = await base44.entities.School.filter({ id: adminRecords[0].schoolId });
+          const schoolData = await School.filter({ id: adminRecords[0].schoolId });
           if (schoolData && schoolData.length > 0) {
             resolvedSchool = schoolData[0];
             setSchool(resolvedSchool);
             // Fire-and-forget: recalculate completeness score on every admin login
-            base44.functions.invoke('calculateCompletenessScore', { schoolId: resolvedSchool.id }).catch(() => {});
+            invokeFunction('calculateCompletenessScore', { schoolId: resolvedSchool.id }).catch(() => {});
           }
         } else {
           // --- PATH B: Legacy adminUserId fallback ---
-          const schools = await base44.entities.School.filter({ adminUserId: userData.id });
+          const schools = await School.filter({ adminUserId: userData.id });
           if (schools && schools.length > 0) {
             resolvedSchool = schools[0];
             setSchool(resolvedSchool);
             // Fire-and-forget: recalculate completeness score on every admin login
-            base44.functions.invoke('calculateCompletenessScore', { schoolId: resolvedSchool.id }).catch(() => {});
+            invokeFunction('calculateCompletenessScore', { schoolId: resolvedSchool.id }).catch(() => {});
           }
         }
       }
@@ -87,13 +90,13 @@ export default function SchoolAdmin() {
         const urlParams2 = new URLSearchParams(window.location.search);
         const urlSchoolId = urlParams2.get('schoolId');
         if (urlSchoolId) {
-          const claims = await base44.entities.SchoolClaim.filter({
+          const claims = await SchoolClaim.filter({
             userId: userData.id,
             schoolId: urlSchoolId,
             status: 'verified'
           });
           if (claims && claims.length > 0) {
-            const schoolData = await base44.entities.School.filter({ id: urlSchoolId });
+            const schoolData = await School.filter({ id: urlSchoolId });
             if (schoolData && schoolData.length > 0) {
               resolvedSchool = schoolData[0];
               setSchool(resolvedSchool);
@@ -105,12 +108,12 @@ export default function SchoolAdmin() {
       // --- PATH D: Pending/rejected claim state ---
       if (!resolvedSchool) {
         try {
-          const claims = await base44.entities.SchoolClaim.filter({ userId: userData.id });
+          const claims = await SchoolClaim.filter({ userId: userData.id });
           if (claims && claims.length > 0) {
             const latest = claims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
             setPendingClaim(latest);
             if (latest.schoolId) {
-              const schoolData = await base44.entities.School.filter({ id: latest.schoolId });
+              const schoolData = await School.filter({ id: latest.schoolId });
               if (schoolData && schoolData.length > 0) setPendingSchool(schoolData[0]);
             }
           }
@@ -120,18 +123,18 @@ export default function SchoolAdmin() {
       // Load badges for resolved school
       if (resolvedSchool) {
         try {
-          const inquiries = await base44.entities.SchoolInquiry.filter({ schoolId: resolvedSchool.id, inquiryType: 'tour_request' });
+          const inquiries = await SchoolInquiry.filter({ schoolId: resolvedSchool.id, inquiryType: 'tour_request' });
           const newCount = inquiries.filter(i => !i.tourStatus || i.tourStatus === 'new').length;
           setNewInquiryCount(newCount);
         } catch (e) { /* non-blocking */ }
 
         try {
-          const diffs = await base44.entities.EnrichmentDiff.filter({ schoolId: resolvedSchool.id, status: 'pending' });
+          const diffs = await EnrichmentDiff.filter({ schoolId: resolvedSchool.id, status: 'pending' });
           setPendingDiffCount(diffs.length);
         } catch (e) { /* non-blocking */ }
 
         try {
-          const photos = await base44.entities.PhotoCandidate.filter({ schoolId: resolvedSchool.id, status: 'pending' });
+          const photos = await PhotoCandidate.filter({ schoolId: resolvedSchool.id, status: 'pending' });
           setPendingPhotoCount(photos.length);
         } catch (e) { /* non-blocking */ }
       }
@@ -147,11 +150,11 @@ export default function SchoolAdmin() {
     
     setIsSaving(true);
     try {
-      await base44.entities.School.update(school.id, updatedData);
+      await School.update(school.id, updatedData);
       const updated = { ...school, ...updatedData };
       setSchool(updated);
       // Post-save: recalculate completeness score server-side (non-blocking)
-      base44.functions.invoke('calculateCompletenessScore', { schoolId: school.id })
+      invokeFunction('calculateCompletenessScore', { schoolId: school.id })
         .then(res => {
           if (res?.data?.completenessScore != null) {
             setSchool(s => ({ ...s, completenessScore: res.data.completenessScore }));
@@ -170,8 +173,8 @@ export default function SchoolAdmin() {
     setEnrichError(null);
     try {
       const [enrichResult, photoResult] = await Promise.allSettled([
-        base44.functions.invoke('enrichSchoolFromWeb', { schoolId: school.id }),
-        base44.functions.invoke('scrapeSchoolPhotos', { schoolId: school.id })
+        invokeFunction('enrichSchoolFromWeb', { schoolId: school.id }),
+        invokeFunction('scrapeSchoolPhotos', { schoolId: school.id })
       ]);
       const enrichOk = enrichResult.status === 'fulfilled';
       const photoOk = photoResult.status === 'fulfilled';
@@ -180,11 +183,11 @@ export default function SchoolAdmin() {
         return;
       }
       try {
-        const diffs = await base44.entities.EnrichmentDiff.filter({ schoolId: school.id, status: 'pending' });
+        const diffs = await EnrichmentDiff.filter({ schoolId: school.id, status: 'pending' });
         setPendingDiffCount(diffs.length);
       } catch {}
       try {
-        const photos = await base44.entities.PhotoCandidate.filter({ schoolId: school.id, status: 'pending' });
+        const photos = await PhotoCandidate.filter({ schoolId: school.id, status: 'pending' });
         setPendingPhotoCount(photos.length);
       } catch {}
       setCurrentView('enrichment');
@@ -383,7 +386,7 @@ export default function SchoolAdmin() {
           </nav>
           <div className="border-t border-slate-100 p-4 mt-auto">
             <Link 
-              to={createPageUrl('Home')} 
+              href={'/'} 
               className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />

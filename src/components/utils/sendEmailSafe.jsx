@@ -11,7 +11,7 @@ export async function sendEmailSafe({ from_name, to, subject, body, test_mode = 
   }
   
   // Normal send
-  const { base44 } = await import('@/api/base44Client');
-  await base44.integrations.Core.SendEmail({ from_name, to, subject, body });
+  const { sendEmail } = await import('@/lib/integrations');
+  await sendEmail({ from_name, to, subject, body });
   return { sent: true };
 }

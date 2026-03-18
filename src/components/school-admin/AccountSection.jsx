@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { SchoolAdmin } from '@/lib/entities';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AlertCircle, Lock } from 'lucide-react';
@@ -14,13 +15,13 @@ export default function AccountSection({ school }) {
     loadUserData();
   }, [school]);
 
+  const { user: authUser } = useAuth();
   const loadUserData = async () => {
     try {
-      const userData = await base44.auth.me();
-      setUser(userData);
+      setUser(authUser);
 
       // Load SchoolAdmin record
-      const admins = await base44.entities.SchoolAdmin.filter({ schoolId: school?.id });
+      const admins = await SchoolAdmin.filter({ schoolId: school?.id });
       if (admins && admins.length > 0) {
         setAdminRecord(admins[0]);
       }

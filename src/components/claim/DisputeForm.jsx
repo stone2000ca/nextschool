@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { DisputeRequest } from '@/lib/entities';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, Loader2 } from "lucide-react";
@@ -15,7 +15,7 @@ export default function DisputeForm({ schoolId, schoolName, onCancel }) {
       return;
     }
     setSubmitting(true);
-    await base44.entities.DisputeRequest.create({
+    await DisputeRequest.create({
       schoolId: schoolId,
       requester_name: form.name,
       requester_role: form.role,

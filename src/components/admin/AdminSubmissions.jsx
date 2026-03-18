@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { SchoolClaim, School, SchoolAdmin } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { CheckCircle2, XCircle, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -12,8 +13,8 @@ export default function AdminSubmissions() {
     setLoading(true);
     // Fetch claims from both submission paths: 'pending' (SubmitSchool) and 'pending_review' (ClaimSchool)
     const [claimsPending, claimsPendingReview] = await Promise.all([
-      base44.entities.SchoolClaim.filter({ status: "pending" }),
-      base44.entities.SchoolClaim.filter({ status: "pending_review" }),
+      SchoolClaim.filter({ status: "pending" }),
+      SchoolClaim.filter({ status: "pending_review" }),
     ]);
     const allClaims = [...claimsPending, ...claimsPendingReview];
     const schoolIds = [...new Set(allClaims.map(c => c.schoolId).filter(Boolean))];
@@ -25,7 +26,7 @@ export default function AdminSubmissions() {
     }
 
     // Fetch the actual school records for those IDs
-    const schoolResults = await Promise.all(schoolIds.map(id => base44.entities.School.filter({ id })));
+    const schoolResults = await Promise.all(schoolIds.map(id => School.filter({ id })));
     const schools = schoolResults.flat().filter(s => s.status === "draft" || s.status === "active" || s.status === "pending_review");
     setSubmissions(schools.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     setLoading(false);
@@ -36,25 +37,25 @@ export default function AdminSubmissions() {
   async function approve(school) {
     setActionMap(m => ({ ...m, [school.id]: "approving" }));
     // Fix 1+2: Set status, claimStatus, membershipTier together
-    await base44.entities.School.update(school.id, { status: "active", claimStatus: "claimed", membershipTier: "basic" });
+    await School.update(school.id, { status: "active", claimStatus: "claimed", membershipTier: "basic" });
     // Update associated SchoolClaim to verified (checks both statuses)
     let approvedClaim = null;
     try {
       const [claimsPending, claimsPendingReview] = await Promise.all([
-        base44.entities.SchoolClaim.filter({ schoolId: school.id, status: "pending" }),
-        base44.entities.SchoolClaim.filter({ schoolId: school.id, status: "pending_review" }),
+        SchoolClaim.filter({ schoolId: school.id, status: "pending" }),
+        SchoolClaim.filter({ schoolId: school.id, status: "pending_review" }),
       ]);
       const claims = [...claimsPending, ...claimsPendingReview];
       if (claims.length > 0) {
         approvedClaim = claims[0];
-        await base44.entities.SchoolClaim.update(approvedClaim.id, { status: "verified", verifiedAt: new Date().toISOString() });
+        await SchoolClaim.update(approvedClaim.id, { status: "verified", verifiedAt: new Date().toISOString() });
       }
     } catch (e) { /* non-blocking */ }
 
     // Create SchoolAdmin for submitter
     if (school.userId) {
       try {
-        await base44.entities.SchoolAdmin.create({
+        await SchoolAdmin.create({
           schoolId: school.id,
           userId: school.userId,
           role: "owner",
@@ -66,7 +67,7 @@ export default function AdminSubmissions() {
     // Send approval email notification (non-blocking)
     try {
       if (approvedClaim) {
-        await base44.functions.invoke('sendClaimEmail', {
+        await invokeFunction('sendClaimEmail', {
           emailType: 'CLAIM_APPROVED',
           claimData: {
             claimantName: approvedClaim.claimantName || school.created_by || 'School Administrator',
@@ -85,16 +86,16 @@ export default function AdminSubmissions() {
 
   async function reject(school) {
     setActionMap(m => ({ ...m, [school.id]: "rejecting" }));
-    await base44.entities.School.update(school.id, { status: "archived" });
+    await School.update(school.id, { status: "archived" });
     // Also reject associated SchoolClaim (non-blocking)
     try {
       const [claimsPending, claimsPendingReview] = await Promise.all([
-        base44.entities.SchoolClaim.filter({ schoolId: school.id, status: "pending" }),
-        base44.entities.SchoolClaim.filter({ schoolId: school.id, status: "pending_review" }),
+        SchoolClaim.filter({ schoolId: school.id, status: "pending" }),
+        SchoolClaim.filter({ schoolId: school.id, status: "pending_review" }),
       ]);
       const claims = [...claimsPending, ...claimsPendingReview];
       if (claims.length > 0) {
-        await base44.entities.SchoolClaim.update(claims[0].id, { status: "rejected" });
+        await SchoolClaim.update(claims[0].id, { status: "rejected" });
       }
     } catch (e) { /* non-blocking */ }
     setSubmissions(s => s.filter(x => x.id !== school.id));

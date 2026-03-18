@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { School } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Upload, X, Loader2 } from 'lucide-react';
@@ -13,7 +14,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
   });
 
   const recalculateScore = () => {
-    base44.functions.invoke('calculateCompletenessScore', { schoolId: school.id })
+    invokeFunction('calculateCompletenessScore', { schoolId: school.id })
       .catch(e => console.warn('completenessScore update failed:', e));
   };
 
@@ -22,12 +23,12 @@ export default function PhotosMediaSection({ school, onUpdate }) {
 
     setUploading(field);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await invokeFunction('uploadFile', { file });
       
       if (field === 'logoUrl') {
-        await base44.entities.School.update(school.id, { logoUrl: file_url });
+        await School.update(school.id, { logoUrl: file_url });
       } else if (field === 'headerPhotoUrl') {
-        await base44.entities.School.update(school.id, { headerPhotoUrl: file_url });
+        await School.update(school.id, { headerPhotoUrl: file_url });
       }
       
       onUpdate && onUpdate(field, file_url);
@@ -46,9 +47,9 @@ export default function PhotosMediaSection({ school, onUpdate }) {
 
     setUploading('gallery');
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await invokeFunction('uploadFile', { file });
       const newGallery = [...(school?.photoGallery || []), file_url];
-      await base44.entities.School.update(school.id, { photoGallery: newGallery });
+      await School.update(school.id, { photoGallery: newGallery });
       onUpdate && onUpdate('photoGallery', newGallery);
       toast.success('Photo added to gallery');
       recalculateScore();
@@ -63,14 +64,14 @@ export default function PhotosMediaSection({ school, onUpdate }) {
   const handleRemovePhoto = async (field, url) => {
     try {
       if (field === 'logoUrl') {
-        await base44.entities.School.update(school.id, { logoUrl: null });
+        await School.update(school.id, { logoUrl: null });
         onUpdate && onUpdate('logoUrl', null);
       } else if (field === 'headerPhotoUrl') {
-        await base44.entities.School.update(school.id, { headerPhotoUrl: null });
+        await School.update(school.id, { headerPhotoUrl: null });
         onUpdate && onUpdate('headerPhotoUrl', null);
       } else if (field === 'gallery') {
         const newGallery = school.photoGallery.filter(u => u !== url);
-        await base44.entities.School.update(school.id, { photoGallery: newGallery });
+        await School.update(school.id, { photoGallery: newGallery });
         onUpdate && onUpdate('photoGallery', newGallery);
       }
       toast.success('Photo removed');
@@ -92,7 +93,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
     }
 
     try {
-      await base44.entities.School.update(school.id, updateData);
+      await School.update(school.id, updateData);
       recalculateScore();
     } catch (error) {
       console.error('Failed to save:', error);

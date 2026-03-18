@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { SchoolClaim, School, User as UserEntity, SchoolAdmin } from '@/lib/entities';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
@@ -18,11 +18,11 @@ export default function AdminClaims() {
     setLoading(true);
     try {
       // Primary query: status:'pending'
-      let rawClaims = await base44.entities.SchoolClaim.filter({ status: 'pending' });
+      let rawClaims = await SchoolClaim.filter({ status: 'pending' });
 
       // Fallback: fetch all and filter client-side for any pending-prefixed status
       if (!rawClaims || rawClaims.length === 0) {
-        const all = await base44.entities.SchoolClaim.list();
+        const all = await SchoolClaim.list();
         rawClaims = all.filter(c => c.status && c.status.startsWith('pending'));
       }
 
@@ -30,8 +30,8 @@ export default function AdminClaims() {
       const enriched = await Promise.all(
         rawClaims.map(async (claim) => {
           const [schools, users] = await Promise.all([
-            base44.entities.School.filter({ id: claim.schoolId }),
-            claim.userId ? base44.entities.User.filter({ id: claim.userId }) : Promise.resolve([]),
+            School.filter({ id: claim.schoolId }),
+            claim.userId ? UserEntity.filter({ id: claim.userId }) : Promise.resolve([]),
           ]);
           return {
             ...claim,
@@ -55,13 +55,13 @@ export default function AdminClaims() {
   const handleApprove = async (claim) => {
     setProcessingId(claim.id);
     try {
-      await base44.entities.SchoolClaim.update(claim.id, { status: 'verified' });
-      await base44.entities.School.update(claim.schoolId, {
+      await SchoolClaim.update(claim.id, { status: 'verified' });
+      await School.update(claim.schoolId, {
         verified: true,
         claimStatus: 'claimed',
         membershipTier: 'basic',
       });
-      await base44.entities.SchoolAdmin.create({
+      await SchoolAdmin.create({
         userId: claim.userId,
         schoolId: claim.schoolId,
         role: 'owner',
@@ -80,7 +80,7 @@ export default function AdminClaims() {
   const handleReject = async (claim) => {
     setProcessingId(claim.id);
     try {
-      await base44.entities.SchoolClaim.update(claim.id, { status: 'rejected' });
+      await SchoolClaim.update(claim.id, { status: 'rejected' });
       setClaims(prev => prev.filter(c => c.id !== claim.id));
       toast.success(`Claim rejected for ${claim._schoolName}`);
     } catch (error) {
