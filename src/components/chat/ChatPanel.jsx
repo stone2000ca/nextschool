@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { Lock } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { School } from '@/lib/entities';
 import { STATES, BRIEF_STATUS } from '../../pages/stateMachineConfig';
 import { Button } from "@/components/ui/button";
 import MessageBubble from '@/components/chat/MessageBubble';
@@ -8,12 +8,11 @@ import ChatInput from '@/components/chat/ChatInput';
 import TypingIndicator from '@/components/chat/TypingIndicator';
 import DeepDiveLoader from '@/components/chat/DeepDiveLoader';
 import DeepDiveConfirmation from '@/components/dialogs/DeepDiveConfirmation';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+import Link from 'next/link';
 
 const CONSULTANT_AVATARS = {
-  Jackie: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/150ea2350_Jackie.jpg',
-  Liam: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/568e5604d_liam.png'
+  Jackie: '/avatars/jackie.jpg',
+  Liam: '/avatars/liam.png'
 };
 
 /**
@@ -97,9 +96,9 @@ const ChatPanel = forwardRef(function ChatPanel({
       onViewSchoolDetail(school);
     } else {
       try {
-        let results = await base44.entities.School.filter({ slug });
+        let results = await School.filter({ slug });
         if (!results || results.length === 0) {
-          results = await base44.entities.School.filter({ name: { $regex: slug.replace(/-/g, ' '), $options: 'i' } });
+          results = await School.filter({ name: { $regex: slug.replace(/-/g, ' '), $options: 'i' } });
         }
         if (results && results.length > 0) {
           onViewSchoolDetail(results[0]);
@@ -170,7 +169,7 @@ const ChatPanel = forwardRef(function ChatPanel({
                   I hope that was helpful! If you have a minute, I'd love to hear how this went for you.
                 </p>
               </div>
-              <Link to={createPageUrl('Feedback')} className="flex-shrink-0">
+              <Link href="/feedback" className="flex-shrink-0">
                 <Button size="sm" variant="outline" className="border-teal-600 text-teal-600 hover:bg-teal-50">
                   Share Feedback
                 </Button>
@@ -181,7 +180,7 @@ const ChatPanel = forwardRef(function ChatPanel({
               <p className="text-sm text-[#E8E8ED] mb-2">
                 I hope that was helpful! If you have a minute, I'd love to hear how this went for you.
               </p>
-              <Link to={createPageUrl('Feedback')} className="block">
+              <Link href="/feedback" className="block">
                 <Button size="sm" variant="outline" className="w-full border-teal-500 text-teal-400 hover:bg-teal-900/50">
                   Share Feedback
                 </Button>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { SchoolInquiry } from '@/lib/entities';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -294,7 +294,7 @@ export default function Inquiries({ schoolId }) {
 
   const loadInquiries = async () => {
     try {
-      const data = await base44.entities.SchoolInquiry.filter({ schoolId });
+      const data = await SchoolInquiry.filter({ schoolId });
       setInquiries(data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (error) {
       console.error('Failed to load inquiries:', error);
@@ -306,7 +306,7 @@ export default function Inquiries({ schoolId }) {
   const handleSendResponse = async (inquiryId) => {
     const responseText = responses[inquiryId];
     if (!responseText?.trim()) return;
-    await base44.entities.SchoolInquiry.update(inquiryId, { response: responseText, status: 'responded' });
+    await SchoolInquiry.update(inquiryId, { response: responseText, status: 'responded' });
     setInquiries(inquiries.map(inq =>
       inq.id === inquiryId ? { ...inq, response: responseText, status: 'responded' } : inq
     ));
@@ -315,12 +315,12 @@ export default function Inquiries({ schoolId }) {
   };
 
   const handleCloseInquiry = async (inquiryId) => {
-    await base44.entities.SchoolInquiry.update(inquiryId, { status: 'closed' });
+    await SchoolInquiry.update(inquiryId, { status: 'closed' });
     setInquiries(inquiries.map(inq => inq.id === inquiryId ? { ...inq, status: 'closed' } : inq));
   };
 
   const handleTourStatusChange = async (inquiryId, newStatus) => {
-    await base44.entities.SchoolInquiry.update(inquiryId, { tourStatus: newStatus });
+    await SchoolInquiry.update(inquiryId, { tourStatus: newStatus });
     setInquiries(inquiries.map(inq => inq.id === inquiryId ? { ...inq, tourStatus: newStatus } : inq));
   };
 

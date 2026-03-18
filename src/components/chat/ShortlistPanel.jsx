@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { X, Heart } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import SchoolDossierCard from '@/components/chat/SchoolDossierCard';

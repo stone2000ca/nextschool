@@ -1,15 +1,16 @@
 // force rebuild
 import { useState, useEffect, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/AuthContext';
+import { School, SchoolClaim, SchoolAdmin, User } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { AlertCircle, CheckCircle2, AlertTriangle, Upload, Loader2, Search, HelpCircle, Lock, Clock } from 'lucide-react';
 import Navbar from '@/components/navigation/Navbar';
 import Footer from '@/components/navigation/Footer';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import Link from 'next/link';
 import { debounce } from 'lodash';
 import DisputeForm from '@/components/claim/DisputeForm';
 
@@ -20,14 +21,15 @@ const STATUS_LABELS = {
 };
 
 export default function ClaimSchool() {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user: authUser, isAuthenticated: authIsAuthenticated, navigateToLogin } = useAuth();
   const [user, setUser] = useState(null);
   const [existingClaim, setExistingClaim] = useState(null);
   const [claimSchoolName, setClaimSchoolName] = useState('');
   const [cancellingClaim, setCancellingClaim] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [schoolId, setSchoolId] = useState(new URLSearchParams(location.search).get('schoolId'));
+  const [schoolId, setSchoolId] = useState(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('schoolId') : null);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [school, setSchool] = useState(null);
@@ -56,7 +58,7 @@ export default function ClaimSchool() {
     setSchoolId(selectedSchoolId);
     setLoading(true);
     setStep(1);
-    navigate(`${createPageUrl('ClaimSchool')}?schoolId=${selectedSchoolId}`);
+    router.push(`/claim-school?schoolId=${selectedSchoolId}`);
   };
 
   const searchSchoolsDebounced = useCallback(
@@ -68,7 +70,7 @@ export default function ClaimSchool() {
       }
       setSearchingSchools(true);
       try {
-        const schools = await base44.entities.School.filter({
+        const schools = await School.filter({
           name: { "$regex": term, "$options": "i" }
         }, null, 50);
         setSearchResults(schools);
@@ -88,19 +90,19 @@ export default function ClaimSchool() {
 
   useEffect(() => {
     const init = async () => {
-      const isAuth = await base44.auth.isAuthenticated();
+      const isAuth = authIsAuthenticated;
       if (!isAuth) {
-        base44.auth.redirectToLogin(location.pathname + location.search);
+        navigateToLogin(pathname + (typeof window !== 'undefined' ? window.location.search : ''));
         return;
       }
-      const userData = await base44.auth.me();
+      const userData = authUser;
       setUser(userData);
 
       // Check if user already has an active claim
-      const claims = await base44.entities.SchoolClaim.filter({ userId: userData.id });
+      const claims = await SchoolClaim.filter({ userId: userData.id });
       const activeClaim = claims.find(c => ['pending_email', 'pending_review', 'verified'].includes(c.status));
       if (activeClaim) {
-        const schools = await base44.entities.School.filter({ id: activeClaim.schoolId });
+        const schools = await School.filter({ id: activeClaim.schoolId });
         setClaimSchoolName(schools[0]?.name || '');
         setExistingClaim(activeClaim);
         setLoading(false);
@@ -118,15 +120,15 @@ export default function ClaimSchool() {
 
   const loadSchool = async () => {
     try {
-      const schools = await base44.entities.School.filter({ id: schoolId });
+      const schools = await School.filter({ id: schoolId });
       if (schools && schools.length > 0) {
         const s = schools[0];
         setSchool(s);
         // Check if already claimed by another user
         if (s.claimStatus === 'claimed') {
-          const admins = await base44.entities.SchoolAdmin.filter({ schoolId: schoolId, role: 'owner', isActive: true });
+          const admins = await SchoolAdmin.filter({ schoolId: schoolId, role: 'owner', isActive: true });
           if (admins.length > 0 && admins[0].userId) {
-            const users = await base44.entities.User.filter({ id: admins[0].userId });
+            const users = await User.filter({ id: admins[0].userId });
             const ownerEmail = users[0]?.email || '';
             const domain = ownerEmail.split('@')[1] || null;
             setAlreadyClaimed({ domain });
@@ -192,7 +194,7 @@ export default function ClaimSchool() {
       const status = emailDomainMatch ? 'pending_email' : 'pending_review';
 
       // Create SchoolClaim record (no code stored client-side)
-      const claim = await base44.entities.SchoolClaim.create({
+      const claim = await SchoolClaim.create({
         schoolId,
         userId: user?.id,
         claimantName: formData.name,
@@ -208,7 +210,7 @@ export default function ClaimSchool() {
       if (emailDomainMatch) {
         setSendingEmail(true);
         try {
-          const emailRes = await base44.functions.invoke('sendClaimEmail', {
+          const emailRes = await invokeFunction('sendClaimEmail', {
             emailType: 'VERIFICATION_CODE',
             claimData: {
               claimantName: formData.name,
@@ -246,7 +248,7 @@ export default function ClaimSchool() {
     setSendingEmail(true);
     setEmailError('');
     try {
-      const emailRes = await base44.functions.invoke('sendClaimEmail', {
+      const emailRes = await invokeFunction('sendClaimEmail', {
         emailType: 'VERIFICATION_CODE',
         claimData: {
           claimantName: formData.name,
@@ -274,7 +276,7 @@ export default function ClaimSchool() {
     setIsVerifying(true);
 
     try {
-      const result = await base44.functions.invoke('verifyClaimCode', { claimId, code: verificationCode });
+      const result = await invokeFunction('verifyClaimCode', { claimId, code: verificationCode });
       const { success, error } = result.data;
 
       if (!success) {
@@ -284,7 +286,7 @@ export default function ClaimSchool() {
 
       // Send approval email (best-effort)
       try {
-        await base44.functions.invoke('sendClaimEmail', {
+        await invokeFunction('sendClaimEmail', {
           emailType: 'CLAIM_APPROVED',
           claimData: {
             claimantName: formData.name,
@@ -316,24 +318,28 @@ export default function ClaimSchool() {
 
     setIsSubmitting(true);
     try {
-      // Upload document
-      const uploadResult = await base44.integrations.Core.UploadFile({ file: documentFile });
+      // Upload document via API route
+      const formData = new FormData();
+      formData.append('file', documentFile);
+      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!uploadRes.ok) throw new Error('Upload failed');
+      const uploadResult = await uploadRes.json();
       const documentUrl = uploadResult.file_url;
 
       // Update claim with document and pending_review status
-      await base44.entities.SchoolClaim.update(claimId, {
+      await SchoolClaim.update(claimId, {
         documentUrl,
         status: 'pending_review'
       });
 
       // Update School claim status to pending
-      await base44.entities.School.update(schoolId, {
+      await School.update(schoolId, {
         claimStatus: 'pending'
       });
 
       // Send document received email
       try {
-        await base44.functions.invoke('sendClaimEmail', {
+        await invokeFunction('sendClaimEmail', {
           emailType: 'DOCUMENT_RECEIVED',
           claimData: {
             claimantName: formData.name,
@@ -362,9 +368,9 @@ export default function ClaimSchool() {
     if (!showCancelConfirm) return;
     setCancellingClaim(true);
     try {
-      await base44.entities.SchoolClaim.update(existingClaim.id, { status: 'cancelled' });
+      await SchoolClaim.update(existingClaim.id, { status: 'cancelled' });
       if (existingClaim.status === 'pending_review') {
-        await base44.entities.School.update(existingClaim.schoolId, { claimStatus: null });
+        await School.update(existingClaim.schoolId, { claimStatus: null });
       }
       setExistingClaim(null);
       setShowCancelConfirm(false);
@@ -440,7 +446,7 @@ export default function ClaimSchool() {
                 <div>
                   <p className="font-medium text-slate-700 mb-1">Don't see your school?</p>
                   <p>
-                    <Link to={createPageUrl('Contact')} className="text-teal-600 hover:underline">Contact us</Link> to have your school added to our database.
+                    <Link href="/contact" className="text-teal-600 hover:underline">Contact us</Link> to have your school added to our database.
                   </p>
                 </div>
               </div>
@@ -481,7 +487,7 @@ export default function ClaimSchool() {
               <p className="text-lg text-slate-700 font-medium mb-2">{claimSchoolName}</p>
               <p className="text-slate-600 mb-8">Your school claim has been verified. You can now manage your school's profile.</p>
               <Button
-                onClick={() => navigate(`${createPageUrl('SchoolAdmin')}?schoolId=${existingClaim.schoolId}`)}
+                onClick={() => router.push(`/school-admin?schoolId=${existingClaim.schoolId}`)}
                 className="bg-teal-600 hover:bg-teal-700 px-8"
               >
                 Go to School Admin
@@ -811,7 +817,7 @@ export default function ClaimSchool() {
                   ? 'You can now manage your school profile and access the admin dashboard.'
                   : 'Your verification document has been submitted. Our team will review it within 24-48 hours.'}
               </p>
-              <Link to={`${createPageUrl('SchoolAdmin')}?schoolId=${schoolId}`}>
+              <Link href={`/school-admin?schoolId=${schoolId}`}>
                 <Button className="bg-teal-600 hover:bg-teal-700 px-8">
                   Go to Admin Dashboard
                 </Button>

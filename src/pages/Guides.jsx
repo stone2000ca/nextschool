@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import Link from 'next/link';
 import Navbar from '@/components/navigation/Navbar';
 import Footer from '@/components/navigation/Footer';
 import { ArrowRight, Clock, Calendar } from 'lucide-react';
@@ -17,7 +16,7 @@ export default function Guides() {
       date: 'February 15, 2026',
       readTime: 8,
       image: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      path: createPageUrl('BlogPost') + '?id=1'
+      path: '/blog?id=1'
     },
     {
       id: 2,
@@ -26,7 +25,7 @@ export default function Guides() {
       date: 'February 8, 2026',
       readTime: 5,
       image: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      path: createPageUrl('BlogPost') + '?id=2'
+      path: '/blog?id=2'
     },
     {
       id: 3,
@@ -35,7 +34,7 @@ export default function Guides() {
       date: 'January 30, 2026',
       readTime: 7,
       image: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      path: createPageUrl('BlogPost') + '?id=3'
+      path: '/blog?id=3'
     }
   ];
 
@@ -58,7 +57,7 @@ export default function Guides() {
             {articles.map((article) => (
               <Link
                 key={article.id}
-                to={article.path}
+                href={article.path}
                 className="group cursor-pointer"
                 onMouseEnter={() => setHoveredCard(article.id)}
                 onMouseLeave={() => setHoveredCard(null)}
@@ -108,7 +107,7 @@ export default function Guides() {
               <p className="text-slate-600 max-w-2xl mx-auto">
                 Let our AI consultant help you explore schools that match your child's unique needs and your family's priorities.
               </p>
-              <Link to={createPageUrl('Consultant')}>
+              <Link href="/consultant">
                 <Button className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 text-lg gap-2">
                   Start Your School Search
                   <ArrowRight className="w-5 h-5" />

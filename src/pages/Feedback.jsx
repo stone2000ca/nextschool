@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { BetaFeedback } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,8 +8,7 @@ import { Card } from '@/components/ui/card';
 import { CheckCircle2, ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/navigation/Navbar';
 import Footer from '@/components/navigation/Footer';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import Link from 'next/link';
 
 export default function Feedback() {
   const [formData, setFormData] = useState({
@@ -34,19 +33,10 @@ export default function Feedback() {
     setIsSubmitting(true);
 
     try {
-      await base44.entities.BetaFeedback.create({
+      await BetaFeedback.create({
         ...formData,
         timestamp: new Date().toISOString(),
         source: 'InApp'
-      });
-
-      // Track feedback submission
-      base44.analytics.track({
-        eventName: 'feedback_submitted',
-        properties: {
-          consultant: formData.consultantUsed,
-          recommendation: formData.wouldYouRecommend
-        }
       });
 
       setSubmitted(true);
@@ -69,7 +59,7 @@ export default function Feedback() {
             <p className="text-slate-600 mb-8">
               Your feedback is incredibly valuable and helps us build a better experience for parents. We truly appreciate you taking the time to share your thoughts.
             </p>
-            <Link to={createPageUrl('Home')}>
+            <Link href="/">
               <Button className="bg-teal-600 hover:bg-teal-700 w-full">
                 Back to Home
               </Button>
@@ -87,7 +77,7 @@ export default function Feedback() {
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
-          <Link to={createPageUrl('Home')} className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-6">
+          <Link href="/" className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-6">
             <ArrowLeft className="h-4 w-4" />
             <span className="text-sm font-medium">Back to Home</span>
           </Link>

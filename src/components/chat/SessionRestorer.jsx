@@ -4,10 +4,12 @@
 
 import { STATES } from '@/pages/stateMachineConfig';
 import { STATES as STATES_FOR_GUEST } from '@/pages/stateMachineConfig';
+import { ChatSession, ChatHistory, SchoolAnalysis, FamilyProfile, School } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 
 export async function restoreSessionFromParam(
   sessionIdParam,
-  base44,
+  _unused,
   isAuthenticated,
   user,
   setSelectedConsultant,
@@ -40,7 +42,7 @@ export async function restoreSessionFromParam(
   try {
     // Fetch ChatSession
     console.log('[RESTORE] Attempting to fetch ChatSession with ID:', sessionIdParam);
-    const chatSession = await base44.entities.ChatSession.get(sessionIdParam);
+    const chatSession = await ChatSession.get(sessionIdParam);
     console.log('[RESTORE] ChatSession fetched:', chatSession ? 'Success' : 'Not found');
     
     if (!chatSession) {
@@ -101,7 +103,7 @@ export async function restoreSessionFromParam(
         }
       }
 
-      const response = await base44.functions.invoke('searchSchools', searchParams);
+      const response = await invokeFunction('searchSchools', searchParams);
       setDebugInfo('location=' + locationArea + ' | city=' + (searchParams.city || 'N/A') + ' grade=' + chatSession.childGrade + ' tuition=' + chatSession.maxTuition + ' | schools=' + (response?.data?.schools?.length || 0));
       restoredSchools = response?.data?.schools || [];
     } catch (err) {
@@ -112,7 +114,7 @@ export async function restoreSessionFromParam(
     // Fetch and restore ChatHistory messages and context
     let chatHistory = null;
     if (chatSession.chatHistoryId) {
-      chatHistory = await base44.entities.ChatHistory.get(chatSession.chatHistoryId);
+      chatHistory = await ChatHistory.get(chatSession.chatHistoryId);
       if (chatHistory?.messages) {
         setMessages(chatHistory.messages);
       }
@@ -146,7 +148,7 @@ export async function restoreSessionFromParam(
         // BUG-RN-PERSIST Fix E: Omit conversationId when falsy to avoid matching empty-string rows
         const restoreFilter = { userId: user.id };
         if (chatHistory?.id) restoreFilter.conversationId = chatHistory.id;
-        const recentAnalyses = await base44.entities.SchoolAnalysis.filter(restoreFilter);
+        const recentAnalyses = await SchoolAnalysis.filter(restoreFilter);
         if (recentAnalyses?.length > 0) {
           // Bug 2: Merge ALL analyses into schoolAnalyses, set most recent as active
           const analysesMap = {};
@@ -196,7 +198,7 @@ export async function restoreSessionFromParam(
     // Fetch and restore FamilyProfile
     let restoredProfile = null;
     if (chatSession.familyProfileId) {
-      restoredProfile = await base44.entities.FamilyProfile.get(chatSession.familyProfileId);
+      restoredProfile = await FamilyProfile.get(chatSession.familyProfileId);
       if (restoredProfile) {
         setFamilyProfile(restoredProfile);
       }
@@ -233,7 +235,7 @@ export async function restoreSessionFromParam(
       } else {
         // School not in search results - fetch full record from entity
         try {
-          const fullSchools = await base44.entities.School.filter({ id: lastDeepDiveSchoolId });
+          const fullSchools = await School.filter({ id: lastDeepDiveSchoolId });
           if (fullSchools && fullSchools.length > 0) {
             setSelectedSchool(fullSchools[0]);
           } else {
@@ -259,7 +261,7 @@ export async function restoreSessionFromParam(
         try { schoolIds = JSON.parse(schoolIds); } catch (_) { schoolIds = []; }
       }
       if (Array.isArray(schoolIds) && schoolIds.length > 0) {
-        const fullSchools = await base44.entities.School.filter({ id: { $in: schoolIds } });
+        const fullSchools = await School.filter({ id: { $in: schoolIds } });
         restoredContext.schools = fullSchools;
         setSchools(fullSchools);
       }
@@ -279,7 +281,7 @@ export async function restoreSessionFromParam(
         try { schoolIds = JSON.parse(schoolIds); } catch (_) { schoolIds = []; }
       }
       if (Array.isArray(schoolIds) && schoolIds.length > 0) {
-        const fullSchools = await base44.entities.School.filter({ id: { $in: schoolIds } });
+        const fullSchools = await School.filter({ id: { $in: schoolIds } });
         restoredContext.schools = fullSchools;
         setSchools(fullSchools);
       }
@@ -315,7 +317,7 @@ export async function restoreSessionFromParam(
  * useDataLoader can repopulate SchoolAnalysis → ResearchNotepad.
  */
 export async function restoreMostRecentConversation(
-  base44,
+  _unused,
   user,
   setMessages,
   setSelectedConsultant,
@@ -336,7 +338,7 @@ export async function restoreMostRecentConversation(
 
   try {
     // 1. Fetch all active conversations for this user, pick the most recent
-    const convos = await base44.entities.ChatHistory.filter({ userId: user.id, isActive: true });
+    const convos = await ChatHistory.filter({ userId: user.id, isActive: true });
     if (!convos || convos.length === 0) {
       console.log('[RESTORE-LATEST] No active conversations found');
       return;
@@ -380,7 +382,7 @@ export async function restoreMostRecentConversation(
       try {
         const latestFilter = { userId: user.id };
         if (latest.id) latestFilter.conversationId = latest.id;
-        const recentAnalyses = await base44.entities.SchoolAnalysis.filter(latestFilter);
+        const recentAnalyses = await SchoolAnalysis.filter(latestFilter);
         if (recentAnalyses?.length > 0) {
           // Bug 2: Merge ALL analyses into schoolAnalyses, set most recent as active
           const analysesMap = {};
@@ -434,7 +436,7 @@ export async function restoreMostRecentConversation(
     // If stored as IDs, fetch full records
     if (Array.isArray(restoredSchools) && restoredSchools.length > 0 && typeof restoredSchools[0] === 'string') {
       try {
-        restoredSchools = await base44.entities.School.filter({ id: { $in: restoredSchools } });
+        restoredSchools = await School.filter({ id: { $in: restoredSchools } });
       } catch (_) { /* keep as-is */ }
     }
     if (restoredSchools.length > 0) setSchools(restoredSchools);
@@ -465,7 +467,7 @@ export async function restoreMostRecentConversation(
         setSelectedSchool(target);
       } else {
         try {
-          const fullSchools = await base44.entities.School.filter({ id: lastDeepDiveSchoolId });
+          const fullSchools = await School.filter({ id: lastDeepDiveSchoolId });
           if (fullSchools?.length > 0) setSelectedSchool(fullSchools[0]);
         } catch (_) { /* best effort */ }
       }
@@ -494,7 +496,7 @@ export async function restoreMostRecentConversation(
   }
 }
 
-export const restoreGuestSession = (isAuthenticated, user, currentConversation, setMessages, setSelectedConsultant, setCurrentConversation, base44) => {
+export const restoreGuestSession = (isAuthenticated, user, currentConversation, setMessages, setSelectedConsultant, setCurrentConversation, _unused) => {
   const guestData = localStorage.getItem('guestConversationData');
   if (!guestData || isAuthenticated) return;
 

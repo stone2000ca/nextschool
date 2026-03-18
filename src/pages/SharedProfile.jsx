@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { useSearchParams } from 'next/navigation';
+import { ChatSession, School as SchoolEntity, User } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
-import { createPageUrl } from '../utils';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { ArrowRight, MapPin, DollarSign, Bookmark } from 'lucide-react';
 import Navbar from '@/components/navigation/Navbar';
 import SchoolCard from '@/components/schools/SchoolCard';
 
 export default function SharedProfile() {
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const shareToken = searchParams.get('token');
   const [session, setSession] = useState(null);
   const [schools, setSchools] = useState([]);
@@ -24,7 +23,7 @@ export default function SharedProfile() {
   const loadSharedProfile = async () => {
     try {
       // Fetch ChatSession by shareToken
-      const sessions = await base44.entities.ChatSession.filter({
+      const sessions = await ChatSession.filter({
         shareToken: shareToken
       });
 
@@ -44,7 +43,7 @@ export default function SharedProfile() {
           const matchedSchoolIds = Array.isArray(matchedIds) ? matchedIds : [];
           
           if (matchedSchoolIds.length > 0) {
-            const schoolData = await base44.entities.School.filter({
+            const schoolData = await SchoolEntity.filter({
               id: { $in: matchedSchoolIds.slice(0, 5) }
             });
             setSchools(schoolData);
@@ -57,11 +56,11 @@ export default function SharedProfile() {
       // Load shortlisted schools if any
       if (chatSession.userId) {
         try {
-          const user = await base44.entities.User.filter({
+          const user = await User.filter({
             id: chatSession.userId
           });
           if (user.length > 0 && user[0].shortlist) {
-            const shortlistedData = await base44.entities.School.filter({
+            const shortlistedData = await SchoolEntity.filter({
               id: { $in: user[0].shortlist }
             });
             setShortlistedSchools(shortlistedData);
@@ -95,7 +94,7 @@ export default function SharedProfile() {
           <div className="text-center max-w-md">
             <h1 className="text-3xl font-bold text-white mb-3">Profile Not Found</h1>
             <p className="text-[#E8E8ED]/70 mb-6">This shared profile link is invalid or has been removed.</p>
-            <Link to={createPageUrl('Consultant')}>
+            <Link href={'/consultant'}>
               <Button className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
                 Start Your Own Search <ArrowRight className="w-4 h-4" />
               </Button>
@@ -221,7 +220,7 @@ export default function SharedProfile() {
           <p className="text-[#E8E8ED]/70 mb-6 max-w-xl mx-auto">
             Find the perfect private school for your child with personalized AI recommendations.
           </p>
-          <Link to={createPageUrl('Consultant')}>
+          <Link href={'/consultant'}>
             <Button className="bg-teal-600 hover:bg-teal-700 text-white gap-2 px-8 py-6 text-lg font-semibold">
               Create Your Profile <ArrowRight className="w-5 h-5" />
             </Button>

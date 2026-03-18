@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import Link from 'next/link';
 import Navbar from '@/components/navigation/Navbar';
 import Footer from '@/components/navigation/Footer';
 import { ArrowLeft, Clock, Calendar } from 'lucide-react';
@@ -215,7 +214,7 @@ const articles = {
           <p className="mb-6 text-teal-50 leading-relaxed">
             Our AI consultant can help you narrow down options based on your child's unique profile. Answer a few questions and get matched with schools that truly fit your family.
           </p>
-          <Link to={createPageUrl('Consultant')}>
+          <Link href={'/consultant'}>
             <Button className="bg-white text-teal-700 hover:bg-teal-50 font-semibold px-6 py-2">
               Start Your Consultation
             </Button>
@@ -256,12 +255,12 @@ const articles = {
             Use our school directory to browse all Toronto schools, compare programs, and create your shortlist. Our AI consultant is here to guide you through the process.
           </p>
           <div className="flex flex-col md:flex-row gap-4">
-            <Link to={createPageUrl('SchoolDirectory')}>
+            <Link href={'/schools'}>
               <Button className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2">
                 Browse School Directory
               </Button>
             </Link>
-            <Link to={createPageUrl('Consultant')}>
+            <Link href={'/consultant'}>
               <Button variant="outline" className="px-6 py-2">
                 Talk to Our Consultant
               </Button>
@@ -326,7 +325,7 @@ export default function BlogPost() {
       {/* Header Banner */}
       <section className="bg-gradient-to-br from-slate-900 to-slate-800 py-16 text-white">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <Link to={createPageUrl('Blog')} className="inline-flex items-center gap-2 text-slate-300 hover:text-white transition-colors mb-6">
+          <Link href={'/guides'} className="inline-flex items-center gap-2 text-slate-300 hover:text-white transition-colors mb-6">
             <ArrowLeft className="w-4 h-4" />
             Back to Guides
           </Link>
@@ -364,7 +363,7 @@ export default function BlogPost() {
             {relatedArticlesList.map((relArticle) => (
               <Link
                 key={relArticle.id}
-                to={relArticle.id === 1 ? createPageUrl('BlogPost') + '?id=1' : createPageUrl('BlogPost') + '?id=' + relArticle.id}
+                href={relArticle.id === 1 ? '/blog?id=1' : '/blog?id=' + relArticle.id}
                 className="group"
               >
                 <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">

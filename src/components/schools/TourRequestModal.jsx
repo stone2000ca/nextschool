@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { TourRequest, SchoolInquiry, FamilyProfile, FamilyJourney, SchoolJourney } from '@/lib/entities';
+import { useAuth } from '@/lib/AuthContext';
+import { invokeFunction } from '@/lib/functions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { X, CheckCircle2, CalendarDays } from 'lucide-react';
 import { EVENT_TYPE_LABELS } from '@/components/utils/eventConstants';
 import { sendSchoolEmail } from '@/components/utils/sendSchoolEmail';
-import FamilyJourney from '@/entities/FamilyJourney';
 
 export default function TourRequestModal({ school, onClose, upcomingEvents = [] }) {
   const [user, setUser] = useState(null);
@@ -24,12 +25,13 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const { user: authUser } = useAuth();
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
-      setForm(f => ({ ...f, childGrade: u?.childGrade ?? '' }));
-    }).catch(() => {});
-  }, []);
+    if (authUser) {
+      setUser(authUser);
+      setForm(f => ({ ...f, childGrade: authUser?.childGrade ?? '' }));
+    }
+  }, [authUser]);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -52,7 +54,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
     // Fetch FamilyProfile for Family Snapshot section in email
     let familyProfile = null;
     try {
-      const profiles = await base44.entities.FamilyProfile.filter({ userId: user.id });
+      const profiles = await FamilyProfile.filter({ userId: user.id });
       if (profiles && profiles.length > 0) {
         familyProfile = profiles[0];
       }
@@ -71,7 +73,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
     ].filter(Boolean).join('\n');
 
     // E29-005-AC7: Create TourRequest entity (primary) for runtime verification
-    const tourRequest = await base44.entities.TourRequest.create({
+    const tourRequest = await TourRequest.create({
       parentUserId: user.id,
       schoolId: school.id,
       requestedAt: new Date().toISOString(),
@@ -96,7 +98,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
     });
 
     // Also create SchoolInquiry for backward compatibility and school notifications
-    const inquiry = await base44.entities.SchoolInquiry.create({
+    const inquiry = await SchoolInquiry.create({
       parentUserId: user.id,
       schoolId: school.id,
       inquiryType: 'tour_request',
@@ -124,26 +126,26 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
     // E29-005: Fire-and-forget — sync tour request to SchoolJourney entity
     ;(async () => {
       try {
-        const me = await base44.auth.me();
+        const me = authUser;
         if (!me?.id) return;
 
-        const journeys = await base44.entities.FamilyJourney.filter({ userId: me.id }, '-updated_date', 1);
+        const journeys = await FamilyJourney.filter({ userId: me.id }, '-updated_date', 1);
         if (!journeys || journeys.length === 0) return;
         const familyJourney = journeys[0];
 
-        const existing = await base44.entities.SchoolJourney.filter({
+        const existing = await SchoolJourney.filter({
           familyJourneyId: familyJourney.id,
           schoolId: school.id,
         });
 
         if (existing && existing.length > 0) {
-          await base44.entities.SchoolJourney.update(existing[0].id, {
+          await SchoolJourney.update(existing[0].id, {
             status: 'touring',
             tourRequestId: inquiry?.id || null,
             tourDate: preferredDate || null,
           });
         } else {
-          await base44.entities.SchoolJourney.create({
+          await SchoolJourney.create({
             familyJourneyId: familyJourney.id,
             schoolId: school.id,
             schoolName: school.name,
@@ -159,7 +161,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         if (familyJourney.currentPhase === 'EVALUATE') {
           try {
             const currentHistory = Array.isArray(familyJourney.phaseHistory) ? familyJourney.phaseHistory : [];
-            await base44.entities.FamilyJourney.update(familyJourney.id, {
+            await FamilyJourney.update(familyJourney.id, {
               currentPhase: 'EXPERIENCE',
               phaseHistory: [...currentHistory, { phase: 'EXPERIENCE', enteredAt: new Date().toISOString() }],
             });
@@ -172,7 +174,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         // E29-013: Generate tour prep brief and store on SchoolJourney
         try {
           // Get the SchoolJourney id we just upserted
-          const sjRecords = await base44.entities.SchoolJourney.filter({
+          const sjRecords = await SchoolJourney.filter({
             familyJourneyId: familyJourney.id,
             schoolId: school.id,
           });
@@ -182,7 +184,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
           // Load family profile for personalization
           let fp = null;
           try {
-            const fps = await base44.entities.FamilyProfile.filter({ userId: me.id });
+            const fps = await FamilyProfile.filter({ userId: me.id });
             fp = fps?.[0] || null;
           } catch (_) {}
 
@@ -208,11 +210,11 @@ List 4 things to observe during the tour that relate to their priorities.
 
 Keep each point to one sentence. Be specific to ${school.name} if possible. No intro paragraph.`;
 
-          const prepResult = await base44.integrations.Core.InvokeLLM({ prompt: prepPrompt });
+          const prepResult = await invokeFunction('invokeLLM', { prompt: prepPrompt });
           const prepText = typeof prepResult === 'string' ? prepResult : (prepResult?.response || prepResult?.text || '');
 
           if (prepText) {
-            await base44.entities.SchoolJourney.update(sjId, {
+            await SchoolJourney.update(sjId, {
               tourPrepContent: prepText,
               tourPrepSent: true,
             });

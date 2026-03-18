@@ -1,7 +1,8 @@
 import { STATES, BRIEF_STATUS } from '@/pages/stateMachineConfig';
 import { validateBriefContent, generateProgrammaticBrief } from '@/components/utils/briefUtils';
 import { extractAndSaveMemories } from '@/components/utils/memoryManager';
-import { base44 } from '@/api/base44Client';
+import { ChatHistory, ChatSession, FamilyJourney, User } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { retryWithBackoff } from '@/components/utils/retryWithBackoff';
 import { useRef, useEffect } from 'react';
 
@@ -52,7 +53,6 @@ export const useMessageHandler = ({
   setShowUpgradeModal,
   trackEvent,
   mapStateToView,
-  createPageUrl,
   activeJourney,
   setActiveJourney,
   // E41: Action dispatch deps for S6/S7/S10
@@ -90,7 +90,7 @@ export const useMessageHandler = ({
     }
     isProcessing = true;
     // Track message sent
-    base44.functions.invoke('trackSessionEvent', {
+    invokeFunction('trackSessionEvent', {
       eventType: 'message_sent',
       consultantName: selectedConsultant,
       sessionId
@@ -187,7 +187,7 @@ export const useMessageHandler = ({
     }
     if (resolvedSchoolId && resolvedSchoolId !== explicitSchoolId) { lastResolvedSchoolId = resolvedSchoolId; }
       // Call orchestrateConversation with current schools context and user location
-      const response = await base44.functions.invoke('orchestrateConversation', {
+      const response = await invokeFunction('orchestrateConversation', {
         message: messageText,
         conversationHistory: messages.slice(-10),
         conversationContext: currentConversation?.conversationContext || {},
@@ -343,7 +343,7 @@ export const useMessageHandler = ({
 
       // E42-PERSIST: Primary conversationContext persist (non-blocking)
       if (typeof conversationIdRef.current === 'string' && conversationIdRef.current) {
-        retryWithBackoff(() => base44.entities.ChatHistory.update(conversationIdRef.current, { conversationContext: updatedContext })).catch(err => console.error('[E42-PERSIST] Primary context save failed:', err));
+        retryWithBackoff(() => ChatHistory.update(conversationIdRef.current, { conversationContext: updatedContext })).catch(err => console.error('[E42-PERSIST] Primary context save failed:', err));
       }
 
       // BUG-DD-001 FIX: selectedSchool is SINGLE SOURCE OF TRUTH - NEVER clear it based on AI state
@@ -431,7 +431,7 @@ export const useMessageHandler = ({
           let chatHistoryRecord = null;
           if ((!currentConversation?.id) && isAuthenticated && user) {
             try {
-              chatHistoryRecord = await base44.entities.ChatHistory.create({
+              chatHistoryRecord = await ChatHistory.create({
                 userId: user.id,
                 title: profileName,
                 messages: updatedMessages,
@@ -461,11 +461,11 @@ export const useMessageHandler = ({
           ;(async () => {
             if (!user?.id) return;
             try {
-              const existingJourneys = await base44.entities.FamilyJourney.filter({ userId: user.id });
+              const existingJourneys = await FamilyJourney.filter({ userId: user.id });
               const activeJourneyList = existingJourneys.filter(j => !j.isArchived);
               if (activeJourneyList.length === 0) {
                 const childName = profileForSession?.childName || 'My Child';
-                const newJourney = await base44.entities.FamilyJourney.create({
+                const newJourney = await FamilyJourney.create({
                   userId: user.id,
                   childName: childName,
                   profileLabel: childName + "'s School Search",
@@ -486,7 +486,7 @@ export const useMessageHandler = ({
                   setActiveJourney(newJourney);
                 }
                 if (chatSession?.id && newJourney?.id) {
-                  base44.entities.ChatSession.update(chatSession.id, { journeyId: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
+                  ChatSession.update(chatSession.id, { journeyId: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
                 }
               } else {
                 console.log('[E29-003] Active FamilyJourney already exists, skipping creation. Journey ID:', activeJourneyList[0].id);
@@ -499,7 +499,7 @@ export const useMessageHandler = ({
             }
           })();
 
-          const chatSession = await base44.entities.ChatSession.create({
+          const chatSession = await ChatSession.create({
             sessionToken: sessionId,
             userId: user?.id,
             familyProfileId: profileForSession?.id || null,
@@ -518,7 +518,7 @@ export const useMessageHandler = ({
 
           // Update URL with entity id (not sessionToken)
           if (chatSession?.id && typeof chatSession.id === 'string') {
-            const newUrl = createPageUrl(`Consultant?sessionId=${chatSession.id}`);
+            const newUrl = `/consultant?sessionId=${chatSession.id}`;
             window.history.replaceState({}, document.title, newUrl);
             console.log('[SESSION] Created ChatSession with id:', chatSession.id);
           } else {
@@ -617,7 +617,7 @@ export const useMessageHandler = ({
         // data survival path. Must run before any other bookkeeping that might throw.
         if (isAuthenticated && typeof currentConversation?.id === 'string' && currentConversation.id.length > 0) {
           try {
-            await retryWithBackoff(() => base44.entities.ChatHistory.update(currentConversation.id, {
+            await retryWithBackoff(() => ChatHistory.update(currentConversation.id, {
               messages: finalMessages,
               conversationContext: updatedContext
             }));
@@ -631,7 +631,7 @@ export const useMessageHandler = ({
 
             if (userMessageCount === 1 && currentConversation.title === 'New Conversation') {
               try {
-                const titleResult = await base44.functions.invoke('generateConversationTitle', {
+                const titleResult = await invokeFunction('generateConversationTitle', {
                   conversationId: currentConversation.id
                 });
                 if (titleResult.data?.title) {
@@ -644,7 +644,7 @@ export const useMessageHandler = ({
             }
 
             if (userMessageCount % 5 === 0) {
-              await base44.functions.invoke('summarizeConversation', {
+              await invokeFunction('summarizeConversation', {
                 conversationId: currentConversation.id
               });
             }
@@ -660,12 +660,17 @@ export const useMessageHandler = ({
           if (isAuthenticated && user && !isPremium) {
             const newTokenBalance = Math.max(0, tokenBalance - 1);
             setTokenBalance(newTokenBalance);
-            await base44.auth.updateMe({ tokenBalance: newTokenBalance });
+            await User.update(user.id, { tokenBalance: newTokenBalance });
           }
 
           // Save AI memories with deduplication and filtering
           if (isAuthenticated && user) {
-            await extractAndSaveMemories(messageText, response.data?.message || '', user, base44);
+            // Pass entity adapters so UserMemory calls work
+            const entityShim = {
+              entities: { UserMemory: (await import('@/lib/entities')).UserMemory },
+              integrations: { Core: { InvokeLLM: () => Promise.resolve({ facts: [] }) } },
+            };
+            await extractAndSaveMemories(messageText, response.data?.message || '', user, entityShim);
           }
         } catch (err) {
           console.error('[BOOKKEEPING] Non-fatal error:', err);

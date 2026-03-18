@@ -7,8 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Save, Eye, X, CheckCircle2, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { createPageUrl } from '../../utils';
+import { Testimonial } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 
 // =============================================================================
 // Inline ring chart (weighted score only)
@@ -219,7 +219,7 @@ function ImageUploadField({ label, field, hint, formData, onChange }) {
     setUploadProgress(10);
     const interval = setInterval(() => setUploadProgress(p => Math.min(p + 10, 90)), 100);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await invokeFunction('uploadFile', { file });
       clearInterval(interval);
       setUploadProgress(100);
       onChange(field, file_url);
@@ -277,7 +277,7 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
     setDirtyFields({});
     setVerifiedFields(school?.verifiedFields || {});
     if (school?.id) {
-      base44.entities.Testimonial.filter({ schoolId: school.id })
+      Testimonial.filter({ schoolId: school.id })
         .then(list => setTestimonialCount(list.length))
         .catch(() => {});
     }
@@ -596,7 +596,7 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
               <span>Saved</span>
             </div>
           )}
-          <a href={createPageUrl(`SchoolProfile?id=${school.id}`)} target="_blank" rel="noopener noreferrer">
+          <a href={`/school?id=${school.id}`} target="_blank" rel="noopener noreferrer">
             <Button variant="outline"><Eye className="h-4 w-4 mr-2" />Preview</Button>
           </a>
           <div className="relative group">

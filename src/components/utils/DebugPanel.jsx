@@ -1,6 +1,6 @@
 // E18c-001 / E18c-003
 import { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { EmailLog, LLMLog } from '@/lib/entities';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 // E18c-001: Read-only debug panel, shown only when ?debug=true
@@ -42,7 +42,7 @@ export default function DebugPanel({ debugState }) {
     if (emailLogs !== null) return; // already fetched
     setLoadingLogs(true);
     try {
-      const logs = await base44.entities.EmailLog.filter({ is_test: true });
+      const logs = await EmailLog.filter({ is_test: true });
       setEmailLogs(logs);
     } catch (e) {
       console.error('[E18c-001] Failed to fetch EmailLog:', e);
@@ -58,8 +58,8 @@ export default function DebugPanel({ debugState }) {
     try {
       const conversationId = debugState?.conversationContext?.conversationId;
       const logs = conversationId
-        ? await base44.entities.LLMLog.filter({ conversationId: conversationId }, '-createdAt', 100)
-        : await base44.entities.LLMLog.list('-createdAt', 50);
+        ? await LLMLog.filter({ conversationId: conversationId }, '-createdAt', 100)
+        : await LLMLog.list('-createdAt', 50);
       setLlmLogs(logs);
     } catch (e) {
       console.error('[WC7] Failed to fetch LLMLog:', e);

@@ -9,7 +9,7 @@ export default function ConsultantSelection({ onSelectConsultant }) {
       tagline: 'Empathetic, encouraging, and emotionally attuned',
       description: 'Jackie excels at understanding family dynamics and emotional needs. She validates concerns, celebrates strengths, and makes families feel truly heard throughout the school search journey.',
       color: 'from-rose-500 to-pink-500',
-      avatar: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/150ea2350_Jackie.jpg',
+      avatar: '/avatars/jackie.jpg',
       isImage: true
     },
     {
@@ -18,7 +18,7 @@ export default function ConsultantSelection({ onSelectConsultant }) {
       tagline: 'Data-driven, efficient, and results-oriented',
       description: 'Liam cuts through the noise with clear analysis and strategic recommendations. He focuses on matching your priorities with school data and gets you to the best fit quickly.',
       color: 'from-blue-500 to-cyan-500',
-      avatar: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699717aa28903550c09d4d26/568e5604d_liam.png',
+      avatar: '/avatars/liam.png',
       isImage: true
     }
   ];

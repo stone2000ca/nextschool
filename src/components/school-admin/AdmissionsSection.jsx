@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { School } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar, Plus, X, Loader2 } from 'lucide-react';
@@ -41,7 +41,7 @@ export default function AdmissionsSection({ school, onUpdate }) {
     setSavingField(field);
     try {
       const updateData = { [field]: value };
-      await base44.entities.School.update(school.id, updateData);
+      await School.update(school.id, updateData);
       onUpdate && onUpdate(field, value);
       setTimeout(() => setSavingField(null), 1500);
     } catch (error) {

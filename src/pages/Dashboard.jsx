@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/AuthContext';
+import { ChatSession, ChatHistory } from '@/lib/entities';
 import Navbar from '@/components/navigation/Navbar';
 import SchoolSearchProfile from '@/components/dashboard/SchoolSearchProfile.jsx';
 import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
@@ -9,7 +9,8 @@ import { Plus, Settings, X, AlertCircle, Crown, CheckCircle, Trash2 } from 'luci
 import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const { user: authUser, isAuthenticated: authIsAuthenticated, navigateToLogin } = useAuth();
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,7 @@ export default function Dashboard() {
     if (params.get('upgrade') === 'success') {
       setShowUpgradeSuccess(true);
       // Clean up URL param
-      window.history.replaceState({}, document.title, createPageUrl('Dashboard'));
+      window.history.replaceState({}, document.title, '/dashboard');
     }
   }, []);
 
@@ -40,20 +41,20 @@ export default function Dashboard() {
 
   const checkAuthAndLoadSessions = async () => {
     try {
-      const authenticated = await base44.auth.isAuthenticated();
+      const authenticated = authIsAuthenticated;
       setIsAuthenticated(authenticated);
 
       if (!authenticated) {
         // Redirect to login
-        base44.auth.redirectToLogin(window.location.pathname);
+        navigateToLogin(window.location.pathname);
         return;
       }
 
-      const userData = await base44.auth.me();
+      const userData = authUser;
       setUser(userData);
 
       // Fetch ChatSession records for this user
-      const chatSessions = await base44.entities.ChatSession.filter({
+      const chatSessions = await ChatSession.filter({
         userId: userData.id
       });
       
@@ -75,7 +76,7 @@ export default function Dashboard() {
     // WC8: Case 1 (free user with 0 sessions) - navigate directly
     const activeSessions = sessions.filter(s => s.status === 'active');
     if (activeSessions.length === 0) {
-      navigate(createPageUrl('Consultant'));
+      router.push('/consultant');
       return;
     }
 
@@ -98,7 +99,7 @@ export default function Dashboard() {
 
     // WC14: Case 3 (paid user under 5 active sessions) - navigate directly
     if (activeSessions.length < 5) {
-      navigate(createPageUrl('Consultant'));
+      router.push('/consultant');
       return;
     }
 
@@ -109,11 +110,11 @@ export default function Dashboard() {
   const handleArchiveSessionForNewSearch = async (sessionToArchive) => {
     setModalLoading(true);
     try {
-      await base44.entities.ChatSession.update(sessionToArchive.id, { status: 'archived' });
+      await ChatSession.update(sessionToArchive.id, { status: 'archived' });
       setShowArchiveChoiceModal(false);
       // Refresh sessions
       await checkAuthAndLoadSessions();
-      navigate(createPageUrl('Consultant'));
+      router.push('/consultant');
     } catch (err) {
       console.error('Failed to archive session:', err);
     } finally {
@@ -131,7 +132,7 @@ export default function Dashboard() {
     }
 
     try {
-      await base44.entities.ChatSession.update(archivedSession.id, { status: 'active' });
+      await ChatSession.update(archivedSession.id, { status: 'active' });
       setReactivateError(null);
       await checkAuthAndLoadSessions();
     } catch (err) {
@@ -150,10 +151,10 @@ export default function Dashboard() {
     try {
       // Cascade delete: Remove associated ChatHistory
       if (sessionToDelete.chatHistoryId) {
-        await base44.entities.ChatHistory.delete(sessionToDelete.chatHistoryId);
+        await ChatHistory.delete(sessionToDelete.chatHistoryId);
       }
       // Delete the session
-      await base44.entities.ChatSession.update(sessionToDelete.id, { 
+      await ChatSession.update(sessionToDelete.id, { 
         status: 'deleted',
         isActive: false 
       });
@@ -165,24 +166,24 @@ export default function Dashboard() {
 
   const handleStartOver = async () => {
     if (sessions.length === 0) {
-      navigate(createPageUrl('Consultant'));
+      router.push('/consultant');
       return;
     }
 
     // Archive the first (most recent) active session
     const activeSession = sessions.find(s => s.status === 'active');
     if (!activeSession) {
-      navigate(createPageUrl('Consultant'));
+      router.push('/consultant');
       return;
     }
 
     setModalLoading(true);
     try {
-      await base44.entities.ChatSession.update(activeSession.id, { status: 'archived' });
+      await ChatSession.update(activeSession.id, { status: 'archived' });
       setShowNewSearchModal(false);
       // Refresh sessions
       await checkAuthAndLoadSessions();
-      navigate(createPageUrl('Consultant'));
+      router.push('/consultant');
     } catch (err) {
       console.error('Failed to archive session:', err);
     } finally {
@@ -206,13 +207,13 @@ export default function Dashboard() {
     await Promise.all(toProcess.map(async (s) => {
       if (isArchivingActive) {
         // Archive active sessions — soft archive only
-        return base44.entities.ChatSession.update(s.id, { status: 'archived' });
+        return ChatSession.update(s.id, { status: 'archived' });
       } else {
         // Permanently delete archived sessions + their chat history
         if (s.chatHistoryId) {
-          await base44.entities.ChatHistory.delete(s.chatHistoryId);
+          await ChatHistory.delete(s.chatHistoryId);
         }
-        return base44.entities.ChatSession.update(s.id, { status: 'deleted', isActive: false });
+        return ChatSession.update(s.id, { status: 'deleted', isActive: false });
       }
     }));
   };

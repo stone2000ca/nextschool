@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { SchoolEvent } from '@/lib/entities';
 import { CalendarDays, Bell, BellRing } from 'lucide-react';
 import { EVENT_TYPE_LABELS } from '@/components/utils/eventConstants';
 
@@ -39,7 +39,7 @@ export default function ApplicationTimeline({ shortlist }) {
       try {
         const results = await Promise.all(
           shortlist.map(school =>
-            base44.entities.SchoolEvent.filter({ schoolId: school.id, isActive: true })
+            SchoolEvent.filter({ schoolId: school.id, isActive: true })
               .then(evs =>
                 evs
                   .filter(e => e.date && e.date >= today)

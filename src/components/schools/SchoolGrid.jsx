@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import SchoolCard from './SchoolCard';
 import { ChevronDown, ChevronUp, Pin, GitCompareArrows, Share2, Check, Copy, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { SchoolEvent } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 
 // =============================================================================
 // T-RES-003: Tiered SchoolGrid
@@ -81,7 +82,7 @@ function PinnedShortlistSection({ shortlistedSchools, onViewDetails, onToggleSho
     try {
       const schoolIds = shortlistedSchools.map(s => s.id);
       const familyProfileId = familyProfile?.id || null;
-      const result = await base44.functions.invoke('generateSharedShortlistLink', { familyProfileId, schoolIds });
+      const result = await invokeFunction('generateSharedShortlistLink', { familyProfileId, schoolIds });
       const url = result.data?.shareUrl;
       if (url) setShareUrl(url);
     } catch (e) {
@@ -217,7 +218,7 @@ export default function SchoolGrid({
   useEffect(() => {
     if (!allSchoolIdsKey) return;
     const today = new Date().toISOString();
-    base44.entities.SchoolEvent.filter({ isActive: true })
+    SchoolEvent.filter({ isActive: true })
       .then(events => {
         const upcoming = new Set(
           events.filter(e => e.date && e.date >= today).map(e => e.schoolId)

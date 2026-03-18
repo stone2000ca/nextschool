@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getShortlistNudge } from '@/components/utils/shortlistNudges';
 import { STATES } from '@/pages/stateMachineConfig';
-import { base44 } from '@/api/base44Client';
+import { ChatShortlist, School, SchoolJourney, FamilyJourney } from '@/lib/entities';
 
 export function useShortlist({
   user, setUser, isAuthenticated, schools, currentState,
@@ -21,12 +21,12 @@ export function useShortlist({
     const jid = journeyId || activeJourney?.journeyId;
     if (!jid) return;
     try {
-      const records = await base44.entities.ChatShortlist.filter({ familyJourneyId: jid });
+      const records = await ChatShortlist.filter({ familyJourneyId: jid });
       if (records.length === 0) {
         return;
       }
       const schoolIds = records.map(r => r.schoolId).filter(Boolean);
-      const schools = await base44.entities.School.filter({ id: { $in: schoolIds } });
+      const schools = await School.filter({ id: { $in: schoolIds } });
       setShortlistData(schools);
     } catch (error) {
       console.error('Failed to load shortlist:', error);
@@ -56,7 +56,7 @@ export function useShortlist({
 
       if (!school && !isRemoving) {
         try {
-          const fetched = await base44.entities.School.filter({ id: schoolId });
+          const fetched = await School.filter({ id: schoolId });
           school = fetched?.[0] || null;
         } catch (e) {
           console.error('[SHORTLIST] Failed to fetch school for toggle:', e.message);
@@ -68,9 +68,9 @@ export function useShortlist({
         setRemovedSchoolIds(prev => [...prev, schoolId]);
         // Remove from ChatShortlist
         if (activeJourney?.journeyId) {
-          const existing = await base44.entities.ChatShortlist.filter({ familyJourneyId: activeJourney.journeyId, schoolId });
+          const existing = await ChatShortlist.filter({ familyJourneyId: activeJourney.journeyId, schoolId });
           for (const rec of existing) {
-            await base44.entities.ChatShortlist.delete(rec.id);
+            await ChatShortlist.delete(rec.id);
           }
         }
       } else {
@@ -78,7 +78,7 @@ export function useShortlist({
         if (school) setShortlistData(prev => [...prev, school]);
         // Add to ChatShortlist
         if (activeJourney?.journeyId) {
-          await base44.entities.ChatShortlist.create({
+          await ChatShortlist.create({
             familyJourneyId: activeJourney.journeyId,
             schoolId,
             addedAt: new Date().toISOString(),
@@ -94,15 +94,15 @@ export function useShortlist({
           if (!familyJourney) return;
 
           if (isRemoving) {
-            const existing = await base44.entities.SchoolJourney.filter({
+            const existing = await SchoolJourney.filter({
               familyJourneyId: familyJourney.journeyId,
               schoolId: schoolId,
             });
             if (existing.length > 0) {
-              await base44.entities.SchoolJourney.update(existing[0].id, { status: 'removed' });
+              await SchoolJourney.update(existing[0].id, { status: 'removed' });
             }
           } else {
-            await base44.entities.SchoolJourney.create({
+            await SchoolJourney.create({
               familyJourneyId: familyJourney.journeyId,
               schoolId: school?.id || schoolId,
               schoolName: school?.name || '',
@@ -115,7 +115,7 @@ export function useShortlist({
           if (!isRemoving && familyJourney.currentPhase === 'MATCH') {
             try {
               const currentHistory = Array.isArray(familyJourney.phaseHistory) ? familyJourney.phaseHistory : [];
-              await base44.entities.FamilyJourney.update(familyJourney.journeyId, {
+              await FamilyJourney.update(familyJourney.journeyId, {
                 currentPhase: 'EVALUATE',
                 phaseHistory: [...currentHistory, { phase: 'EVALUATE', enteredAt: new Date().toISOString() }],
               });

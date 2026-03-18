@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { User } from '@/lib/entities';
 import { Shield, LayoutDashboard, Building2, Users, ClipboardCheck, BarChart3, PlusSquare, ShieldAlert } from 'lucide-react';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminSchools from '@/components/admin/AdminSchools';
@@ -14,14 +15,16 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState('dashboard');
 
+  const { user: authUser } = useAuth();
+
   useEffect(() => {
     checkAdmin();
   }, []);
 
   const checkAdmin = async () => {
     try {
-      const userData = await base44.auth.me();
-      const users = await base44.entities.User.filter({ email: userData.email });
+      const userData = authUser;
+      const users = await User.filter({ email: userData.email });
       const userRecord = users?.[0];
 
       if (!userRecord || userRecord.role !== 'admin') {

@@ -1,7 +1,6 @@
 import Navbar from "@/components/navigation/Navbar";
 import Footer from "@/components/navigation/Footer";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "../utils";
+import Link from 'next/link';
 import { AlertCircle } from "lucide-react";
 
 export default function Terms() {
@@ -179,7 +178,7 @@ export default function Terms() {
                   <a href="mailto:legal@nextschool.ca" className="hover:underline">legal@nextschool.ca</a>
                 </p>
                 <p className="text-slate-900 font-semibold mb-2">Questions or Feedback?</p>
-                <Link to={createPageUrl('Contact')} className="text-teal-600 hover:underline">
+                <Link href="/contact" className="text-teal-600 hover:underline">
                   Visit our Contact Page
                 </Link>
               </div>

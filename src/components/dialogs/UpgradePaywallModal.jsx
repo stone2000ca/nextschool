@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Share2, Grid3x3, Bell, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { invokeFunction } from '@/lib/functions';
 
 const variantConfig = {
   GENERAL: {
@@ -71,7 +70,7 @@ export default function UpgradePaywallModal({
   onStartOver,
   profileData = {}
 }) {
-  const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const config = variantConfig[variant] || variantConfig.SHARE;
   const Icon = config.icon;
@@ -82,8 +81,8 @@ export default function UpgradePaywallModal({
     if (action === 'upgrade') {
       setIsLoading(true);
       try {
-        const user = await base44.auth.me();
-        const response = await base44.functions.invoke('createCheckoutSession', {
+        const user = authUser;
+        const response = await invokeFunction('createCheckoutSession', {
           userId: user.id,
           priceId: 'price_pro_monthly'
         });

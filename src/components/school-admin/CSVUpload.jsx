@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { School } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, Download, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -47,7 +48,7 @@ export default function CSVUpload({ school, onUpdate }) {
 
     try {
       // Upload file
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await invokeFunction('uploadFile', { file });
 
       // Extract data with expected schema
       const schema = {
@@ -63,7 +64,7 @@ export default function CSVUpload({ school, onUpdate }) {
         }
       };
 
-      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      const result = await invokeFunction('extractDataFromUploadedFile', {
         file_url,
         json_schema: schema
       });
@@ -85,7 +86,7 @@ export default function CSVUpload({ school, onUpdate }) {
     if (!preview) return;
 
     try {
-      await base44.entities.School.update(school.id, preview);
+      await School.update(school.id, preview);
       setUploadResult({ type: 'success', message: 'Profile updated successfully!' });
       setPreview(null);
       onUpdate();

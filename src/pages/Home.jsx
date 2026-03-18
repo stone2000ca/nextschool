@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageSquare, Zap, BarChart3, CheckCircle2 } from "lucide-react";
-import { createPageUrl } from "../utils";
-import { Link } from "react-router-dom";
+import Link from 'next/link';
 import Navbar from "@/components/navigation/Navbar";
-import { base44 } from '@/api/base44Client';
+import { invokeFunction } from '@/lib/functions';
+import { School } from '@/lib/entities';
 import SchoolCardUnified from '@/components/schools/SchoolCardUnified';
 
 export default function Home() {
@@ -14,7 +14,7 @@ export default function Home() {
 
   useEffect(() => {
     // Track page view
-    base44.functions.invoke('trackSessionEvent', {
+    invokeFunction('trackSessionEvent', {
       eventType: 'page_view',
       sessionId,
       metadata: { page: 'Home' }
@@ -82,7 +82,7 @@ export default function Home() {
   const loadFeaturedSchools = async () => {
     try {
       const featuredNames = ["Havergal College", "Upper Canada College", "Branksome Hall", "Crescent School"];
-      const data = await base44.entities.School.filter({
+      const data = await School.filter({
         name: { "$in": featuredNames }
       });
       setSchools(data.slice(0, 4));
@@ -131,7 +131,7 @@ export default function Home() {
           <p className="text-lg sm:text-xl lg:text-2xl text-slate-200 mb-8 sm:mb-10 max-w-3xl mx-auto font-light">
             Tell us what matters to your family, and we'll narrow hundreds of options down to the few that actually fit.
           </p>
-          <Link to={createPageUrl('Consultant')}>
+          <Link href="/consultant">
             <Button 
               size="lg" 
               className="bg-teal-500 hover:bg-teal-600 text-white px-6 sm:px-8 py-5 sm:py-7 text-base sm:text-lg focus:ring-2 focus:ring-teal-400 focus:ring-offset-2"
@@ -219,7 +219,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 sm:mb-12 gap-4">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900">Featured Schools</h2>
-            <Link to={createPageUrl('SchoolDirectory')}>
+            <Link href="/schools">
               <Button 
                 variant="outline" 
                 className="text-teal-600 border-teal-600 hover:bg-teal-50 w-full sm:w-auto focus:ring-2 focus:ring-teal-400"
@@ -248,7 +248,7 @@ export default function Home() {
               {schools.map((school) => (
                 <Link 
                   key={school.id} 
-                  to={`${createPageUrl('SchoolProfile')}?id=${school.id}`}
+                  href={`/school?id=${school.id}`}
                   className="block focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 rounded-lg"
                 >
                   <SchoolCardUnified school={school} />
@@ -268,7 +268,7 @@ export default function Home() {
           <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
             Claim your free profile on NextSchool. Control how families discover your school.
           </p>
-          <Link to={`${createPageUrl('ClaimSchool')}?schoolId=`}>
+          <Link href="/claim-school?schoolId=">
             <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-7 text-lg">
               Claim Your School
               <ArrowRight className="ml-2 h-5 w-5" />

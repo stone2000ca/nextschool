@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Check, Heart, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { School } from '@/lib/entities';
 
-export default function AddSchoolPanel({ onClose, onToggleShortlist, shortlistedIds, base44 }) {
+export default function AddSchoolPanel({ onClose, onToggleShortlist, shortlistedIds }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +18,7 @@ export default function AddSchoolPanel({ onClose, onToggleShortlist, shortlisted
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const found = await base44.entities.School.filter(
+        const found = await School.filter(
           { name: { $regex: query, $options: 'i' } },
           'name',
           10

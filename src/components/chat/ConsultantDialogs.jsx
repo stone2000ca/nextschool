@@ -1,9 +1,8 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
-import { createPageUrl } from "../../utils";
+import Link from "next/link";
+import { useAuth } from '@/lib/AuthContext';
 import LoginGateModal from "@/components/dialogs/LoginGateModal";
 import UpgradePaywallModal from "@/components/dialogs/UpgradePaywallModal";
 import DebugPanel from "@/components/utils/DebugPanel";
@@ -26,6 +25,7 @@ export default function ConsultantDialogs({
   deepDiveAnalysis, actionPlan, visitPrepKit, fitReEvaluation, journeySteps, selectedSchool, schoolsWithDeepDive,
   hydrationSource,
 }) {
+  const { navigateToLogin } = useAuth();
   return (
     <>
       {/* 1. Delete Conversation Dialog */}
@@ -65,7 +65,7 @@ export default function ConsultantDialogs({
               onClick={() => {
                 setArchiveConfirmOpen(false);
                 setPendingNewConversation(false);
-                window.location.href = createPageUrl('Dashboard');
+                window.location.href = '/dashboard';
               }}
               variant="outline"
             >
@@ -97,13 +97,13 @@ export default function ConsultantDialogs({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             {isAuthenticated ? (
-              <Link to={createPageUrl('Pricing')}>
+              <Link href="/pricing">
                 <AlertDialogAction className="bg-teal-600 hover:bg-teal-700">Upgrade Plan</AlertDialogAction>
               </Link>
             ) : (
               <AlertDialogAction
                 className="bg-teal-600 hover:bg-teal-700"
-                onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
+                onClick={() => navigateToLogin(window.location.pathname)}
               >
                 Sign In
               </AlertDialogAction>
@@ -155,13 +155,13 @@ export default function ConsultantDialogs({
               {!isAuthenticated && (
                 <Button
                   className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-6"
-                  onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
+                  onClick={() => navigateToLogin(window.location.pathname)}
                 >
                   Sign In
                 </Button>
               )}
               {isAuthenticated && (
-                <Link to={createPageUrl('Pricing')}>
+                <Link href="/pricing">
                   <Button className="w-full bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white font-semibold py-6 shadow-lg">
                     <Sparkles className="h-5 w-5 mr-2" />
                     Upgrade Plan

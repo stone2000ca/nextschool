@@ -7,7 +7,7 @@
  * E18a-002: queryEntityExcludingTests
  * Wraps entity.filter() and automatically appends is_test: false filter by default.
  *
- * @param {Object} entityRef - Base44 entity reference (e.g., base44.entities.EmailLog)
+ * @param {Object} entityRef - Entity reference (e.g., EmailLog from '@/lib/entities')
  * @param {Object} filterParams - Filter parameters object (default: {})
  * @param {Object} options - Query options
  * @param {boolean} options.include_test - If true, skip the is_test filter (default: false)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+// Analytics data is currently mocked
 import { Card } from '@/components/ui/card';
 import { Eye, Heart, Mail, TrendingUp } from 'lucide-react';
 

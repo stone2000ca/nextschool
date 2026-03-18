@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { User, ChatHistory, TokenTransaction } from '@/lib/entities';
 import { Card } from '@/components/ui/card';
 import { TrendingUp, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -14,18 +14,18 @@ export default function AdminAnalytics() {
 
   const loadAnalytics = async () => {
     try {
-      const users = await base44.entities.User.list('-createdAt');
+      const users = await User.list('-createdAt');
 
       let conversations = [];
       try {
-        conversations = await base44.entities.ChatHistory.list('-createdAt');
+        conversations = await ChatHistory.list('-createdAt');
       } catch (e) {
         console.error('Failed to load ChatHistory:', e);
       }
 
       let transactions = [];
       try {
-        transactions = await base44.entities.TokenTransaction.list('-createdAt', 1000);
+        transactions = await TokenTransaction.list('-createdAt', 1000);
       } catch (e) {
         console.error('Failed to load TokenTransaction:', e);
       }

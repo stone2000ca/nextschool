@@ -3,7 +3,7 @@ import { X, Plus, Trash2, Edit2, Save, Brain, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { base44 } from '@/api/base44Client';
+import { Notes, UserMemory, FamilyProfile, ChatHistory } from '@/lib/entities';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function NotesPanel({ userId, onClose }) {
@@ -21,7 +21,7 @@ export default function NotesPanel({ userId, onClose }) {
 
   const loadNotes = async () => {
     try {
-      const userNotes = await base44.entities.Notes.filter({ userId });
+      const userNotes = await Notes.filter({ userId });
       setNotes(userNotes);
     } catch (error) {
       console.error('Failed to load notes:', error);
@@ -30,7 +30,7 @@ export default function NotesPanel({ userId, onClose }) {
 
   const loadMemories = async () => {
     try {
-      const userMemories = await base44.entities.UserMemory.filter({ userId });
+      const userMemories = await UserMemory.filter({ userId });
       if (userMemories.length > 0) {
         setMemories(userMemories[0].memories || []);
       }
@@ -42,7 +42,7 @@ export default function NotesPanel({ userId, onClose }) {
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
     try {
-      await base44.entities.Notes.create({
+      await Notes.create({
         userId,
         content: newNote
       });
@@ -55,7 +55,7 @@ export default function NotesPanel({ userId, onClose }) {
 
   const handleDeleteNote = async (noteId) => {
     try {
-      await base44.entities.Notes.delete(noteId);
+      await Notes.delete(noteId);
       loadNotes();
     } catch (error) {
       console.error('Failed to delete note:', error);
@@ -64,7 +64,7 @@ export default function NotesPanel({ userId, onClose }) {
 
   const handleEditNote = async (noteId) => {
     try {
-      await base44.entities.Notes.update(noteId, { content: editContent });
+      await Notes.update(noteId, { content: editContent });
       setEditingId(null);
       loadNotes();
     } catch (error) {
@@ -75,21 +75,21 @@ export default function NotesPanel({ userId, onClose }) {
   const handleClearMemory = async () => {
     try {
       // Delete all UserMemory records
-      const userMemories = await base44.entities.UserMemory.filter({ userId });
+      const userMemories = await UserMemory.filter({ userId });
       if (userMemories.length > 0) {
-        await base44.entities.UserMemory.delete(userMemories[0].id);
+        await UserMemory.delete(userMemories[0].id);
       }
 
       // Delete all FamilyProfile records
-      const familyProfiles = await base44.entities.FamilyProfile.filter({ userId });
+      const familyProfiles = await FamilyProfile.filter({ userId });
       for (const profile of familyProfiles) {
-        await base44.entities.FamilyProfile.delete(profile.id);
+        await FamilyProfile.delete(profile.id);
       }
 
       // Delete all ChatHistory records
-      const chatHistories = await base44.entities.ChatHistory.filter({ userId });
+      const chatHistories = await ChatHistory.filter({ userId });
       for (const chat of chatHistories) {
-        await base44.entities.ChatHistory.delete(chat.id);
+        await ChatHistory.delete(chat.id);
       }
 
       setMemories([]);

@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Check, HelpCircle } from "lucide-react";
-import { createPageUrl } from "../utils";
-import { Link } from "react-router-dom";
+import Link from 'next/link';
 import { useState } from "react";
 import Navbar from "@/components/navigation/Navbar";
 import Footer from "@/components/navigation/Footer";
@@ -73,7 +72,7 @@ export default function Pricing() {
                 <span className="text-5xl font-bold text-teal-600">$0</span>
                 <span className="text-slate-600 ml-2">/month</span>
               </div>
-              <Link to={createPageUrl('Consultant')}>
+              <Link href="/consultant">
                 <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 mb-8">
                   Start Free Consultation
                 </Button>
@@ -151,7 +150,7 @@ export default function Pricing() {
           <p className="text-xl text-slate-700 mb-8">
             Your free consultation is waiting. No credit card required.
           </p>
-          <Link to={createPageUrl('Consultant')}>
+          <Link href="/consultant">
             <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-7 text-lg">
               Start Your Free Consultation
               <ArrowRight className="ml-2 h-5 w-5" />

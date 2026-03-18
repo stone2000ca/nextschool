@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import Link from 'next/link';
 import { Search, Building2, ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
-import { createPageUrl } from "@/utils";
+import { School } from '@/lib/entities';
 import Navbar from "@/components/navigation/Navbar";
 
 // --- T-SP-006: Fuzzy normalization helpers ---
@@ -54,7 +53,7 @@ export default function Portal() {
     setLoading(true);
     try {
       // Fetch a broad set and score client-side for fuzzy matching
-      const allSchools = await base44.entities.School.list("-updated_date", 500);
+      const allSchools = await School.list("-updated_date", 500);
       const norm = normalize(q);
       const scored = allSchools
         .filter(s => {
@@ -149,7 +148,7 @@ export default function Portal() {
                         </p>
                       </div>
                     </div>
-                    <Link to={createPageUrl(`ClaimSchool`) + `?schoolId=${school.id}`}>
+                    <Link href={`/claim-school?schoolId=${school.id}`}>
                       <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white flex-shrink-0 ml-3">
                         Claim
                         <ArrowRight className="h-3.5 w-3.5" />
@@ -166,7 +165,7 @@ export default function Portal() {
                 <p className="text-slate-600 mb-4">
                   We couldn't find <span className="font-semibold text-slate-900">"{query}"</span> in our directory.
                 </p>
-                <Link to={createPageUrl("SubmitSchool") + `?name=${encodeURIComponent(query)}`}>
+                <Link href={`/submit-school?name=${encodeURIComponent(query)}`}>
                   <Button className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
                     <Plus className="h-4 w-4" />
                     Add Your School
@@ -180,7 +179,7 @@ export default function Portal() {
           {!searched && (
             <p className="mt-6 text-sm text-slate-400">
               Already claimed?{" "}
-              <Link to={createPageUrl("SchoolAdmin")} className="text-teal-600 hover:underline">
+              <Link href="/school-admin" className="text-teal-600 hover:underline">
                 Go to your dashboard
               </Link>
             </p>
