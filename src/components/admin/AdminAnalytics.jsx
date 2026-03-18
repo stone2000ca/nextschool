@@ -14,18 +14,18 @@ export default function AdminAnalytics() {
 
   const loadAnalytics = async () => {
     try {
-      const users = await User.list('-createdDate');
+      const users = await User.list('-createdAt');
 
       let conversations = [];
       try {
-        conversations = await ChatHistory.list('-createdDate');
+        conversations = await ChatHistory.list('-createdAt');
       } catch (e) {
         console.error('Failed to load ChatHistory:', e);
       }
 
       let transactions = [];
       try {
-        transactions = await TokenTransaction.list('-createdDate', 1000);
+        transactions = await TokenTransaction.list('-createdAt', 1000);
       } catch (e) {
         console.error('Failed to load TokenTransaction:', e);
       }
