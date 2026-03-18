@@ -35,7 +35,10 @@ export default function Login() {
     setIsSubmitting(true)
 
     try {
-      await login(email, password)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Login timed out. Please check your connection and try again.')), 15000)
+      )
+      await Promise.race([login(email, password), timeoutPromise])
       router.replace(returnTo)
     } catch (err) {
       setError(err.message || 'Invalid email or password')
