@@ -184,14 +184,15 @@ export default function SchoolDirectory() {
   };
 
   const filteredSchools = allSchools.filter(school => {
-    const matchesSearch = school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          school.city.toLowerCase().includes(searchTerm.toLowerCase());
+    const nameLower = (school.name || '').toLowerCase();
+    const cityLower = (school.city || '').toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = nameLower.includes(searchLower) || cityLower.includes(searchLower);
     const matchesCountry = filterCountry === 'all' || (
       (filterCountry === 'Canada' && school.country === 'Canada') ||
       (filterCountry === 'US' && school.country === 'United States') ||
       (filterCountry === 'UK' && school.country === 'United Kingdom')
     );
-    // For province matching: normalize the school's state and compare, allowing for both abbreviations and full names
     const matchesProvince = filterProvince === 'all' || (
       school.provinceState === filterProvince ||
       (school.country === 'United States' && normalizeStateName(school.provinceState) === filterProvince)
@@ -199,7 +200,6 @@ export default function SchoolDirectory() {
     const matchesGrade = filterGrade === 'all' || (school.gradesServed && school.gradesServed.includes(filterGrade.charAt(0)));
     const matchesTuition = filterTuition === 'all' || matchesTuitionRange(school.tuition, filterTuition);
     const matchesCurriculum = filterCurriculum === 'all' || (school.curriculum && school.curriculum.some(c => c === filterCurriculum)) || school.curriculum?.includes(filterCurriculum);
-    // E16a-018: Filter by upcoming events
     const matchesEvents = !hasEventsFilter || schoolsWithEvents.has(school.id);
     return matchesSearch && matchesCountry && matchesProvince && matchesGrade && matchesTuition && matchesCurriculum && matchesEvents;
   });
