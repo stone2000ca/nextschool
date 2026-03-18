@@ -128,7 +128,7 @@ export async function getNearbySchools(params: {
     // 1. Fetch all active schools
     let allSchools: any[] = [];
     try {
-      allSchools = await School.filter({}, undefined, 1000);
+      allSchools = await School.filter({}, '-createdDate', 1000);
     } catch (err: any) {
       console.error('[getNearbySchools] School fetch failed:', err.message);
       return { schools: [], hasMore: false, totalRemaining: 0 };

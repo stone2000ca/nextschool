@@ -125,7 +125,7 @@ export default function SubmitSchool() {
 
     // T-SP-009: Duplicate check
     setChecking(true);
-    const allSchools = await School.list(undefined, undefined, 500);
+    const allSchools = await School.list('-updatedDate', undefined, 500);
     const dupes = findDuplicates(form.name, form.city, allSchools);
     setChecking(false);
 

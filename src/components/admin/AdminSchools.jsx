@@ -23,7 +23,7 @@ export default function AdminSchools() {
 
   const loadSchools = async () => {
     try {
-      const data = await School.list();
+      const data = await School.list('-updatedDate');
       setSchools(data);
     } catch (error) {
       console.error('Failed to load schools:', error);
