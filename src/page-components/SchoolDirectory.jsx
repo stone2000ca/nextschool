@@ -133,7 +133,8 @@ export default function SchoolDirectory() {
         SchoolEvent.filter({}),
       ]);
 
-      const schools = schoolsResult.status === 'fulfilled' ? schoolsResult.value : [];
+      const schoolsRaw = schoolsResult.status === 'fulfilled' ? schoolsResult.value : [];
+      const schools = Array.isArray(schoolsRaw) ? schoolsRaw : (schoolsRaw?.data || []);
       const events = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
 
       if (schoolsResult.status === 'rejected') {
