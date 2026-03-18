@@ -14,6 +14,12 @@ function keysToCamel(obj: Record<string, any>): Record<string, any> {
   return result
 }
 
+// Map legacy column names to actual DB column names
+const COLUMN_ALIASES: Record<string, string> = {
+  updated_date: 'updated_at',
+  created_date: 'created_at',
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { status, sort, limit } = await req.json()
@@ -27,7 +33,8 @@ export async function POST(req: NextRequest) {
 
     if (sort) {
       const descending = sort.startsWith('-')
-      const field = descending ? sort.slice(1) : sort
+      const rawField = descending ? sort.slice(1) : sort
+      const field = COLUMN_ALIASES[rawField] || rawField
       query = query.order(field, { ascending: !descending })
     }
 
