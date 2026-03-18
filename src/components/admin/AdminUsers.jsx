@@ -32,7 +32,7 @@ export default function AdminUsers() {
 
   const loadUsers = async () => {
     try {
-      const data = await UserEntity.list('-createdAt');
+      const data = await UserEntity.list('-createdDate');
       setUsers(data);
     } catch (error) {
       console.error('Failed to load users:', error);
