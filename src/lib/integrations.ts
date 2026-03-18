@@ -108,6 +108,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<void> {
         throw new Error(`Email send failed (${response.status}): ${errText}`)
       }
       return
+  }
 
   // If no email provider configured, warn but don't fail
   console.warn('[sendEmail] No email provider configured. Email not sent.')
