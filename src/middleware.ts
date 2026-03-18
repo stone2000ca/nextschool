@@ -33,9 +33,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Create a single response we will mutate throughout
+  // Create response — will be recreated inside setAll when tokens are refreshed
   let response = NextResponse.next({
-    request: { headers: request.headers },
+    request,
   })
 
   // Refresh the Supabase session (sets cookies on response)
@@ -48,11 +48,15 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          // Update request cookies so downstream Server Components see refreshed tokens
+          // Update request cookies so downstream handlers see refreshed tokens
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
-          // Apply cookies to the EXISTING response (do NOT create a new NextResponse)
+          // Recreate the response with the updated request (carries refreshed cookies)
+          response = NextResponse.next({
+            request,
+          })
+          // Set the Set-Cookie headers on the new response
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )
@@ -65,6 +69,19 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Helper: create a redirect that carries all Set-Cookie headers from the current response
+  function redirectToLogin(returnPath: string) {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    loginUrl.searchParams.set('returnTo', returnPath)
+    const redirect = NextResponse.redirect(loginUrl)
+    // Copy all Set-Cookie headers (Supabase auth cookies) to the redirect
+    response.headers.getSetCookie().forEach((cookie) => {
+      redirect.headers.append('Set-Cookie', cookie)
+    })
+    return redirect
+  }
+
   if (user) {
     // Check inactivity timeout
     const lastActivity = request.cookies.get(ACTIVITY_COOKIE)?.value
@@ -74,10 +91,7 @@ export async function middleware(request: NextRequest) {
         // Inactive for too long — sign out
         await supabase.auth.signOut()
         response.cookies.set(ACTIVITY_COOKIE, '', { maxAge: 0, path: '/' })
-        const loginUrl = request.nextUrl.clone()
-        loginUrl.pathname = '/login'
-        loginUrl.searchParams.set('returnTo', pathname)
-        return NextResponse.redirect(loginUrl)
+        return redirectToLogin(pathname)
       }
     }
 
@@ -97,10 +111,7 @@ export async function middleware(request: NextRequest) {
 
   // Protect routes: redirect unauthenticated users to login
   if (!user && isProtectedRoute(pathname)) {
-    const loginUrl = request.nextUrl.clone()
-    loginUrl.pathname = '/login'
-    loginUrl.searchParams.set('returnTo', pathname)
-    return NextResponse.redirect(loginUrl)
+    return redirectToLogin(pathname)
   }
 
   return response

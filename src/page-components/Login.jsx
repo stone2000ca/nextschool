@@ -42,11 +42,19 @@ export default function Login() {
   }
 
   if (isLoadingAuth) {
-    return null
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    )
   }
 
   if (isAuthenticated) {
-    return null
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">Redirecting...</p>
+      </div>
+    )
   }
 
   return (
