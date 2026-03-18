@@ -35,7 +35,7 @@ export default function AdminFeedback() {
       }
 
       // Load feedback
-      const allFeedback = await BetaFeedback.list('-timestamp', 1000);
+      const allFeedback = await BetaFeedback.list(undefined, undefined, 1000);
       setFeedback(allFeedback);
     } catch (error) {
       console.error('Failed to load data:', error);

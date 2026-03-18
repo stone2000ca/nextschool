@@ -53,7 +53,7 @@ export default function Portal() {
     setLoading(true);
     try {
       // Fetch a broad set and score client-side for fuzzy matching
-      const allSchools = await School.list("-updated_date", 500);
+      const allSchools = await School.list(undefined, undefined, 500);
       const norm = normalize(q);
       const scored = allSchools
         .filter(s => {

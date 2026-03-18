@@ -934,7 +934,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
         try {
           const journeys = context.journeyId
             ? await FamilyJourney.filter({ id: context.journeyId })
-            : await FamilyJourney.filter({ userId: context.userId }, '-updated_date', 1);
+            : await FamilyJourney.filter({ userId: context.userId }, undefined, 1);
           const familyJourney = journeys?.[0];
           if (!familyJourney) return;
 
