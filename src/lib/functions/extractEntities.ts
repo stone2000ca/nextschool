@@ -10,6 +10,95 @@
 import { FamilyProfile } from '@/lib/entities-server'
 
 // =============================================================================
+// INLINED: callOpenRouter (from handleBrief pattern)
+// =============================================================================
+async function callOpenRouter(options: any) {
+  const { systemPrompt, userPrompt, responseSchema, maxTokens = 1000, temperature = 0.7 } = options;
+
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_API_KEY) {
+    console.warn('[OPENROUTER] OPENROUTER_API_KEY not set');
+    throw new Error('OPENROUTER_API_KEY not set');
+  }
+
+  const messages: any[] = [];
+  if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+  messages.push({ role: 'user', content: userPrompt });
+
+  const models = ['google/gemini-3-flash-preview', 'openai/gpt-4.1-mini', 'google/gemini-2.5-flash'];
+
+  const body: any = {
+    models,
+    messages,
+    max_tokens: maxTokens,
+    temperature
+  };
+
+  if (responseSchema) {
+    body.response_format = {
+      type: 'json_schema',
+      json_schema: {
+        name: responseSchema.name || 'response',
+        strict: true,
+        schema: responseSchema.schema
+      }
+    };
+  }
+
+  console.log('[OPENROUTER] Calling extractEntities with models:', body.models, 'maxTokens:', maxTokens);
+
+  const controller = new AbortController();
+  const TIMEOUT_MS = 10000;
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://nextschool.ca',
+        'X-OpenRouter-Title': 'NextSchool'
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error(`[TIMEOUT] callOpenRouter timed out after ${TIMEOUT_MS}ms in extractEntities.ts`);
+      throw new Error(`LLM request timed out after ${TIMEOUT_MS / 1000}s`);
+    }
+    console.error(`[callOpenRouter] Model call failed in extractEntities.ts:`, error.message);
+    throw error;
+  }
+  clearTimeout(timeoutId);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[OPENROUTER] API error:', response.status, errorText);
+    throw new Error(`OpenRouter API error: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  console.log('[OPENROUTER] Response model used:', data.model, 'usage:', data.usage);
+
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('OpenRouter returned empty content');
+
+  if (responseSchema) {
+    try {
+      return JSON.parse(content);
+    } catch (e) {
+      console.error('[OPENROUTER] JSON parse failed:', content.substring(0, 200));
+      throw new Error('OpenRouter structured output parse failed');
+    }
+  }
+
+  return content;
+}
+
+// =============================================================================
 // INLINED: extractEntitiesLogic
 // =============================================================================
 export async function extractEntitiesLogic({ message: rawMessage, aiReply, conversationFamilyProfile, context, conversationHistory }: {
@@ -242,15 +331,21 @@ PARENT'S MESSAGE:
 Extract all factual data from the parent's message. Return ONLY valid JSON. Do NOT explain.`;
 
     try {
-      const combinedPrompt = systemPrompt + '\n\n' + userPrompt;
-      // TODO: Replace with your LLM call implementation
-      // For now, this is a placeholder that returns empty extraction
-      // In production, call your LLM service here
       let llmResult: any = {};
 
-      // Placeholder: In production, replace with actual LLM call
-      // e.g., const llmResult = await callLLM({ prompt: combinedPrompt, ... });
-      console.log('[EXTRACT] LLM call placeholder - implement with your LLM service');
+      try {
+        const llmResponse = await callOpenRouter({
+          systemPrompt,
+          userPrompt,
+          maxTokens: 800,
+          temperature: 0.3
+        });
+        llmResult = llmResponse;
+        console.log('[EXTRACT] LLM call succeeded');
+      } catch (llmCallError: any) {
+        console.warn('[EXTRACT] LLM call failed, falling back to regex-only extraction:', llmCallError.message);
+        llmResult = {};
+      }
 
       if (typeof llmResult === 'string') {
         try { llmResult = JSON.parse(llmResult); } catch { llmResult = {}; }

@@ -5,6 +5,95 @@
 
 import { School, FamilyProfile, GeneratedArtifact, User, FamilyJourney } from '@/lib/entities-server'
 
+// =============================================================================
+// INLINED: callOpenRouter
+// =============================================================================
+async function callOpenRouter(options: any) {
+  const { systemPrompt, userPrompt, responseSchema, maxTokens = 1000, temperature = 0.7 } = options;
+
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_API_KEY) {
+    console.warn('[OPENROUTER] OPENROUTER_API_KEY not set');
+    throw new Error('OPENROUTER_API_KEY not set');
+  }
+
+  const messages: any[] = [];
+  if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+  messages.push({ role: 'user', content: userPrompt });
+
+  const models = ['google/gemini-3-flash-preview', 'openai/gpt-4.1-mini', 'google/gemini-2.5-flash'];
+
+  const body: any = {
+    models,
+    messages,
+    max_tokens: maxTokens,
+    temperature
+  };
+
+  if (responseSchema) {
+    body.response_format = {
+      type: 'json_schema',
+      json_schema: {
+        name: responseSchema.name || 'response',
+        strict: true,
+        schema: responseSchema.schema
+      }
+    };
+  }
+
+  console.log('[OPENROUTER] Calling generateComparison with models:', body.models, 'maxTokens:', maxTokens);
+
+  const controller = new AbortController();
+  const TIMEOUT_MS = 10000;
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://nextschool.ca',
+        'X-OpenRouter-Title': 'NextSchool'
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error(`[TIMEOUT] callOpenRouter timed out after ${TIMEOUT_MS}ms in generateComparison.ts`);
+      throw new Error(`LLM request timed out after ${TIMEOUT_MS / 1000}s`);
+    }
+    console.error(`[callOpenRouter] Model call failed in generateComparison.ts:`, error.message);
+    throw error;
+  }
+  clearTimeout(timeoutId);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[OPENROUTER] API error:', response.status, errorText);
+    throw new Error(`OpenRouter API error: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  console.log('[OPENROUTER] Response model used:', data.model, 'usage:', data.usage);
+
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('OpenRouter returned empty content');
+
+  if (responseSchema) {
+    try {
+      return JSON.parse(content);
+    } catch (e) {
+      console.error('[OPENROUTER] JSON parse failed:', content.substring(0, 200));
+      throw new Error('OpenRouter structured output parse failed');
+    }
+  }
+
+  return content;
+}
+
 export async function generateComparisonLogic(params: { schoolIds: string[]; familyProfileId?: string; userId?: string }) {
   const { schoolIds, familyProfileId, userId } = params;
 
@@ -116,9 +205,47 @@ export async function generateComparisonLogic(params: { schoolIds: string[]; fam
   }
 
   // Generate AI insights
-  // TODO: Replace with your LLM call implementation
   let insights: any = { insights: [] };
-  console.log('[E25-S5] LLM insights placeholder - implement with your LLM service');
+  try {
+    const schoolNames = schools.map((s: any) => s.name).join(', ');
+    const prioritiesStr = familyProfile?.priorities?.join(', ') || 'not specified';
+    const dealbreakersStr = familyProfile?.dealbreakers?.join(', ') || 'none';
+
+    const insightSystemPrompt = `You are an education consultant generating comparison insights for schools. Generate 3-5 concise, actionable insights that help a family compare these schools based on their priorities. Each insight should be 1-2 sentences. Return ONLY valid JSON.`;
+
+    const insightUserPrompt = `SCHOOLS BEING COMPARED: ${schoolNames}
+
+COMPARISON DATA:
+${JSON.stringify(comparison.categories, null, 2)}
+
+FAMILY PRIORITIES: ${prioritiesStr}
+FAMILY DEALBREAKERS: ${dealbreakersStr}
+CHILD GRADE: ${familyProfile?.childGrade || 'not specified'}
+BUDGET: ${familyProfile?.maxTuition ? '$' + familyProfile.maxTuition.toLocaleString() : 'not specified'}
+
+Generate 3-5 comparison insights. Return JSON: { "insights": ["insight 1", "insight 2", ...] }`;
+
+    const llmResponse = await callOpenRouter({
+      systemPrompt: insightSystemPrompt,
+      userPrompt: insightUserPrompt,
+      maxTokens: 800,
+      temperature: 0.5
+    });
+
+    let parsed = llmResponse;
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch { parsed = null; }
+    }
+
+    if (parsed?.insights && Array.isArray(parsed.insights)) {
+      insights = parsed;
+      console.log('[E25-S5] LLM generated', insights.insights.length, 'comparison insights');
+    } else {
+      console.warn('[E25-S5] LLM response did not contain valid insights');
+    }
+  } catch (insightError: any) {
+    console.error('[E25-S5] LLM insights generation failed (non-blocking):', insightError.message);
+  }
 
   // Build family-personalized comparisonMatrix
   const priorities = familyProfile?.priorities || [];
