@@ -1358,7 +1358,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         console.log('[RESUME-FIX] Seeded accumulatedFamilyProfile from DB FamilyProfile');
       }
       const workingProfile = mergeProfile(mergeProfile(accumulatedProfile, conversationFamilyProfile), bridgeProfile);
-      // E42-FIX: Ensure .id survives merge — Base44 entity .id may be non-enumerable/getter
+      // E42-FIX: Ensure .id survives merge — entity .id may be non-enumerable/getter
       if (conversationFamilyProfile?.id && !workingProfile.id) {
         workingProfile.id = conversationFamilyProfile.id;
       }
