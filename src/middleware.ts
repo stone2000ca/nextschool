@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 
 // 3-day inactivity session persistence
 const INACTIVITY_LIMIT_MS = 3 * 24 * 60 * 60 * 1000 // 3 days in ms
-const INACTIVITY_LIMIT_SECONDS = 3 * 24 * 60 * 60    // 3 days in seconds
+const INACTIVITY_LIMIT_SECONDS = 3 * 24 * 60 * 60   // 3 days in seconds
 const ACTIVITY_COOKIE = 'ns_last_activity'
 
 const PROTECTED_PREFIXES = [
@@ -34,9 +34,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Create a response we can modify (for session refresh cookies)
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  })
+  let response = NextResponse.next()
 
   // Refresh the Supabase session (sets cookies on response)
   const supabase = createServerClient(
@@ -48,17 +46,10 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          // Set cookies on the request (for downstream server components)
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          // Also set on the response (for the browser)
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
+          // Apply Supabase auth cookies to the existing response
+          cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options)
-          )
+          })
         },
       },
     }
@@ -83,6 +74,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl)
       }
     }
+
     // Reset activity timer on every navigation
     response.cookies.set(ACTIVITY_COOKIE, String(Date.now()), {
       maxAge: INACTIVITY_LIMIT_SECONDS,
