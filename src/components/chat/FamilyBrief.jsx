@@ -29,8 +29,10 @@ function formatGrade(grade) {
 function formatBudget(val) {
   if (!val) return null;
   if (val === 'unlimited') return 'Flexible / No limit';
-  const num = typeof val === 'number' ? val : parseInt(val);
-  if (isNaN(num)) return toTitleCase(String(val));
+  if (typeof val === 'number') return `$${val.toLocaleString()}/yr`;
+  // Budget range strings like "$15K-$25K" — display as-is
+  const num = parseInt(val);
+  if (isNaN(num)) return String(val);
   return `$${num.toLocaleString()}/yr`;
 }
 
