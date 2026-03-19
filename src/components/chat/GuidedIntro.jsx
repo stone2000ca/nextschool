@@ -224,7 +224,7 @@ export default function GuidedIntro({ consultantName, onComplete }) {
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="w-full bg-transparent border-b-2 border-white/20 focus:border-teal-400 text-white text-2xl py-3 px-1 outline-none placeholder:text-white/30 transition-colors"
+        className="guided-intro-input w-full bg-transparent border-0 text-center text-white text-2xl py-3 px-1 outline-none placeholder:text-white/30 transition-colors"
         autoComplete="off"
       />
       <p className="text-white/40 text-sm mt-3">Press Enter to continue</p>

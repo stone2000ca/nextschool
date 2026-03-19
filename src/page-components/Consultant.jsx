@@ -1477,10 +1477,6 @@ export default function Consultant() {
   if (selectedConsultant && showGuidedIntro) {
     return (
       <div className="h-screen flex flex-col relative">
-        <ConsultantAvatarBadge
-          consultant={selectedConsultant}
-          className="fixed top-4 left-4"
-        />
         <GuidedIntro
           consultantName={selectedConsultant}
           onComplete={handleGuidedIntroComplete}

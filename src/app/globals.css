@@ -298,3 +298,13 @@
     transform: translateY(0);
   }
 }
+
+/* E47: Thick block caret for guided intro typewriter inputs */
+.guided-intro-input {
+  caret-color: #2dd4bf;
+}
+@supports (caret-shape: block) {
+  .guided-intro-input:focus {
+    caret-shape: block;
+  }
+}
