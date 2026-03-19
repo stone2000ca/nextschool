@@ -87,7 +87,7 @@ export function buildPriorityChecks(school, familyProfile) {
     }
   }
 
-  const wantsBoarding = familyProfile.boardingPreference === 'open_to_boarding' || familyProfile.boardingPreference === 'boarding_preferred';
+  const wantsBoarding = familyProfile.boarding_preference === 'open_to_boarding' || familyProfile.boarding_preference === 'boarding_preferred';
   if (wantsBoarding) {
     if (school.boarding_available == null) {
       rows.push({ id: 'boarding', rowNum: 6, label: 'Boarding', status: 'unknown', detail: 'Worth asking about' });
@@ -106,7 +106,7 @@ export function buildPriorityChecks(school, familyProfile) {
     }
   }
 
-  const wantsLS = familyProfile.learningDifferences?.length > 0 || familyProfile.priorities?.some(p => /learning support|special needs|adhd/i.test(p));
+  const wantsLS = familyProfile.learning_differences?.length > 0 || familyProfile.priorities?.some(p => /learning support|special needs|adhd/i.test(p));
   if (wantsLS) {
     const hasLS = school.special_ed_programs?.length > 0;
     if (school.special_ed_programs == null) {
@@ -116,12 +116,12 @@ export function buildPriorityChecks(school, familyProfile) {
     }
   }
 
-  if (familyProfile.languagePreference && !/^english$/i.test(familyProfile.languagePreference)) {
+  if (familyProfile.language_preference && !/^english$/i.test(familyProfile.language_preference)) {
     const li = school.languages_of_instruction;
     if (!li) {
       rows.push({ id: 'language', rowNum: 9, label: 'Language', status: 'unknown', detail: 'Worth asking about' });
     } else {
-      rows.push({ id: 'language', rowNum: 9, label: 'Language', status: li.toLowerCase().includes(familyProfile.languagePreference.toLowerCase()) ? 'match' : 'mismatch', detail: li });
+      rows.push({ id: 'language', rowNum: 9, label: 'Language', status: li.toLowerCase().includes(familyProfile.language_preference.toLowerCase()) ? 'match' : 'mismatch', detail: li });
     }
   }
 
@@ -172,10 +172,10 @@ function buildAlsoWorthKnowing(school, familyProfile) {
     if (familyProfile.max_tuition) priorityIds.add('budget');
 
     if (familyProfile.curriculum_preference?.length > 0) priorityIds.add('curriculum');
-    if (familyProfile.boardingPreference && familyProfile.boardingPreference !== 'day_only') priorityIds.add('boarding');
+    if (familyProfile.boarding_preference && familyProfile.boarding_preference !== 'day_only') priorityIds.add('boarding');
     if (familyProfile.religious_preference) priorityIds.add('religious');
     if (familyProfile.priorities?.some(p => /class size/i.test(p))) priorityIds.add('classSize');
-    if (familyProfile.learningDifferences?.length > 0) priorityIds.add('learningSupport');
+    if (familyProfile.learning_differences?.length > 0) priorityIds.add('learningSupport');
   }
 
   const items = [];
