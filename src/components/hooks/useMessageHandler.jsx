@@ -637,8 +637,8 @@ export const useMessageHandler = ({
                 const titleResult = await invokeFunction('generateConversationTitle', {
                   conversationId: currentConversation.id
                 });
-                if (titleResult.data?.title) {
-                  setCurrentConversation(prev => ({ ...prev, title: titleResult.data.title }));
+                if (titleResult.title) {
+                  setCurrentConversation(prev => ({ ...prev, title: titleResult.title }));
                   await loadConversations(user.id);
                 }
               } catch (titleError) {
