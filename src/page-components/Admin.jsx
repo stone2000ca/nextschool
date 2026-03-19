@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { Shield, ShieldX, LayoutDashboard, Building2, Users, ClipboardCheck, BarChart3, PlusSquare, ShieldAlert } from 'lucide-react';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminSchools from '@/components/admin/AdminSchools';
@@ -35,34 +34,15 @@ export default function Admin() {
     checkAdmin();
   }, [authUser, isAuthenticated, isLoadingAuth]);
 
-  const checkAdmin = async () => {
-    try {
-      // Check role from auth context first (populated from public.users)
-      if (authUser.role === 'admin') {
-        setUser(authUser);
-        setLoading(false);
-        return;
-      }
-
-      // Fallback: query public.users directly in case context hasn't refreshed
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', authUser.id)
-        .single();
-
-      if (data?.role !== 'admin') {
-        setUnauthorized(true);
-        return;
-      }
-
-      setUser({ ...authUser, role: 'admin' });
-    } catch (error) {
+  const checkAdmin = () => {
+    // AuthContext.fetchUserProfile already reads role from public.users,
+    // so authUser.role is the authoritative value.
+    if (authUser.role === 'admin') {
+      setUser(authUser);
+    } else {
       setUnauthorized(true);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   if (loading || isLoadingAuth) {

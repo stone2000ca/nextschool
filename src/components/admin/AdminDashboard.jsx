@@ -70,6 +70,14 @@ export default function AdminDashboard({ onViewChange }) {
     );
   }
 
+  if (!stats) {
+    return (
+      <div className="p-6 text-center text-slate-600">
+        Failed to load dashboard stats. Please refresh.
+      </div>
+    );
+  }
+
   const statCards = [
     {
       label: 'Total Schools',
