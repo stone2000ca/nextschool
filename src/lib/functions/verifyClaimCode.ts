@@ -25,7 +25,7 @@ export async function verifyClaimCode(params: {
   const claim = claims[0] as any;
 
   // Ensure the claim belongs to the requesting user
-  if (claim.user_id !== userId) {
+  if (claim.claimed_by !== userId) {
     throw Object.assign(new Error('Forbidden'), { statusCode: 403 });
   }
 
@@ -95,7 +95,7 @@ export async function verifyClaimCode(params: {
   try {
     await SchoolAdmin.create({
       school_id: claim.school_id,
-      user_id: claim.user_id,
+      user_id: claim.claimed_by,
       claim_id: claimId,
       role: 'owner',
       is_active: true
