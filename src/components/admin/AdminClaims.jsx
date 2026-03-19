@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { SchoolClaim, School, User as UserEntity } from '@/lib/entities';
 import { invokeFunction } from '@/lib/functions';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,32 +17,7 @@ export default function AdminClaims() {
   const loadClaims = async () => {
     setLoading(true);
     try {
-      // Primary query: status:'pending'
-      let rawClaims = await SchoolClaim.filter({ status: 'pending' });
-
-      // Fallback: fetch all and filter client-side for any pending-prefixed status
-      if (!rawClaims || rawClaims.length === 0) {
-        const all = await SchoolClaim.list();
-        rawClaims = all.filter(c => c.status && c.status.startsWith('pending'));
-      }
-
-      // Enrich each claim with school name/city and user email in parallel
-      const enriched = await Promise.all(
-        rawClaims.map(async (claim) => {
-          const [schools, users] = await Promise.all([
-            School.filter({ id: claim.school_id }),
-            claim.claimed_by ? UserEntity.filter({ id: claim.claimed_by }) : Promise.resolve([]),
-          ]);
-          return {
-            ...claim,
-            _schoolName: schools[0]?.name || 'Unknown School',
-            _schoolCity: schools[0]?.city || '',
-            _schoolRegion: schools[0]?.region || '',
-            _userEmail: users[0]?.email || claim.claimant_email || 'Unknown',
-          };
-        })
-      );
-
+      const enriched = await invokeFunction('adminClaims', {});
       setClaims(enriched);
     } catch (error) {
       console.error('Failed to load claims:', error);
@@ -74,7 +48,7 @@ export default function AdminClaims() {
   const handleReject = async (claim) => {
     setProcessingId(claim.id);
     try {
-      await SchoolClaim.update(claim.id, { status: 'rejected' });
+      await invokeFunction('rejectClaim', { claimId: claim.id });
       setClaims(prev => prev.filter(c => c.id !== claim.id));
       toast.success(`Claim rejected for ${claim._schoolName}`);
     } catch (error) {
