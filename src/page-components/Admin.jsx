@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { User } from '@/lib/entities';
-import { Shield, LayoutDashboard, Building2, Users, ClipboardCheck, BarChart3, PlusSquare, ShieldAlert } from 'lucide-react';
+import { Shield, ShieldX, LayoutDashboard, Building2, Users, ClipboardCheck, BarChart3, PlusSquare, ShieldAlert } from 'lucide-react';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminSchools from '@/components/admin/AdminSchools';
 import AdminUsers from '@/components/admin/AdminUsers';
@@ -13,13 +13,19 @@ import AdminDisputes from '@/components/admin/AdminDisputes';
 export default function Admin() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [unauthorized, setUnauthorized] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
 
-  const { user: authUser } = useAuth();
+  const { user: authUser, isLoadingAuth } = useAuth();
 
   useEffect(() => {
+    if (isLoadingAuth) return;
+    if (!authUser) {
+      window.location.href = '/';
+      return;
+    }
     checkAdmin();
-  }, []);
+  }, [authUser, isLoadingAuth]);
 
   const checkAdmin = async () => {
     try {
@@ -28,22 +34,35 @@ export default function Admin() {
       const userRecord = users?.[0];
 
       if (!userRecord || userRecord.role !== 'admin') {
-        window.location.href = '/';
+        setUnauthorized(true);
         return;
       }
 
       setUser({ ...userData, ...userRecord });
     } catch (error) {
-      window.location.href = '/';
+      setUnauthorized(true);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
+  if (loading || isLoadingAuth) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50">
         <div className="animate-spin h-8 w-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (unauthorized) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <ShieldX className="h-16 w-16 text-red-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Not Authorized</h1>
+          <p className="text-slate-600 mb-6">You do not have admin access to this page.</p>
+          <a href="/" className="text-teal-600 hover:underline font-medium">Go to Home</a>
+        </div>
       </div>
     );
   }
