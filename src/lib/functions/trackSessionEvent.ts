@@ -15,16 +15,18 @@ export async function trackSessionEvent(params: {
 
   // Insert directly without .select().single() to avoid PGRST204 error
   // (session_events is fire-and-forget; we don't need the returned row)
-  // Note: consultant_name column does not exist in the production session_events table,
-  // so we store it inside metadata instead to avoid schema cache errors.
   const supabase = getAdminClient()
   const enrichedMetadata = { ...(metadata || {}), ...(consultantName ? { consultantName } : {}) };
-  const { error } = await (supabase.from('session_events') as any).insert({
+  const row: Record<string, any> = {
     event_type: eventType,
     session_id: sessionId,
     timestamp: new Date().toISOString(),
-    metadata: enrichedMetadata
-  })
+    metadata: enrichedMetadata,
+  }
+  if (consultantName) {
+    row.consultant_name = consultantName
+  }
+  const { error } = await (supabase.from('session_events') as any).insert(row)
   if (error) throw error
 
   return { success: true };
