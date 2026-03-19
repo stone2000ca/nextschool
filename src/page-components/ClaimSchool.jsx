@@ -88,7 +88,7 @@ export default function ClaimSchool() {
 
       try {
         // Check if user already has an active claim
-        const claims = await SchoolClaim.filter({ user_id: userData.id });
+        const claims = await SchoolClaim.filter({ claimed_by: userData.id });
         const activeClaim = claims.find(c => ['pending_review', 'verified'].includes(c.status));
         if (activeClaim) {
           const schools = await School.filter({ id: activeClaim.school_id });
@@ -148,7 +148,7 @@ export default function ClaimSchool() {
       // Create SchoolClaim record — goes straight to pending_review for admin approval
       await SchoolClaim.create({
         school_id: schoolId,
-        user_id: user?.id,
+        claimed_by: user?.id,
         claimant_name: formData.name,
         claimant_role: formData.role,
         claimant_email: formData.email,
@@ -165,7 +165,7 @@ export default function ClaimSchool() {
       setStep(3);
     } catch (error) {
       console.error('Failed to create claim:', error);
-      setFormError('Failed to submit claim. Please try again.');
+      setFormError(error?.message || error?.details || 'Failed to submit claim. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
