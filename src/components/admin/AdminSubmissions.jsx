@@ -17,7 +17,7 @@ export default function AdminSubmissions() {
       SchoolClaim.filter({ status: "pending_review" }),
     ]);
     const allClaims = [...claimsPending, ...claimsPendingReview];
-    const schoolIds = [...new Set(allClaims.map(c => c.schoolId).filter(Boolean))];
+    const schoolIds = [...new Set(allClaims.map(c => c.school_id).filter(Boolean))];
 
     if (schoolIds.length === 0) {
       setSubmissions([]);
@@ -28,7 +28,7 @@ export default function AdminSubmissions() {
     // Fetch the actual school records for those IDs
     const schoolResults = await Promise.all(schoolIds.map(id => School.filter({ id })));
     const schools = schoolResults.flat().filter(s => s.status === "draft" || s.status === "active" || s.status === "pending_review");
-    setSubmissions(schools.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+    setSubmissions(schools.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
     setLoading(false);
   }
 
@@ -37,29 +37,29 @@ export default function AdminSubmissions() {
   async function approve(school) {
     setActionMap(m => ({ ...m, [school.id]: "approving" }));
     // Fix 1+2: Set status, claimStatus, membershipTier together
-    await School.update(school.id, { status: "active", claimStatus: "claimed", membershipTier: "basic" });
+    await School.update(school.id, { status: "active", claim_status: "claimed", membership_tier: "basic" });
     // Update associated SchoolClaim to verified (checks both statuses)
     let approvedClaim = null;
     try {
       const [claimsPending, claimsPendingReview] = await Promise.all([
-        SchoolClaim.filter({ schoolId: school.id, status: "pending" }),
-        SchoolClaim.filter({ schoolId: school.id, status: "pending_review" }),
+        SchoolClaim.filter({ school_id: school.id, status: "pending" }),
+        SchoolClaim.filter({ school_id: school.id, status: "pending_review" }),
       ]);
       const claims = [...claimsPending, ...claimsPendingReview];
       if (claims.length > 0) {
         approvedClaim = claims[0];
-        await SchoolClaim.update(approvedClaim.id, { status: "verified", verifiedAt: new Date().toISOString() });
+        await SchoolClaim.update(approvedClaim.id, { status: "verified", verified_at: new Date().toISOString() });
       }
     } catch (e) { /* non-blocking */ }
 
     // Create SchoolAdmin for submitter
-    if (school.userId) {
+    if (school.user_id) {
       try {
         await SchoolAdmin.create({
-          schoolId: school.id,
-          userId: school.userId,
+          school_id: school.id,
+          user_id: school.user_id,
           role: "owner",
-          isActive: true,
+          is_active: true,
         });
       } catch (_) { /* already exists or non-blocking */ }
     }
@@ -70,10 +70,10 @@ export default function AdminSubmissions() {
         await invokeFunction('sendClaimEmail', {
           emailType: 'CLAIM_APPROVED',
           claimData: {
-            claimantName: approvedClaim.claimantName || school.created_by || 'School Administrator',
-            claimantEmail: approvedClaim.claimantEmail || school.created_by,
+            claimantName: approvedClaim.claimant_name || school.created_by || 'School Administrator',
+            claimantEmail: approvedClaim.claimant_email || school.created_by,
           },
-          schoolData: { id: school.id, name: school.name, claimStatus: 'claimed' },
+          schoolData: { id: school.id, name: school.name, claim_status: 'claimed' },
         });
       }
     } catch (e) {
@@ -90,8 +90,8 @@ export default function AdminSubmissions() {
     // Also reject associated SchoolClaim (non-blocking)
     try {
       const [claimsPending, claimsPendingReview] = await Promise.all([
-        SchoolClaim.filter({ schoolId: school.id, status: "pending" }),
-        SchoolClaim.filter({ schoolId: school.id, status: "pending_review" }),
+        SchoolClaim.filter({ school_id: school.id, status: "pending" }),
+        SchoolClaim.filter({ school_id: school.id, status: "pending_review" }),
       ]);
       const claims = [...claimsPending, ...claimsPendingReview];
       if (claims.length > 0) {
@@ -148,10 +148,10 @@ export default function AdminSubmissions() {
                   <tr key={school.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-slate-900">{school.name}</td>
                     <td className="px-4 py-3 text-slate-600">{school.city || "—"}</td>
-                    <td className="px-4 py-3 text-slate-600">{school.provinceState || "—"}</td>
+                    <td className="px-4 py-3 text-slate-600">{school.province_state || "—"}</td>
                     <td className="px-4 py-3 text-slate-500">{school.created_by || "—"}</td>
                     <td className="px-4 py-3 text-slate-500">
-                      {school.createdAt ? new Date(school.createdAt).toLocaleDateString("en-CA") : "—"}
+                      {school.created_date ? new Date(school.created_date).toLocaleDateString("en-CA") : "—"}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 justify-end">

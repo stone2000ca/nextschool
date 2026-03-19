@@ -99,7 +99,7 @@ function getMatchReasons(school, familyProfile) {
       reasons.push(`${matchedPriorities.slice(0, 2).join(' & ')} focus`);
     }
   }
-  if (familyProfile.boardingPreference?.includes('boarding') && school.boardingAvailable) {
+  if (familyProfile.boardingPreference?.includes('boarding') && school.boarding_available) {
     reasons.push('Boarding available');
   }
   return reasons.slice(0, 4);
@@ -108,18 +108,18 @@ function getMatchReasons(school, familyProfile) {
 // --- Section Components ---
 
 function HeroSection({ school, onBack }) {
-  const boardingType = f(school, 'boardingType', 'boarding_type') || (school.boardingAvailable ? 'Day & Boarding' : 'Day');
+  const boardingType = f(school, 'boardingType', 'boarding_type') || (school.boarding_available ? 'Day & Boarding' : 'Day');
   const faithBased = f(school, 'faithBased', 'faith_based');
   const logoUrl = f(school, 'logoUrl', 'logo_url');
-  const gradeRange = school.lowestGrade != null && school.highestGrade != null
-    ? `${gradeLabel(school.lowestGrade)} – ${gradeLabel(school.highestGrade)}`
-    : school.gradesServed || null;
+  const gradeRange = school.lowest_grade != null && school.highest_grade != null
+    ? `${gradeLabel(school.lowest_grade)} – ${gradeLabel(school.highest_grade)}`
+    : school.grades_served || null;
 
   return (
     <div className="relative h-[420px] overflow-hidden">
-      {(school.headerPhotoUrl || school.heroImage) ? (
+      {(school.header_photo_url || school.hero_image) ? (
         <img
-          src={school.headerPhotoUrl || school.heroImage}
+          src={school.header_photo_url || school.hero_image}
           alt={school.name}
           className="w-full h-full object-cover"
         />
@@ -149,9 +149,9 @@ function HeroSection({ school, onBack }) {
               {boardingType}
             </span>
           )}
-          {school.genderPolicy && (
+          {school.gender_policy && (
             <span className="bg-white/12 backdrop-blur-sm border border-white/18 text-white text-[12px] font-semibold px-3.5 py-1 rounded-md uppercase tracking-wider">
-              {school.genderPolicy}
+              {school.gender_policy}
             </span>
           )}
           {gradeRange && (
@@ -169,7 +169,7 @@ function HeroSection({ school, onBack }) {
           {school.name}
         </h1>
         <p className="text-[15px] text-white/70">
-          {school.city}, {school.provinceState}
+          {school.city}, {school.province_state}
           {school.founded ? ` · Est. ${school.founded}` : ''}
         </p>
       </div>
@@ -182,16 +182,16 @@ function ScanBar({ school }) {
   const add = (emoji, text, highlight) => pills.push({ emoji, text, highlight });
 
   if (school.enrollment) add('\u{1F465}', `${school.enrollment.toLocaleString()} students`);
-  if (school.avgClassSize) add('\u{1F465}', `Avg class ${school.avgClassSize}`);
+  if (school.avg_class_size) add('\u{1F465}', `Avg class ${school.avg_class_size}`);
   const ratio = f(school, 'studentTeacherRatio', 'student_teacher_ratio');
   if (ratio) add('\u{1F393}', `${ratio} ratio`);
   const curriculum = school.curriculum;
   if (curriculum) add('\u{1F4DA}', Array.isArray(curriculum) ? curriculum.join(' · ') : curriculum);
-  if (school.financialAidAvailable) add('\u{1F4B0}', 'Aid available', true);
+  if (school.financial_aid_available) add('\u{1F4B0}', 'Aid available', true);
   if (school.founded) add('\u{1F3DB}', `Est. ${school.founded}`);
   const accreditations = school.accreditations;
   if (accreditations?.length > 0) add('\u2705', `${accreditations[0]} accredited`);
-  if (school.acceptanceRate) add('\u{1F393}', `${school.acceptanceRate}% acceptance`);
+  if (school.acceptance_rate) add('\u{1F393}', `${school.acceptance_rate}% acceptance`);
   if (school.campusSize) add('\u{1F3E1}', `${school.campusSize}-acre campus`);
   if (school.uniformRequired) add('\u{1F454}', 'Uniform');
   const langs = f(school, 'languagesOfInstruction', 'languages_of_instruction');
@@ -233,7 +233,7 @@ function AboutSection({ school }) {
   const desc = school.description || '';
   const isLong = desc.length > 300;
 
-  const hasMission = !!school.missionStatement;
+  const hasMission = !!school.mission_statement;
   const hasContent = hasMission || !!desc;
   if (!hasContent && !values?.length && !specializations?.length) return null;
 
@@ -241,7 +241,7 @@ function AboutSection({ school }) {
     <div className="px-8 pt-10">
       {hasMission && (
         <blockquote className="border-l-[3px] border-[#c9a84c] pl-6 pr-4 py-5 mb-5 rounded-r-lg italic text-[17px] text-[#d4cfc5] leading-relaxed" style={{ fontFamily: "'Playfair Display', serif", background: 'rgba(201,168,76,0.04)' }}>
-          &ldquo;{school.missionStatement}&rdquo;
+          &ldquo;{school.mission_statement}&rdquo;
         </blockquote>
       )}
       {values?.length > 0 && (
@@ -324,8 +324,8 @@ function WhatToExpectSection({ school }) {
 
 function ProgramsSection({ school }) {
   const groups = [];
-  if (school.artsPrograms?.length > 0) groups.push({ label: 'Arts', items: school.artsPrograms });
-  if (school.sportsPrograms?.length > 0) groups.push({ label: 'Sports', items: school.sportsPrograms });
+  if (school.arts_programs?.length > 0) groups.push({ label: 'Arts', items: school.arts_programs });
+  if (school.sports_programs?.length > 0) groups.push({ label: 'Sports', items: school.sports_programs });
   if (school.clubs?.length > 0) groups.push({ label: 'Clubs', items: school.clubs });
 
   const specialEd = f(school, 'specialEdPrograms', 'special_ed_programs');
@@ -356,11 +356,11 @@ function ProgramsSection({ school }) {
 
 function FinancialSection({ school }) {
   const currency = school.currency || 'CAD';
-  const dayTuition = school.dayTuition;
+  const dayTuition = school.day_tuition;
   const dayMax = f(school, 'dayTuitionMax', 'day_tuition_max');
-  const boardingTuition = school.boardingTuition;
+  const boardingTuition = school.boarding_tuition;
   const boardingMax = f(school, 'boardingTuitionMax', 'boarding_tuition_max');
-  const aidAvailable = school.financialAidAvailable;
+  const aidAvailable = school.financial_aid_available;
   const aidPct = f(school, 'financialAidPct', 'financial_aid_pct');
   const medianAid = f(school, 'medianAidAmount', 'median_aid_amount');
   const tuitionNotes = f(school, 'tuitionNotes', 'tuition_notes');
@@ -435,7 +435,7 @@ function FinancialSection({ school }) {
 }
 
 function AdmissionsSection({ school }) {
-  const dayDeadline = school.dayAdmissionDeadline;
+  const dayDeadline = school.day_admission_deadline;
   const boardingDeadline = f(school, 'boardingAdmissionDeadline', 'boarding_admission_deadline');
   const openHouse = school.openHouseDates?.[0];
   const openHouseCountdown = daysUntil(openHouse);

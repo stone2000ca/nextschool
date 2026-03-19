@@ -17,14 +17,14 @@ export async function processDebriefCompletion(params: {
   // 1) Load artifacts (visit_debrief and deep_dive_analysis)
   const [debriefArtifacts, deepDiveArtifacts] = await Promise.all([
     GeneratedArtifact.filter({
-      conversationId,
-      schoolId,
-      artifactType: 'visit_debrief',
+      conversation_id: conversationId,
+      school_id: schoolId,
+      artifact_type: 'visit_debrief',
     }),
     GeneratedArtifact.filter({
-      conversationId,
-      schoolId,
-      artifactType: 'deep_dive_analysis',
+      conversation_id: conversationId,
+      school_id: schoolId,
+      artifact_type: 'deep_dive_analysis',
     }),
   ]);
   const debriefArtifact = (debriefArtifacts as any)?.[0] || null;
@@ -33,7 +33,7 @@ export async function processDebriefCompletion(params: {
   // 2) Load FamilyJourney by id or userId
   const journey =
     (journeyId && (await FamilyJourney.filter({ id: journeyId }))?.[0]) ||
-    (await FamilyJourney.filter({ userId }))?.[0] ||
+    (await FamilyJourney.filter({ user_id: userId }))?.[0] ||
     null;
 
   if (!journey) {
@@ -41,9 +41,9 @@ export async function processDebriefCompletion(params: {
   }
 
   // 3) Find/create schoolJourney entry; set VISITED + timestamps
-  let currentPhase = (journey as any)?.currentPhase || null;
+  let currentPhase = (journey as any)?.current_phase || null;
   const nowIso = new Date().toISOString();
-  let schoolJourneys: any[] = Array.isArray((journey as any)?.schoolJourneys) ? [...(journey as any).schoolJourneys] : [];
+  let schoolJourneys: any[] = Array.isArray((journey as any)?.school_journeys) ? [...(journey as any).school_journeys] : [];
   let item = schoolJourneys.find((sj: any) => sj.schoolId === schoolId);
 
   if (item) {
@@ -118,16 +118,16 @@ Based on what the family shared during their visit, provide a fit re-evaluation.
         };
 
         await GeneratedArtifact.create({
-          userId,
-          conversationId,
-          schoolId,
-          artifactType: 'fit_reevaluation',
+          user_id: userId,
+          conversation_id: conversationId,
+          school_id: schoolId,
+          artifact_type: 'fit_reevaluation',
           title: 'Fit Re-evaluation',
           content: fitReevalContent,
           status: 'ready',
-          isShared: false,
-          pdfUrl: null,
-          shareToken: null,
+          is_shared: false,
+          pdf_url: null,
+          share_token: null,
         });
       }
     } else {
@@ -153,8 +153,8 @@ Based on what the family shared during their visit, provide a fit re-evaluation.
     if (!hasTouring && currentPhase === 'EXPERIENCE') {
       nextPhase = 'DECIDE';
     }
-    const updatePayload: any = { schoolJourneys };
-    if (nextPhase) updatePayload.currentPhase = nextPhase;
+    const updatePayload: any = { school_journeys: schoolJourneys };
+    if (nextPhase) updatePayload.current_phase = nextPhase;
     await FamilyJourney.update((journey as any).id, updatePayload);
   }
 

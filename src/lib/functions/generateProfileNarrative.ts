@@ -81,7 +81,7 @@ Commute preference: ${commuteDisplay}`;
   });
 
   // Update ChatSession with new narrative
-  await ChatSession.update(sessionId, { aiNarrative });
+  await ChatSession.update(sessionId, { ai_narrative: aiNarrative });
 
   console.log('[generateProfileNarrative] Updated ChatSession narrative');
 

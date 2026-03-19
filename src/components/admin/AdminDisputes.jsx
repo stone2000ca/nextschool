@@ -13,25 +13,25 @@ export default function AdminDisputes() {
   async function load() {
     setLoading(true);
     const raw = await DisputeRequest.filter({ status: "pending" });
-    raw.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    raw.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
     // Enrich with school name + current owner from SchoolAdmin
     const enrichedRows = await Promise.all(raw.map(async (d) => {
-      let schoolName = d.schoolId;
+      let schoolName = d.school_id;
       let ownerEmail = "—";
       let ownerName = "—";
 
       try {
-        const schools = await School.filter({ id: d.schoolId });
+        const schools = await School.filter({ id: d.school_id });
         if (schools[0]) schoolName = schools[0].name;
       } catch (_) {}
 
       try {
-        const admins = await SchoolAdmin.filter({ schoolId: d.schoolId, role: "owner", isActive: true });
+        const admins = await SchoolAdmin.filter({ school_id: d.school_id, role: "owner", is_active: true });
         if (admins[0]) {
-          ownerEmail = admins[0].userId || "—";
+          ownerEmail = admins[0].user_id || "—";
           // Try to get user email by userId
-          const users = await UserEntity.filter({ id: admins[0].userId });
+          const users = await UserEntity.filter({ id: admins[0].user_id });
           if (users[0]) {
             ownerEmail = users[0].email || "—";
             ownerName = users[0].full_name || "—";
@@ -39,7 +39,7 @@ export default function AdminDisputes() {
         }
       } catch (_) {}
 
-      return { ...d, schoolName, ownerEmail, ownerName };
+      return { ...d, school_name: schoolName, ownerEmail, ownerName };
     }));
 
     setEnriched(enrichedRows);
@@ -62,22 +62,22 @@ export default function AdminDisputes() {
     const newUserId = users[0].id;
 
     // Save existing owner IDs for rollback
-    const existingAdmins = await SchoolAdmin.filter({ schoolId: dispute.schoolId, role: "owner" });
+    const existingAdmins = await SchoolAdmin.filter({ school_id: dispute.school_id, role: "owner" });
     const deactivatedOwnerIds = [];
 
     try {
       // Deactivate existing owner records for this school
       await Promise.all(existingAdmins.map(async a => {
-        await SchoolAdmin.update(a.id, { isActive: false });
+        await SchoolAdmin.update(a.id, { is_active: false });
         deactivatedOwnerIds.push(a.id);
       }));
 
       // Create new owner SchoolAdmin record
       await SchoolAdmin.create({
-        schoolId: dispute.schoolId,
-        userId: newUserId,
+        school_id: dispute.school_id,
+        user_id: newUserId,
         role: "owner",
-        isActive: true,
+        is_active: true,
       });
 
       // Mark dispute approved
@@ -87,7 +87,7 @@ export default function AdminDisputes() {
       setActionMap(m => ({ ...m, [dispute.id]: "done" }));
     } catch (err) {
       // Rollback: re-activate any owners that were deactivated
-      await Promise.all(deactivatedOwnerIds.map(id => SchoolAdmin.update(id, { isActive: true })));
+      await Promise.all(deactivatedOwnerIds.map(id => SchoolAdmin.update(id, { is_active: true })));
       setTransferError("Transfer failed: " + (err.message || "Unknown error") + ". Previous ownership has been restored.");
       setActionMap(m => ({ ...m, [dispute.id]: null }));
     }
@@ -143,9 +143,9 @@ export default function AdminDisputes() {
               <div key={d.id} className="rounded-xl border border-slate-200 bg-white p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 text-base">{d.schoolName}</p>
+                    <p className="font-semibold text-slate-900 text-base">{d.school_name}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Submitted {d.createdAt ? new Date(d.createdAt).toLocaleDateString("en-CA") : "—"}
+                      Submitted {d.created_date ? new Date(d.created_date).toLocaleDateString("en-CA") : "—"}
                     </p>
 
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">

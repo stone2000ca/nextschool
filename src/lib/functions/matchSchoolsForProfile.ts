@@ -92,7 +92,7 @@ export async function matchSchoolsForProfileLogic(params: { sessionId: string; f
   try {
     const searchResult: any = await searchSchoolsLogic({
       ...searchParams,
-      conversationId: (session as any).chatHistoryId,
+      conversationId: (session as any).chat_history_id,
       userId: userId,
       searchQuery: 'profile_edit_refresh'
     });
@@ -103,7 +103,7 @@ export async function matchSchoolsForProfileLogic(params: { sessionId: string; f
   }
 
   // Filter and deduplicate
-  schools = schools.filter((s: any) => s.schoolTypeLabel !== 'Special Needs' && s.schoolTypeLabel !== 'Public');
+  schools = schools.filter((s: any) => s.school_type_label !== 'Special Needs' && s.school_type_label !== 'Public');
   const seen = new Set();
   const deduplicated: any[] = [];
   for (const school of schools) {
@@ -118,7 +118,7 @@ export async function matchSchoolsForProfileLogic(params: { sessionId: string; f
   // Update ChatSession with new matches
   const matchedSchoolIds = matchingSchools.map((s: any) => s.id);
   await ChatSession.update(sessionId, {
-    matchedSchools: JSON.stringify(matchedSchoolIds)
+    matched_schools: JSON.stringify(matchedSchoolIds)
   });
 
   console.log('[matchSchoolsForProfile] Updated ChatSession with', matchedSchoolIds.length, 'matched schools');

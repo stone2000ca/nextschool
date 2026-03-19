@@ -59,7 +59,7 @@ export default function AdminClaims() {
       await School.update(claim.school_id, {
         verified: true,
         claim_status: 'claimed',
-        membershipTier: 'basic',
+        membership_tier: 'basic',
       });
       await SchoolAdmin.create({
         user_id: claim.user_id,
@@ -130,8 +130,8 @@ export default function AdminClaims() {
                     <div className="space-y-1 text-sm text-slate-600">
                       <div><span className="font-medium">Location:</span> {[claim._schoolCity, claim._schoolRegion].filter(Boolean).join(', ') || 'N/A'}</div>
                       <div><span className="font-medium">Claimant:</span> {claim.claimant_name || 'N/A'} — {claim._userEmail}</div>
-                      <div><span className="font-medium">Role at school:</span> {claim.claimantRole || 'N/A'}</div>
-                      <div><span className="font-medium">Verification:</span> {claim.verificationMethod || 'N/A'}</div>
+                      <div><span className="font-medium">Role at school:</span> {claim.claimant_role || 'N/A'}</div>
+                      <div><span className="font-medium">Verification:</span> {claim.verification_method || 'N/A'}</div>
                       <div><span className="font-medium">Submitted:</span> {new Date(claim.created_date).toLocaleDateString('en-CA')}</div>
                     </div>
                   </div>

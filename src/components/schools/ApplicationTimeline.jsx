@@ -39,7 +39,7 @@ export default function ApplicationTimeline({ shortlist }) {
       try {
         const results = await Promise.all(
           shortlist.map(school =>
-            SchoolEvent.filter({ schoolId: school.id, isActive: true })
+            SchoolEvent.filter({ school_id: school.id, is_active: true })
               .then(evs =>
                 evs
                   .filter(e => e.date && e.date >= today)
@@ -155,7 +155,7 @@ export default function ApplicationTimeline({ shortlist }) {
                 day: '2-digit'
               });
 
-              const colorClass = eventTypeColors[ev.eventType] || 'bg-slate-700/20 text-slate-400 border border-slate-700/30';
+              const colorClass = eventTypeColors[ev.event_type] || 'bg-slate-700/20 text-slate-400 border border-slate-700/30';
 
               return (
                 <div key={ev.id} className="flex gap-4 items-start">
@@ -187,7 +187,7 @@ export default function ApplicationTimeline({ shortlist }) {
                         <p className="text-sm font-semibold text-white">{ev.title}</p>
                         <p className="text-xs text-slate-400">{ev.schoolName}</p>
                         <span className={`inline-block text-[10px] font-semibold px-2 py-1 rounded ${colorClass}`}>
-                          {EVENT_TYPE_LABELS[ev.eventType] || ev.eventType}
+                          {EVENT_TYPE_LABELS[ev.event_type] || ev.event_type}
                         </span>
                       </div>
                       <button

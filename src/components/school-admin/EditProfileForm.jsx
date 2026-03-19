@@ -154,10 +154,10 @@ export default function EditProfileForm({ school, onUpdate }) {
               placeholder="City"
             />
           </FieldWrapper>
-          <FieldWrapper label="Province/State" field="provinceState">
+          <FieldWrapper label="Province/State" field="province_state">
             <Input
-              value={formData.provinceState || ''}
-              onChange={(e) => handleChange('provinceState', e.target.value)}
+              value={formData.province_state || ''}
+              onChange={(e) => handleChange('province_state', e.target.value)}
               placeholder="Province/State"
             />
           </FieldWrapper>
@@ -214,10 +214,10 @@ export default function EditProfileForm({ school, onUpdate }) {
           />
         </FieldWrapper>
 
-        <FieldWrapper label="Gender Policy" field="genderPolicy">
+        <FieldWrapper label="Gender Policy" field="gender_policy">
           <select
-            value={formData.genderPolicy || ''}
-            onChange={(e) => handleChange('genderPolicy', e.target.value)}
+            value={formData.gender_policy || ''}
+            onChange={(e) => handleChange('gender_policy', e.target.value)}
             className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
             <option value="">Select...</option>

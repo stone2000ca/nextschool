@@ -123,16 +123,16 @@ export async function extractEntitiesLogic({ message: rawMessage, aiReply, conve
     const t1 = Date.now();
 
     const knownData = conversationFamilyProfile ? {
-      childName: conversationFamilyProfile.childName,
-      childGrade: conversationFamilyProfile.childGrade,
-      locationArea: conversationFamilyProfile.locationArea,
-      maxTuition: conversationFamilyProfile.maxTuition,
+      childName: conversationFamilyProfile.child_name,
+      childGrade: conversationFamilyProfile.child_grade,
+      locationArea: conversationFamilyProfile.location_area,
+      maxTuition: conversationFamilyProfile.max_tuition,
       interests: conversationFamilyProfile.interests,
       priorities: conversationFamilyProfile.priorities,
       dealbreakers: conversationFamilyProfile.dealbreakers,
-      curriculumPreference: conversationFamilyProfile.curriculumPreference,
-      religiousPreference: conversationFamilyProfile.religiousPreference,
-      boardingPreference: conversationFamilyProfile.boardingPreference
+      curriculumPreference: conversationFamilyProfile.curriculum_preference,
+      religiousPreference: conversationFamilyProfile.religious_preference,
+      boardingPreference: conversationFamilyProfile.boarding_preference
     } : {};
 
     const conversationSummary = conversationHistory?.slice(-5)
