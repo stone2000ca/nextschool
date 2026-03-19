@@ -506,7 +506,7 @@ export default function SchoolProfile() {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [relatedSchools, setRelatedSchools] = useState([]);
-  const [sessionId] = useState(() => Math.random().toString(36).substring(2, 11));
+  const [sessionId] = useState(() => crypto.randomUUID());
 
   // Load school by slug or ID
   useEffect(() => {

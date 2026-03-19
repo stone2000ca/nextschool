@@ -10,7 +10,7 @@ import SchoolCardUnified from '@/components/schools/SchoolCardUnified';
 export default function Home() {
   const [schools, setSchools] = useState([]);
   const [loadingSchools, setLoadingSchools] = useState(true);
-  const [sessionId] = useState(Math.random().toString(36).substring(2, 11));
+  const [sessionId] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     // Track page view

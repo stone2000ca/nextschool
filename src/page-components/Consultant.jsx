@@ -74,7 +74,7 @@ export default function Consultant() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
   const [showResponseChips, setShowResponseChips] = useState(false);
-  const [sessionId] = useState(Math.random().toString(36).substring(2, 11));
+  const [sessionId] = useState(() => crypto.randomUUID());
   const [feedbackPromptShown, setFeedbackPromptShown] = useState(false);
   
   // View states
