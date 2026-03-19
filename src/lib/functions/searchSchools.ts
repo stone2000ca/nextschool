@@ -211,7 +211,7 @@ async function performSearch(payload: any) {
 
   let allSchools: any[] = [];
   try {
-    allSchools = await School.filter({}, '-createdDate', 1000);
+    allSchools = await School.filter({}, '-createdAt', 1000);
     if (allSchools.length === 1000) {
       console.warn('[searchSchools] WARNING: School count hit limit (1000). Results may be incomplete.');
     }
