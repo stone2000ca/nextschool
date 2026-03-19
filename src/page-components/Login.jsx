@@ -22,12 +22,12 @@ export default function Login() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (wait for auth to finish loading first)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isLoadingAuth && isAuthenticated) {
       router.replace(returnTo)
     }
-  }, [isAuthenticated, returnTo, router])
+  }, [isAuthenticated, isLoadingAuth, returnTo, router])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -35,14 +35,13 @@ export default function Login() {
     setIsSubmitting(true)
 
     try {
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Login timed out. Please check your connection and try again.')), 15000)
-      )
-      await Promise.race([login(email, password), timeoutPromise])
+      await login(email, password)
+      // signInWithPassword succeeded — navigate immediately.
+      // The onAuthStateChange listener will update isAuthenticated in parallel,
+      // and the useEffect above acts as a fallback redirect.
       router.replace(returnTo)
     } catch (err) {
       setError(err.message || 'Invalid email or password')
-    } finally {
       setIsSubmitting(false)
     }
   }
@@ -61,6 +60,15 @@ export default function Login() {
     } catch (err) {
       setError(err.message || 'Google sign-in failed')
     }
+  }
+
+  // While auth is hydrating, show a spinner instead of flashing the login form
+  if (isLoadingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    )
   }
 
   // Show redirecting message only when we know user is authenticated
