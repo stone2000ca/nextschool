@@ -34,7 +34,7 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
   const loadData = async () => {
     setLoading(true);
     const [allDiffs] = await Promise.all([
-      EnrichmentDiff.filter({ schoolId: school.id }),
+      EnrichmentDiff.filter({ school_id: school.id }),
     ]);
     const userData = authUser;
     setDiffs(allDiffs);
@@ -49,7 +49,7 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
   // Group pending by batchId
   const batches = {};
   for (const d of pendingDiffs) {
-    const key = d.batchId || 'ungrouped';
+    const key = d.batch_id || 'ungrouped';
     if (!batches[key]) batches[key] = [];
     batches[key].push(d);
   }
@@ -57,15 +57,15 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
   const approveDiff = async (diff) => {
     setProcessing(p => new Set(p).add(diff.id));
     // Parse proposedValue (may be JSON string for arrays/objects)
-    let parsedValue = diff.proposedValue;
-    try { parsedValue = JSON.parse(diff.proposedValue); } catch (_) {}
+    let parsedValue = diff.proposed_value;
+    try { parsedValue = JSON.parse(diff.proposed_value); } catch (_) {}
 
     await Promise.all([
       School.update(school.id, { [diff.field]: parsedValue }),
       EnrichmentDiff.update(diff.id, {
         status: 'approved',
-        reviewedBy: user?.email || '',
-        reviewedAt: new Date().toISOString(),
+        reviewed_by: user?.email || '',
+        reviewed_at: new Date().toISOString(),
       }),
     ]);
     setDiffs(prev => {
@@ -80,8 +80,8 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
     setProcessing(p => new Set(p).add(diff.id));
     await EnrichmentDiff.update(diff.id, {
       status: 'rejected',
-      reviewedBy: user?.email || '',
-      reviewedAt: new Date().toISOString(),
+      reviewed_by: user?.email || '',
+      reviewed_at: new Date().toISOString(),
     });
     setDiffs(prev => {
       const next = prev.map(d => d.id === diff.id ? { ...d, status: 'rejected' } : d);
@@ -178,16 +178,16 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
                 {batchDiffs.map(diff => (
                   <tr key={diff.id} className={rowBg(diff.confidence)}>
                     <td className="px-4 py-3 font-medium text-slate-700 whitespace-nowrap">{diff.field}</td>
-                    <td className="px-4 py-3 text-slate-500 max-w-[180px] truncate" title={diff.currentValue}>
-                      {diff.currentValue || <span className="italic text-slate-300">empty</span>}
+                    <td className="px-4 py-3 text-slate-500 max-w-[180px] truncate" title={diff.current_value}>
+                      {diff.current_value || <span className="italic text-slate-300">empty</span>}
                     </td>
-                    <td className="px-4 py-3 text-slate-800 max-w-[220px] truncate" title={diff.proposedValue}>
-                      {diff.proposedValue}
+                    <td className="px-4 py-3 text-slate-800 max-w-[220px] truncate" title={diff.proposed_value}>
+                      {diff.proposed_value}
                     </td>
                     <td className="px-4 py-3">{confidenceBadge(diff.confidence)}</td>
                     <td className="px-4 py-3">
-                      {diff.sourceUrl ? (
-                        <a href={diff.sourceUrl} target="_blank" rel="noopener noreferrer"
+                      {diff.source_url ? (
+                        <a href={diff.source_url} target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-teal-600 hover:underline text-xs">
                           <ExternalLink className="h-3 w-3" /> source
                         </a>

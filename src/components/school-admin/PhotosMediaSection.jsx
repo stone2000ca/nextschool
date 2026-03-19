@@ -10,7 +10,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
   const [uploading, setUploading] = useState(null);
   const [formData, setFormData] = useState({
     videoUrl: school?.videos?.[0] || '',
-    virtualTourUrl: school?.virtualTourUrl || '',
+    virtualTourUrl: school?.virtual_tour_url || '',
   });
 
   const recalculateScore = () => {
@@ -26,9 +26,9 @@ export default function PhotosMediaSection({ school, onUpdate }) {
       const { file_url } = await invokeFunction('uploadFile', { file });
       
       if (field === 'logoUrl') {
-        await School.update(school.id, { logoUrl: file_url });
+        await School.update(school.id, { logo_url: file_url });
       } else if (field === 'headerPhotoUrl') {
-        await School.update(school.id, { headerPhotoUrl: file_url });
+        await School.update(school.id, { header_photo_url: file_url });
       }
       
       onUpdate && onUpdate(field, file_url);
@@ -48,8 +48,8 @@ export default function PhotosMediaSection({ school, onUpdate }) {
     setUploading('gallery');
     try {
       const { file_url } = await invokeFunction('uploadFile', { file });
-      const newGallery = [...(school?.photoGallery || []), file_url];
-      await School.update(school.id, { photoGallery: newGallery });
+      const newGallery = [...(school?.photo_gallery || []), file_url];
+      await School.update(school.id, { photo_gallery: newGallery });
       onUpdate && onUpdate('photoGallery', newGallery);
       toast.success('Photo added to gallery');
       recalculateScore();
@@ -64,15 +64,15 @@ export default function PhotosMediaSection({ school, onUpdate }) {
   const handleRemovePhoto = async (field, url) => {
     try {
       if (field === 'logoUrl') {
-        await School.update(school.id, { logoUrl: null });
-        onUpdate && onUpdate('logoUrl', null);
+        await School.update(school.id, { logo_url: null });
+        onUpdate && onUpdate('logo_url', null);
       } else if (field === 'headerPhotoUrl') {
-        await School.update(school.id, { headerPhotoUrl: null });
-        onUpdate && onUpdate('headerPhotoUrl', null);
+        await School.update(school.id, { header_photo_url: null });
+        onUpdate && onUpdate('header_photo_url', null);
       } else if (field === 'gallery') {
-        const newGallery = school.photoGallery.filter(u => u !== url);
-        await School.update(school.id, { photoGallery: newGallery });
-        onUpdate && onUpdate('photoGallery', newGallery);
+        const newGallery = school.photo_gallery.filter(u => u !== url);
+        await School.update(school.id, { photo_gallery: newGallery });
+        onUpdate && onUpdate('photo_gallery', newGallery);
       }
       toast.success('Photo removed');
       recalculateScore();
@@ -89,7 +89,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
     if (field === 'videoUrl') {
       updateData.videos = value ? [value] : [];
     } else if (field === 'virtualTourUrl') {
-      updateData.virtualTourUrl = value;
+      updateData.virtual_tour_url = value;
     }
 
     try {
@@ -109,11 +109,11 @@ export default function PhotosMediaSection({ school, onUpdate }) {
         <p className="text-xs text-slate-600 mb-4">Recommended: Square, 400x400px, PNG/JPG</p>
         {school?.logoUrl && (
           <div className="mb-4 flex items-center gap-4">
-            <img src={school.logoUrl} alt="Logo" className="h-24 w-24 rounded-lg border object-cover" />
+            <img src={school.logo_url} alt="Logo" className="h-24 w-24 rounded-lg border object-cover" />
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => handleRemovePhoto('logoUrl', school.logoUrl)}
+              onClick={() => handleRemovePhoto('logoUrl', school.logo_url)}
             >
               <X className="h-3 w-3 mr-1" />
               Remove
@@ -150,11 +150,11 @@ export default function PhotosMediaSection({ school, onUpdate }) {
         <p className="text-xs text-slate-600 mb-4">Recommended: Landscape, 1200x400px</p>
         {school?.headerPhotoUrl && (
           <div className="mb-4 flex flex-col gap-3">
-            <img src={school.headerPhotoUrl} alt="Header" className="h-32 w-full rounded-lg border object-cover" />
+            <img src={school.header_photo_url} alt="Header" className="h-32 w-full rounded-lg border object-cover" />
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => handleRemovePhoto('headerPhotoUrl', school.headerPhotoUrl)}
+              onClick={() => handleRemovePhoto('headerPhotoUrl', school.header_photo_url)}
               className="w-fit"
             >
               <X className="h-3 w-3 mr-1" />

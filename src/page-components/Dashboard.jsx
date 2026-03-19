@@ -55,12 +55,12 @@ export default function Dashboard() {
 
       // Fetch ChatSession records for this user
       const chatSessions = await ChatSession.filter({
-        userId: userData.id
+        user_id: userData.id
       });
       
       // Sort by createdAt descending (most recent first)
       const sorted = chatSessions.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
+        new Date(b.created_at) - new Date(a.created_at)
       );
       
       setSessions(sorted);
@@ -87,7 +87,7 @@ export default function Dashboard() {
       const activeSession = activeSessions[0];
       const matchedCount = activeSession ? (() => {
         try {
-          return activeSession.matchedSchools ? JSON.parse(activeSession.matchedSchools).length : 0;
+          return activeSession.matched_schools ? JSON.parse(activeSession.matched_schools).length : 0;
         } catch {
           return 0;
         }
@@ -150,13 +150,13 @@ export default function Dashboard() {
 
     try {
       // Cascade delete: Remove associated ChatHistory
-      if (sessionToDelete.chatHistoryId) {
-        await ChatHistory.delete(sessionToDelete.chatHistoryId);
+      if (sessionToDelete.chat_history_id) {
+        await ChatHistory.delete(sessionToDelete.chat_history_id);
       }
       // Delete the session
       await ChatSession.update(sessionToDelete.id, { 
         status: 'deleted',
-        isActive: false 
+        is_active: false
       });
       await checkAuthAndLoadSessions();
     } catch (err) {
@@ -210,10 +210,10 @@ export default function Dashboard() {
         return ChatSession.update(s.id, { status: 'archived' });
       } else {
         // Permanently delete archived sessions + their chat history
-        if (s.chatHistoryId) {
-          await ChatHistory.delete(s.chatHistoryId);
+        if (s.chat_history_id) {
+          await ChatHistory.delete(s.chat_history_id);
         }
-        return ChatSession.update(s.id, { status: 'deleted', isActive: false });
+        return ChatSession.update(s.id, { status: 'deleted', is_active: false});
       }
     }));
   };
@@ -397,11 +397,11 @@ export default function Dashboard() {
                       >
                         <div className="flex-1">
                           <h3 className="font-semibold text-white">
-                            {session.profileName || 'Untitled Profile'}
+                            {session.profile_name || 'Untitled Profile'}
                           </h3>
                           <p className="text-sm text-white/60 mt-1">
-                            {session.childName && `${session.childName}`}
-                            {session.childName && session.childGrade != null && ` • Grade ${session.childGrade}`}
+                            {session.child_name && `${session.child_name}`}
+                            {session.child_name && session.child_grade != null && ` • Grade ${session.child_grade}`}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -467,10 +467,10 @@ export default function Dashboard() {
                   disabled={modalLoading}
                   className="w-full p-3 text-left bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <p className="text-white font-medium text-sm">{session.profileName || 'Untitled'}</p>
+                  <p className="text-white font-medium text-sm">{session.profile_name || 'Untitled'}</p>
                   <p className="text-white/60 text-xs mt-0.5">
-                    {session.childName && `${session.childName}`}
-                    {session.childName && session.childGrade != null && ` • Grade ${session.childGrade}`}
+                    {session.child_name && `${session.child_name}`}
+                    {session.child_name && session.child_grade != null && ` • Grade ${session.child_grade}`}
                   </p>
                 </button>
               ))}
@@ -496,11 +496,11 @@ export default function Dashboard() {
               <div>
                 <h2 className="text-xl font-semibold text-white mb-2">Start a New Search?</h2>
                 <p className="text-white/70 text-sm">
-                  Starting a new search will replace <strong>{sessions[0].profileName || 'Untitled Profile'}</strong>, including{' '}
+                  Starting a new search will replace <strong>{sessions[0].profile_name || 'Untitled Profile'}</strong>, including{' '}
                   <strong>
                     {(() => {
                       try {
-                        return sessions[0].matchedSchools ? JSON.parse(sessions[0].matchedSchools).length : 0;
+                        return sessions[0].matched_schools ? JSON.parse(sessions[0].matched_schools).length : 0;
                       } catch {
                         return 0;
                       }
@@ -573,12 +573,12 @@ export default function Dashboard() {
             const activeSession = sessions.find(s => s.status === 'active');
             if (!activeSession) return 0;
             try {
-              return activeSession.matchedSchools ? JSON.parse(activeSession.matchedSchools).length : 0;
+              return activeSession.matched_schools ? JSON.parse(activeSession.matched_schools).length : 0;
             } catch {
               return 0;
             }
           })(),
-          shortlistedCount: sessions.find(s => s.status === 'active')?.shortlistedCount || 0
+          shortlisted_count: sessions.find(s => s.status === 'active')?.shortlisted_count || 0
         }}
       />
     </div>

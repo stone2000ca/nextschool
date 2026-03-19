@@ -207,10 +207,10 @@ export default function Consultant() {
     }
     (async () => {
       try {
-        const journeys = await FamilyJourney.filter({ userId: user.id, isArchived: false });
+        const journeys = await FamilyJourney.filter({ user_id: user.id, is_archived: false });
         if (!journeys.length) { setSchoolJourney(null); return; }
-        const journey = journeys.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-        const schoolJourneys = await SchoolJourney.filter({ familyJourneyId: journey.id, schoolId: selectedSchool.id });
+        const journey = journeys.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+        const schoolJourneys = await SchoolJourney.filter({ family_journey_id: journey.id, school_id: selectedSchool.id });
         const sj = schoolJourneys[0] || null;
         setSchoolJourney(sj);
       } catch { setSchoolJourney(null); }
@@ -240,18 +240,18 @@ export default function Consultant() {
       setResearchNotes('');
       return;
     }
-    ResearchNote.filter({ userId: user.id, schoolId: selectedSchool.id }).then(results => {
+    ResearchNote.filter({ user_id: user.id, school_id: selectedSchool.id }).then(results => {
       setResearchNotes(results[0]?.notes || '');
     }).catch(() => setResearchNotes(''));
   }, [selectedSchool?.id, isAuthenticated, user?.id]);
 
   const handleSaveNotes = async () => {
     if (!selectedSchool?.id || !user?.id) return;
-    const existing = await ResearchNote.filter({ userId: user.id, schoolId: selectedSchool.id });
+    const existing = await ResearchNote.filter({ user_id: user.id, school_id: selectedSchool.id });
     if (existing.length > 0) {
-      await ResearchNote.update(existing[0].id, { notes: researchNotes, updatedAt: new Date().toISOString() });
+      await ResearchNote.update(existing[0].id, { notes: researchNotes, updated_at: new Date().toISOString() });
     } else {
-      await ResearchNote.create({ userId: user.id, schoolId: selectedSchool.id, notes: researchNotes, updatedAt: new Date().toISOString() });
+      await ResearchNote.create({ user_id: user.id, school_id: selectedSchool.id, notes: researchNotes, updated_at: new Date().toISOString() });
     }
   };
 
@@ -261,12 +261,12 @@ export default function Consultant() {
       setContactLog([]);
       return;
     }
-    SchoolInquiry.filter({ schoolId: selectedSchool.id }).then(inquiries => {
+    SchoolInquiry.filter({ school_id: selectedSchool.id }).then(inquiries => {
       setContactLog(inquiries.map(inq => ({
-        type: inq.inquiryType === 'tour_request' ? 'Tour Request' : 'General Inquiry',
-        date: new Date(inq.createdAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }),
-        status: inq.tourStatus || inq.status || 'pending',
-        note: inq.specialRequests || '',
+        type: inq.inquiry_type === 'tour_request' ? 'Tour Request' : 'General Inquiry',
+        date: new Date(inq.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: inq.tour_status || inq.status || 'pending',
+        note: inq.special_requests || '',
       })));
     }).catch(() => setContactLog([]));
   }, [selectedSchool?.id, isAuthenticated]);
@@ -290,7 +290,7 @@ export default function Consultant() {
   const inputRef = useRef(null);
 
   // Determine UI phase based on state and schools
-  const currentState = currentConversation?.conversationContext?.state || STATES.WELCOME;
+  const currentState = currentConversation?.conversation_context?.state || STATES.WELCOME;
 
   // Data loader hook — must come before useShortlist so familyProfile is available
   const {
@@ -332,19 +332,19 @@ export default function Consultant() {
   // Whether the Family Brief toggle should be visible
   const isBriefState = true; // T045: FamilyBrief visible in all states
   const hasFamilyProfileData = familyProfile && Object.entries(familyProfile).some(
-    ([k, v]) => !['id', 'userId', 'conversationId', 'createdAt', 'updatedAt', 'createdBy', 'onboardingPhase', 'onboardingComplete'].includes(k)
+    ([k, v]) => !['id', 'user_id', 'conversation_id', 'created_at', 'updated_at', 'created_by', 'onboarding_phase', 'onboarding_complete'].includes(k)
       && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0) && v !== ''
   );
   const showBriefToggle = isBriefState && hasFamilyProfileData;
   
-  // FIX 17: Sync briefStatus from conversationContext whenever it changes
+  // FIX 17: Sync briefStatus from conversation_context whenever it changes
   useEffect(() => {
-    const contextBriefStatus = currentConversation?.conversationContext?.briefStatus;
+    const contextBriefStatus = currentConversation?.conversation_context?.briefStatus;
     if (contextBriefStatus !== briefStatus) {
       console.log('[FIX 17] Syncing briefStatus:', contextBriefStatus);
       setBriefStatus(contextBriefStatus);
     }
-  }, [currentConversation?.conversationContext?.briefStatus]);
+  }, [currentConversation?.conversation_context?.briefStatus]);
   
   // BUG-DD-001 FIX: selectedSchool is the SINGLE SOURCE OF TRUTH for detail view
   useEffect(() => {
@@ -360,9 +360,9 @@ export default function Consultant() {
     }
     
     // Only sync view from state if NO school is selected
-    const conversationState = currentConversation?.conversationContext?.state || STATES.WELCOME;
+    const conversationState = currentConversation?.conversation_context?.state || STATES.WELCOME;
     setCurrentView(mapStateToView(conversationState));
-  }, [currentConversation?.conversationContext?.state, selectedSchool, currentView]);
+  }, [currentConversation?.conversation_context?.state, selectedSchool, currentView]);
   
   const isIntakePhase = !isRestoringSessionRef.current && (
                         schools.length === 0 && 
@@ -411,7 +411,7 @@ export default function Consultant() {
     filterOverrides,
     setFilterOverrides,
     resetFilterOverrides,
-  } = useSchoolFiltering(schools, currentConversation?.conversationContext);
+  } = useSchoolFiltering(schools, currentConversation?.conversation_context);
 
   // BRIEF→RESULTS transition animation
   useEffect(() => {
@@ -550,10 +550,10 @@ export default function Consultant() {
     }
   }, [sessionIdParam, isAuthenticated, user?.id, currentConversation?.id]);
 
-  // Hydrate schools from restored conversationContext (after session restore or when context first arrives)
+  // Hydrate schools from restored conversation_context (after session restore or when context first arrives)
   useEffect(() => {
     const hydrate = async () => {
-      let restored = currentConversation?.conversationContext?.schools;
+      let restored = currentConversation?.conversation_context?.schools;
       if (!restored) return;
       // If stored as JSON string, parse first
       if (typeof restored === 'string') {
@@ -571,7 +571,7 @@ export default function Consultant() {
       }
     };
     hydrate();
-  }, [currentConversation?.conversationContext?.schools]);
+  }, [currentConversation?.conversation_context?.schools]);
 
   // Restore guest session when user becomes authenticated
   useEffect(() => {
@@ -628,16 +628,16 @@ export default function Consultant() {
         setUser(userData);
         
         // Check daily token replenishment
-        const plan = userData.subscriptionPlan || userData.tier || 'free';
+        const plan = userData.subscription_plan || userData.tier || 'free';
         const limits = getPlanLimits(plan);
         if (plan !== PLAN_NAMES.FREE) {
           setTokenBalance(999999);
           setIsPremium(true);
         } else {
         const today = new Date().toISOString().split('T')[0];
-        const renewalDate = userData.renewalDate ? userData.renewalDate.split('T')[0] : null;
-        
-        let newBalance = userData.tokenBalance !== undefined ? userData.tokenBalance : limits.total;
+        const renewalDate = userData.renewal_date ? userData.renewal_date.split('T')[0] : null;
+
+        let newBalance = userData.token_balance !== undefined ? userData.token_balance : limits.total;
         let needsUpdate = false;
         
         // Replenish tokens if it's a new day
@@ -647,8 +647,8 @@ export default function Consultant() {
           
           // Update user with new balance and renewal date
           await authUpdateMe({
-            tokenBalance: newBalance,
-            renewalDate: new Date().toISOString()
+            token_balance: newBalance,
+            renewal_date: new Date().toISOString()
           });
         }
         
@@ -679,12 +679,12 @@ export default function Consultant() {
 
   const loadConversations = async (userId) => {
     try {
-      const convos = await ChatHistory.filter({ userId, isActive: true });
+      const convos = await ChatHistory.filter({ user_id: userId, is_active: true });
       // Sort: starred first (by date), then unstarred (by date)
       const sorted = convos.sort((a, b) => {
         if (a.starred && !b.starred) return -1;
         if (!a.starred && b.starred) return 1;
-        return new Date(b.updatedAt) - new Date(a.updatedAt);
+        return new Date(b.updated_at) - new Date(a.updated_at);
       });
       setConversations(sorted);
     } catch (error) {
@@ -702,8 +702,8 @@ export default function Consultant() {
     }
 
     // Check conversation limit
-    const activeCount = conversations.filter(c => c.isActive).length;
-    const plan = user?.subscriptionPlan || 'free';
+    const activeCount = conversations.filter(c => c.is_active).length;
+    const plan = user?.subscription_plan || 'free';
     const limit = getConversationLimits(plan);
 
     if (activeCount >= limit) {
@@ -720,11 +720,11 @@ export default function Consultant() {
   const proceedWithNewConversation = async () => {
     try {
       const newConvo = {
-        userId: user?.id,
+        user_id: user?.id,
         title: 'New Conversation',
         messages: [],
-        conversationContext: { consultant: selectedConsultant },
-        isActive: true
+        conversation_context: { consultant: selectedConsultant },
+        is_active: true
       };
       
       const created = await ChatHistory.create(newConvo);
@@ -743,13 +743,13 @@ export default function Consultant() {
     try {
       // Find oldest active conversation
       const oldestConvo = conversations
-        .filter(c => c.isActive)
-        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+        .filter(c => c.is_active)
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
       
       if (oldestConvo) {
         // Archive it
         await ChatHistory.update(oldestConvo.id, {
-          isActive: false
+          is_active: false
         });
         
         // Reload conversations
@@ -768,7 +768,7 @@ export default function Consultant() {
 
   const resetChatState = () => {
     setMessages([]);
-    setCurrentConversation({ conversationContext: {} });
+    setCurrentConversation({ conversation_context: {} });
     setBriefStatus(null);
     setOnboardingPhase(null);
     setActiveJourney(null);
@@ -837,13 +837,13 @@ export default function Consultant() {
     setRemovedSchoolIds([]);
     
     // FIX #3: Set briefStatus from conversation context
-    const contextBriefStatus = convo.conversationContext?.briefStatus;
+    const contextBriefStatus = convo.conversation_context?.briefStatus;
     if (contextBriefStatus) {
       setBriefStatus(contextBriefStatus);
     } else {
       setBriefStatus(null);
     }
-    
+
     // Then set messages from this conversation
     const msgs = convo.messages || [];
     if (msgs.length === 0) {
@@ -854,21 +854,21 @@ export default function Consultant() {
       };
       setMessages([greeting]);
       // Clear conversation context for new conversations to prevent memory leaks
-      setCurrentConversation({ ...convo, conversationContext: {} });
+      setCurrentConversation({ ...convo, conversation_context: {} });
     } else {
       setMessages(msgs);
     }
-    
+
     // BUG-DD-001: Map state to view with DEEP_DIVE guard
-    const conversationState = convo.conversationContext?.state || STATES.WELCOME;
+    const conversationState = convo.conversation_context?.state || STATES.WELCOME;
     const isDeepDiveWithSchool = conversationState === STATES.DEEP_DIVE && selectedSchool !== null;
-    
+
     if (!isDeepDiveWithSchool) {
       setCurrentView(mapStateToView(conversationState));
     }
-    setSchools(convo.conversationContext?.schools || []);
+    setSchools(convo.conversation_context?.schools || []);
     // BUG-DD-001 FIX: Only clear selectedSchool if NOT in DEEP_DIVE state
-    if (convo.conversationContext?.state !== STATES.DEEP_DIVE) {
+    if (convo.conversation_context?.state !== STATES.DEEP_DIVE) {
       setSelectedSchool(null);
     }
   };
@@ -878,17 +878,17 @@ export default function Consultant() {
     setCurrentView('schools');
     if (currentConversation) {
       const updatedContext = {
-        ...currentConversation.conversationContext,
+        ...currentConversation.conversation_context,
         state: STATES.RESULTS,
         selectedSchoolId: null,
       };
       setCurrentConversation(prevConvo => ({
         ...prevConvo,
-        conversationContext: updatedContext,
+        conversation_context: updatedContext,
       }));
       if (currentConversation.id) {
         await ChatHistory.update(currentConversation.id, {
-          conversationContext: updatedContext,
+          conversation_context: updatedContext,
         });
       }
     }
@@ -905,7 +905,7 @@ export default function Consultant() {
   };
 
   // E31-003: Load More Schools handler
-  const conversationContext = currentConversation?.conversationContext;
+  const conversationContext = currentConversation?.conversation_context;
   const loadMoreSchools = useCallback(async () => {
     const lat = conversationContext?.resolvedLat || familyProfile?.resolvedLat || userLocation?.lat;
     const lng = conversationContext?.resolvedLng || familyProfile?.resolvedLng || userLocation?.lng;
@@ -1062,15 +1062,15 @@ export default function Consultant() {
     } catch (e) {
       console.warn('[E11b] generateComparison failed (non-blocking):', e.message);
     }
-    // Update conversationContext so chat AI knows which schools are being compared
+    // Update conversation_context so chat AI knows which schools are being compared
     const updatedContext = {
-      ...(currentConversation?.conversationContext || {}),
+      ...(currentConversation?.conversation_context || {}),
       comparingSchools: comparedSchools.map(s => s.name),
     };
-    setCurrentConversation(prev => prev ? { ...prev, conversationContext: updatedContext } : prev);
+    setCurrentConversation(prev => prev ? { ...prev, conversation_context: updatedContext } : prev);
     if (currentConversation?.id) {
       await ChatHistory.update(currentConversation.id, {
-        conversationContext: updatedContext,
+        conversation_context: updatedContext,
       });
     }
     // Trigger narration
@@ -1097,7 +1097,7 @@ export default function Consultant() {
     try {
       // Mark as inactive instead of deleting
       await ChatHistory.update(conversationToDelete.id, {
-        isActive: false
+        is_active: false
       });
       
       // Reload conversations
@@ -1105,7 +1105,7 @@ export default function Consultant() {
       
       // Clear current conversation if it was the one deleted
       if (currentConversation?.id === conversationToDelete.id) {
-        const firstActive = conversations.find(c => c.id !== conversationToDelete.id && c.isActive);
+        const firstActive = conversations.find(c => c.id !== conversationToDelete.id && c.is_active);
         if (firstActive) {
           selectConversation(firstActive);
         } else {
@@ -1597,9 +1597,9 @@ export default function Consultant() {
                 setLeftPanelMode('grid');
                 setComparisonData(null);
                 // Clear comparingSchools from context
-                const updatedContext = { ...(currentConversation?.conversationContext || {}) };
+                const updatedContext = { ...(currentConversation?.conversation_context || {}) };
                 delete updatedContext.comparingSchools;
-                setCurrentConversation(prev => prev ? { ...prev, conversationContext: updatedContext } : prev);
+                setCurrentConversation(prev => prev ? { ...prev, conversation_context: updatedContext } : prev);
               }}
             />
           ) : currentView === 'detail' && selectedSchool ? (

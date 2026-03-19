@@ -16,7 +16,7 @@ export default function TestimonialsSection({ school }) {
 
   useEffect(() => {
     if (school?.id) {
-      Testimonial.filter({ schoolId: school.id })
+      Testimonial.filter({ school_id: school.id })
         .then(setTestimonials)
         .catch(() => {})
         .finally(() => setLoading(false));
@@ -43,7 +43,7 @@ export default function TestimonialsSection({ school }) {
     const updated = [];
     for (const t of testimonials) {
       const payload = {
-        schoolId: school.id,
+        school_id: school.id,
         author_first_name: t.author_first_name.slice(0, 50),
         author_role: t.author_role,
         quote_text: t.quote_text.slice(0, 500),

@@ -99,10 +99,10 @@ export default function ClaimSchool() {
       setUser(userData);
 
       // Check if user already has an active claim
-      const claims = await SchoolClaim.filter({ userId: userData.id });
+      const claims = await SchoolClaim.filter({ user_id: userData.id });
       const activeClaim = claims.find(c => ['pending_email', 'pending_review', 'verified'].includes(c.status));
       if (activeClaim) {
-        const schools = await School.filter({ id: activeClaim.schoolId });
+        const schools = await School.filter({ id: activeClaim.school_id });
         setClaimSchoolName(schools[0]?.name || '');
         setExistingClaim(activeClaim);
         setLoading(false);
@@ -125,10 +125,10 @@ export default function ClaimSchool() {
         const s = schools[0];
         setSchool(s);
         // Check if already claimed by another user
-        if (s.claimStatus === 'claimed') {
-          const admins = await SchoolAdmin.filter({ schoolId: schoolId, role: 'owner', isActive: true });
-          if (admins.length > 0 && admins[0].userId) {
-            const users = await User.filter({ id: admins[0].userId });
+        if (s.claim_status === 'claimed') {
+          const admins = await SchoolAdmin.filter({ school_id: schoolId, role: 'owner', is_active: true });
+          if (admins.length > 0 && admins[0].user_id) {
+            const users = await User.filter({ id: admins[0].user_id });
             const ownerEmail = users[0]?.email || '';
             const domain = ownerEmail.split('@')[1] || null;
             setAlreadyClaimed({ domain });
@@ -195,12 +195,12 @@ export default function ClaimSchool() {
 
       // Create SchoolClaim record (no code stored client-side)
       const claim = await SchoolClaim.create({
-        schoolId,
-        userId: user?.id,
-        claimantName: formData.name,
-        claimantRole: formData.role,
-        claimantEmail: formData.email,
-        verificationMethod: method,
+        school_id: schoolId,
+        user_id: user?.id,
+        claimant_name: formData.name,
+        claimant_role: formData.role,
+        claimant_email: formData.email,
+        verification_method: method,
         status
       });
 
@@ -328,13 +328,13 @@ export default function ClaimSchool() {
 
       // Update claim with document and pending_review status
       await SchoolClaim.update(claimId, {
-        documentUrl,
+        document_url: documentUrl,
         status: 'pending_review'
       });
 
       // Update School claim status to pending
       await School.update(schoolId, {
-        claimStatus: 'pending'
+        claim_status: 'pending'
       });
 
       // Send document received email
@@ -370,7 +370,7 @@ export default function ClaimSchool() {
     try {
       await SchoolClaim.update(existingClaim.id, { status: 'cancelled' });
       if (existingClaim.status === 'pending_review') {
-        await School.update(existingClaim.schoolId, { claimStatus: null });
+        await School.update(existingClaim.school_id, { claim_status: null });
       }
       setExistingClaim(null);
       setShowCancelConfirm(false);
@@ -426,7 +426,7 @@ export default function ClaimSchool() {
                   >
                     <div className="flex flex-col">
                       <span className="font-medium text-slate-800">{result.name}</span>
-                      <span className="text-sm text-slate-500">{result.city}, {result.provinceState}</span>
+                      <span className="text-sm text-slate-500">{result.city}, {result.province_state}</span>
                     </div>
                   </Button>
                 ))}
@@ -487,7 +487,7 @@ export default function ClaimSchool() {
               <p className="text-lg text-slate-700 font-medium mb-2">{claimSchoolName}</p>
               <p className="text-slate-600 mb-8">Your school claim has been verified. You can now manage your school's profile.</p>
               <Button
-                onClick={() => router.push(`/school-admin?schoolId=${existingClaim.schoolId}`)}
+                onClick={() => router.push(`/school-admin?schoolId=${existingClaim.school_id}`)}
                 className="bg-teal-600 hover:bg-teal-700 px-8"
               >
                 Go to School Admin
@@ -514,9 +514,9 @@ export default function ClaimSchool() {
                   {STATUS_LABELS[existingClaim.status]}
                 </span>
               </div>
-              {existingClaim.createdAt && (
+              {existingClaim.created_at && (
                 <p className="text-xs text-slate-500 mt-1">
-                  Submitted {new Date(existingClaim.createdAt).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  Submitted {new Date(existingClaim.created_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               )}
               <p className="text-xs text-slate-500 mt-2">Most claims are reviewed within 1–2 business days.</p>
