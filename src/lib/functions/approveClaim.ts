@@ -19,9 +19,8 @@ export async function approveClaim(params: {
 
   // Update school to claimed
   await School.update(schoolId, {
-    verified: true,
     claim_status: 'claimed',
-    membership_tier: 'basic',
+    listing_tier: 'basic',
   })
 
   // Create SchoolAdmin record linking user to school
