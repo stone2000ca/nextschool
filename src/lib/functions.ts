@@ -44,6 +44,7 @@ const ROUTE_MAP: Record<string, string> = {
   sendClaimEmail: 'send-claim-email',
   verifyClaimCode: 'verify-claim-code',
   approveClaim: 'approve-claim',
+  adminStats: 'admin-stats',
 }
 
 export async function invokeFunction<T = any>(name: string, payload: any): Promise<T> {

@@ -3,12 +3,19 @@ import { SchoolClaim, SchoolAdmin, School } from '@/lib/entities-server'
 export async function approveClaim(params: {
   claimId: string
   schoolId: string
-  userId: string
+  userId?: string
 }) {
-  const { claimId, schoolId, userId } = params
+  const { claimId, schoolId } = params
+  let { userId } = params
 
   if (!claimId || !schoolId) {
     throw Object.assign(new Error('claimId and schoolId are required'), { statusCode: 400 })
+  }
+
+  // Safety net: if userId wasn't passed, look it up from the claim record
+  if (!userId) {
+    const claim = await SchoolClaim.get(claimId)
+    userId = claim?.claimed_by
   }
 
   // Update claim status to verified

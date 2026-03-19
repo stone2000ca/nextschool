@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { School, User as UserEntity, ChatHistory, SchoolClaim } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { Card } from '@/components/ui/card';
 import { Building2, Users, MessageSquare, ClipboardCheck, DollarSign, TrendingUp } from 'lucide-react';
 
@@ -13,48 +13,8 @@ export default function AdminDashboard({ onViewChange }) {
 
   const loadStats = async () => {
     try {
-      const [schools, users] = await Promise.all([
-        School.list(),
-        UserEntity.list(),
-      ]);
-
-      // Filter out archived schools
-      const activeSchools = schools.filter(s => s.status !== 'archived');
-
-      // Conversations — graceful fallback if entity fails
-      let activeToday = 0;
-      try {
-        const conversations = await ChatHistory.list();
-        const today = new Date().toDateString();
-        activeToday = conversations.filter(c =>
-          new Date(c.updated_date).toDateString() === today
-        ).length;
-      } catch (e) {
-        console.warn('ChatHistory unavailable:', e);
-      }
-
-      // Pending claims — use SchoolClaim entity, fallback to 0
-      let pendingClaims = 0;
-      try {
-        const claims = await SchoolClaim.filter({ status: 'pending' });
-        pendingClaims = claims.length;
-      } catch (e) {
-        console.warn('SchoolClaim unavailable:', e);
-      }
-
-      // Revenue — based on User.subscriptionPlan
-      const tierRevenue = { free: 0, basic: 99, premium: 249, pro: 499, enterprise: 999 };
-      const revenue = users.reduce((sum, user) => {
-        return sum + (tierRevenue[user.subscription_plan] || 0);
-      }, 0);
-
-      setStats({
-        totalSchools: activeSchools.length,
-        totalUsers: users.length,
-        activeConversationsToday: activeToday,
-        pendingClaims,
-        monthlyRevenue: revenue
-      });
+      const data = await invokeFunction('adminStats', {});
+      setStats(data);
     } catch (error) {
       console.error('Failed to load stats:', error);
     } finally {
