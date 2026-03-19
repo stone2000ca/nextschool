@@ -114,13 +114,25 @@ export default function Home() {
       <Navbar />
 
       {/* HERO SECTION */}
-      <section className="bg-gradient-to-br from-slate-900 to-slate-800 min-h-[70vh] flex items-center justify-center py-20 sm:py-28">
-        <div id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Video background */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          src="https://fofygizrrcxdsijzfxab.supabase.co/storage/v1/object/public/img/hero_video_nextschool.mp4"
+        />
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/60" />
+
+        <div id="main-content" className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="ns-display text-white text-3xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6 leading-tight">
             Find a school your child will{' '}
             <em className="text-teal-400 not-italic">love</em>
           </h1>
-          <p className="text-lg sm:text-xl text-slate-300 mb-8 sm:mb-10 max-w-3xl mx-auto font-light">
+          <p className="text-lg sm:text-xl text-white/80 mb-8 sm:mb-10 max-w-3xl mx-auto font-light">
             Chat with an AI consultant that narrows 1,000+ Canadian private schools down to the few that truly fit your child.
           </p>
 
@@ -130,31 +142,31 @@ export default function Home() {
               const trimmed = heroQuery.trim();
               router.push(trimmed ? `/consultant?q=${encodeURIComponent(trimmed)}` : '/consultant');
             }}
-            className="max-w-2xl mx-auto mb-4"
+            className="max-w-4xl mx-auto mb-4"
           >
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <input
                 type="text"
                 value={heroQuery}
                 onChange={(e) => setHeroQuery(e.target.value)}
                 placeholder="Tell us about your child and what you're looking for..."
-                className="flex-1 bg-teal-900/40 border border-teal-700/50 text-white placeholder:text-white/50 rounded-full px-5 py-3 text-base focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                className="flex-1 bg-white/10 border border-white/30 text-white placeholder:text-white/50 rounded-full px-8 py-5 text-lg sm:text-xl focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400 backdrop-blur-sm"
               />
               <button
                 type="submit"
-                className="h-12 w-12 flex-shrink-0 rounded-full bg-teal-500 hover:bg-teal-600 text-white flex items-center justify-center transition-colors"
+                className="h-16 w-16 flex-shrink-0 rounded-full bg-teal-500 hover:bg-teal-600 text-white flex items-center justify-center transition-colors"
                 aria-label="Start conversation with AI consultant"
               >
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-7 w-7" />
               </button>
             </div>
           </form>
 
-          <p className="text-sm text-slate-400 italic mb-10 max-w-2xl mx-auto">
+          <p className="text-sm text-white/60 italic mb-10 max-w-2xl mx-auto">
             Try: &ldquo;We&rsquo;re in Toronto looking for a Grade 5 spot for a shy but creative kid...&rdquo;
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-300">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/80">
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-teal-400 flex-shrink-0" />
               Free to use
@@ -167,39 +179,6 @@ export default function Home() {
               <Check className="h-4 w-4 text-teal-400 flex-shrink-0" />
               Private &amp; secure
             </span>
-          </div>
-        </div>
-      </section>
-
-
-      {/* STATS BAR (WC-2) */}
-      <section className="py-12 sm:py-16 bg-slate-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-10">
-            {[
-              { value: '1,000+', label: 'Schools in our database' },
-              { value: '6-phase', label: 'Guided consultation' },
-              { value: '5 min', label: 'To your first matches' },
-              { value: '$0', label: 'Free to start' },
-            ].map((stat) => (
-              <div key={stat.value} className="text-center">
-                <p className="text-4xl font-bold text-white mb-1">{stat.value}</p>
-                <p className="text-sm text-white/60">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* School pills */}
-          <div className="text-center">
-            <p className="ns-label mb-4">FAMILIES DISCOVER TOP SCHOOLS INCLUDING</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {['Upper Canada College', 'Havergal', 'Ridley', 'Appleby', 'Bayview Glen'].map((name) => (
-                <span key={name} className="border border-white/20 rounded-full px-4 py-1.5 text-sm text-white/80">
-                  {name}
-                </span>
-              ))}
-            </div>
           </div>
         </div>
       </section>
