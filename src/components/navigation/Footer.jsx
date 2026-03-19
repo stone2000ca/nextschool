@@ -1,11 +1,12 @@
 import Link from 'next/link';
+import { LOGO_WHITE_TEXT } from '@/lib/brand-assets';
 
 export default function Footer() {
   return (
     <footer className="bg-slate-900 text-slate-400 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-center mb-12">
-          <img src="/logo-white.png" alt="NextSchool" className="h-8" />
+          <img src={LOGO_WHITE_TEXT} alt="NextSchool" className="h-8" />
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">

@@ -4,6 +4,7 @@ import { ArrowRight, MessageSquare, Zap, BarChart3, CheckCircle2 } from "lucide-
 import Link from 'next/link';
 import Navbar from "@/components/navigation/Navbar";
 import { invokeFunction } from '@/lib/functions';
+import { LOGO_BLACK_TEXT } from '@/lib/brand-assets';
 import { School } from '@/lib/entities';
 import SchoolCardUnified from '@/components/schools/SchoolCardUnified';
 
@@ -34,7 +35,7 @@ export default function Home() {
     const ogTags = {
       'og:title': 'NextSchool - Find the Perfect Private School for Your Child',
       'og:description': 'AI-powered education consultant helping Canadian parents find, compare, and choose the right private school. Chat with Jackie or Liam to start your search.',
-      'og:image': '/logo.png',
+      'og:image': LOGO_BLACK_TEXT,
       'og:url': 'https://nextschool.ca/Home',
       'og:type': 'website',
       'og:site_name': 'NextSchool'

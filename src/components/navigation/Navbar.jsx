@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { SchoolAdmin as SchoolAdminEntity } from '@/lib/entities';
+import { LOGO_BLACK_TEXT } from '@/lib/brand-assets';
 
 export default function Navbar({ variant = "default" }) {
   const { user: authUser, isAuthenticated: authIsAuthenticated, navigateToLogin, logout } = useAuth();
@@ -41,7 +42,7 @@ export default function Navbar({ variant = "default" }) {
       <header className="border-b bg-white/80 backdrop-blur-sm">
         <div className="px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
           <Link href={'/'} className="flex items-center gap-2">
-            <img src="/logo.png" alt="NextSchool" className="h-8" />
+            <img src={LOGO_BLACK_TEXT} alt="NextSchool" className="h-8" />
           </Link>
           {isAuthenticated && user ? (
             <div className="flex items-center gap-1">
@@ -85,7 +86,7 @@ export default function Navbar({ variant = "default" }) {
     <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50" style={{ borderColor: 'var(--ns-border)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <Link href={'/'} className="flex items-center gap-2">
-          <img src="/logo.png" alt="NextSchool" className="h-10" />
+          <img src={LOGO_BLACK_TEXT} alt="NextSchool" className="h-10" />
         </Link>
         <nav className="hidden md:flex gap-8 items-center">
           <Link href={'/how-it-works'} className="text-slate-600 hover:text-teal-600 text-sm">How it Works</Link>

@@ -8,6 +8,7 @@ import { MapPin, Users, DollarSign, Calendar, Award, Globe2, Mail, Phone, Extern
 import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, formatEventDate } from '@/components/utils/eventConstants';
 import Navbar from '@/components/navigation/Navbar';
 import { LogoDisplay, isClearbitUrl } from '@/components/schools/HeaderPhotoHelper';
+import { LOGO_BLACK_TEXT } from '@/lib/brand-assets';
 
 // --- Helpers ---
 
@@ -381,7 +382,7 @@ function useSchoolSEO(school, slug, faqs) {
 
     setMetaProperty('og:title', `${school.name} — ${schoolType} School in ${city} | NextSchool`);
     setMetaProperty('og:description', descParts.substring(0, 200));
-    setMetaProperty('og:image', school.header_photo_url || school.logo_url || '/logo.png');
+    setMetaProperty('og:image', school.header_photo_url || school.logo_url || LOGO_BLACK_TEXT);
     setMetaProperty('og:url', canonical);
     setMetaProperty('og:type', 'place');
     setMetaProperty('og:site_name', 'NextSchool');

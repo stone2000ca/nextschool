@@ -9,11 +9,7 @@ import TypingIndicator from '@/components/chat/TypingIndicator';
 import DeepDiveLoader from '@/components/chat/DeepDiveLoader';
 import DeepDiveConfirmation from '@/components/dialogs/DeepDiveConfirmation';
 import Link from 'next/link';
-
-const CONSULTANT_AVATARS = {
-  Jackie: '/avatars/jackie.jpg',
-  Liam: '/avatars/liam.png'
-};
+import { CONSULTANT_AVATARS } from '@/lib/brand-assets';
 
 /**
  * Shared chat panel used in both intake (centered modal) and results (sidebar) phases.

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { SharedShortlist } from '@/lib/entities';
 import { Check, X, Circle, MapPin, Navigation, DollarSign, ExternalLink } from 'lucide-react';
+import { LOGO_WHITE_TEXT } from '@/lib/brand-assets';
 
 // =============================================================================
 // T-SL-006: Shared Shortlist View — public read-only page, no login required
@@ -162,7 +163,7 @@ export default function SharedShortlistView() {
       <div className="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-10 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 group">
-            <img src="/logo-white.png" alt="NextSchool" className="h-8" />
+            <img src={LOGO_WHITE_TEXT} alt="NextSchool" className="h-8" />
           </a>
           <a
             href="/"
