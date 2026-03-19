@@ -173,6 +173,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setIsAuthenticated(false)
             setIsLoadingAuth(false)
           }
+        } else {
+          // Fallback: for any unhandled event (USER_UPDATED, PASSWORD_RECOVERY, etc.)
+          // always ensure loading resolves so the UI never gets stuck
+          setIsLoadingAuth(false)
         }
       }
     )
@@ -180,7 +184,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Also run an explicit check with getUser() for server-validated session
     checkAppState()
 
-    return () => subscription.unsubscribe()
+    // Safety timeout: guarantee isLoadingAuth resolves within 5 seconds
+    // so the UI never gets stuck in an infinite spinner
+    const safetyTimeout = setTimeout(() => {
+      setIsLoadingAuth((current) => {
+        if (current) {
+          console.warn('Auth loading safety timeout triggered — forcing isLoadingAuth to false')
+        }
+        return false
+      })
+    }, 5000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(safetyTimeout)
+    }
   }, [])
 
   // Auth state is fully managed by the onAuthStateChange listener above.
