@@ -37,7 +37,7 @@ import { restoreSessionFromParam, restoreMostRecentConversation } from '@/compon
 import ConsultantDialogs from '@/components/chat/ConsultantDialogs';
 import ChatPanel from '@/components/chat/ChatPanel';
 import ProgressBar from '@/components/ui/progress-bar';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/navigation/Navbar';
 import TourRequestModal from '../components/schools/TourRequestModal';
 import { useSchoolFiltering } from '@/components/hooks/useSchoolFiltering';
@@ -63,7 +63,9 @@ export default function Consultant() {
    const { user: authUser, isAuthenticated: authIsAuthenticated, updateMe: authUpdateMe } = useAuth();
 
    const searchParams = useSearchParams();
+   const router = useRouter();
    const sessionIdParam = searchParams.get('sessionId');
+   const [pendingMessage, setPendingMessage] = useState(() => searchParams.get('q') || null);
    const sessionParamProcessedRef = useRef(false);
   
   const [user, setUser] = useState(null);
@@ -1016,6 +1018,15 @@ export default function Consultant() {
     setActivePanel,
     applyDistances,
   });
+
+  // WC-1b: Inject pendingMessage from ?q= param after consultant greeting
+  useEffect(() => {
+    if (pendingMessage && !showGuidedIntro && selectedConsultant && messages.length === 1 && messages[0].role === 'assistant') {
+      handleSendMessage(pendingMessage);
+      setPendingMessage(null);
+      router.replace('/consultant');
+    }
+  }, [pendingMessage, showGuidedIntro, selectedConsultant, messages]);
 
   const handleViewSchoolDetail = async (schoolId, skipConfirmation = false) => {
     let school = schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId) || extraSchools.find(s => s.id === schoolId);
