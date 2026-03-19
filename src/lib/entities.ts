@@ -132,14 +132,14 @@ function createEntity(entityName: string): EntityClient {
     },
 
     async create(data: Record<string, any>): Promise<any> {
-      const row = { ...data, updated_date: new Date().toISOString() }
+      const row = { ...data, updated_at: new Date().toISOString() }
       const { data: result, error } = await db().insert(row).select().single()
       if (error) throw error
       return result
     },
 
     async update(id: string, data: Record<string, any>): Promise<any> {
-      const row = { ...data, updated_date: new Date().toISOString() }
+      const row = { ...data, updated_at: new Date().toISOString() }
       const { data: result, error } = await db().update(row).eq('id', id).select().single()
       if (error) throw error
       return result

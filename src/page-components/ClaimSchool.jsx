@@ -102,7 +102,7 @@ export default function ClaimSchool() {
 
       try {
         // Check if user already has an active claim
-        const claims = await SchoolClaim.filter({ user_id: userData.id });
+        const claims = await SchoolClaim.filter({ claimed_by: userData.id });
         const activeClaim = claims.find(c => ['pending_email', 'pending_review', 'verified'].includes(c.status));
         if (activeClaim) {
           const schools = await School.filter({ id: activeClaim.school_id });
@@ -203,7 +203,7 @@ export default function ClaimSchool() {
       // Create SchoolClaim record (no code stored client-side)
       const claim = await SchoolClaim.create({
         school_id: schoolId,
-        user_id: user?.id,
+        claimed_by: user?.id,
         claimant_name: formData.name,
         claimant_role: formData.role,
         claimant_email: formData.email,
@@ -243,7 +243,8 @@ export default function ClaimSchool() {
       }
     } catch (error) {
       console.error('Failed to create claim:', error);
-      setFormError('Failed to create claim. Please try again.');
+      const msg = error?.message || error?.details || 'Unknown error';
+      setFormError(`Failed to create claim: ${msg}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -371,7 +372,8 @@ export default function ClaimSchool() {
       setStep(4);
     } catch (error) {
       console.error('Document upload failed:', error);
-      setDocumentError('Failed to upload document. Please try again.');
+      const msg = error?.message || error?.details || 'Unknown error';
+      setDocumentError(`Failed to upload document: ${msg}`);
     } finally {
       setIsSubmitting(false);
     }
