@@ -13,16 +13,16 @@ export async function trackSessionEvent(params: {
     throw Object.assign(new Error('Missing required fields'), { statusCode: 400 });
   }
 
-  // Only insert columns that PostgREST schema cache already knows about.
-  // consultant_name is stored inside metadata JSONB to avoid PGRST204
+  // Use actual DB column names: event_data (not metadata), created_at (not timestamp).
+  // consultant_name is stored inside event_data JSONB to avoid PGRST204
   // errors on Supabase Free tier where schema cache reload is unreliable.
   const supabase = getAdminClient()
-  const enrichedMetadata = { ...(metadata || {}), ...(consultantName ? { consultantName } : {}) };
+  const eventData = { ...(metadata || {}), ...(consultantName ? { consultantName } : {}) };
   const { error } = await (supabase.from('session_events') as any).insert({
     event_type: eventType,
     session_id: sessionId,
-    timestamp: new Date().toISOString(),
-    metadata: enrichedMetadata,
+    created_at: new Date().toISOString(),
+    event_data: eventData,
   })
   if (error) throw error
 
