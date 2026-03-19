@@ -17,6 +17,8 @@ import FamilyBrief from '@/components/chat/FamilyBrief';
 import WelcomeState from '@/components/schools/WelcomeState';
 import ConsultantSelection from '@/components/chat/ConsultantSelection';
 import GuidedIntro from '@/components/chat/GuidedIntro';
+import ConsultantAvatarBadge from '@/components/chat/ConsultantAvatarBadge';
+import { LayoutGroup } from 'framer-motion';
 import SchoolGrid from '@/components/schools/SchoolGrid';
 import SchoolDetailPanel from '@/components/schools/SchoolDetailPanel';
 import ShortlistPanel from '@/components/chat/ShortlistPanel';
@@ -1434,25 +1436,30 @@ export default function Consultant() {
   // Show consultant selection if not yet selected (but skip if restoring a session from URL)
   if (!selectedConsultant && !sessionIdParam) {
     return (
-      <div className="h-screen flex flex-col bg-slate-50">
-        <a 
-          href="#consultant-selection" 
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded-lg"
-        >
-          Skip to consultant selection
-        </a>
-        <Navbar variant="minimal" />
-        <div id="consultant-selection" className="flex-1 overflow-auto">
-          <ConsultantSelection onSelectConsultant={handleSelectConsultant} />
+      <LayoutGroup>
+        <div className="h-screen flex flex-col bg-slate-900">
+          <a
+            href="#consultant-selection"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded-lg"
+          >
+            Skip to consultant selection
+          </a>
+          <div id="consultant-selection" className="flex-1 overflow-auto">
+            <ConsultantSelection onSelectConsultant={handleSelectConsultant} />
+          </div>
         </div>
-      </div>
+      </LayoutGroup>
     );
   }
 
   // E47: Show guided intro sequence after consultant selection, before chat
   if (selectedConsultant && showGuidedIntro) {
     return (
-      <div className="h-screen flex flex-col">
+      <div className="h-screen flex flex-col relative">
+        <ConsultantAvatarBadge
+          consultant={selectedConsultant}
+          className="fixed top-4 left-4"
+        />
         <GuidedIntro
           consultantName={selectedConsultant}
           onComplete={handleGuidedIntroComplete}
@@ -1486,6 +1493,14 @@ export default function Consultant() {
       
       {/* Header */}
       <Navbar variant="minimal" />
+
+      {/* E47: Persistent consultant avatar badge (morphs from selection card) */}
+      {selectedConsultant && (
+        <ConsultantAvatarBadge
+          consultant={selectedConsultant}
+          className="fixed top-4 left-4"
+        />
+      )}
 
       {/* E37: Loading overlay on brief confirmation with 5-second minimum */}
       <LoadingOverlay 
