@@ -837,11 +837,19 @@ export default function Consultant() {
     setFamilyBrief(brief);
     setShowGuidedIntro(false);
 
+    // E47-P2: Build persona-aware opening line from FamilyBrief fields
+    const budgetLabel = brief.budget || '';
+    const gradeLabel = brief.grade ? `Grade ${brief.grade}` : '';
+    const locationLabel = brief.location || '';
+    // schoolTypePreferences silently informs matching — not read back
+    const detailParts = [gradeLabel, locationLabel, budgetLabel ? `a budget around ${budgetLabel}` : ''].filter(Boolean);
+    const detailLine = detailParts.length > 0 ? detailParts.join(' in ').replace(' in a budget', ' with a budget') : '';
+
     const greeting = {
       role: 'assistant',
       content: selectedConsultant === 'Jackie'
-        ? `Great to meet you, ${brief.parentName}! I already have a good picture — let me find the best schools for ${brief.childName}. Feel free to add anything else, or I'll get started.`
-        : `Got it, ${brief.parentName}. I have what I need to find strong options for ${brief.childName}. Anything else, or should I start searching?`,
+        ? `Alright ${brief.parentName} — I can see ${brief.childName} is heading into ${detailLine}. Let's talk about what matters most to your family.`
+        : `Got it, ${brief.parentName}. ${brief.childName}, ${detailLine} — I have the essentials. Let's dig into what matters most.`,
       timestamp: new Date().toISOString()
     };
     setMessages([greeting]);
@@ -1017,6 +1025,8 @@ export default function Consultant() {
     loadMoreSchools,
     setActivePanel,
     applyDistances,
+    // E47: Pass familyBrief so it can be sent as pre-extracted entities
+    familyBrief,
   });
 
   // WC-1b: Inject pendingMessage from ?q= param after consultant greeting
@@ -1514,8 +1524,9 @@ export default function Consultant() {
       )}
 
       {/* E37: Loading overlay on brief confirmation with 5-second minimum */}
-      <LoadingOverlay 
+      <LoadingOverlay
         isVisible={showLoadingOverlay}
+        familyBrief={familyBrief}
         onTransitionComplete={() => { setShowLoadingOverlay(false); setBriefStatus(null); setIsTransitioning(true); }}
       />
 

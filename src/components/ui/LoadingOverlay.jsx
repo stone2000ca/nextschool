@@ -65,7 +65,7 @@ const DOT_CONFIG = [
   { radius: 80, duration: 7, direction: 'CW', delayOffset: -2.3 },
 ];
 
-export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
+export default function LoadingOverlay({ isVisible, onTransitionComplete, familyBrief }) {
   const [flashActive, setFlashActive] = useState(false);
   const [step, setStep] = useState(0);
   const [factIdx, setFactIdx] = useState(() => Math.floor(Math.random() * FACTS.length));
@@ -200,8 +200,12 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete }) {
 
       <style>{KEYFRAMES}</style>
       <div style={{textAlign:'center',maxWidth:420,width:'100%',padding:'0 20px'}}>
-        {/* Status Badge */}
-        <div style={{display:'inline-block',background:`rgba(24,150,138,0.1)`,border:`1px solid rgba(24,150,138,0.25)`,padding:'6px 18px',borderRadius:20,fontSize:13,color:TEAL,fontWeight:500,animation:'badgePulse 2s ease-in-out infinite',marginBottom:28}}>Finding Your Matches...</div>
+        {/* Status Badge — E47-P3: Personalised from FamilyBrief */}
+        <div style={{display:'inline-block',background:`rgba(24,150,138,0.1)`,border:`1px solid rgba(24,150,138,0.25)`,padding:'6px 18px',borderRadius:20,fontSize:13,color:TEAL,fontWeight:500,animation:'badgePulse 2s ease-in-out infinite',marginBottom:28}}>
+          {familyBrief?.grade && familyBrief?.location
+            ? `Searching 1,000+ schools for Grade ${familyBrief.grade} programs in ${familyBrief.location}${familyBrief.budget ? ` under ${familyBrief.budget}` : ''}…`
+            : 'Finding Your Matches...'}
+        </div>
 
         {/* Orbit */}
         <div style={{position:'relative',width:160,height:160,margin:'0 auto 28px'}}>
