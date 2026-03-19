@@ -1819,9 +1819,9 @@ Object.assign(context, safeUpdatedContext);
 
         // E41-S3: Deferred extractEntities — fire after reply, with aiReply for richer context
         // Skip extraction when transitioning BRIEF→RESULTS on confirmation — profile is already complete
-        const briefJustConfirmed = briefStatus === 'confirmed' && previousState === STATES.BRIEF;
+        const skipExtraction = briefJustConfirmed || (briefStatus === 'confirmed' && previousState === STATES.BRIEF);
         const aiReply = responseData.message || '';
-        if (briefJustConfirmed) {
+        if (skipExtraction) {
           console.log('[E41-S3] Skipping deferred extractEntities — brief confirmation, profile already built');
         } else {
         extractEntitiesLogic( {
