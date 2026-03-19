@@ -1,9 +1,7 @@
 // Function: createCheckoutSession
 // Purpose: Create a Stripe Checkout Session for subscription upgrade
 // Entities: User
-// Last Modified: 2026-03-01
-
-const STRIPE_PRICE_ID = 'price_pro_monthly'; // Placeholder - update with actual Stripe price ID
+// Last Modified: 2026-03-19
 
 export async function createCheckoutSessionLogic(params: { priceId?: string; userEmail: string; userId: string }) {
   const { priceId, userEmail, userId } = params;
@@ -13,6 +11,14 @@ export async function createCheckoutSessionLogic(params: { priceId?: string; use
     throw Object.assign(new Error('Stripe not configured'), { status: 500 });
   }
 
+  const defaultPriceId = process.env.STRIPE_PRICE_ID;
+  const resolvedPriceId = priceId || defaultPriceId;
+  if (!resolvedPriceId) {
+    throw Object.assign(new Error('No price ID provided and STRIPE_PRICE_ID env var is not set'), { status: 500 });
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nextschool.ca';
+
   const Stripe = (await import('stripe')).default;
   const stripeClient = new Stripe(stripeSecretKey);
 
@@ -21,12 +27,12 @@ export async function createCheckoutSessionLogic(params: { priceId?: string; use
     customer_email: userEmail,
     line_items: [
       {
-        price: priceId || STRIPE_PRICE_ID,
+        price: resolvedPriceId,
         quantity: 1,
       },
     ],
-    success_url: 'https://nextschool.ca/dashboard?upgrade=success',
-    cancel_url: 'https://nextschool.ca/dashboard?upgrade=cancelled',
+    success_url: `${baseUrl}/dashboard?upgrade=success`,
+    cancel_url: `${baseUrl}/dashboard?upgrade=cancelled`,
     metadata: {
       userId: userId,
     },
