@@ -1005,7 +1005,7 @@ Return ONLY this JSON (no markdown): { "debriefSummary": "<2-3 sentences summari
 
           // E29-015: Phase auto-advancement → DECIDE if all non-removed schools are now visited
           try {
-            const allSchoolJourneys = await SchoolJourney.filter({ familyJourneyId: familyJourney.id });
+            const allSchoolJourneys = await SchoolJourney.filter({ family_journey_id: familyJourney.id });
             const activeJourneys = allSchoolJourneys.filter(sj => sj.status !== 'removed');
             const allVisited = activeJourneys.length > 0 && activeJourneys.every(sj => sj.status === 'visited');
             if (allVisited && familyJourney.currentPhase !== 'DECIDE') {
@@ -1285,7 +1285,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
       
       if (userId && conversationId) {
         try {
-          const profiles = await FamilyProfile.filter({ userId, conversationId });
+          const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
           conversationFamilyProfile = profiles.length > 0 ? profiles[0] : null;
           
           if (!conversationFamilyProfile) {
@@ -1788,7 +1788,7 @@ Object.assign(context, safeUpdatedContext);
                     }
                   }
                   if (Object.keys(updatePayload).length > 0) {
-                    const profiles = await FamilyProfile.filter({ userId, conversationId });
+                    const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
                     if (profiles && profiles.length > 0) {
                       await FamilyProfile.update(profiles[0].id, updatePayload);
                       console.log('[E42-PERSIST] FamilyProfile updated (EDIT_CRITERIA):', profiles[0].id, Object.keys(updatePayload));
@@ -1848,7 +1848,7 @@ Object.assign(context, safeUpdatedContext);
                   }
                 }
                 if (Object.keys(updatePayload).length > 0) {
-                  const profiles = await FamilyProfile.filter({ userId, conversationId });
+                  const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
                   if (profiles && profiles.length > 0) {
                     await FamilyProfile.update(profiles[0].id, updatePayload);
                     console.log('[E42-PERSIST] FamilyProfile updated:', profiles[0].id, Object.keys(updatePayload));

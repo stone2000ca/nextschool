@@ -16,9 +16,9 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
     try {
       // BUG-RN-PERSIST Fix D: Omit conversationId from filter when falsy to handle legacy rows
       const analysisFilter = { user_id: user.id };
-      if (conversationId) analysisFilter.conversationId = conversationId;
+      if (conversationId) analysisFilter.conversation_id = conversationId;
       const [artifacts, analyses] = await Promise.all([
-        GeneratedArtifact.filter({ conversationId }),
+        GeneratedArtifact.filter({ conversation_id: conversationId }),
         user?.id ? SchoolAnalysis.filter(analysisFilter) : Promise.resolve([])
       ]);
 
@@ -157,7 +157,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
 
         if (!journey) { setActiveJourney(null); return; }
 
-        const schoolJourneys = await SchoolJourney.filter({ familyJourneyId: journey.id });
+        const schoolJourneys = await SchoolJourney.filter({ family_journey_id: journey.id });
 
         setActiveJourney({
           id: journey.id,
