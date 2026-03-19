@@ -59,7 +59,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
         console.log('[WC6] No SchoolAnalyses found — scheduling one retry in 800ms');
         setTimeout(async () => {
           try {
-            const retryAnalyses = await SchoolAnalysis.filter({ user_id: user.id, conversationId });
+            const retryAnalyses = await SchoolAnalysis.filter({ user_id: user.id, conversation_id: conversationId });
             if (retryAnalyses.length > 0) {
               const retryMap = {};
               for (const analysis of retryAnalyses) {
@@ -101,7 +101,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
     try {
       const profiles = await FamilyProfile.filter({
         user_id: user.id,
-        conversationId: currentConversation.id
+        conversation_id: currentConversation.id
       });
 
       if (profiles.length > 0) {

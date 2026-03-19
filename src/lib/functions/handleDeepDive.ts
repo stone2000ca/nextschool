@@ -304,13 +304,25 @@ Generate the DEEPDIVE card for this family-school match.`;
   // Save to SchoolAnalysis
   if (userId && selectedSchoolId && deepDiveAnalysis) {
     try {
+      // Convert camelCase deepDiveAnalysis keys to snake_case for DB
+      const ANALYSIS_CAMEL_TO_SNAKE: Record<string, string> = {
+        fitLabel: 'fit_label', fitScore: 'fit_score', tradeOffs: 'trade_offs',
+        dataGaps: 'data_gaps', visitQuestions: 'visit_questions',
+        financialSummary: 'financial_summary', aiInsight: 'ai_insight',
+        priorityMatches: 'priority_matches', communityPulse: 'community_pulse',
+      };
+      const snakeCaseAnalysis: Record<string, any> = {};
+      for (const [k, v] of Object.entries(deepDiveAnalysis)) {
+        snakeCaseAnalysis[ANALYSIS_CAMEL_TO_SNAKE[k] || k] = v;
+      }
+
       const persistFilter: any = { user_id: userId, school_id: selectedSchoolId };
       if (conversationId) persistFilter.conversation_id = conversationId;
       const existing = await SchoolAnalysis.filter(persistFilter);
       if (existing?.length > 0) {
-        await SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, school_name: selectedSchool.name, last_analyzed_at: new Date().toISOString(), conversation_id: conversationId || null });
+        await SchoolAnalysis.update(existing[0].id, { ...snakeCaseAnalysis, school_name: selectedSchool.name, last_analyzed_at: new Date().toISOString(), conversation_id: conversationId || null });
       } else {
-        await SchoolAnalysis.create({ user_id: userId, school_id: selectedSchoolId, school_name: selectedSchool.name, ...deepDiveAnalysis, last_analyzed_at: new Date().toISOString(), conversation_id: conversationId || null });
+        await SchoolAnalysis.create({ user_id: userId, school_id: selectedSchoolId, school_name: selectedSchool.name, ...snakeCaseAnalysis, last_analyzed_at: new Date().toISOString(), conversation_id: conversationId || null });
         const childName = conversationFamilyProfile?.childName || null;
         const schoolName = selectedSchool.name;
         if (consultantName === 'Jackie') {

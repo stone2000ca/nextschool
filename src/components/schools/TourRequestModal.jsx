@@ -141,8 +141,8 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         if (existing && existing.length > 0) {
           await SchoolJourney.update(existing[0].id, {
             status: 'touring',
-            tourRequestId: inquiry?.id || null,
-            tourDate: preferredDate || null,
+            tour_request_id: inquiry?.id || null,
+            tour_date: preferredDate || null,
           });
         } else {
           await SchoolJourney.create({
@@ -150,9 +150,9 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
             school_id: school.id,
             school_name: school.name,
             status: 'touring',
-            tourRequestId: inquiry?.id || null,
-            tourDate: preferredDate || null,
-            addedAt: new Date().toISOString(),
+            tour_request_id: inquiry?.id || null,
+            tour_date: preferredDate || null,
+            added_at: new Date().toISOString(),
           });
         }
         console.log('[E29-005] SchoolJourney tour sync completed for', school.name);
@@ -215,8 +215,8 @@ Keep each point to one sentence. Be specific to ${school.name} if possible. No i
 
           if (prepText) {
             await SchoolJourney.update(sjId, {
-              tourPrepContent: prepText,
-              tourPrepSent: true,
+              tour_prep_content: prepText,
+              tour_prep_sent: true,
             });
             console.log('[E29-013] Tour prep brief stored on SchoolJourney', sjId);
           }
