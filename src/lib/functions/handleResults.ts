@@ -491,7 +491,9 @@ Commute preference: ${commuteDisplay}`;
     return { message: "I'm having trouble searching for schools right now. Could you tell me a bit more about your preferences?", state: STATES.RESULTS, briefStatus, schools: [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
   }
 
+  const preFilterCount = schools.length;
   schools = schools.filter((s: any) => s.schoolTypeLabel !== 'Special Needs' && s.schoolTypeLabel !== 'Public');
+  console.log(`[FILTER STAGE] handleResults post-search type filter: ${preFilterCount} → ${schools.length} (removed Special Needs/Public)`);
   const seen = new Set();
   const deduplicated: any[] = [];
   for (const school of schools) { if (!seen.has(school.name)) { seen.add(school.name); deduplicated.push(school); } }

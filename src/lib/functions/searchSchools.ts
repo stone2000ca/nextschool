@@ -21,15 +21,10 @@ function applyReligiousFilter(school: any, familyProfile: any, payload: any) {
   );
   if (hasReligiousDealbreaker) {
     const schoolAffiliation = (school.faithBased || '').toLowerCase().trim().replace(/[\s-]+/g, ' ');
-    const knownReligiousAffiliations = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'methodist', 'presbyterian', 'anglican', 'orthodox', 'evangelical', 'pentecostal', 'adventist', 'mormon', 'lds', 'quaker', 'mennonite', 'amish', 'hindu', 'buddhist', 'sikh', 'muslim'];
-    if (school.faithBased && knownReligiousAffiliations.includes(schoolAffiliation)) {
-      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation`);
-      return false;
-    }
-    const religiousKeywords = ['christian', 'catholic', 'islamic', 'jewish', 'lutheran', 'baptist', 'adventist', 'anglican', 'yeshiva', 'hebrew', 'our lady', 'gospel', 'covenant', 'faith-based', 'huraira', 'mosque', 'synagogue', 'church school', 'bible', 'quaker', 'mennonite', 'amish', 'hindu', 'buddhist', 'sikh', 'muslim', 'baeck', 'heschel', 'tayyibah', 'khairul', 'wali ul', 'orthodox', 'mother of god'];
-    const schoolNameLower = school.name?.toLowerCase() || '';
-    if (religiousKeywords.some(keyword => schoolNameLower.includes(keyword))) {
-      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: name contains religious keyword`);
+    const secularValues = ['', 'non-sectarian', 'nonsectarian', 'secular', 'none', 'n/a'];
+    // Only exclude schools with a confirmed religious faithBased value
+    if (school.faithBased && !secularValues.includes(schoolAffiliation)) {
+      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: faithBased="${school.faithBased}"`);
       return false;
     }
   }
@@ -232,6 +227,8 @@ async function performSearch(payload: any) {
   }
   let schools = allSchools.filter((s: any) => s.status === 'active');
 
+  console.log(`[FILTER STAGE] Initial active schools: ${schools.length}`);
+
   let locationFiltered = schools;
 
   let aliasedCities: string[] = [];
@@ -316,6 +313,8 @@ async function performSearch(payload: any) {
     });
   }
 
+  console.log(`[FILTER STAGE] After location filter: ${locationFiltered.length}`);
+
   let hardFiltered = locationFiltered.filter((school: any) => {
     const parsedMinGrade = minGrade !== undefined && minGrade !== null ? parseInt(minGrade) : null;
     if (parsedMinGrade !== null) {
@@ -332,7 +331,7 @@ async function performSearch(payload: any) {
       }
     }
 
-    const schoolTuition = school.tuition || school.dayTuition || school.tuitionMin || null;
+    const schoolTuition = school.dayTuition || school.effectiveTuition || school.boardingTuition || null;
     if (maxTuition && maxTuition !== 'unlimited') {
       if (schoolTuition && schoolTuition > maxTuition) {
         console.log(`[BUDGET FILTER] Filtered out ${school.name}: tuition $${schoolTuition} exceeds budget $${maxTuition}`);
@@ -354,7 +353,7 @@ async function performSearch(payload: any) {
     return true;
   });
 
-  console.log(`Hard filters: ${locationFiltered.length} → ${hardFiltered.length} schools`);
+  console.log(`[FILTER STAGE] After hard filters (grade+budget+religious+gender): ${locationFiltered.length} → ${hardFiltered.length} schools`);
 
   let schoolsToRank = hardFiltered;
   let isRelaxedPass = false;
@@ -406,8 +405,9 @@ async function performSearch(payload: any) {
       }
     }
 
-    if (maxTuition !== undefined && school.tuition) {
-      if (school.tuition <= maxTuition) {
+    const scoreTuition = school.dayTuition || school.effectiveTuition || school.boardingTuition || null;
+    if (maxTuition !== undefined && scoreTuition) {
+      if (scoreTuition <= maxTuition) {
         score += 2;
       }
     }
@@ -497,9 +497,10 @@ async function performSearch(payload: any) {
         }
       }
 
-      if (familyProfile.maxTuition && school.tuition) {
-        if (school.tuition > familyProfile.maxTuition * 2) {
-          console.log(`Filtered out ${school.name}: tuition $${school.tuition} is 2x+ budget $${familyProfile.maxTuition}`);
+      const postTuition = school.dayTuition || school.effectiveTuition || school.boardingTuition || null;
+      if (familyProfile.maxTuition && postTuition) {
+        if (postTuition > familyProfile.maxTuition * 2) {
+          console.log(`Filtered out ${school.name}: tuition $${postTuition} is 2x+ budget $${familyProfile.maxTuition}`);
           return false;
         }
       }
