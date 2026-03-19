@@ -16,6 +16,7 @@ import IconRail from '@/components/navigation/IconRail';
 import FamilyBrief from '@/components/chat/FamilyBrief';
 import WelcomeState from '@/components/schools/WelcomeState';
 import ConsultantSelection from '@/components/chat/ConsultantSelection';
+import GuidedIntro from '@/components/chat/GuidedIntro';
 import SchoolGrid from '@/components/schools/SchoolGrid';
 import SchoolDetailPanel from '@/components/schools/SchoolDetailPanel';
 import ShortlistPanel from '@/components/chat/ShortlistPanel';
@@ -73,6 +74,8 @@ export default function Consultant() {
   const skipViewOverrideRef = useRef(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
+  const [showGuidedIntro, setShowGuidedIntro] = useState(false);
+  const [familyBrief, setFamilyBrief] = useState(null);
   const [showResponseChips, setShowResponseChips] = useState(false);
   const [sessionId] = useState(() => crypto.randomUUID());
   const [feedbackPromptShown, setFeedbackPromptShown] = useState(false);
@@ -821,14 +824,20 @@ export default function Consultant() {
     // E40-S4: Complete state reset for fresh conversation
     resetChatState();
 
-    // S169-WC1: E29-RESUMPTION-FIX note — isResuming guard removed here because
-    // handleSelectConsultant is ONLY called from ConsultantSelection (fresh start).
-    // Session restoration uses a separate code path and never triggers this function.
+    // E47: Show guided intro sequence before chat
+    setShowGuidedIntro(true);
+  };
+
+  // E47: Called when GuidedIntro completes — transitions to chat with FamilyBrief
+  const handleGuidedIntroComplete = (brief) => {
+    setFamilyBrief(brief);
+    setShowGuidedIntro(false);
+
     const greeting = {
       role: 'assistant',
-      content: consultantName === 'Jackie'
-        ? "Hey there — I'm Jackie. I've worked with hundreds of families going through exactly this. Tell me a bit about your child and what's prompting the search."
-        : "Hi, I'm Liam. I'll help you cut through the noise and find schools that actually fit. What's driving the search?",
+      content: selectedConsultant === 'Jackie'
+        ? `Great to meet you, ${brief.parentName}! I already have a good picture — let me find the best schools for ${brief.childName}. Feel free to add anything else, or I'll get started.`
+        : `Got it, ${brief.parentName}. I have what I need to find strong options for ${brief.childName}. Anything else, or should I start searching?`,
       timestamp: new Date().toISOString()
     };
     setMessages([greeting]);
@@ -1436,6 +1445,18 @@ export default function Consultant() {
         <div id="consultant-selection" className="flex-1 overflow-auto">
           <ConsultantSelection onSelectConsultant={handleSelectConsultant} />
         </div>
+      </div>
+    );
+  }
+
+  // E47: Show guided intro sequence after consultant selection, before chat
+  if (selectedConsultant && showGuidedIntro) {
+    return (
+      <div className="h-screen flex flex-col">
+        <GuidedIntro
+          consultantName={selectedConsultant}
+          onComplete={handleGuidedIntroComplete}
+        />
       </div>
     );
   }
