@@ -58,7 +58,7 @@ export async function restoreSessionFromParam(
       consultantName: chatSession.consultantSelected,
       matchedSchoolsCount: chatSession.matchedSchools ? JSON.parse(chatSession.matchedSchools).length : 0,
       createdDate: chatSession.createdAt,
-      updatedDate: chatSession.updated_date
+      updatedDate: chatSession.updatedAt
     });
 
     // CRITICAL: Restore consultant selection FIRST so chat panel can render correctly
@@ -343,7 +343,7 @@ export async function restoreMostRecentConversation(
       console.log('[RESTORE-LATEST] No active conversations found');
       return;
     }
-    const sorted = convos.sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
+    const sorted = convos.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     const latest = sorted[0];
     console.log('[RESTORE-LATEST] Restoring most recent conversation:', latest.id);
 

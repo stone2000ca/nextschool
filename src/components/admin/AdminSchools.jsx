@@ -218,7 +218,7 @@ export default function AdminSchools() {
                     )}
                   </td>
                   <td className="p-4 text-sm text-slate-600">
-                    {new Date(school.updated_date).toLocaleDateString()}
+                    {new Date(school.updatedAt).toLocaleDateString()}
                   </td>
                   <td className="p-4 text-sm">
                     {school.website ? (

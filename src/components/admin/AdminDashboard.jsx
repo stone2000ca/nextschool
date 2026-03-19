@@ -27,7 +27,7 @@ export default function AdminDashboard({ onViewChange }) {
         const conversations = await ChatHistory.list();
         const today = new Date().toDateString();
         activeToday = conversations.filter(c =>
-          new Date(c.updated_date).toDateString() === today
+          new Date(c.updatedAt).toDateString() === today
         ).length;
       } catch (e) {
         console.warn('ChatHistory unavailable:', e);
