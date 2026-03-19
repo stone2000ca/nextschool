@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { CONSULTANT_AVATARS } from '@/lib/brand-assets';
 
 export default function ConsultantSelection({ onSelectConsultant }) {
   const consultants = [
@@ -9,7 +10,7 @@ export default function ConsultantSelection({ onSelectConsultant }) {
       tagline: 'Empathetic, encouraging, and emotionally attuned',
       description: 'Jackie excels at understanding family dynamics and emotional needs. She validates concerns, celebrates strengths, and makes families feel truly heard throughout the school search journey.',
       color: 'from-rose-500 to-pink-500',
-      avatar: '/avatars/jackie.jpg',
+      avatar: CONSULTANT_AVATARS.Jackie,
       isImage: true
     },
     {
@@ -18,7 +19,7 @@ export default function ConsultantSelection({ onSelectConsultant }) {
       tagline: 'Data-driven, efficient, and results-oriented',
       description: 'Liam cuts through the noise with clear analysis and strategic recommendations. He focuses on matching your priorities with school data and gets you to the best fit quickly.',
       color: 'from-blue-500 to-cyan-500',
-      avatar: '/avatars/liam.png',
+      avatar: CONSULTANT_AVATARS.Liam,
       isImage: true
     }
   ];
