@@ -114,7 +114,7 @@ export const useMessageHandler = ({
       localStorage.setItem('guestConversationData', JSON.stringify({
         messages,
         consultant: selectedConsultant,
-        conversationContext: currentConversation?.conversation_context || currentConversation?.conversationContext || {},
+        conversationContext: currentConversation?.conversation_context || {},
         familyProfile: familyProfile || {},
         briefStatus: briefStatus || null,
         extractedEntitiesData: extractedEntitiesData || {},
@@ -192,7 +192,7 @@ export const useMessageHandler = ({
       const response = await invokeFunction('orchestrateConversation', {
         message: messageText,
         conversationHistory: messages.slice(-10),
-        conversationContext: currentConversation?.conversation_context || currentConversation?.conversationContext || {},
+        conversationContext: currentConversation?.conversation_context || {},
         region: user?.profileRegion || 'Canada',
         userId: user?.id,
         consultantName: selectedConsultant,
@@ -325,7 +325,7 @@ export const useMessageHandler = ({
       // CRITICAL FIX: Merge backend's full context (including extractedEntities) with frontend state
       const responseState = response.data?.state;
       const deepDiveSchoolId = response.data?.deepDiveAnalysis?.schoolId || selectedSchool?.id || resolvedSchoolId || null;
-      const prevContext = currentConversation?.conversation_context || currentConversation?.conversationContext || {};
+      const prevContext = currentConversation?.conversation_context || {};
       const updatedContext = {
         ...prevContext,
         ...(response.data?.conversationContext || {}),
@@ -339,11 +339,9 @@ export const useMessageHandler = ({
 
       // BUG-RN-PERSIST Fix A: Use functional updater to avoid stale-closure overwrite
       // of currentConversation.id that was set by the RESULTS ChatHistory.create block.
-      // E45-FIX: Set BOTH conversation_context (for Consultant.jsx) and conversationContext (for backward compat)
       setCurrentConversation(prev => ({
         ...(prev || { id: null, messages: [] }),
         conversation_context: updatedContext,
-        conversationContext: updatedContext,
       }));
 
       // E42-PERSIST: Primary conversation_context persist (non-blocking)
@@ -451,7 +449,7 @@ export const useMessageHandler = ({
               } else {
                 console.warn('[E42-GUARD] Invalid chatHistoryRecord.id, skipping ref assignment:', chatHistoryRecord.id);
               }
-              setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversation_context: updatedContext, conversationContext: updatedContext }));
+              setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversation_context: updatedContext }));
               console.log('[SESSION] Created ChatHistory with id:', chatHistoryRecord.id);
             } catch (e) {
               console.error('Failed to create ChatHistory before ChatSession:', e);
@@ -481,7 +479,7 @@ export const useMessageHandler = ({
                   ]),
                   family_profile_id: familyProfile?.id || null,
                   brief_snapshot: JSON.stringify(profileForSession || {}),
-                  consultantId: selectedConsultant || 'jackie',
+                  consultant_id: selectedConsultant || 'jackie',
                   total_sessions: 1,
                   is_archived: false,
                   last_active_at: new Date().toISOString(),
@@ -505,7 +503,7 @@ export const useMessageHandler = ({
           })();
 
           const chatSession = await ChatSession.create({
-            sessionToken: sessionId,
+            session_token: sessionId,
             user_id: user?.id,
             family_profile_id: profileForSession?.id || null,
             chat_history_id: chatHistoryRecord?.id || currentConversation?.id,
