@@ -22,21 +22,11 @@ const COLUMN_ALIASES: Record<string, string> = {
     created_at: 'created_date',
 }
 
-// Only select columns needed by the frontend to keep payload small
-const SCHOOL_SELECT_COLUMNS = [
-  'id', 'name', 'slug', 'city', 'province_state', 'country', 'status',
-  'tuition', 'day_tuition', 'currency', 'enrollment', 'grades_served',
-  'gender_policy', 'boarding_available', 'faith_based', 'curriculum',
-  'specializations', 'header_photo_url', 'hero_image', 'logo_url',
-  'highlights', 'founded', 'acceptance_rate',
-].join(',')
-
-async function listSchools(params: { status?: string; sort?: string; limit?: number; columns?: string }) {
-  const { status, sort, limit, columns } = params
+async function listSchools(params: { status?: string; sort?: string; limit?: number }) {
+  const { status, sort, limit } = params
   const supabase = getAdminClient()
 
-  const selectCols = columns || SCHOOL_SELECT_COLUMNS
-  let query = supabase.from('schools').select(selectCols)
+  let query = supabase.from('schools').select('*')
 
   if (status) {
     query = query.eq('status', status)
