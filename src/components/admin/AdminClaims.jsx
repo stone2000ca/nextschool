@@ -32,7 +32,7 @@ export default function AdminClaims() {
         rawClaims.map(async (claim) => {
           const [schools, users] = await Promise.all([
             School.filter({ id: claim.school_id }),
-            claim.user_id ? UserEntity.filter({ id: claim.user_id }) : Promise.resolve([]),
+            claim.claimed_by ? UserEntity.filter({ id: claim.claimed_by }) : Promise.resolve([]),
           ]);
           return {
             ...claim,
@@ -59,7 +59,7 @@ export default function AdminClaims() {
       await invokeFunction('approveClaim', {
         claimId: claim.id,
         schoolId: claim.school_id,
-        userId: claim.user_id,
+        userId: claim.claimed_by,
       });
       setClaims(prev => prev.filter(c => c.id !== claim.id));
       toast.success(`Claim approved for ${claim._schoolName}`);
