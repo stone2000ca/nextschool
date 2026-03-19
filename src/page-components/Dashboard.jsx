@@ -39,10 +39,18 @@ export default function Dashboard() {
   // Previously this ran on mount with useEffect([], []), capturing the initial
   // isAuthenticated=false (before auth loaded), which caused an immediate
   // redirect to /login even for authenticated users on hard refresh.
+  //
+  // We also depend on authUser because AuthContext sets isAuthenticated=true
+  // and isLoadingAuth=false synchronously, but fetches the user profile
+  // asynchronously. Without authUser in deps, loadSessions() would run with
+  // authUser=null, set local user state to null, and the render guard
+  // (!user) would return null — causing a blank page.
   useEffect(() => {
     if (isLoadingAuth) return;
+    // If authenticated but profile hasn't loaded yet, wait for it
+    if (authIsAuthenticated && !authUser) return;
     loadSessions();
-  }, [isLoadingAuth, authIsAuthenticated]);
+  }, [isLoadingAuth, authIsAuthenticated, authUser]);
 
   const loadSessions = async () => {
     try {
@@ -83,7 +91,7 @@ export default function Dashboard() {
     }
 
     // WC12: Case 2 (free user with 1+ session) - show upgrade paywall instead
-    const isPaid = user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise';
+    const isPaid = user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise';
     if (!isPaid) {
       // Show upgrade modal for free users
       const activeSession = activeSessions[0];
@@ -229,7 +237,13 @@ export default function Dashboard() {
   }
 
   if (!isAuthenticated || !user) {
-    return null; // Will redirect
+    // Not authenticated — navigateToLogin was already called in loadSessions.
+    // Show a spinner while the redirect completes instead of a blank page.
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#1E1E2E]">
+        <div className="animate-spin h-8 w-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+      </div>
+    );
   }
 
   return (
@@ -264,14 +278,14 @@ export default function Dashboard() {
             </h1>
             {/* WC12: Tier badge */}
             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-              user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise'
+              user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise'
                 ? 'bg-amber-500/20 text-amber-300'
                 : 'bg-slate-500/20 text-slate-300'
             }`}>
-              {(user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise') && (
+              {(user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise') && (
                 <Crown className="w-3 h-3" />
               )}
-              {user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise' ? 'Premium' : 'Free Plan'}
+              {user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise' ? 'Premium' : 'Free Plan'}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -375,7 +389,7 @@ export default function Dashboard() {
                       onViewMatches={() => {}}
                       onEditProfile={() => {}}
                       onArchive={handleSessionArchived}
-                      isPaid={user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise'}
+                      isPaid={user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise'}
                     />
                   ))}
                 </div>
@@ -407,7 +421,7 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          {user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise' ? (
+                          {user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise' ? (
                             <>
                               <button
                                 onClick={() => handleReactivateSession(session)}
