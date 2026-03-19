@@ -1886,9 +1886,11 @@ export default function Consultant() {
         setShowLoginGate={setShowLoginGate}
         onLoginGateClose={() => {
           setShowLoginGate(false);
-          // Ensure loading overlay is dismissed when login gate closes
-          // (briefStatus may still be 'confirmed' if set before login gate appeared)
-          if (briefStatus === 'confirmed') {
+          // FIX-RESULTS-VIEW: The API call now proceeds behind the login gate modal.
+          // When the API returns, it sets schools + view + clears briefStatus automatically.
+          // Only clear briefStatus if the API already failed or somehow didn't clear it
+          // AND we're not currently loading (isTyping would indicate API in progress).
+          if (briefStatus === 'confirmed' && !isTyping) {
             setBriefStatus(null);
             setShowLoadingOverlay(false);
           }

@@ -121,11 +121,10 @@ export const useMessageHandler = ({
         sessionId
       }));
 
-      // Reset briefStatus so the loading overlay doesn't stay stuck
-      // (no API call will run since we return early)
-      setBriefStatus(null);
+      // FIX-RESULTS-VIEW: Show login gate as non-blocking overlay but do NOT
+      // return early. The API call proceeds so schools load behind the modal.
+      // When the user closes the modal, they see the RESULTS view with schools.
       setShowLoginGate(true);
-      return;
     }
 
     // Check if user has tokens (skip for premium)
@@ -683,6 +682,8 @@ export const useMessageHandler = ({
     } catch (error) {
       console.error('Error sending message:', error);
       setIsTyping(false);
+      // FIX-RESULTS-VIEW: Clear briefStatus on error so loading overlay doesn't stay stuck
+      setBriefStatus(null);
 
       // Add error message to chat
       const errorMessage = {

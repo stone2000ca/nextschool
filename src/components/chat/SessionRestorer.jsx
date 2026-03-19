@@ -498,7 +498,10 @@ export async function restoreMostRecentConversation(
 
 export const restoreGuestSession = (isAuthenticated, user, currentConversation, setMessages, setSelectedConsultant, setCurrentConversation, _unused) => {
   const guestData = localStorage.getItem('guestConversationData');
-  if (!guestData || isAuthenticated) return;
+  // FIX-RESULTS-VIEW: Removed `isAuthenticated` guard — this function restores data
+  // saved WHILE the user was a guest. It must work when called after the user signs in
+  // through the login gate modal and returns to the page.
+  if (!guestData) return;
 
   try {
     const {
