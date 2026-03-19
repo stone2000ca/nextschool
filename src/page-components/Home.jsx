@@ -8,6 +8,7 @@ import { invokeFunction } from '@/lib/functions';
 import { LOGO_BLACK_TEXT } from '@/lib/brand-assets';
 import { School } from '@/lib/entities';
 import SchoolCardUnified from '@/components/schools/SchoolCardUnified';
+import Footer from '@/components/navigation/Footer';
 
 export default function Home() {
   const router = useRouter();
@@ -351,15 +352,13 @@ export default function Home() {
       <section className="py-12 sm:py-20 lg:py-28 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 sm:mb-12 gap-4">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900">Featured Schools</h2>
-            <Link href="/schools">
-              <Button 
-                variant="outline" 
-                className="text-teal-600 border-teal-600 hover:bg-teal-50 w-full sm:w-auto focus:ring-2 focus:ring-teal-400"
-                aria-label="Browse all schools in directory"
-              >
-                Browse All Schools <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+            <h2 className="ns-heading text-3xl sm:text-4xl">Featured Schools</h2>
+            <Link
+              href="/schools"
+              className="text-teal-600 hover:text-teal-700 text-sm font-semibold inline-flex items-center gap-1 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 rounded"
+              aria-label="Browse all schools in directory"
+            >
+              Browse all schools <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
@@ -494,22 +493,23 @@ export default function Home() {
       </section>
 
       {/* FOR SCHOOLS CTA */}
-      <section className="py-20 sm:py-28 bg-gradient-to-r from-teal-50 to-amber-50 border-y border-slate-200">
+      <section className="py-12 sm:py-16 bg-gradient-to-br from-slate-900 to-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
-            Are You a School Administrator?
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+            Are you a school?
           </h2>
-          <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
-            Claim your free profile on NextSchool. Control how families discover your school.
+          <p className="text-white/60 mb-6 max-w-xl mx-auto">
+            Claim your free profile and control how families discover you.
           </p>
-          <Link href="/claim-school?schoolId=">
-            <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-7 text-lg">
-              Claim Your School
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+          <Link href="/for-schools">
+            <button className="ns-btn-primary">
+              Learn More <ArrowRight className="ml-2 h-4 w-4 inline" />
+            </button>
           </Link>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }

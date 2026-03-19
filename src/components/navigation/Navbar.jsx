@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { SchoolAdmin as SchoolAdminEntity } from '@/lib/entities';
-import { LOGO_BLACK_TEXT } from '@/lib/brand-assets';
+import { LOGO_BLACK_TEXT, LOGO_WHITE_TEXT } from '@/lib/brand-assets';
 
 export default function Navbar({ variant = "default" }) {
   const { user: authUser, isAuthenticated: authIsAuthenticated, navigateToLogin, logout } = useAuth();
@@ -83,31 +83,27 @@ export default function Navbar({ variant = "default" }) {
 
   // Default variant for other pages
   return (
-    <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50" style={{ borderColor: 'var(--ns-border)' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+    <header className="bg-slate-900 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
         <Link href={'/'} className="flex items-center gap-2">
-          <img src={LOGO_BLACK_TEXT} alt="NextSchool" className="h-10" />
+          <img src={LOGO_WHITE_TEXT} alt="NextSchool" className="h-10" />
         </Link>
-        <nav className="hidden md:flex gap-8 items-center">
-          <Link href={'/how-it-works'} className="text-slate-600 hover:text-teal-600 text-sm">How it Works</Link>
-          <Link href={'/schools'} className="text-slate-600 hover:text-teal-600 text-sm">
-            Browse Schools
-          </Link>
-          <Link href={'/guides'} className="text-slate-600 hover:text-teal-600 text-sm">Guides</Link>
-          <Link href={'/pricing'} className="text-slate-600 hover:text-teal-600 text-sm">Pricing</Link>
-          <Link href={'/for-schools'} className="text-slate-600 hover:text-teal-600 text-sm">For Schools</Link>
-          <Link href={'/about'} className="text-slate-600 hover:text-teal-600 text-sm">About</Link>
+        <nav className="hidden md:flex gap-6 items-center">
+          <Link href={'/how-it-works'} className="text-white/70 hover:text-white text-sm transition-colors">How it Works</Link>
+          <Link href={'/schools'} className="text-white/70 hover:text-white text-sm transition-colors">Browse Schools</Link>
+          <Link href={'/pricing'} className="text-white/70 hover:text-white text-sm transition-colors">Pricing</Link>
+          <Link href={'/for-schools'} className="text-white/70 hover:text-white text-sm transition-colors">For Schools</Link>
         </nav>
         {isAuthenticated && user ? (
           <div className="flex items-center gap-2">
             <Link href={'/dashboard'} title="Dashboard">
-              <Button variant="outline" size="icon">
+              <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10">
                 <User className="h-4 w-4" />
               </Button>
             </Link>
             {isSchoolAdmin && (
               <Link href={'/school-admin'} title="Manage School">
-                <Button variant="outline" size="icon">
+                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10">
                   <Building2 className="h-4 w-4" />
                 </Button>
               </Link>
@@ -115,7 +111,7 @@ export default function Navbar({ variant = "default" }) {
             <Button
               variant="ghost"
               size="sm"
-              className="gap-2 text-slate-600 hover:text-red-600"
+              className="gap-2 text-white/70 hover:text-red-400 hover:bg-white/10"
               onClick={() => logout()}
             >
               <LogOut className="h-4 w-4" />
@@ -123,9 +119,11 @@ export default function Navbar({ variant = "default" }) {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <button className="ns-btn-outline" onClick={() => navigateToLogin(window.location.pathname)}>Log In</button>
-            <button className="ns-btn-primary" onClick={() => navigateToLogin(window.location.pathname)}>Sign Up</button>
+          <div className="flex items-center gap-3">
+            <button className="text-white/70 hover:text-white text-sm transition-colors" onClick={() => navigateToLogin(window.location.pathname)}>Log in</button>
+            <Link href="/consultant">
+              <button className="ns-btn-primary text-sm">Start free chat</button>
+            </Link>
           </div>
         )}
       </div>
