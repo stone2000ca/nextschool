@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user: authUser, isAuthenticated: authIsAuthenticated, navigateToLogin } = useAuth();
+  const { user: authUser, isAuthenticated: authIsAuthenticated, isLoadingAuth, navigateToLogin } = useAuth();
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,21 +35,23 @@ export default function Dashboard() {
     }
   }, []);
 
+  // Wait for auth to finish hydrating before checking authentication.
+  // Previously this ran on mount with useEffect([], []), capturing the initial
+  // isAuthenticated=false (before auth loaded), which caused an immediate
+  // redirect to /login even for authenticated users on hard refresh.
   useEffect(() => {
-    checkAuthAndLoadSessions();
-  }, []);
+    if (isLoadingAuth) return;
+    loadSessions();
+  }, [isLoadingAuth, authIsAuthenticated]);
 
-  const checkAuthAndLoadSessions = async () => {
+  const loadSessions = async () => {
     try {
-      const authenticated = authIsAuthenticated;
-      setIsAuthenticated(authenticated);
-
-      if (!authenticated) {
-        // Redirect to login
+      if (!authIsAuthenticated) {
         navigateToLogin(window.location.pathname);
         return;
       }
 
+      setIsAuthenticated(true);
       const userData = authUser;
       setUser(userData);
 
@@ -218,7 +220,7 @@ export default function Dashboard() {
     }));
   };
 
-  if (loading) {
+  if (isLoadingAuth || loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#1E1E2E]">
         <div className="animate-spin h-8 w-8 border-4 border-teal-600 border-t-transparent rounded-full" />
