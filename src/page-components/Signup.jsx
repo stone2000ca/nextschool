@@ -20,6 +20,7 @@ export default function Signup() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [confirmationSent, setConfirmationSent] = useState(false)
 
   useEffect(() => {
     if (!isLoadingAuth && isAuthenticated) {
@@ -42,7 +43,11 @@ export default function Signup() {
       await signup(email, password, { full_name: fullName })
       router.replace(returnTo)
     } catch (err) {
-      setError(err.message || 'Signup failed. Please try again.')
+      if (err.code === 'email_confirmation_required') {
+        setConfirmationSent(true)
+      } else {
+        setError(err.message || 'Signup failed. Please try again.')
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -54,6 +59,29 @@ export default function Signup() {
 
   if (isAuthenticated) {
     return null
+  }
+
+  if (confirmationSent) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Check your email</CardTitle>
+            <CardDescription>
+              We sent a confirmation link to <strong>{email}</strong>. Click the link in the email to activate your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center text-sm text-muted-foreground">
+              Already confirmed?{' '}
+              <Link href={`/login${returnTo !== '/dashboard' ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`} className="text-primary underline-offset-4 hover:underline">
+                Log in
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
