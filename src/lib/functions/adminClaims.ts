@@ -16,23 +16,33 @@ export async function adminClaims() {
   const schoolIds = [...new Set(claims.map((c: any) => c.school_id).filter(Boolean))]
   const userIds = [...new Set(claims.map((c: any) => c.claimed_by).filter(Boolean))]
 
+  console.log('[adminClaims] schoolIds:', JSON.stringify(schoolIds))
+  console.log('[adminClaims] userIds:', JSON.stringify(userIds))
+
   // Batch fetch schools and users
   const [schoolsRes, usersRes] = await Promise.all([
     schoolIds.length > 0
       ? (db.from('schools') as any).select('id, name, city, region').in('id', schoolIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
     userIds.length > 0
       ? (db.from('users') as any).select('id, email').in('id', userIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
   ])
+
+  console.log('[adminClaims] schoolsRes error:', schoolsRes.error)
+  console.log('[adminClaims] schoolsRes data:', JSON.stringify(schoolsRes.data))
 
   const schoolMap = new Map((schoolsRes.data || []).map((s: any) => [s.id, s]))
   const userMap = new Map((usersRes.data || []).map((u: any) => [u.id, u]))
 
+  console.log('[adminClaims] schoolMap size:', schoolMap.size)
+  console.log('[adminClaims] schoolMap keys:', JSON.stringify([...schoolMap.keys()]))
+
   // Enrich claims
   return claims.map((claim: any) => {
-        const school = schoolMap.get(claim.school_id) as any
-        const user = userMap.get(claim.claimed_by) as any
+    const school = schoolMap.get(claim.school_id) as any
+    const user = userMap.get(claim.claimed_by) as any
+    console.log('[adminClaims] claim.school_id:', claim.school_id, 'found school:', !!school)
     return {
       ...claim,
       _schoolName: school?.name || 'Unknown School',
