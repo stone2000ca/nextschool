@@ -50,7 +50,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
       const { file_url } = await invokeFunction('uploadFile', { file });
       const newGallery = [...(school?.photo_gallery || []), file_url];
       await School.update(school.id, { photo_gallery: newGallery });
-      onUpdate && onUpdate('photoGallery', newGallery);
+      onUpdate && onUpdate('photo_gallery', newGallery);
       toast.success('Photo added to gallery');
       recalculateScore();
     } catch (error) {

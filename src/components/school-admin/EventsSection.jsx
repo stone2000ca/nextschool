@@ -96,7 +96,7 @@ function FreeTierTeaser({ school }) {
             <div className="space-y-2">
               {aiEvents.map(ev => (
                 <div key={ev.id} className="flex items-center gap-3 text-sm text-slate-500">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${EVENT_TYPE_COLORS[ev.eventType] || 'bg-slate-100 text-slate-600'}`}>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${EVENT_TYPE_COLORS[ev.event_type] || 'bg-slate-100 text-slate-600'}`}>
                     {EVENT_TYPE_LABELS[ev.event_type] || ev.event_type}
                   </span>
                   <span>{ev.title}</span>
