@@ -22,11 +22,21 @@ const COLUMN_ALIASES: Record<string, string> = {
     created_at: 'created_date',
 }
 
-async function listSchools(params: { status?: string; sort?: string; limit?: number }) {
-  const { status, sort, limit } = params
+// Only select columns needed by the frontend to keep payload small
+const SCHOOL_SELECT_COLUMNS = [
+  'id', 'name', 'slug', 'city', 'province_state', 'country', 'status',
+  'tuition', 'day_tuition', 'currency', 'enrollment', 'grades_served',
+  'gender_policy', 'boarding_available', 'faith_based', 'curriculum',
+  'specializations', 'header_photo_url', 'hero_image', 'logo_url',
+  'highlights', 'founded', 'acceptance_rate',
+].join(',')
+
+async function listSchools(params: { status?: string; sort?: string; limit?: number; columns?: string }) {
+  const { status, sort, limit, columns } = params
   const supabase = getAdminClient()
 
-  let query = supabase.from('schools').select('*')
+  const selectCols = columns || SCHOOL_SELECT_COLUMNS
+  let query = supabase.from('schools').select(selectCols)
 
   if (status) {
     query = query.eq('status', status)
@@ -46,9 +56,11 @@ async function listSchools(params: { status?: string; sort?: string; limit?: num
   const { data, error } = await query
 
   if (error) {
-    console.error('list-schools error:', error)
+    console.error('[list-schools] Supabase error:', error)
     throw new Error(error.message)
   }
+
+  console.log(`[list-schools] Returned ${(data || []).length} schools (status=${status}, sort=${sort}, limit=${limit})`)
 
   return (data || []).map(keysToCamel)
 }
