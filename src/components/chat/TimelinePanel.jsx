@@ -35,7 +35,7 @@ export default function TimelinePanel({ shortlist, onClose }) {
       try {
         const results = await Promise.all(
           shortlist.map(school =>
-            SchoolEvent.filter({ schoolId: school.id, isActive: true })
+            SchoolEvent.filter({ school_id: school.id, is_active: true })
               .then(evs => evs
                 .filter(e => e.date && e.date >= today)
                 .map(e => ({ ...e, schoolName: school.name }))
@@ -152,18 +152,18 @@ export default function TimelinePanel({ shortlist, onClose }) {
                       </p>
                       <p className="text-sm font-semibold text-white leading-snug">{ev.title}</p>
                       <p className="text-xs text-slate-400">{ev.schoolName}</p>
-                      <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded ${EVENT_TYPE_COLORS[ev.eventType] || 'bg-slate-700 text-slate-300'}`}>
-                        {EVENT_TYPE_LABELS[ev.eventType] || ev.eventType}
+                      <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded ${EVENT_TYPE_COLORS[ev.event_type] || 'bg-slate-700 text-slate-300'}`}>
+                        {EVENT_TYPE_LABELS[ev.event_type] || ev.event_type}
                       </span>
                       <div className="flex items-center justify-between gap-2">
-                        {(ev.registrationUrl || ev.virtualUrl) ? (
+                        {(ev.registration_url || ev.virtual_url) ? (
                           <a
-                            href={ev.registrationUrl || ev.virtualUrl}
+                            href={ev.registration_url || ev.virtual_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-xs font-medium text-teal-400 hover:underline"
                           >
-                            {ev.registrationUrl ? 'Register' : 'Join'}
+                            {ev.registration_url ? 'Register' : 'Join'}
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         ) : null}

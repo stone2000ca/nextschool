@@ -21,11 +21,11 @@ export function useShortlist({
     const jid = journeyId || activeJourney?.journeyId;
     if (!jid) return;
     try {
-      const records = await ChatShortlist.filter({ familyJourneyId: jid });
+      const records = await ChatShortlist.filter({ family_journey_id: jid });
       if (records.length === 0) {
         return;
       }
-      const schoolIds = records.map(r => r.schoolId).filter(Boolean);
+      const schoolIds = records.map(r => r.school_id).filter(Boolean);
       const schools = await School.filter({ id: { $in: schoolIds } });
       setShortlistData(schools);
     } catch (error) {
@@ -68,7 +68,7 @@ export function useShortlist({
         setRemovedSchoolIds(prev => [...prev, schoolId]);
         // Remove from ChatShortlist
         if (activeJourney?.journeyId) {
-          const existing = await ChatShortlist.filter({ familyJourneyId: activeJourney.journeyId, schoolId });
+          const existing = await ChatShortlist.filter({ family_journey_id: activeJourney.journeyId, school_id: schoolId });
           for (const rec of existing) {
             await ChatShortlist.delete(rec.id);
           }
@@ -79,8 +79,8 @@ export function useShortlist({
         // Add to ChatShortlist
         if (activeJourney?.journeyId) {
           await ChatShortlist.create({
-            familyJourneyId: activeJourney.journeyId,
-            schoolId,
+            family_journey_id: activeJourney.journeyId,
+            school_id: schoolId,
             addedAt: new Date().toISOString(),
             source: 'manual',
           });
@@ -95,17 +95,17 @@ export function useShortlist({
 
           if (isRemoving) {
             const existing = await SchoolJourney.filter({
-              familyJourneyId: familyJourney.journeyId,
-              schoolId: schoolId,
+              family_journey_id: familyJourney.journeyId,
+              school_id: schoolId,
             });
             if (existing.length > 0) {
               await SchoolJourney.update(existing[0].id, { status: 'removed' });
             }
           } else {
             await SchoolJourney.create({
-              familyJourneyId: familyJourney.journeyId,
-              schoolId: school?.id || schoolId,
-              schoolName: school?.name || '',
+              family_journey_id: familyJourney.journeyId,
+              school_id: school?.id || schoolId,
+              school_name: school?.name || '',
               status: 'shortlisted',
               addedAt: new Date().toISOString(),
             });
@@ -116,8 +116,8 @@ export function useShortlist({
             try {
               const currentHistory = Array.isArray(familyJourney.phaseHistory) ? familyJourney.phaseHistory : [];
               await FamilyJourney.update(familyJourney.journeyId, {
-                currentPhase: 'EVALUATE',
-                phaseHistory: [...currentHistory, { phase: 'EVALUATE', enteredAt: new Date().toISOString() }],
+                current_phase: 'EVALUATE',
+                phase_history: [...currentHistory, { phase: 'EVALUATE', enteredAt: new Date().toISOString() }],
               });
               console.log('[E29-015] FamilyJourney advanced MATCH → EVALUATE');
             } catch (phaseErr) {

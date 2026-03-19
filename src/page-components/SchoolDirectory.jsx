@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { School, SchoolEvent, VisitorLog } from '@/lib/entities';
+import { SchoolEvent, VisitorLog } from '@/lib/entities';
 import { invokeFunction } from '@/lib/functions';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ export default function SchoolDirectory() {
   const [filterCurriculum, setFilterCurriculum] = useState('all');
   const [displayedCount, setDisplayedCount] = useState(20);
   const [user, setUser] = useState(null);
-  const [sessionId] = useState(Math.random().toString(36).substring(2, 11));
+  const [sessionId] = useState(() => crypto.randomUUID());
   // E16a-018: Has Upcoming Events filter
   const [hasEventsFilter, setHasEventsFilter] = useState(false);
   const SCHOOLS_PER_PAGE = 20;
@@ -43,11 +43,11 @@ export default function SchoolDirectory() {
     const provincesSet = new Set();
     
     allSchools.forEach(school => {
-      if (school.country === selectedCountryValue && school.provinceState) {
+      if (school.country === selectedCountryValue && school.province_state) {
         // Normalize US state abbreviations to full names
         const normalizedName = selectedCountryValue === 'United States' 
-          ? normalizeStateName(school.provinceState) 
-          : school.provinceState;
+          ? normalizeStateName(school.province_state) 
+          : school.province_state;
         provincesSet.add(normalizedName);
       }
     });
@@ -66,17 +66,17 @@ export default function SchoolDirectory() {
         if (authenticated) {
           userId = authUser?.id;
           // Update lastSignedOn timestamp
-          await updateMe({ lastSignedOn: new Date().toISOString() });
+          await updateMe({ last_signed_on: new Date().toISOString() });
         }
 
         // Log visitor
         await VisitorLog.create({
-          userId,
-          sessionId,
+          user_id: userId,
+          session_id: sessionId,
           timestamp: new Date().toISOString(),
           page: 'SchoolDirectory',
           referrer: document.referrer || null,
-          userAgent: navigator.userAgent
+          user_agent: navigator.userAgent
         });
       } catch (err) {
         console.error('Failed to log visitor:', err);
@@ -127,21 +127,27 @@ export default function SchoolDirectory() {
 
   const loadSchools = async () => {
     try {
-      // Fetch ALL schools without limit
-      const [schools, events] = await Promise.all([
-        School.filter({ status: 'active' }, '-updated_date', 1000),
-        SchoolEvent.filter({ isActive: true }),
-      ]);
+      // Load schools via server API (bypasses RLS)
+      const schoolsRaw = await invokeFunction('listSchools', { status: 'active', sort: '-updated_at', limit: 1000 });
+      const schools = Array.isArray(schoolsRaw) ? schoolsRaw : (schoolsRaw?.data || []);
+      console.log('[SchoolDirectory] Loaded schools:', schools.length, 'first:', schools[0]?.name);
       setAllSchools(schools || []);
+    } catch (error) {
+      console.error('[SchoolDirectory] Failed to load schools:', error);
+    } finally {
+      setLoading(false);
+    }
+
+    // Load events separately — don't let it block school rendering
+    try {
+      const events = await SchoolEvent.filter({});
       const today = new Date().toISOString();
       const withEvents = new Set(
-        (events || []).filter(e => e.date && e.date >= today).map(e => e.schoolId)
+        (events || []).filter(e => e.date && e.date >= today).map(e => e.school_id)
       );
       setSchoolsWithEvents(withEvents);
     } catch (error) {
-      console.error('Failed to load schools:', error);
-    } finally {
-      setLoading(false);
+      console.error('[SchoolDirectory] Failed to load events:', error);
     }
   };
 
@@ -173,22 +179,22 @@ export default function SchoolDirectory() {
   };
 
   const filteredSchools = allSchools.filter(school => {
-    const matchesSearch = school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          school.city.toLowerCase().includes(searchTerm.toLowerCase());
+    const nameLower = (school.name || '').toLowerCase();
+    const cityLower = (school.city || '').toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = nameLower.includes(searchLower) || cityLower.includes(searchLower);
     const matchesCountry = filterCountry === 'all' || (
       (filterCountry === 'Canada' && school.country === 'Canada') ||
       (filterCountry === 'US' && school.country === 'United States') ||
       (filterCountry === 'UK' && school.country === 'United Kingdom')
     );
-    // For province matching: normalize the school's state and compare, allowing for both abbreviations and full names
     const matchesProvince = filterProvince === 'all' || (
-      school.provinceState === filterProvince ||
-      (school.country === 'United States' && normalizeStateName(school.provinceState) === filterProvince)
+      school.province_state === filterProvince ||
+      (school.country === 'United States' && normalizeStateName(school.province_state) === filterProvince)
     );
-    const matchesGrade = filterGrade === 'all' || (school.gradesServed && school.gradesServed.includes(filterGrade.charAt(0)));
+    const matchesGrade = filterGrade === 'all' || (school.grades_served && school.grades_served.includes(filterGrade.charAt(0)));
     const matchesTuition = filterTuition === 'all' || matchesTuitionRange(school.tuition, filterTuition);
     const matchesCurriculum = filterCurriculum === 'all' || (school.curriculum && school.curriculum.some(c => c === filterCurriculum)) || school.curriculum?.includes(filterCurriculum);
-    // E16a-018: Filter by upcoming events
     const matchesEvents = !hasEventsFilter || schoolsWithEvents.has(school.id);
     return matchesSearch && matchesCountry && matchesProvince && matchesGrade && matchesTuition && matchesCurriculum && matchesEvents;
   });
@@ -406,15 +412,15 @@ export default function SchoolDirectory() {
               {displayedSchools.map((school) => (
                   <Link
                     key={school.id}
-                    href={school.slug ? `/schools/${school.slug}` : `/school?id=${school.id}`}
+                    href={school.slug ? `/school/${school.slug}` : `/school?id=${school.id}`}
                     className="block focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 rounded-lg"
                   >
                     <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
                       {/* Header Photo */}
                       <div className="h-32 sm:h-40 relative overflow-hidden">
                         <HeaderPhotoDisplay
-                          headerPhotoUrl={school.headerPhotoUrl}
-                          heroImage={school.heroImage}
+                          headerPhotoUrl={school.header_photo_url}
+                          heroImage={school.hero_image}
                           schoolName={school.name}
                           height="h-32 sm:h-40"
                         />
@@ -429,9 +435,9 @@ export default function SchoolDirectory() {
                       <div className="p-3 sm:p-4">
                         {/* Logo and Name */}
                         <div className="flex gap-2 sm:gap-3 mb-2 sm:mb-3">
-                          {school.logoUrl && (
+                          {school.logo_url && (
                             <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
-                              <img src={school.logoUrl} alt={`${school.name} logo`} className="w-full h-full object-contain" />
+                              <img src={school.logo_url} alt={`${school.name} logo`} className="w-full h-full object-contain" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
@@ -442,24 +448,24 @@ export default function SchoolDirectory() {
                         {/* Location */}
                         <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 mb-2">
                           <MapPin className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
-                          <span className="truncate">{school.city}, {school.provinceState || school.country}</span>
+                          <span className="truncate">{school.city}, {school.province_state || school.country}</span>
                         </div>
 
                         {/* Enriched chips: grades, tuition, gender, boarding, faith */}
                         <div className="flex flex-wrap gap-1.5 mb-3">
-                          {school.gradesServed && (
+                          {school.grades_served && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">
-                              <GraduationCap className="h-3 w-3" /> {school.gradesServed}
+                              <GraduationCap className="h-3 w-3" /> {school.grades_served}
                             </span>
                           )}
-                          {school.genderPolicy && school.genderPolicy !== 'Co-ed' && (
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">{school.genderPolicy}</span>
+                          {school.gender_policy && school.gender_policy !== 'Co-ed' && (
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">{school.gender_policy}</span>
                           )}
-                          {school.boardingAvailable && (
+                          {school.boarding_available && (
                             <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">Boarding</span>
                           )}
-                          {school.faithBased && (
-                            <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-medium">{school.faithBased}</span>
+                          {school.faith_based && (
+                            <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-medium">{school.faith_based}</span>
                           )}
                           {school.curriculum && Array.isArray(school.curriculum) && school.curriculum.slice(0, 2).map((c, i) => (
                             <span key={i} className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded text-xs font-medium">{c}</span>
@@ -471,11 +477,11 @@ export default function SchoolDirectory() {
 
                         {/* Tuition + Enrollment + Founded */}
                         <div className="space-y-1 text-xs sm:text-sm text-slate-600 mb-3">
-                          {(school.dayTuition || school.tuition) && (
+                          {(school.day_tuition || school.tuition) && (
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
                               <span className="truncate font-semibold text-slate-900">
-                                From {getCurrencySymbol(school.currency)}{(school.dayTuition || school.tuition).toLocaleString()}/yr
+                                From {getCurrencySymbol(school.currency)}{(school.day_tuition || school.tuition).toLocaleString()}/yr
                               </span>
                             </div>
                           )}
@@ -485,8 +491,8 @@ export default function SchoolDirectory() {
                               <span>{school.enrollment.toLocaleString()} students</span>
                             </div>
                           )}
-                          {school.acceptanceRate && (
-                            <span className="text-xs text-slate-500">{school.acceptanceRate}% acceptance</span>
+                          {school.acceptance_rate && (
+                            <span className="text-xs text-slate-500">{school.acceptance_rate}% acceptance</span>
                           )}
                           {school.founded && (
                             <span className="text-xs text-slate-500 ml-2">Est. {school.founded}</span>

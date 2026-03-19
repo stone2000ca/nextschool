@@ -21,7 +21,7 @@ export default function NotesPanel({ userId, onClose }) {
 
   const loadNotes = async () => {
     try {
-      const userNotes = await Notes.filter({ userId });
+      const userNotes = await Notes.filter({ user_id: userId });
       setNotes(userNotes);
     } catch (error) {
       console.error('Failed to load notes:', error);
@@ -30,7 +30,7 @@ export default function NotesPanel({ userId, onClose }) {
 
   const loadMemories = async () => {
     try {
-      const userMemories = await UserMemory.filter({ userId });
+      const userMemories = await UserMemory.filter({ user_id: userId });
       if (userMemories.length > 0) {
         setMemories(userMemories[0].memories || []);
       }
@@ -43,7 +43,7 @@ export default function NotesPanel({ userId, onClose }) {
     if (!newNote.trim()) return;
     try {
       await Notes.create({
-        userId,
+        user_id: userId,
         content: newNote
       });
       setNewNote('');
@@ -75,19 +75,19 @@ export default function NotesPanel({ userId, onClose }) {
   const handleClearMemory = async () => {
     try {
       // Delete all UserMemory records
-      const userMemories = await UserMemory.filter({ userId });
+      const userMemories = await UserMemory.filter({ user_id: userId });
       if (userMemories.length > 0) {
         await UserMemory.delete(userMemories[0].id);
       }
 
       // Delete all FamilyProfile records
-      const familyProfiles = await FamilyProfile.filter({ userId });
+      const familyProfiles = await FamilyProfile.filter({ user_id: userId });
       for (const profile of familyProfiles) {
         await FamilyProfile.delete(profile.id);
       }
 
       // Delete all ChatHistory records
-      const chatHistories = await ChatHistory.filter({ userId });
+      const chatHistories = await ChatHistory.filter({ user_id: userId });
       for (const chat of chatHistories) {
         await ChatHistory.delete(chat.id);
       }
@@ -139,7 +139,7 @@ export default function NotesPanel({ userId, onClose }) {
                       <p className="text-sm text-slate-700 mb-2">{note.content}</p>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">
-                          {new Date(note.createdAt).toLocaleDateString()}
+                          {new Date(note.created_date).toLocaleDateString()}
                         </span>
                         <div className="flex gap-1">
                           <Button

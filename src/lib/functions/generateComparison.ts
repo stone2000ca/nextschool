@@ -133,10 +133,10 @@ export async function generateComparisonLogic(params: { schoolIds: string[]; fam
   let schoolJourneys: any[] = [];
   if (userId) {
     try {
-      const journeys = await FamilyJourney.filter({ userId });
-      activeJourney = journeys?.find((j: any) => !j.isArchived) || null;
-      if (activeJourney?.schoolJourneys) {
-        schoolJourneys = Array.isArray(activeJourney.schoolJourneys) ? activeJourney.schoolJourneys : JSON.parse(activeJourney.schoolJourneys);
+      const journeys = await FamilyJourney.filter({ user_id: userId });
+      activeJourney = journeys?.find((j: any) => !j.is_archived) || null;
+      if (activeJourney?.school_journeys) {
+        schoolJourneys = Array.isArray(activeJourney.school_journeys) ? activeJourney.school_journeys : JSON.parse(activeJourney.school_journeys);
       }
       console.log('[E29-016] FamilyJourney fetched:', activeJourney?.id, 'schoolJourneys count:', schoolJourneys.length);
     } catch (journeyErr: any) {
@@ -149,7 +149,7 @@ export async function generateComparisonLogic(params: { schoolIds: string[]; fam
     schools: schools.map((s: any) => ({
       id: s.id,
       name: s.name,
-      heroImage: s.headerPhotoUrl || s.heroImage || null,
+      heroImage: s.header_photo_url || s.hero_image || null,
       city: s.city,
       region: s.region
     })),
@@ -157,8 +157,8 @@ export async function generateComparisonLogic(params: { schoolIds: string[]; fam
       {
         name: 'Basic Info',
         rows: [
-          { label: 'Location', values: schools.map((s: any) => `${s.city}, ${s.provinceState}`) },
-          { label: 'Grades', values: schools.map((s: any) => s.gradesServed || (s.lowestGrade && s.highestGrade ? s.lowestGrade + '-' + s.highestGrade : 'N/A')) },
+          { label: 'Location', values: schools.map((s: any) => `${s.city}, ${s.province_state}`) },
+          { label: 'Grades', values: schools.map((s: any) => s.grades_served || (s.lowest_grade && s.highest_grade ? s.lowest_grade + '-' + s.highest_grade : 'N/A')) },
           { label: 'Enrollment', values: schools.map((s: any) => s.enrollment?.toLocaleString()) },
           { label: 'Founded', values: schools.map((s: any) => s.founded) },
           { label: 'Curriculum', values: schools.map((s: any) => s.curriculum) }
@@ -167,8 +167,8 @@ export async function generateComparisonLogic(params: { schoolIds: string[]; fam
       {
         name: 'Academics',
         rows: [
-          { label: 'Avg Class Size', values: schools.map((s: any) => s.avgClassSize) },
-          { label: 'Student:Teacher', values: schools.map((s: any) => s.studentTeacherRatio) },
+          { label: 'Avg Class Size', values: schools.map((s: any) => s.avg_class_size) },
+          { label: 'Student:Teacher', values: schools.map((s: any) => s.student_teacher_ratio) },
           { label: 'Specializations', values: schools.map((s: any) => s.specializations?.join(', ') || 'None') }
         ]
       },
@@ -176,14 +176,14 @@ export async function generateComparisonLogic(params: { schoolIds: string[]; fam
         name: 'Cost',
         rows: [
           { label: 'Annual Tuition', values: schools.map((s: any) => `${s.currency} ${s.tuition?.toLocaleString()}`) },
-          { label: 'Financial Aid', values: schools.map((s: any) => s.financialAidAvailable ? 'Available' : 'Not available') }
+          { label: 'Financial Aid', values: schools.map((s: any) => s.financial_aid_available ? 'Available' : 'Not available') }
         ]
       },
       {
         name: 'Programs',
         rows: [
-          { label: 'Arts', values: schools.map((s: any) => s.artsPrograms?.slice(0, 3).join(', ') || 'None') },
-          { label: 'Sports', values: schools.map((s: any) => s.sportsPrograms?.slice(0, 3).join(', ') || 'None') },
+          { label: 'Arts', values: schools.map((s: any) => s.arts_programs?.slice(0, 3).join(', ') || 'None') },
+          { label: 'Sports', values: schools.map((s: any) => s.sports_programs?.slice(0, 3).join(', ') || 'None') },
           { label: 'Languages', values: schools.map((s: any) => s.languages?.join(', ') || 'None') }
         ]
       }
@@ -220,8 +220,8 @@ ${JSON.stringify(comparison.categories, null, 2)}
 
 FAMILY PRIORITIES: ${prioritiesStr}
 FAMILY DEALBREAKERS: ${dealbreakersStr}
-CHILD GRADE: ${familyProfile?.childGrade || 'not specified'}
-BUDGET: ${familyProfile?.maxTuition ? '$' + familyProfile.maxTuition.toLocaleString() : 'not specified'}
+CHILD GRADE: ${familyProfile?.child_grade || 'not specified'}
+BUDGET: ${familyProfile?.max_tuition ? '$' + familyProfile.max_tuition.toLocaleString() : 'not specified'}
 
 Generate 3-5 comparison insights. Return JSON: { "insights": ["insight 1", "insight 2", ...] }`;
 
@@ -287,22 +287,22 @@ Generate 3-5 comparison insights. Return JSON: { "insights": ["insight 1", "insi
     try {
       const artifactKey = [...schoolIds].sort().join('_');
       const existing = await GeneratedArtifact.filter({
-        familyProfileId,
-        artifactType: 'comparison'
+        family_profile_id: familyProfileId,
+        artifact_type: 'comparison'
       });
-      const found = existing?.find((a: any) => a.artifactKey === artifactKey);
+      const found = existing?.find((a: any) => a.artifact_key === artifactKey);
 
       const artifactData: any = {
-        familyProfileId,
-        artifactType: 'comparison',
-        artifactKey,
+        family_profile_id: familyProfileId,
+        artifact_type: 'comparison',
+        artifact_key: artifactKey,
         content: {
           comparisonMatrix,
           insights: finalInsights,
           isLocked,
           tradeoffNarration
         },
-        generatedAt: new Date().toISOString()
+        generated_at: new Date().toISOString()
       };
 
       if (found) {
@@ -321,7 +321,7 @@ Generate 3-5 comparison insights. Return JSON: { "insights": ["insight 1", "insi
     ...comparison,
     comparisonMatrix,
     isLocked,
-    journeyPhase: activeJourney?.currentPhase || null,
+    journeyPhase: activeJourney?.current_phase || null,
     tradeoffNarration
   };
 }

@@ -114,15 +114,17 @@ export const useMessageHandler = ({
       localStorage.setItem('guestConversationData', JSON.stringify({
         messages,
         consultant: selectedConsultant,
-        conversationContext: currentConversation?.conversationContext || {},
+        conversationContext: currentConversation?.conversation_context || {},
         familyProfile: familyProfile || {},
         briefStatus: briefStatus || null,
         extractedEntitiesData: extractedEntitiesData || {},
         sessionId
       }));
 
+      // FIX-RESULTS-VIEW: Show login gate as non-blocking overlay but do NOT
+      // return early. The API call proceeds so schools load behind the modal.
+      // When the user closes the modal, they see the RESULTS view with schools.
       setShowLoginGate(true);
-      return;
     }
 
     // Check if user has tokens (skip for premium)
@@ -190,7 +192,7 @@ export const useMessageHandler = ({
       const response = await invokeFunction('orchestrateConversation', {
         message: messageText,
         conversationHistory: messages.slice(-10),
-        conversationContext: currentConversation?.conversationContext || {},
+        conversationContext: currentConversation?.conversation_context || {},
         region: user?.profileRegion || 'Canada',
         userId: user?.id,
         consultantName: selectedConsultant,
@@ -323,27 +325,28 @@ export const useMessageHandler = ({
       // CRITICAL FIX: Merge backend's full context (including extractedEntities) with frontend state
       const responseState = response.data?.state;
       const deepDiveSchoolId = response.data?.deepDiveAnalysis?.schoolId || selectedSchool?.id || resolvedSchoolId || null;
+      const prevContext = currentConversation?.conversation_context || {};
       const updatedContext = {
-        ...(currentConversation?.conversationContext || {}),
+        ...prevContext,
         ...(response.data?.conversationContext || {}),
         state: responseState,
         briefStatus: newBriefStatus,
         schools: response.data?.schools || [],
         conversationId: conversationIdRef.current || currentConversation?.id || null,
         resumeView: responseState || null,
-        lastDeepDiveSchoolId: (responseState === 'DEEP_DIVE' || deepDiveSchoolId) ? deepDiveSchoolId : (currentConversation?.conversationContext?.lastDeepDiveSchoolId || null),
+        lastDeepDiveSchoolId: (responseState === 'DEEP_DIVE' || deepDiveSchoolId) ? deepDiveSchoolId : (prevContext?.lastDeepDiveSchoolId || null),
       };
 
       // BUG-RN-PERSIST Fix A: Use functional updater to avoid stale-closure overwrite
       // of currentConversation.id that was set by the RESULTS ChatHistory.create block.
       setCurrentConversation(prev => ({
         ...(prev || { id: null, messages: [] }),
-        conversationContext: updatedContext,
+        conversation_context: updatedContext,
       }));
 
-      // E42-PERSIST: Primary conversationContext persist (non-blocking)
+      // E42-PERSIST: Primary conversation_context persist (non-blocking)
       if (typeof conversationIdRef.current === 'string' && conversationIdRef.current) {
-        retryWithBackoff(() => ChatHistory.update(conversationIdRef.current, { conversationContext: updatedContext })).catch(err => console.error('[E42-PERSIST] Primary context save failed:', err));
+        retryWithBackoff(() => ChatHistory.update(conversationIdRef.current, { conversation_context: updatedContext })).catch(err => console.error('[E42-PERSIST] Primary context save failed:', err));
       }
 
       // BUG-DD-001 FIX: selectedSchool is SINGLE SOURCE OF TRUTH - NEVER clear it based on AI state
@@ -432,11 +435,11 @@ export const useMessageHandler = ({
           if ((!currentConversation?.id) && isAuthenticated && user) {
             try {
               chatHistoryRecord = await ChatHistory.create({
-                userId: user.id,
+                user_id: user.id,
                 title: profileName,
                 messages: updatedMessages,
-                conversationContext: updatedContext,
-                isActive: true
+                conversation_context: updatedContext,
+                is_active: true
               });
               // BUG-RN-PERSIST Fix A2 + Fix 1: Patch both updatedContext and the ref immediately
               // so that deep dive closures read the real id without waiting for React re-render.
@@ -446,7 +449,7 @@ export const useMessageHandler = ({
               } else {
                 console.warn('[E42-GUARD] Invalid chatHistoryRecord.id, skipping ref assignment:', chatHistoryRecord.id);
               }
-              setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversationContext: updatedContext }));
+              setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversation_context: updatedContext }));
               console.log('[SESSION] Created ChatHistory with id:', chatHistoryRecord.id);
             } catch (e) {
               console.error('Failed to create ChatHistory before ChatSession:', e);
@@ -461,32 +464,32 @@ export const useMessageHandler = ({
           ;(async () => {
             if (!user?.id) return;
             try {
-              const existingJourneys = await FamilyJourney.filter({ userId: user.id });
-              const activeJourneyList = existingJourneys.filter(j => !j.isArchived);
+              const existingJourneys = await FamilyJourney.filter({ user_id: user.id });
+              const activeJourneyList = existingJourneys.filter(j => !j.is_archived);
               if (activeJourneyList.length === 0) {
                 const childName = profileForSession?.childName || 'My Child';
                 const newJourney = await FamilyJourney.create({
-                  userId: user.id,
-                  childName: childName,
-                  profileLabel: childName + "'s School Search",
-                  currentPhase: 'MATCH',
-                  phaseHistory: JSON.stringify([
+                  user_id: user.id,
+                  child_name: childName,
+                  profile_label: childName + "'s School Search",
+                  current_phase: 'MATCH',
+                  phase_history: JSON.stringify([
                     { phase: 'UNDERSTAND', enteredAt: new Date().toISOString(), completedAt: new Date().toISOString() },
                     { phase: 'MATCH', enteredAt: new Date().toISOString() }
                   ]),
-                  familyProfileId: familyProfile?.id || null,
-                  briefSnapshot: JSON.stringify(profileForSession || {}),
-                  consultantId: selectedConsultant || 'jackie',
-                  totalSessions: 1,
-                  isArchived: false,
-                  lastActiveAt: new Date().toISOString(),
+                  family_profile_id: familyProfile?.id || null,
+                  brief_snapshot: JSON.stringify(profileForSession || {}),
+                  consultant_id: selectedConsultant || 'jackie',
+                  total_sessions: 1,
+                  is_archived: false,
+                  last_active_at: new Date().toISOString(),
                 });
                 console.log('[E29-003] FamilyJourney created:', newJourney.id);
                 if (typeof setActiveJourney === 'function') {
                   setActiveJourney(newJourney);
                 }
                 if (chatSession?.id && newJourney?.id) {
-                  ChatSession.update(chatSession.id, { journeyId: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
+                  ChatSession.update(chatSession.id, { journey_id: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
                 }
               } else {
                 console.log('[E29-003] Active FamilyJourney already exists, skipping creation. Journey ID:', activeJourneyList[0].id);
@@ -500,20 +503,20 @@ export const useMessageHandler = ({
           })();
 
           const chatSession = await ChatSession.create({
-            sessionToken: sessionId,
-            userId: user?.id,
-            familyProfileId: profileForSession?.id || null,
-            chatHistoryId: chatHistoryRecord?.id || currentConversation?.id,
+            session_token: sessionId,
+            user_id: user?.id,
+            family_profile_id: profileForSession?.id || null,
+            chat_history_id: chatHistoryRecord?.id || currentConversation?.id,
             status: 'active',
-            consultantSelected: selectedConsultant,
-            childName: profileForSession?.childName,
-            childGrade: profileForSession?.childGrade,
-            locationArea: safeLocationArea,
-            maxTuition: profileForSession?.maxTuition,
+            consultant_selected: selectedConsultant,
+            child_name: profileForSession?.childName,
+            child_grade: profileForSession?.childGrade,
+            location_area: safeLocationArea,
+            max_tuition: profileForSession?.maxTuition,
             priorities: profileForSession?.priorities,
-            matchedSchools: JSON.stringify(matchedSchoolIds),
-            profileName,
-            journeyId: null,
+            matched_schools: JSON.stringify(matchedSchoolIds),
+            profile_name: profileName,
+            journey_id: null,
           });
 
           // Update URL with entity id (not sessionToken)
@@ -619,7 +622,7 @@ export const useMessageHandler = ({
           try {
             await retryWithBackoff(() => ChatHistory.update(currentConversation.id, {
               messages: finalMessages,
-              conversationContext: updatedContext
+              conversation_context: updatedContext
             }));
           } catch (persistErr) {
             console.error('[PERSIST] ChatHistory.update failed — messages may be lost on refresh:', persistErr);
@@ -634,8 +637,8 @@ export const useMessageHandler = ({
                 const titleResult = await invokeFunction('generateConversationTitle', {
                   conversationId: currentConversation.id
                 });
-                if (titleResult.data?.title) {
-                  setCurrentConversation(prev => ({ ...prev, title: titleResult.data.title }));
+                if (titleResult.title) {
+                  setCurrentConversation(prev => ({ ...prev, title: titleResult.title }));
                   await loadConversations(user.id);
                 }
               } catch (titleError) {
@@ -660,7 +663,7 @@ export const useMessageHandler = ({
           if (isAuthenticated && user && !isPremium) {
             const newTokenBalance = Math.max(0, tokenBalance - 1);
             setTokenBalance(newTokenBalance);
-            await User.update(user.id, { tokenBalance: newTokenBalance });
+            await User.update(user.id, { token_balance: newTokenBalance });
           }
 
           // Save AI memories with deduplication and filtering
@@ -680,6 +683,8 @@ export const useMessageHandler = ({
     } catch (error) {
       console.error('Error sending message:', error);
       setIsTyping(false);
+      // FIX-RESULTS-VIEW: Clear briefStatus on error so loading overlay doesn't stay stuck
+      setBriefStatus(null);
 
       // Add error message to chat
       const errorMessage = {

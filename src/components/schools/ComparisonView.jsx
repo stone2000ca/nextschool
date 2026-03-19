@@ -45,15 +45,15 @@ const SECTIONS = [
   {
     title: 'Basics',
     rows: [
-      { id: 'location',    label: 'Location',       get: s => [s.city, s.provinceState, s.country].filter(Boolean).join(', ') },
-      { id: 'grades',      label: 'Grades',          get: s => { const f = formatGrade(s.lowestGrade), t = formatGrade(s.highestGrade); return f && t ? `${f}–${t}` : (f || t || null); } },
+      { id: 'location',    label: 'Location',       get: s => [s.city, s.province_state, s.country].filter(Boolean).join(', ') },
+      { id: 'grades',      label: 'Grades',          get: s => { const f = formatGrade(s.lowest_grade), t = formatGrade(s.highest_grade); return f && t ? `${f}–${t}` : (f || t || null); } },
       { id: 'enrollment',  label: 'Enrollment',      get: s => s.enrollment ? `${s.enrollment.toLocaleString()} students` : null },
-      { id: 'schoolTypeLabel',  label: 'School Type',     get: s => fmt(s.schoolTypeLabel) },
+      { id: 'schoolTypeLabel',  label: 'School Type',     get: s => fmt(s.school_type_label) },
       { id: 'founded',     label: 'Founded',         get: s => fmt(s.founded) },
-      { id: 'gender',      label: 'Gender Policy',   get: s => fmt(s.genderPolicy) },
-      { id: 'religious',   label: 'Religious',       get: s => fmt(s.faithBased) },
-      { id: 'campus',      label: 'Campus',          get: s => fmt(s.campusSize) },
-      { id: 'campusFeel',  label: 'Campus Feel',     get: s => fmt(s.campusFeel) },
+      { id: 'gender',      label: 'Gender Policy',   get: s => fmt(s.gender_policy) },
+      { id: 'religious',   label: 'Religious',       get: s => fmt(s.faith_based) },
+      { id: 'campus',      label: 'Campus',          get: s => fmt(s.campus_size) },
+      { id: 'campusFeel',  label: 'Campus Feel',     get: s => fmt(s.campus_feel) },
     ]
   },
   {
@@ -62,48 +62,48 @@ const SECTIONS = [
       { id: 'curriculum',  label: 'Curriculum',      get: s => fmt(s.curriculum?.length ? s.curriculum : s.curriculum) },
       { id: 'currType',    label: 'Curriculum Type', get: s => fmt(s.curriculum) },
       { id: 'specs',       label: 'Specializations', get: s => fmt(s.specializations) },
-      { id: 'classSize',   label: 'Avg Class Size',  get: s => s.avgClassSize ? `${s.avgClassSize} students` : null },
-      { id: 'stRatio',     label: 'Student:Teacher', get: s => fmt(s.studentTeacherRatio) },
-      { id: 'intlPct',     label: 'Intl Students',   get: s => s.internationalStudentPct != null ? `${s.internationalStudentPct}%` : null },
-      { id: 'langInstr',   label: 'Language',        get: s => fmt(s.languagesOfInstruction) },
+      { id: 'classSize',   label: 'Avg Class Size',  get: s => s.avg_class_size ? `${s.avg_class_size} students` : null },
+      { id: 'stRatio',     label: 'Student:Teacher', get: s => fmt(s.student_teacher_ratio) },
+      { id: 'intlPct',     label: 'Intl Students',   get: s => s.international_student_pct != null ? `${s.international_student_pct}%` : null },
+      { id: 'langInstr',   label: 'Language',        get: s => fmt(s.languages_of_instruction) },
       { id: 'langs',       label: 'Languages Taught',get: s => fmt(s.languages) },
-      { id: 'uni',         label: 'University Placements', get: s => { try { const p = typeof s.universityPlacements === 'string' ? JSON.parse(s.universityPlacements) : s.universityPlacements; return Array.isArray(p) && p.length ? p.slice(0, 4).join(', ') : null; } catch { return fmt(s.universityPlacements); } } },
+      { id: 'uni',         label: 'University Placements', get: s => { try { const p = typeof s.university_placements === 'string' ? JSON.parse(s.university_placements) : s.university_placements; return Array.isArray(p) && p.length ? p.slice(0, 4).join(', ') : null; } catch { return fmt(s.university_placements); } } },
     ]
   },
   {
     title: 'Student Life',
     rows: [
-      { id: 'arts',        label: 'Arts Programs',   get: s => fmt(s.artsPrograms) },
-      { id: 'sports',      label: 'Sports',          get: s => fmt(s.sportsPrograms) },
+      { id: 'arts',        label: 'Arts Programs',   get: s => fmt(s.arts_programs) },
+      { id: 'sports',      label: 'Sports',          get: s => fmt(s.sports_programs) },
       { id: 'clubs',       label: 'Clubs',           get: s => fmt(s.clubs) },
       { id: 'facilities',  label: 'Facilities',      get: s => fmt(s.facilities) },
-      { id: 'specEd',      label: 'Learning Support',get: s => fmt(s.specialEdPrograms) },
-      { id: 'uniform',     label: 'Uniform',         get: s => s.uniformRequired != null ? (s.uniformRequired ? 'Required' : 'Not required') : null },
-      { id: 'community',   label: 'Community Vibe',  get: s => fmt(s.communityVibe) },
-      { id: 'parents',     label: 'Parent Involvement', get: s => fmt(s.parentInvolvement) },
-      { id: 'transport',   label: 'Transportation',  get: s => fmt(s.transportationOptions) },
-      { id: 'care',        label: 'Before/After Care',get: s => fmt(s.beforeAfterCare) },
+      { id: 'specEd',      label: 'Learning Support',get: s => fmt(s.special_ed_programs) },
+      { id: 'uniform',     label: 'Uniform',         get: s => s.uniform_required != null ? (s.uniform_required ? 'Required' : 'Not required') : null },
+      { id: 'community',   label: 'Community Vibe',  get: s => fmt(s.community_vibe) },
+      { id: 'parents',     label: 'Parent Involvement', get: s => fmt(s.parent_involvement) },
+      { id: 'transport',   label: 'Transportation',  get: s => fmt(s.transportation_options) },
+      { id: 'care',        label: 'Before/After Care',get: s => fmt(s.before_after_care) },
     ]
   },
   {
     title: 'Admissions',
     rows: [
-      { id: 'acceptRate',  label: 'Acceptance Rate', get: s => s.acceptanceRate != null ? `${s.acceptanceRate}%` : null },
-      { id: 'deadline',    label: 'Application Deadline', get: s => fmt(s.dayAdmissionDeadline) },
-      { id: 'entrance',    label: 'Entrance Requirements', get: s => fmt(s.entranceRequirements) },
-      { id: 'admReqs',     label: 'Admission Requirements', get: s => fmt(s.admissionRequirements) },
-      { id: 'openHouse',   label: 'Open House',      get: s => fmt(s.openHouseDates) },
+      { id: 'acceptRate',  label: 'Acceptance Rate', get: s => s.acceptance_rate != null ? `${s.acceptance_rate}%` : null },
+      { id: 'deadline',    label: 'Application Deadline', get: s => fmt(s.day_admission_deadline) },
+      { id: 'entrance',    label: 'Entrance Requirements', get: s => fmt(s.entrance_requirements) },
+      { id: 'admReqs',     label: 'Admission Requirements', get: s => fmt(s.admission_requirements) },
+      { id: 'openHouse',   label: 'Open House',      get: s => fmt(s.open_house_dates) },
     ]
   },
   {
     title: 'Tuition & Financial',
     rows: [
-      { id: 'dayTuition',  label: 'Day Tuition',     get: s => formatTuition(s.dayTuition ?? s.tuition, s.currency) },
-      { id: 'boarding',    label: 'Boarding',        get: s => s.boardingAvailable != null ? (s.boardingAvailable ? `Yes (${s.boardingType || 'available'})` : 'Day school only') : null },
-      { id: 'boardTuition',label: 'Boarding Tuition',get: s => formatTuition(s.boardingTuition, s.currency) },
-      { id: 'finAid',      label: 'Financial Aid',   get: s => s.financialAidAvailable != null ? (s.financialAidAvailable ? 'Available' : 'Not listed') : null },
-      { id: 'finAidDetail',label: 'Aid Details',     get: s => fmt(s.financialAidDetails) },
-      { id: 'scholar',     label: 'Scholarships',    get: s => { try { const p = typeof s.scholarshipsJson === 'string' ? JSON.parse(s.scholarshipsJson) : s.scholarshipsJson; return Array.isArray(p) && p.length ? `${p.length} available` : null; } catch { return null; } } },
+      { id: 'dayTuition',  label: 'Day Tuition',     get: s => formatTuition(s.day_tuition ?? s.tuition, s.currency) },
+      { id: 'boarding',    label: 'Boarding',        get: s => s.boarding_available != null ? (s.boarding_available ? `Yes (${s.boarding_type || 'available'})` : 'Day school only') : null },
+      { id: 'boardTuition',label: 'Boarding Tuition',get: s => formatTuition(s.boarding_tuition, s.currency) },
+      { id: 'finAid',      label: 'Financial Aid',   get: s => s.financial_aid_available != null ? (s.financial_aid_available ? 'Available' : 'Not listed') : null },
+      { id: 'finAidDetail',label: 'Aid Details',     get: s => fmt(s.financial_aid_details) },
+      { id: 'scholar',     label: 'Scholarships',    get: s => { try { const p = typeof s.scholarships_json === 'string' ? JSON.parse(s.scholarships_json) : s.scholarships_json; return Array.isArray(p) && p.length ? `${p.length} available` : null; } catch { return null; } } },
       { id: 'accreds',     label: 'Accreditations',  get: s => fmt(s.accreditations) },
     ]
   },
@@ -209,18 +209,18 @@ export default function ComparisonView({ schools, familyProfile, comparisonMatri
                 <th key={school.id} className="bg-white border-b border-slate-200 border-l border-l-slate-100 p-0 align-bottom">
                   <div className="relative h-28 bg-slate-100 overflow-hidden">
                     <HeaderPhotoDisplay
-                      headerPhotoUrl={school.headerPhotoUrl}
-                      heroImage={school.heroImage}
+                      headerPhotoUrl={school.header_photo_url}
+                      heroImage={school.hero_image}
                       schoolName={school.name}
                       height="h-28"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-2">
-                      {school.logoUrl && (
-                        <img src={school.logoUrl} alt="" className="h-5 w-5 rounded object-cover mb-1 border border-white/30" />
+                      {school.logo_url && (
+                        <img src={school.logo_url} alt="" className="h-5 w-5 rounded object-cover mb-1 border border-white/30" />
                       )}
                       <p className="text-white text-xs font-semibold leading-tight line-clamp-2">{school.name}</p>
-                      <p className="text-white/70 text-xs">{[school.city, school.provinceState].filter(Boolean).join(', ')}</p>
+                      <p className="text-white/70 text-xs">{[school.city, school.province_state].filter(Boolean).join(', ')}</p>
                     </div>
                   </div>
                 </th>

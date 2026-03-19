@@ -25,7 +25,7 @@ export async function verifyClaimCode(params: {
   const claim = claims[0] as any;
 
   // Ensure the claim belongs to the requesting user
-  if (claim.userId !== userId) {
+  if (claim.claimed_by !== userId) {
     throw Object.assign(new Error('Forbidden'), { statusCode: 403 });
   }
 
@@ -35,7 +35,7 @@ export async function verifyClaimCode(params: {
   }
 
   // Check lock
-  if (claim.lockedAt) {
+  if (claim.locked_at) {
     return {
       success: false,
       error: 'Too many failed attempts. This claim has been locked. Please contact support@nextschool.ca.'
@@ -43,11 +43,11 @@ export async function verifyClaimCode(params: {
   }
 
   // Check attempt count
-  const attemptCount = claim.attemptCount ?? 0;
+  const attemptCount = claim.attempt_count ?? 0;
   if (attemptCount >= MAX_ATTEMPTS) {
     // Lock the claim
     await SchoolClaim.update(claimId, {
-      lockedAt: new Date().toISOString()
+      locked_at: new Date().toISOString()
     });
     return {
       success: false,
@@ -56,16 +56,16 @@ export async function verifyClaimCode(params: {
   }
 
   // Check expiry
-  if (!claim.codeExpiresAt || new Date() > new Date(claim.codeExpiresAt)) {
+  if (!claim.code_expires_at || new Date() > new Date(claim.code_expires_at)) {
     return { success: false, error: 'Verification code has expired. Please request a new one.' };
   }
 
   // Compare code (constant-time-ish string comparison)
-  if (String(code).trim() !== String(claim.verificationCode).trim()) {
+  if (String(code).trim() !== String(claim.verification_code).trim()) {
     const newAttemptCount = attemptCount + 1;
-    const updatePayload: any = { attemptCount: newAttemptCount };
+    const updatePayload: any = { attempt_count: newAttemptCount };
     if (newAttemptCount >= MAX_ATTEMPTS) {
-      updatePayload.lockedAt = new Date().toISOString();
+      updatePayload.locked_at = new Date().toISOString();
     }
     await SchoolClaim.update(claimId, updatePayload);
 
@@ -87,34 +87,34 @@ export async function verifyClaimCode(params: {
   // Step 1: Update SchoolClaim to verified
   await SchoolClaim.update(claimId, {
     status: 'verified',
-    verifiedAt: new Date().toISOString(),
-    attemptCount: attemptCount + 1  // record this final successful attempt
+    verified_at: new Date().toISOString(),
+    attempt_count: attemptCount + 1  // record this final successful attempt
   });
 
   // Step 2: Create SchoolAdmin record (revert claim on failure)
   try {
     await SchoolAdmin.create({
-      schoolId: claim.schoolId,
-      userId: claim.userId,
-      claimId: claimId,
+      school_id: claim.school_id,
+      user_id: claim.claimed_by,
+      claim_id: claimId,
       role: 'owner',
-      isActive: true
+      is_active: true
     });
   } catch (adminErr: any) {
     // Revert SchoolClaim status
     console.error('SchoolAdmin.create failed, reverting SchoolClaim:', adminErr.message);
     await SchoolClaim.update(claimId, {
       status: 'pending_email',
-      verifiedAt: null
+      verified_at: null
     });
     throw Object.assign(new Error('Verification failed during account setup. Please try again.'), { statusCode: 500 });
   }
 
   // Step 3: Update School (least critical — log if fails but don't revert)
   try {
-    await School.update(claim.schoolId, {
-      claimStatus: 'claimed',
-      schoolTier: 'free'
+    await School.update(claim.school_id, {
+      claim_status: 'claimed',
+      school_tier: 'free'
     });
   } catch (schoolErr: any) {
     console.error('School.update failed after successful claim (non-fatal):', schoolErr.message);

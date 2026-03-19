@@ -7,33 +7,33 @@ import { School } from '@/lib/entities-server'
 // =============================================================================
 
 const CRITICAL_FIELDS = [
-  'name', 'description', 'dayTuition', 'lowestGrade', 'highestGrade',
-  'provinceState', 'country', 'genderPolicy', 'schoolTypeLabel', 'city', 'lat', 'lng',
+  'name', 'description', 'day_tuition', 'lowest_grade', 'highest_grade',
+  'province_state', 'country', 'gender_policy', 'school_type_label', 'city', 'lat', 'lng',
 ];
 
 const HIGH_FIELDS = [
-  'enrollment', 'avgClassSize', 'studentTeacherRatio', 'curriculum',
-  'address', 'phone', 'email', 'website', 'missionStatement',
-  'headerPhotoUrl',
+  'enrollment', 'avg_class_size', 'student_teacher_ratio', 'curriculum',
+  'address', 'phone', 'email', 'website', 'mission_statement',
+  'header_photo_url',
 ];
 
 // Fields that are system-managed, derived, or intentionally excluded from scoring
 const EXCLUDED_FIELDS = new Set([
-  'id', 'createdAt', 'updated_date', 'created_by', 'createdById',
-  'slug', 'status', 'verified', 'claimStatus',
-  'schoolTier', 'completenessScore',
-  'adminUserId', 'is_sample', 'source', 'dataSource', 'governmentId',
-  'aiEnrichedFields', 'verifiedFields', 'lastEnriched', 'importBatchId',
+  'id', 'created_at', 'updated_at', 'created_by', 'created_by_id',
+  'slug', 'status', 'verified', 'claim_status',
+  'school_tier', 'completeness_score',
+  'admin_user_id', 'is_sample', 'source', 'data_source', 'government_id',
+  'ai_enriched_fields', 'verified_fields', 'last_enriched', 'import_batch_id',
   // Excluded profile fields per spec
-  'gradeSystem', 'gradesServed', 'heroImage', 'tuition', 'currency',
-  'tuitionMin', 'tuitionMax', 'acceptanceRate', 'internationalStudentPct',
-  'campusFeel',
+  'grade_system', 'grades_served', 'hero_image', 'tuition', 'currency',
+  'tuition_min', 'tuition_max', 'acceptance_rate', 'international_student_pct',
+  'campus_feel',
 ]);
 
 const CRITICAL_SET = new Set(CRITICAL_FIELDS);
 const HIGH_SET = new Set(HIGH_FIELDS);
 
-const GRADE_FIELDS = new Set(['lowestGrade', 'highestGrade']);
+const GRADE_FIELDS = new Set(['lowest_grade', 'highest_grade']);
 const PLACEHOLDER_STRINGS = new Set(['', 'n/a', 'not available', 'unknown', 'tbd']);
 
 function isFieldPopulated(value: any, fieldName: string): boolean {
@@ -102,7 +102,7 @@ export async function calculateCompletenessScore(params: {
     }
     const school = schools[0];
     const score = calculateScore(school);
-    await School.update(school.id, { completenessScore: score });
+    await School.update(school.id, { completeness_score: score });
     return { schoolId: school.id, completenessScore: score };
   }
 
@@ -125,7 +125,7 @@ export async function calculateCompletenessScore(params: {
       for (const school of batch || []) {
         try {
           const score = calculateScore(school);
-          await School.update(school.id, { completenessScore: score });
+          await School.update(school.id, { completeness_score: score });
           processed++;
         } catch (err: any) {
           errors.push({ schoolId: school.id, error: err.message });
@@ -152,7 +152,7 @@ export async function calculateCompletenessScore(params: {
         totalProcessed++;
         try {
           const score = calculateScore(school);
-          await School.update(school.id, { completenessScore: score });
+          await School.update(school.id, { completeness_score: score });
           totalUpdated++;
         } catch (err: any) {
           errors.push({ schoolId: school.id, error: err.message });

@@ -98,7 +98,7 @@ async function callOpenRouter(options) {
       if (_logContext) {
         const isTest = _logContext.is_test === true;
         LLMLog.create({
-          conversationId: _logContext.conversationId || 'unknown',
+          conversation_id: _logContext.conversationId || 'unknown',
           phase: _logContext.phase || 'unknown',
           model: 'unknown',
           prompt_summary: fullPromptStr.substring(0, 500),
@@ -127,7 +127,7 @@ async function callOpenRouter(options) {
     if (_logContext) {
       const isTest = _logContext.is_test === true;
       LLMLog.create({
-        conversationId: _logContext.conversationId || 'unknown',
+        conversation_id: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: data.model || 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -167,7 +167,7 @@ async function callOpenRouter(options) {
     if (isNetworkError && _logContext) {
       const isTest = _logContext.is_test === true;
       LLMLog.create({
-        conversationId: _logContext.conversationId || 'unknown',
+        conversation_id: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -243,7 +243,7 @@ function validateActions(rawToolCalls, validSchoolIds, conversationId) {
 }
 
 async function logDroppedAction( conversationId, action, reason) {
-  try { await LLMLog.create({ conversationId: conversationId || 'unknown', phase: 'ACTION_VALIDATION', status: 'ACTION_DROPPED', prompt_summary: JSON.stringify(action).substring(0, 100), response_summary: reason }); } catch (e) { console.error('[E32] Failed to log dropped action:', e.message); }
+  try { await LLMLog.create({ conversation_id: conversationId || 'unknown', phase: 'ACTION_VALIDATION', status: 'ACTION_DROPPED', prompt_summary: JSON.stringify(action).substring(0, 100), response_summary: reason }); } catch (e) { console.error('[E32] Failed to log dropped action:', e.message); }
 }
 
 // =============================================================================
@@ -764,15 +764,15 @@ async function handleVisitDebriefInternal(selectedSchoolId, processMessage, conv
     let deepDiveArtifacts: any[] = [];
     if (context?.conversationId) {
       [artifacts, deepDiveArtifacts] = await Promise.all([
-        GeneratedArtifact.filter({ 
-          conversationId: context.conversationId,
-          schoolId: selectedSchoolId,
-          artifactType: 'visit_prep'
+        GeneratedArtifact.filter({
+          conversation_id: context.conversationId,
+          school_id: selectedSchoolId,
+          artifact_type: 'visit_prep'
         }),
-        GeneratedArtifact.filter({ 
-          conversationId: context.conversationId,
-          schoolId: selectedSchoolId,
-          artifactType: 'deep_dive_analysis'
+        GeneratedArtifact.filter({
+          conversation_id: context.conversationId,
+          school_id: selectedSchoolId,
+          artifact_type: 'deep_dive_analysis'
         })
       ]);
     }
@@ -896,9 +896,9 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
         };
 
         const existingArtifacts = await GeneratedArtifact.filter({
-          conversationId: context.conversationId,
-          schoolId: selectedSchoolId,
-          artifactType: 'visit_debrief'
+          conversation_id: context.conversationId,
+          school_id: selectedSchoolId,
+          artifact_type: 'visit_debrief'
         });
 
         if (existingArtifacts && existingArtifacts.length > 0) {
@@ -910,16 +910,16 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
           console.log('[E13a] Debrief Q&A appended to artifact:', artifact.id);
         } else {
           const created = await GeneratedArtifact.create({
-            userId: context.userId,
-            conversationId: context.conversationId,
-            schoolId: selectedSchoolId,
-            artifactType: 'visit_debrief',
+            user_id: context.userId,
+            conversation_id: context.conversationId,
+            school_id: selectedSchoolId,
+            artifact_type: 'visit_debrief',
             title: 'Visit Debrief - ' + schoolName,
             content: { qaPairs: [newQAPair], schoolName: schoolName },
             status: 'ready',
-            isShared: false,
-            pdfUrl: null,
-            shareToken: null
+            is_shared: false,
+            pdf_url: null,
+            share_token: null
           });
           console.log('[E13a] Debrief artifact created:', created.id);
         }
@@ -934,13 +934,13 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
         try {
           const journeys = context.journeyId
             ? await FamilyJourney.filter({ id: context.journeyId })
-            : await FamilyJourney.filter({ userId: context.userId }, '-updated_date', 1);
+            : await FamilyJourney.filter({ user_id: context.userId }, undefined, 1);
           const familyJourney = journeys?.[0];
           if (!familyJourney) return;
 
           const existing = await SchoolJourney.filter({
-            familyJourneyId: familyJourney.id,
-            schoolId: selectedSchoolId,
+            family_journey_id: familyJourney.id,
+            school_id: selectedSchoolId,
           });
 
           let sjId = null;
@@ -949,11 +949,11 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
             sjId = existing[0].id;
           } else {
             const created = await SchoolJourney.create({
-              familyJourneyId: familyJourney.id,
-              schoolId: selectedSchoolId,
-              schoolName: school?.name || '',
+              family_journey_id: familyJourney.id,
+              school_id: selectedSchoolId,
+              school_name: school?.name || '',
               status: 'visited',
-              addedAt: new Date().toISOString(),
+              added_at: new Date().toISOString(),
             });
             sjId = created?.id;
           }
@@ -963,9 +963,9 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
           if (sjId && context.conversationId) {
             try {
               const debriefArtifacts = await GeneratedArtifact.filter({
-                conversationId: context.conversationId,
-                schoolId: selectedSchoolId,
-                artifactType: 'visit_debrief'
+                conversation_id: context.conversationId,
+                school_id: selectedSchoolId,
+                artifact_type: 'visit_debrief'
               });
               const qaPairs = debriefArtifacts?.[0]?.content?.qaPairs || [];
               if (qaPairs.length > 0) {
@@ -992,8 +992,8 @@ Return ONLY this JSON (no markdown): { "debriefSummary": "<2-3 sentences summari
                 const parsed = typeof debriefAnalysis === 'object' ? debriefAnalysis : JSON.parse(debriefAnalysis);
                 if (parsed?.debriefSummary) {
                   await SchoolJourney.update(sjId, {
-                    debriefSummary: parsed.debriefSummary,
-                    debriefSentiment: parsed.debriefSentiment || 'MIXED'
+                    debrief_summary: parsed.debriefSummary,
+                    debrief_sentiment: parsed.debriefSentiment || 'MIXED'
                   });
                   console.log('[E29-014] SchoolJourney debrief summary stored, sentiment:', parsed.debriefSentiment);
                 }
@@ -1005,14 +1005,14 @@ Return ONLY this JSON (no markdown): { "debriefSummary": "<2-3 sentences summari
 
           // E29-015: Phase auto-advancement → DECIDE if all non-removed schools are now visited
           try {
-            const allSchoolJourneys = await SchoolJourney.filter({ familyJourneyId: familyJourney.id });
+            const allSchoolJourneys = await SchoolJourney.filter({ family_journey_id: familyJourney.id });
             const activeJourneys = allSchoolJourneys.filter(sj => sj.status !== 'removed');
             const allVisited = activeJourneys.length > 0 && activeJourneys.every(sj => sj.status === 'visited');
-            if (allVisited && familyJourney.currentPhase !== 'DECIDE') {
-              const currentHistory = Array.isArray(familyJourney.phaseHistory) ? familyJourney.phaseHistory : [];
+            if (allVisited && familyJourney.current_phase !== 'DECIDE') {
+              const currentHistory = Array.isArray(familyJourney.phase_history) ? familyJourney.phase_history : [];
               await FamilyJourney.update(familyJourney.id, {
-                currentPhase: 'DECIDE',
-                phaseHistory: [...currentHistory, { phase: 'DECIDE', enteredAt: new Date().toISOString() }],
+                current_phase: 'DECIDE',
+                phase_history: [...currentHistory, { phase: 'DECIDE', enteredAt: new Date().toISOString() }],
               });
               console.log('[E29-015] FamilyJourney advanced to DECIDE — all schools visited');
             }
@@ -1131,12 +1131,12 @@ Write 3 sentences only. No headings, no bullet points.`;
       const currentTotal = journeyContext?.totalSessions || 0;
 
       await FamilyJourney.update(journeyId, {
-        nextAction: parsedAction.nextAction,
-        nextActionType: parsedAction.nextActionType,
-        nextActionDue: parsedAction.nextActionDue,
-        lastSessionSummary: summaryText,
-        totalSessions: currentTotal + 1,
-        lastActiveAt: new Date().toISOString()
+        next_action: parsedAction.nextAction,
+        next_action_type: parsedAction.nextActionType,
+        next_action_due: parsedAction.nextActionDue,
+        last_session_summary: summaryText,
+        total_sessions: currentTotal + 1,
+        last_active_at: new Date().toISOString()
       });
 
       console.log(`[E29-010/012] FamilyJourney updated (${phase}): nextAction="${parsedAction.nextAction}", sessions=${currentTotal + 1}`);
@@ -1285,11 +1285,11 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
       
       if (userId && conversationId) {
         try {
-          const profiles = await FamilyProfile.filter({ userId, conversationId });
+          const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
           conversationFamilyProfile = profiles.length > 0 ? profiles[0] : null;
           
           if (!conversationFamilyProfile) {
-            conversationFamilyProfile = await FamilyProfile.create({ userId, conversationId });
+            conversationFamilyProfile = await FamilyProfile.create({ user_id: userId, conversation_id: conversationId });
             console.log('Created new FamilyProfile:', conversationFamilyProfile.id);
 
             // S141-WC2: E29-HYDRATE — Seed new profile from journey briefSnapshot on session resume
@@ -1358,7 +1358,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         console.log('[RESUME-FIX] Seeded accumulatedFamilyProfile from DB FamilyProfile');
       }
       const workingProfile = mergeProfile(mergeProfile(accumulatedProfile, conversationFamilyProfile), bridgeProfile);
-      // E42-FIX: Ensure .id survives merge — Base44 entity .id may be non-enumerable/getter
+      // E42-FIX: Ensure .id survives merge — entity .id may be non-enumerable/getter
       if (conversationFamilyProfile?.id && !workingProfile.id) {
         workingProfile.id = conversationFamilyProfile.id;
       }
@@ -1477,6 +1477,7 @@ Object.assign(context, safeUpdatedContext);
         previousSchoolId,
         userMessage: processMessage,
         tier1CompletedTurn: context.tier1CompletedTurn || null,
+        briefStatus: context.briefStatus || null,
         context
       });
       
@@ -1567,7 +1568,7 @@ Object.assign(context, safeUpdatedContext);
             flags,
             returningUserContextBlock
           });
-          responseData = (briefResult as any).data;
+          responseData = briefResult;
           if (responseData.briefStatus) {
             context.briefStatus = responseData.briefStatus;
           }
@@ -1650,26 +1651,26 @@ Object.assign(context, safeUpdatedContext);
                   return;
                 }
                 const existing = await GeneratedArtifact.filter({
-                  userId,
-                  conversationId,
-                  artifactType: 'family_brief'
+                  user_id: userId,
+                  conversation_id: conversationId,
+                  artifact_type: 'family_brief'
                 });
                 const generatedAt = new Date().toISOString();
                 const artifactContent = JSON.stringify({ briefText, structuredProfile: workingProfile });
                 if (existing && existing.length > 0) {
                   await GeneratedArtifact.update(existing[0].id, {
                     content: artifactContent,
-                    generatedAt,
+                    generated_at: generatedAt,
                     metadata: { consultantName: consultantName || 'jackie', version: 'E42_V1' }
                   });
                   console.log('[E42-PERSIST] family_brief updated:', existing[0].id);
                 } else {
                   const created = await GeneratedArtifact.create({
-                    userId,
-                    conversationId,
-                    artifactType: 'family_brief',
+                    user_id: userId,
+                    conversation_id: conversationId,
+                    artifact_type: 'family_brief',
                     content: artifactContent,
-                    generatedAt,
+                    generated_at: generatedAt,
                     status: 'active',
                     metadata: { consultantName: consultantName || 'jackie', version: 'E42_V1' }
                   });
@@ -1698,25 +1699,25 @@ Object.assign(context, safeUpdatedContext);
               const briefSnapshot = JSON.parse(JSON.stringify(conversationFamilyProfile || {}));
               const childName = conversationFamilyProfile?.childName || conversationFamilyProfile?.conversationContext?.childName || 'My Child';
               const journey = await FamilyJourney.create({
-                userId,
-                childName,
-                profileLabel: `${childName}'s School Search`,
-                currentPhase: 'MATCH',
-                phaseHistory: [
+                user_id: userId,
+                child_name: childName,
+                profile_label: `${childName}'s School Search`,
+                current_phase: 'MATCH',
+                phase_history: [
                   { phase: 'UNDERSTAND', enteredAt: new Date().toISOString(), completedAt: new Date().toISOString() },
                   { phase: 'MATCH', enteredAt: new Date().toISOString(), completedAt: null }
                 ],
-                familyProfileId: conversationFamilyProfile?.id || '',
-                briefSnapshot,
-                consultantId: consultantName || 'jackie',
-                schoolJourneys: [],
-                totalSessions: 1,
-                lastActiveAt: new Date().toISOString(),
-                isStale: false,
-                isArchived: false
+                family_profile_id: conversationFamilyProfile?.id || '',
+                brief_snapshot: briefSnapshot,
+                consultant_id: consultantName || 'jackie',
+                school_journeys: [],
+                total_sessions: 1,
+                last_active_at: new Date().toISOString(),
+                is_stale: false,
+                is_archived: false
               });
               context.journeyId = journey.id;
-              await ChatHistory.update(conversationId, { journeyId: journey.id });
+              await ChatHistory.update(conversationId, { journey_id: journey.id });
               console.log('[E29] FamilyJourney created:', journey.id);
             } catch (e) {
               console.error('[E29] FamilyJourney creation failed (non-blocking):', e.message);
@@ -1750,7 +1751,7 @@ Object.assign(context, safeUpdatedContext);
           returningUserContextBlock,
           previousSchools: (currentSchools && currentSchools.length > 0) ? currentSchools : (context.lastMatchedSchools || [])
         });
-        responseData = resultsResult.data;
+        responseData = resultsResult;
         responseData.conversationContext = {
           ...(responseData.conversationContext || {}),
           autoRefreshed: autoRefresh,
@@ -1780,15 +1781,22 @@ Object.assign(context, safeUpdatedContext);
             if (userId && conversationId) {
               (async () => {
                 try {
-                  const PROFILE_FIELDS = ['childName','childGrade','childGender','locationArea','maxTuition','priorities','interests','dealbreakers','learningDifferences','curriculumPreference','schoolTypeLabel','academicStrengths','parentNotes','schoolGenderExclusions','schoolGenderPreference'];
+                  const CAMEL_TO_SNAKE: Record<string, string> = {
+                    childName: 'child_name', childGrade: 'child_grade', childGender: 'child_gender',
+                    locationArea: 'location_area', maxTuition: 'max_tuition', priorities: 'priorities',
+                    interests: 'interests', dealbreakers: 'dealbreakers', learningDifferences: 'learning_differences',
+                    curriculumPreference: 'curriculum_preference', schoolTypeLabel: 'school_type_label',
+                    academicStrengths: 'academic_strengths', parentNotes: 'parent_notes',
+                    schoolGenderExclusions: 'school_gender_exclusions', schoolGenderPreference: 'school_gender_preference',
+                  };
                   const updatePayload: Record<string, any> = {};
-                  for (const key of PROFILE_FIELDS) {
-                    if (delta[key] !== undefined && delta[key] !== null) {
-                      updatePayload[key] = delta[key];
+                  for (const [camelKey, snakeKey] of Object.entries(CAMEL_TO_SNAKE)) {
+                    if (delta[camelKey] !== undefined && delta[camelKey] !== null) {
+                      updatePayload[snakeKey] = delta[camelKey];
                     }
                   }
                   if (Object.keys(updatePayload).length > 0) {
-                    const profiles = await FamilyProfile.filter({ userId, conversationId });
+                    const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
                     if (profiles && profiles.length > 0) {
                       await FamilyProfile.update(profiles[0].id, updatePayload);
                       console.log('[E42-PERSIST] FamilyProfile updated (EDIT_CRITERIA):', profiles[0].id, Object.keys(updatePayload));
@@ -1818,7 +1826,12 @@ Object.assign(context, safeUpdatedContext);
         }
 
         // E41-S3: Deferred extractEntities — fire after reply, with aiReply for richer context
+        // Skip extraction when transitioning BRIEF→RESULTS on confirmation — profile is already complete
+        const skipExtraction = briefJustConfirmed || (briefStatus === 'confirmed' && previousState === STATES.BRIEF);
         const aiReply = responseData.message || '';
+        if (skipExtraction) {
+          console.log('[E41-S3] Skipping deferred extractEntities — brief confirmation, profile already built');
+        } else {
         extractEntitiesLogic( {
           message: processMessage,
           aiReply,
@@ -1835,15 +1848,22 @@ Object.assign(context, safeUpdatedContext);
             if (userId && conversationId) {
               try {
                 const delta = extractResult.data.updatedFamilyProfile;
-                const PROFILE_FIELDS = ['childName','childGrade','childGender','locationArea','maxTuition','priorities','interests','dealbreakers','learningDifferences','curriculumPreference','schoolTypeLabel','academicStrengths','parentNotes','schoolGenderExclusions','schoolGenderPreference'];
+                const CAMEL_TO_SNAKE_P: Record<string, string> = {
+                  childName: 'child_name', childGrade: 'child_grade', childGender: 'child_gender',
+                  locationArea: 'location_area', maxTuition: 'max_tuition', priorities: 'priorities',
+                  interests: 'interests', dealbreakers: 'dealbreakers', learningDifferences: 'learning_differences',
+                  curriculumPreference: 'curriculum_preference', schoolTypeLabel: 'school_type_label',
+                  academicStrengths: 'academic_strengths', parentNotes: 'parent_notes',
+                  schoolGenderExclusions: 'school_gender_exclusions', schoolGenderPreference: 'school_gender_preference',
+                };
                 const updatePayload: Record<string, any> = {};
-                for (const key of PROFILE_FIELDS) {
-                  if (delta[key] !== undefined && delta[key] !== null) {
-                    updatePayload[key] = delta[key];
+                for (const [camelKey, snakeKey] of Object.entries(CAMEL_TO_SNAKE_P)) {
+                  if (delta[camelKey] !== undefined && delta[camelKey] !== null) {
+                    updatePayload[snakeKey] = delta[camelKey];
                   }
                 }
                 if (Object.keys(updatePayload).length > 0) {
-                  const profiles = await FamilyProfile.filter({ userId, conversationId });
+                  const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
                   if (profiles && profiles.length > 0) {
                     await FamilyProfile.update(profiles[0].id, updatePayload);
                     console.log('[E42-PERSIST] FamilyProfile updated:', profiles[0].id, Object.keys(updatePayload));
@@ -1857,6 +1877,7 @@ Object.assign(context, safeUpdatedContext);
             }
           }
         }).catch(e => console.error('[E41-S3] Deferred extractEntities failed (non-critical):', e.message));
+        }
 
         return (responseData);
       }
@@ -1901,7 +1922,7 @@ Object.assign(context, safeUpdatedContext);
           flags: resolveResult.flags,
           conversationId
         });
-        responseData = deepDiveResult.data;
+        responseData = deepDiveResult;
         responseData.extractedEntities = extractionResult?.extractedEntities || {};
         // E32-001: Validate and attach actions
         const validSchoolIds_deepdive = new Set((responseData.schools || currentSchools || []).map(s => s.id));

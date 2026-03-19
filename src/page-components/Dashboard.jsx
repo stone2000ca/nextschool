@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user: authUser, isAuthenticated: authIsAuthenticated, navigateToLogin } = useAuth();
+  const { user: authUser, isAuthenticated: authIsAuthenticated, isLoadingAuth, navigateToLogin } = useAuth();
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,32 +35,42 @@ export default function Dashboard() {
     }
   }, []);
 
+  // Wait for auth to finish hydrating before checking authentication.
+  // Previously this ran on mount with useEffect([], []), capturing the initial
+  // isAuthenticated=false (before auth loaded), which caused an immediate
+  // redirect to /login even for authenticated users on hard refresh.
+  //
+  // We also depend on authUser because AuthContext sets isAuthenticated=true
+  // and isLoadingAuth=false synchronously, but fetches the user profile
+  // asynchronously. Without authUser in deps, loadSessions() would run with
+  // authUser=null, set local user state to null, and the render guard
+  // (!user) would return null — causing a blank page.
   useEffect(() => {
-    checkAuthAndLoadSessions();
-  }, []);
+    if (isLoadingAuth) return;
+    // If authenticated but profile hasn't loaded yet, wait for it
+    if (authIsAuthenticated && !authUser) return;
+    loadSessions();
+  }, [isLoadingAuth, authIsAuthenticated, authUser]);
 
-  const checkAuthAndLoadSessions = async () => {
+  const loadSessions = async () => {
     try {
-      const authenticated = authIsAuthenticated;
-      setIsAuthenticated(authenticated);
-
-      if (!authenticated) {
-        // Redirect to login
+      if (!authIsAuthenticated) {
         navigateToLogin(window.location.pathname);
         return;
       }
 
+      setIsAuthenticated(true);
       const userData = authUser;
       setUser(userData);
 
       // Fetch ChatSession records for this user
       const chatSessions = await ChatSession.filter({
-        userId: userData.id
+        user_id: userData.id
       });
       
       // Sort by createdAt descending (most recent first)
       const sorted = chatSessions.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
+        new Date(b.created_at) - new Date(a.created_at)
       );
       
       setSessions(sorted);
@@ -81,13 +91,13 @@ export default function Dashboard() {
     }
 
     // WC12: Case 2 (free user with 1+ session) - show upgrade paywall instead
-    const isPaid = user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise';
+    const isPaid = user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise';
     if (!isPaid) {
       // Show upgrade modal for free users
       const activeSession = activeSessions[0];
       const matchedCount = activeSession ? (() => {
         try {
-          return activeSession.matchedSchools ? JSON.parse(activeSession.matchedSchools).length : 0;
+          return activeSession.matched_schools ? JSON.parse(activeSession.matched_schools).length : 0;
         } catch {
           return 0;
         }
@@ -113,7 +123,7 @@ export default function Dashboard() {
       await ChatSession.update(sessionToArchive.id, { status: 'archived' });
       setShowArchiveChoiceModal(false);
       // Refresh sessions
-      await checkAuthAndLoadSessions();
+      await loadSessions();
       router.push('/consultant');
     } catch (err) {
       console.error('Failed to archive session:', err);
@@ -134,7 +144,7 @@ export default function Dashboard() {
     try {
       await ChatSession.update(archivedSession.id, { status: 'active' });
       setReactivateError(null);
-      await checkAuthAndLoadSessions();
+      await loadSessions();
     } catch (err) {
       console.error('Failed to reactivate session:', err);
       setReactivateError('Failed to reactivate. Please try again.');
@@ -150,15 +160,15 @@ export default function Dashboard() {
 
     try {
       // Cascade delete: Remove associated ChatHistory
-      if (sessionToDelete.chatHistoryId) {
-        await ChatHistory.delete(sessionToDelete.chatHistoryId);
+      if (sessionToDelete.chat_history_id) {
+        await ChatHistory.delete(sessionToDelete.chat_history_id);
       }
       // Delete the session
       await ChatSession.update(sessionToDelete.id, { 
         status: 'deleted',
-        isActive: false 
+        is_active: false
       });
-      await checkAuthAndLoadSessions();
+      await loadSessions();
     } catch (err) {
       console.error('Failed to delete session:', err);
     }
@@ -182,7 +192,7 @@ export default function Dashboard() {
       await ChatSession.update(activeSession.id, { status: 'archived' });
       setShowNewSearchModal(false);
       // Refresh sessions
-      await checkAuthAndLoadSessions();
+      await loadSessions();
       router.push('/consultant');
     } catch (err) {
       console.error('Failed to archive session:', err);
@@ -192,7 +202,7 @@ export default function Dashboard() {
   };
 
   const handleSessionArchived = async () => {
-    await checkAuthAndLoadSessions();
+    await loadSessions();
   };
 
   const handleDeleteAll = async () => {
@@ -210,15 +220,15 @@ export default function Dashboard() {
         return ChatSession.update(s.id, { status: 'archived' });
       } else {
         // Permanently delete archived sessions + their chat history
-        if (s.chatHistoryId) {
-          await ChatHistory.delete(s.chatHistoryId);
+        if (s.chat_history_id) {
+          await ChatHistory.delete(s.chat_history_id);
         }
-        return ChatSession.update(s.id, { status: 'deleted', isActive: false });
+        return ChatSession.update(s.id, { status: 'deleted', is_active: false});
       }
     }));
   };
 
-  if (loading) {
+  if (isLoadingAuth || loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#1E1E2E]">
         <div className="animate-spin h-8 w-8 border-4 border-teal-600 border-t-transparent rounded-full" />
@@ -227,7 +237,13 @@ export default function Dashboard() {
   }
 
   if (!isAuthenticated || !user) {
-    return null; // Will redirect
+    // Not authenticated — navigateToLogin was already called in loadSessions.
+    // Show a spinner while the redirect completes instead of a blank page.
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#1E1E2E]">
+        <div className="animate-spin h-8 w-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+      </div>
+    );
   }
 
   return (
@@ -262,14 +278,14 @@ export default function Dashboard() {
             </h1>
             {/* WC12: Tier badge */}
             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-              user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise'
+              user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise'
                 ? 'bg-amber-500/20 text-amber-300'
                 : 'bg-slate-500/20 text-slate-300'
             }`}>
-              {(user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise') && (
+              {(user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise') && (
                 <Crown className="w-3 h-3" />
               )}
-              {user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise' ? 'Premium' : 'Free Plan'}
+              {user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise' ? 'Premium' : 'Free Plan'}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -373,7 +389,7 @@ export default function Dashboard() {
                       onViewMatches={() => {}}
                       onEditProfile={() => {}}
                       onArchive={handleSessionArchived}
-                      isPaid={user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise'}
+                      isPaid={user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise'}
                     />
                   ))}
                 </div>
@@ -397,15 +413,15 @@ export default function Dashboard() {
                       >
                         <div className="flex-1">
                           <h3 className="font-semibold text-white">
-                            {session.profileName || 'Untitled Profile'}
+                            {session.profile_name || 'Untitled Profile'}
                           </h3>
                           <p className="text-sm text-white/60 mt-1">
-                            {session.childName && `${session.childName}`}
-                            {session.childName && session.childGrade != null && ` • Grade ${session.childGrade}`}
+                            {session.child_name && `${session.child_name}`}
+                            {session.child_name && session.child_grade != null && ` • Grade ${session.child_grade}`}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          {user?.subscriptionPlan === 'pro' || user?.subscriptionPlan === 'enterprise' ? (
+                          {user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise' ? (
                             <>
                               <button
                                 onClick={() => handleReactivateSession(session)}
@@ -467,10 +483,10 @@ export default function Dashboard() {
                   disabled={modalLoading}
                   className="w-full p-3 text-left bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <p className="text-white font-medium text-sm">{session.profileName || 'Untitled'}</p>
+                  <p className="text-white font-medium text-sm">{session.profile_name || 'Untitled'}</p>
                   <p className="text-white/60 text-xs mt-0.5">
-                    {session.childName && `${session.childName}`}
-                    {session.childName && session.childGrade != null && ` • Grade ${session.childGrade}`}
+                    {session.child_name && `${session.child_name}`}
+                    {session.child_name && session.child_grade != null && ` • Grade ${session.child_grade}`}
                   </p>
                 </button>
               ))}
@@ -496,11 +512,11 @@ export default function Dashboard() {
               <div>
                 <h2 className="text-xl font-semibold text-white mb-2">Start a New Search?</h2>
                 <p className="text-white/70 text-sm">
-                  Starting a new search will replace <strong>{sessions[0].profileName || 'Untitled Profile'}</strong>, including{' '}
+                  Starting a new search will replace <strong>{sessions[0].profile_name || 'Untitled Profile'}</strong>, including{' '}
                   <strong>
                     {(() => {
                       try {
-                        return sessions[0].matchedSchools ? JSON.parse(sessions[0].matchedSchools).length : 0;
+                        return sessions[0].matched_schools ? JSON.parse(sessions[0].matched_schools).length : 0;
                       } catch {
                         return 0;
                       }
@@ -573,12 +589,12 @@ export default function Dashboard() {
             const activeSession = sessions.find(s => s.status === 'active');
             if (!activeSession) return 0;
             try {
-              return activeSession.matchedSchools ? JSON.parse(activeSession.matchedSchools).length : 0;
+              return activeSession.matched_schools ? JSON.parse(activeSession.matched_schools).length : 0;
             } catch {
               return 0;
             }
           })(),
-          shortlistedCount: sessions.find(s => s.status === 'active')?.shortlistedCount || 0
+          shortlisted_count: sessions.find(s => s.status === 'active')?.shortlisted_count || 0
         }}
       />
     </div>

@@ -15,10 +15,10 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
 
     try {
       // BUG-RN-PERSIST Fix D: Omit conversationId from filter when falsy to handle legacy rows
-      const analysisFilter = { userId: user.id };
-      if (conversationId) analysisFilter.conversationId = conversationId;
+      const analysisFilter = { user_id: user.id };
+      if (conversationId) analysisFilter.conversation_id = conversationId;
       const [artifacts, analyses] = await Promise.all([
-        GeneratedArtifact.filter({ conversationId }),
+        GeneratedArtifact.filter({ conversation_id: conversationId }),
         user?.id ? SchoolAnalysis.filter(analysisFilter) : Promise.resolve([])
       ]);
 
@@ -29,9 +29,9 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
       };
       const map = {};
       for (const artifact of artifacts) {
-        const schoolIds = artifact.schoolIds || [];
+        const schoolIds = artifact.school_ids || [];
         for (const schoolId of schoolIds) {
-          const remappedType = TYPE_REMAP[artifact.artifactType] || artifact.artifactType;
+          const remappedType = TYPE_REMAP[artifact.artifact_type] || artifact.artifact_type;
           const key = `${schoolId}_${remappedType}`;
           map[key] = artifact.content;
         }
@@ -39,14 +39,14 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
 
       // E30-007: Build schoolAnalyses map with full record (excluding internal metadata)
       const analysesMap = {};
-      const METADATA_KEYS = new Set(['id', 'createdAt', 'updated_date', 'created_by']);
+      const METADATA_KEYS = new Set(['id', 'createdAt', 'updatedAt', 'createdBy']);
       for (const analysis of analyses) {
-        if (analysis.schoolId) {
+        if (analysis.school_id) {
           const entry = {};
           for (const [k, v] of Object.entries(analysis)) {
             if (!METADATA_KEYS.has(k)) entry[k] = v;
           }
-          analysesMap[analysis.schoolId] = entry;
+          analysesMap[analysis.school_id] = entry;
         }
       }
       setSchoolAnalyses(prev => ({ ...analysesMap, ...prev }));
@@ -59,16 +59,16 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
         console.log('[WC6] No SchoolAnalyses found — scheduling one retry in 800ms');
         setTimeout(async () => {
           try {
-            const retryAnalyses = await SchoolAnalysis.filter({ userId: user.id, conversationId });
+            const retryAnalyses = await SchoolAnalysis.filter({ user_id: user.id, conversation_id: conversationId });
             if (retryAnalyses.length > 0) {
               const retryMap = {};
               for (const analysis of retryAnalyses) {
-                if (analysis.schoolId) {
+                if (analysis.school_id) {
                   const entry = {};
                   for (const [k, v] of Object.entries(analysis)) {
                     if (!METADATA_KEYS.has(k)) entry[k] = v;
                   }
-                  retryMap[analysis.schoolId] = entry;
+                  retryMap[analysis.school_id] = entry;
                 }
               }
               setSchoolAnalyses(prev => ({ ...retryMap, ...prev }));
@@ -88,7 +88,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
     if (!user?.id || !currentConversation?.id) return;
 
     // Guard: if familyProfile already has meaningful data from orchestrateConversation, skip DB fetch
-    const METADATA_KEYS = ['id', 'userId', 'conversationId', 'createdAt', 'updated_date', 'created_by'];
+    const METADATA_KEYS = ['id', 'userId', 'conversationId', 'createdAt', 'updatedAt', 'createdBy'];
     const hasRealData = familyProfile && Object.entries(familyProfile).some(
       ([k, v]) => !METADATA_KEYS.includes(k) && v != null && v !== '' && !(Array.isArray(v) && v.length === 0)
     );
@@ -100,8 +100,8 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
 
     try {
       const profiles = await FamilyProfile.filter({
-        userId: user.id,
-        conversationId: currentConversation.id
+        user_id: user.id,
+        conversation_id: currentConversation.id
       });
 
       if (profiles.length > 0) {
@@ -133,23 +133,23 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
 
         if (currentConversation?.id) {
           // Step (a): Try to find journey specifically linked to this chat
-          const linked = await FamilyJourney.filter({ userId: user.id, isArchived: false, chatHistoryId: currentConversation.id });
+          const linked = await FamilyJourney.filter({ user_id: user.id, is_archived: false, chat_history_id: currentConversation.id });
           if (linked.length > 0) {
             journey = linked.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
           } else {
-            // Step (b): Fallback — only pick unassigned journeys (no chatHistoryId), then stamp
-            const all = await FamilyJourney.filter({ userId: user.id, isArchived: false });
-            const unassigned = all.filter(j => !j.chatHistoryId);
+            // Step (b): Fallback — only pick unassigned journeys (no chat_history_id), then stamp
+            const all = await FamilyJourney.filter({ user_id: user.id, is_archived: false });
+            const unassigned = all.filter(j => !j.chat_history_id);
             if (unassigned.length > 0) {
               journey = unassigned.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-              await FamilyJourney.update(journey.id, { chatHistoryId: currentConversation.id });
-              journey = { ...journey, chatHistoryId: currentConversation.id };
+              await FamilyJourney.update(journey.id, { chat_history_id: currentConversation.id });
+              journey = { ...journey, chat_history_id: currentConversation.id };
             }
             // If no unassigned journeys, journey stays null — this chat has no journey yet
           }
         } else {
           // Step (c): No conversation context — just pick most recent journey
-          const all = await FamilyJourney.filter({ userId: user.id, isArchived: false });
+          const all = await FamilyJourney.filter({ user_id: user.id, is_archived: false });
           if (all.length > 0) {
             journey = all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
           }
@@ -157,7 +157,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
 
         if (!journey) { setActiveJourney(null); return; }
 
-        const schoolJourneys = await SchoolJourney.filter({ familyJourneyId: journey.id });
+        const schoolJourneys = await SchoolJourney.filter({ family_journey_id: journey.id });
 
         setActiveJourney({
           id: journey.id,

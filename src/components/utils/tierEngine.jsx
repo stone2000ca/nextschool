@@ -1,6 +1,6 @@
 import { buildPriorityChecks } from '@/components/schools/SchoolCard';
 
-export const IMPORTANT_FIELDS = ['name', 'city', 'curriculum', 'genderPolicy', 'dayTuition', 'tuition', 'lowestGrade', 'highestGrade', 'boardingAvailable', 'description', 'headerPhotoUrl', 'logoUrl'];
+export const IMPORTANT_FIELDS = ['name', 'city', 'curriculum', 'gender_policy', 'day_tuition', 'tuition', 'lowest_grade', 'highest_grade', 'boarding_available', 'description', 'header_photo_url', 'logo_url'];
 
 export function buildTiers(schools, familyProfile, sortMode = 'bestFit', priorityOverrides = {}) {
   if (!schools || schools.length === 0) return null;
@@ -10,10 +10,10 @@ export function buildTiers(schools, familyProfile, sortMode = 'bestFit', priorit
 
   function applySort(arr) {
     if (sortMode === 'closest') {
-      return [...arr].sort((a, b) => (a.school.distanceKm ?? 99999) - (b.school.distanceKm ?? 99999));
+      return [...arr].sort((a, b) => (a.school.distance_km ?? 99999) - (b.school.distance_km ?? 99999));
     }
     if (sortMode === 'affordable') {
-      const tval = s => s.school.dayTuition ?? s.school.tuition ?? 99999;
+      const tval = s => s.school.day_tuition ?? s.school.tuition ?? 99999;
       return [...arr].sort((a, b) => tval(a) - tval(b));
     }
     if (sortMode === 'newest') {
@@ -39,7 +39,7 @@ export function buildTiers(schools, familyProfile, sortMode = 'bestFit', priorit
       if (row.status === 'mismatch' && flex === 'musthave') mustHaveFail = true;
     });
     const completeness = IMPORTANT_FIELDS.filter(f => s[f] != null && s[f] !== '').length;
-    const proximity = s.distanceKm != null ? s.distanceKm : 99999;
+    const proximity = s.distance_km != null ? s.distance_km : 99999;
     return { school: s, score, completeness, proximity, mustHaveFail };
   });
 

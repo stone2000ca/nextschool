@@ -218,10 +218,10 @@ export default function SchoolGrid({
   useEffect(() => {
     if (!allSchoolIdsKey) return;
     const today = new Date().toISOString();
-    SchoolEvent.filter({ isActive: true })
+    SchoolEvent.filter({ is_active: true })
       .then(events => {
         const upcoming = new Set(
-          events.filter(e => e.date && e.date >= today).map(e => e.schoolId)
+          events.filter(e => e.date && e.date >= today).map(e => e.school_id)
         );
         setSchoolsWithEvents(upcoming);
       })

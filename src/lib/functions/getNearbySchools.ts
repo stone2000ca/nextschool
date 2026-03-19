@@ -23,9 +23,9 @@ function applyReligiousFilter(school: any, dealbreakers: string[]): boolean {
   );
   if (!hasReligiousDealbreaker) return true;
 
-  const affiliationNorm = (school.faithBased || '').toLowerCase().trim();
-  if (school.faithBased && !nonReligiousAffiliations.has(affiliationNorm)) {
-    console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: affiliation (${school.faithBased})`);
+  const affiliationNorm = (school.faith_based || '').toLowerCase().trim();
+  if (school.faith_based && !nonReligiousAffiliations.has(affiliationNorm)) {
+    console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: affiliation (${school.faith_based})`);
     return false;
   }
   const nameLower = school.name?.toLowerCase() || '';
@@ -42,7 +42,7 @@ function applyGenderFilter(
   schoolGenderExclusions?: string[],
   schoolGenderPreference?: string
 ): boolean {
-  const gp = school.genderPolicy || null;
+  const gp = school.gender_policy || null;
   if (gp === null) return true;
 
   const exclusions = schoolGenderExclusions || [];
@@ -128,7 +128,7 @@ export async function getNearbySchools(params: {
     // 1. Fetch all active schools
     let allSchools: any[] = [];
     try {
-      allSchools = await School.filter({}, '-createdAt', 1000);
+      allSchools = await School.filter({}, '-created_date', 1000);
     } catch (err: any) {
       console.error('[getNearbySchools] School fetch failed:', err.message);
       return { schools: [], hasMore: false, totalRemaining: 0 };
@@ -144,8 +144,8 @@ export async function getNearbySchools(params: {
       const grade = typeof gradeMin === 'number' ? gradeMin : parseInt(String(gradeMin));
       if (!isNaN(grade)) {
         schools = schools.filter((school: any) => {
-          const sLow = parseInt(school.lowestGrade);
-          const sHigh = parseInt(school.highestGrade);
+          const sLow = parseInt(school.lowest_grade);
+          const sHigh = parseInt(school.highest_grade);
           if (isNaN(sLow) || isNaN(sHigh)) return true;
           const outside = grade < sLow ? sLow - grade : grade > sHigh ? grade - sHigh : 0;
           return outside <= 2;
@@ -159,7 +159,7 @@ export async function getNearbySchools(params: {
       if (!isNaN(budget)) {
         const cap = budget * 1.5;
         schools = schools.filter((school: any) => {
-          const tuition = school.tuition || school.dayTuition || school.tuitionMin;
+          const tuition = school.tuition || school.day_tuition || school.tuition_min;
           if (!tuition) return true;
           return tuition <= cap;
         });
@@ -198,26 +198,26 @@ export async function getNearbySchools(params: {
       name: s.name,
       slug: s.slug,
       city: s.city,
-      provinceState: s.provinceState,
-      gradesServed: `${s.lowestGrade}-${s.highestGrade}`,
-      lowestGrade: s.lowestGrade,
-      highestGrade: s.highestGrade,
+      province_state: s.province_state,
+      grades_served: `${s.lowest_grade}-${s.highest_grade}`,
+      lowest_grade: s.lowest_grade,
+      highest_grade: s.highest_grade,
       tuition: s.tuition,
-      dayTuition: s.dayTuition,
+      day_tuition: s.day_tuition,
       currency: s.currency,
       curriculum: s.curriculum,
-      genderPolicy: s.genderPolicy,
+      gender_policy: s.gender_policy,
       region: s.region,
       specializations: s.specializations,
       distanceKm: s.distanceKm,
-      schoolTypeLabel: s.schoolTypeLabel,
-      headerPhotoUrl: s.headerPhotoUrl,
-      logoUrl: s.logoUrl,
-      artsPrograms: s.artsPrograms?.slice(0, 5) || [],
-      sportsPrograms: s.sportsPrograms?.slice(0, 5) || [],
-      avgClassSize: s.avgClassSize || null,
-      schoolTier: s.schoolTier || null,
-      claimStatus: s.claimStatus || null,
+      school_type_label: s.school_type_label,
+      header_photo_url: s.header_photo_url,
+      logo_url: s.logo_url,
+      arts_programs: s.arts_programs?.slice(0, 5) || [],
+      sports_programs: s.sports_programs?.slice(0, 5) || [],
+      avg_class_size: s.avg_class_size || null,
+      school_tier: s.school_tier || null,
+      claim_status: s.claim_status || null,
       relaxedMatch: false,
     }));
 

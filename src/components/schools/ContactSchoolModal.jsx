@@ -45,8 +45,8 @@ export default function ContactSchoolModal({ school, onClose }) {
 
     try {
       const inquiry = await SchoolInquiry.create({
-        parentUserId: user.id,
-        schoolId: school.id,
+        parent_user_id: user.id,
+        school_id: school.id,
         message: `Parent: ${formData.parentName}\nEmail: ${formData.email}\nChild's Grade: ${formData.childGrade}\n\nMessage:\n${formData.message}`,
         status: 'pending'
       });
@@ -94,7 +94,7 @@ export default function ContactSchoolModal({ school, onClose }) {
   };
 
   // Unclaimed school — show website redirect instead of form
-  if (school.claimStatus !== 'claimed') {
+  if (school.claim_status !== 'claimed') {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center">

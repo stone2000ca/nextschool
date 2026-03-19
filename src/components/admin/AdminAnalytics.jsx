@@ -14,24 +14,24 @@ export default function AdminAnalytics() {
 
   const loadAnalytics = async () => {
     try {
-      const users = await User.list('-createdAt');
+      const users = await User.list('-created_date');
 
       let conversations = [];
       try {
-        conversations = await ChatHistory.list('-createdAt');
+        conversations = await ChatHistory.list('-created_date');
       } catch (e) {
         console.error('Failed to load ChatHistory:', e);
       }
 
       let transactions = [];
       try {
-        transactions = await TokenTransaction.list('-createdAt', 1000);
+        transactions = await TokenTransaction.list('-created_date', undefined, 1000);
       } catch (e) {
         console.error('Failed to load TokenTransaction:', e);
       }
 
-      const weeklyUsers = calculateWeeklyData(users, 'createdAt', 6);
-      const dailyConversations = calculateDailyData(conversations, 'createdAt', 7);
+      const weeklyUsers = calculateWeeklyData(users, 'created_date', 6);
+      const dailyConversations = calculateDailyData(conversations, 'created_date', 7);
 
       // Calculate period-over-period token trend (30-day windows)
       const now = new Date();
@@ -41,11 +41,11 @@ export default function AdminAnalytics() {
       previousStart.setDate(currentStart.getDate() - 30);
 
       const currentTokens = transactions
-        .filter(t => new Date(t.createdAt) >= currentStart)
-        .reduce((sum, t) => sum + t.tokensDeducted, 0);
+        .filter(t => new Date(t.created_date) >= currentStart)
+        .reduce((sum, t) => sum + t.tokens_deducted, 0);
       const previousTokens = transactions
-        .filter(t => new Date(t.createdAt) >= previousStart && new Date(t.createdAt) < currentStart)
-        .reduce((sum, t) => sum + t.tokensDeducted, 0);
+        .filter(t => new Date(t.created_date) >= previousStart && new Date(t.created_date) < currentStart)
+        .reduce((sum, t) => sum + t.tokens_deducted, 0);
 
       let tokenTrend = 'Insufficient data';
       if (previousTokens > 0) {

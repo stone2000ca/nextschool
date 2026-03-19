@@ -24,7 +24,7 @@ export default function SharedProfile() {
     try {
       // Fetch ChatSession by shareToken
       const sessions = await ChatSession.filter({
-        shareToken: shareToken
+        share_token: shareToken
       });
 
       if (sessions.length === 0) {
@@ -37,9 +37,9 @@ export default function SharedProfile() {
       setSession(chatSession);
 
       // Load matched schools
-      if (chatSession.matchedSchools) {
+      if (chatSession.matched_schools) {
         try {
-          const matchedIds = JSON.parse(chatSession.matchedSchools);
+          const matchedIds = JSON.parse(chatSession.matched_schools);
           const matchedSchoolIds = Array.isArray(matchedIds) ? matchedIds : [];
           
           if (matchedSchoolIds.length > 0) {
@@ -54,10 +54,10 @@ export default function SharedProfile() {
       }
 
       // Load shortlisted schools if any
-      if (chatSession.userId) {
+      if (chatSession.user_id) {
         try {
           const user = await User.filter({
-            id: chatSession.userId
+            id: chatSession.user_id
           });
           if (user.length > 0 && user[0].shortlist) {
             const shortlistedData = await SchoolEntity.filter({
@@ -116,35 +116,35 @@ export default function SharedProfile() {
           <div className="mb-8">
             <div className="flex items-start gap-4 mb-6">
               <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center font-bold text-white text-2xl flex-shrink-0">
-                {session.childName ? session.childName.charAt(0).toUpperCase() : '?'}
+                {session.child_name ? session.child_name.charAt(0).toUpperCase() : '?'}
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-white mb-1">
-                  {session.childName || 'Student Profile'}
+                  {session.child_name || 'Student Profile'}
                 </h1>
-                {session.childGrade != null && (
-                  <p className="text-lg text-[#E8E8ED]/70">Grade {session.childGrade}</p>
+                {session.child_grade != null && (
+                  <p className="text-lg text-[#E8E8ED]/70">Grade {session.child_grade}</p>
                 )}
               </div>
             </div>
 
             {/* Key Details Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              {session.locationArea && (
+              {session.location_area && (
                 <div className="flex items-start gap-3 p-3 bg-[#2A2A3D] rounded-lg border border-white/10">
                   <MapPin className="w-5 h-5 text-teal-400 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-[#E8E8ED]/60">Location</p>
-                    <p className="text-sm font-medium text-white">{session.locationArea}</p>
+                    <p className="text-sm font-medium text-white">{session.location_area}</p>
                   </div>
                 </div>
               )}
-              {session.maxTuition && (
+              {session.max_tuition && (
                 <div className="flex items-start gap-3 p-3 bg-[#2A2A3D] rounded-lg border border-white/10">
                   <DollarSign className="w-5 h-5 text-teal-400 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-[#E8E8ED]/60">Budget</p>
-                    <p className="text-sm font-medium text-white">${(session.maxTuition / 1000).toFixed(0)}K/year</p>
+                    <p className="text-sm font-medium text-white">${(session.max_tuition / 1000).toFixed(0)}K/year</p>
                   </div>
                 </div>
               )}
@@ -165,9 +165,9 @@ export default function SharedProfile() {
             )}
 
             {/* AI Narrative */}
-            {session.aiNarrative && (
+            {session.ai_narrative && (
               <div className="p-4 bg-[#2A2A3D] rounded-lg border border-white/10">
-                <p className="text-[#E8E8ED]/80 leading-relaxed">{session.aiNarrative}</p>
+                <p className="text-[#E8E8ED]/80 leading-relaxed">{session.ai_narrative}</p>
               </div>
             )}
           </div>

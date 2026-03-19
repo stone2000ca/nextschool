@@ -27,17 +27,17 @@ const EVENT_TYPE_COLORS = {
 };
 
 const EMPTY_FORM = {
-  eventType: '',
+  event_type: '',
   title: '',
   date: '',
-  endDate: '',
+  end_date: '',
   description: '',
-  registrationUrl: '',
-  virtualUrl: '',
+  registration_url: '',
+  virtual_url: '',
   capacity: '',
   location: '',
-  isRecurring: false,
-  recurrenceRule: '',
+  is_recurring: false,
+  recurrence_rule: '',
 };
 
 function formatDate(dateStr) {
@@ -53,7 +53,7 @@ function FreeTierTeaser({ school }) {
   const [aiEvents, setAiEvents] = useState([]);
 
   useEffect(() => {
-    SchoolEvent.filter({ schoolId: school.id, source: 'ai_enriched' })
+    SchoolEvent.filter({ school_id: school.id, source: 'ai_enriched' })
       .then(setAiEvents)
       .catch(() => {});
   }, [school.id]);
@@ -96,8 +96,8 @@ function FreeTierTeaser({ school }) {
             <div className="space-y-2">
               {aiEvents.map(ev => (
                 <div key={ev.id} className="flex items-center gap-3 text-sm text-slate-500">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${EVENT_TYPE_COLORS[ev.eventType] || 'bg-slate-100 text-slate-600'}`}>
-                    {EVENT_TYPE_LABELS[ev.eventType] || ev.eventType}
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${EVENT_TYPE_COLORS[ev.event_type] || 'bg-slate-100 text-slate-600'}`}>
+                    {EVENT_TYPE_LABELS[ev.event_type] || ev.event_type}
                   </span>
                   <span>{ev.title}</span>
                   {ev.date && <span className="text-slate-400">{formatDate(ev.date)}</span>}
@@ -130,10 +130,10 @@ function EventFormModal({ open, onClose, onSave, initial }) {
         ...EMPTY_FORM,
         ...initial,
         capacity: initial.capacity ?? '',
-        endDate: initial.endDate ?? '',
-        recurrenceRule: initial.recurrenceRule ?? '',
-        registrationUrl: initial.registrationUrl ?? '',
-        virtualUrl: initial.virtualUrl ?? '',
+        end_date: initial.end_date ?? '',
+        recurrence_rule: initial.recurrence_rule ?? '',
+        registration_url: initial.registration_url ?? '',
+        virtual_url: initial.virtual_url ?? '',
         description: initial.description ?? '',
         location: initial.location ?? '',
       } : EMPTY_FORM);
@@ -143,15 +143,15 @@ function EventFormModal({ open, onClose, onSave, initial }) {
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
 
   const handleSave = async () => {
-    if (!form.eventType || !form.title || !form.date) return;
+    if (!form.event_type || !form.title || !form.date) return;
     setSaving(true);
     await onSave({
       ...form,
       capacity: form.capacity !== '' ? Number(form.capacity) : null,
-      endDate: form.endDate || null,
-      recurrenceRule: form.recurrenceRule || null,
-      registrationUrl: form.registrationUrl || null,
-      virtualUrl: form.virtualUrl || null,
+      end_date: form.end_date || null,
+      recurrence_rule: form.recurrence_rule || null,
+      registration_url: form.registration_url || null,
+      virtual_url: form.virtual_url || null,
       description: form.description || null,
       location: form.location || null,
     });
@@ -169,7 +169,7 @@ function EventFormModal({ open, onClose, onSave, initial }) {
         <div className="space-y-4 py-2">
           <div>
             <Label>Event Type *</Label>
-            <Select value={form.eventType} onValueChange={v => set('eventType', v)}>
+            <Select value={form.event_type} onValueChange={v => set('event_type', v)}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Select type…" /></SelectTrigger>
               <SelectContent>
                 {Object.entries(EVENT_TYPE_LABELS).map(([val, label]) => (
@@ -191,7 +191,7 @@ function EventFormModal({ open, onClose, onSave, initial }) {
             </div>
             <div>
               <Label>End Date & Time</Label>
-              <Input className="mt-1" type="datetime-local" value={form.endDate} onChange={e => set('endDate', e.target.value)} />
+              <Input className="mt-1" type="datetime-local" value={form.end_date} onChange={e => set('end_date', e.target.value)} />
             </div>
           </div>
 
@@ -207,12 +207,12 @@ function EventFormModal({ open, onClose, onSave, initial }) {
 
           <div>
             <Label className="flex items-center gap-1"><Link className="h-3 w-3" /> Registration URL</Label>
-            <Input className="mt-1" type="url" placeholder="https://…" value={form.registrationUrl} onChange={e => set('registrationUrl', e.target.value)} />
+            <Input className="mt-1" type="url" placeholder="https://…" value={form.registration_url} onChange={e => set('registration_url', e.target.value)} />
           </div>
 
           <div>
             <Label className="flex items-center gap-1"><Video className="h-3 w-3" /> Virtual / Zoom URL</Label>
-            <Input className="mt-1" type="url" placeholder="https://zoom.us/…" value={form.virtualUrl} onChange={e => set('virtualUrl', e.target.value)} />
+            <Input className="mt-1" type="url" placeholder="https://zoom.us/…" value={form.virtual_url} onChange={e => set('virtual_url', e.target.value)} />
           </div>
 
           <div>
@@ -224,13 +224,13 @@ function EventFormModal({ open, onClose, onSave, initial }) {
             <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
               <RefreshCw className="h-4 w-4" /> Recurring event
             </div>
-            <Switch checked={form.isRecurring} onCheckedChange={v => set('isRecurring', v)} />
+            <Switch checked={form.is_recurring} onCheckedChange={v => set('is_recurring', v)} />
           </div>
 
-          {form.isRecurring && (
+          {form.is_recurring && (
             <div>
               <Label>Recurrence Rule</Label>
-              <Input className="mt-1" placeholder="e.g. Every Tuesday 10am Sept-Nov" value={form.recurrenceRule} onChange={e => set('recurrenceRule', e.target.value)} />
+              <Input className="mt-1" placeholder="e.g. Every Tuesday 10am Sept-Nov" value={form.recurrence_rule} onChange={e => set('recurrence_rule', e.target.value)} />
             </div>
           )}
         </div>
@@ -239,7 +239,7 @@ function EventFormModal({ open, onClose, onSave, initial }) {
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={handleSave}
-            disabled={saving || !form.eventType || !form.title || !form.date}
+            disabled={saving || !form.event_type || !form.title || !form.date}
             className="bg-teal-600 hover:bg-teal-700 text-white"
           >
             {saving ? 'Saving…' : initial ? 'Save Changes' : 'Add Event'}
@@ -260,7 +260,7 @@ function PremiumEventsManagement({ school }) {
 
   const loadEvents = async () => {
     setLoading(true);
-    const data = await SchoolEvent.filter({ schoolId: school.id });
+    const data = await SchoolEvent.filter({ school_id: school.id });
     setEvents(data.sort((a, b) => new Date(a.date) - new Date(b.date)));
     setLoading(false);
   };
@@ -269,9 +269,9 @@ function PremiumEventsManagement({ school }) {
 
   const handleSave = async (formData) => {
     if (editing) {
-      await SchoolEvent.update(editing.id, { ...formData, source: 'school_portal', isConfirmed: true });
+      await SchoolEvent.update(editing.id, { ...formData, source: 'school_portal', is_confirmed: true });
     } else {
-      await SchoolEvent.create({ ...formData, schoolId: school.id, source: 'school_portal', isConfirmed: true, isActive: true });
+      await SchoolEvent.create({ ...formData, school_id: school.id, source: 'school_portal', is_confirmed: true, is_active: true });
     }
     setEditing(null);
     await loadEvents();
@@ -317,19 +317,19 @@ function PremiumEventsManagement({ school }) {
             <div key={ev.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-start gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${EVENT_TYPE_COLORS[ev.eventType] || 'bg-slate-100 text-slate-600'}`}>
-                    {EVENT_TYPE_LABELS[ev.eventType] || ev.eventType}
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${EVENT_TYPE_COLORS[ev.event_type] || 'bg-slate-100 text-slate-600'}`}>
+                    {EVENT_TYPE_LABELS[ev.event_type] || ev.event_type}
                   </span>
-                  {ev.isRecurring && (
+                  {ev.is_recurring && (
                     <span className="flex items-center gap-1 text-xs text-slate-500"><RefreshCw className="h-3 w-3" /> Recurring</span>
                   )}
-                  {!ev.isActive && (
+                  {!ev.is_active && (
                     <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Inactive</span>
                   )}
                 </div>
                 <p className="font-semibold text-slate-900">{ev.title}</p>
                 <p className="text-sm text-slate-500 mt-0.5">
-                  {formatDate(ev.date)}{ev.endDate ? ` → ${formatDate(ev.endDate)}` : ''}
+                  {formatDate(ev.date)}{ev.end_date ? ` → ${formatDate(ev.end_date)}` : ''}
                 </p>
                 {ev.description && (
                   <p className="text-sm text-slate-600 mt-1 line-clamp-2">{ev.description}</p>
@@ -364,7 +364,7 @@ function PremiumEventsManagement({ school }) {
 // ─── DEFAULT EXPORT ───────────────────────────────────────────────────────────
 
 export default function EventsSection({ school }) {
-  const isPremium = school.schoolTier === 'pro';
+  const isPremium = school.school_tier === 'pro';
   return isPremium
     ? <PremiumEventsManagement school={school} />
     : <FreeTierTeaser school={school} />;

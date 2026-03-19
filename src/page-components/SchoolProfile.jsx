@@ -19,8 +19,8 @@ function gradeLabel(grade) {
   return String(grade);
 }
 
-function f(school, camel, snake) {
-  return school[camel] ?? school[snake] ?? null;
+function f(school, key) {
+  return school[key] ?? null;
 }
 
 function getCurrencySymbol(currency) {
@@ -56,12 +56,12 @@ function joinProse(arr, conjunction = 'and') {
 }
 
 function getSchoolTypeLabel(school) {
-  if (school.schoolTypeLabel) return school.schoolTypeLabel;
-  if (school.schoolType) return school.schoolType;
+  if (school.school_type_label) return school.school_type_label;
+  if (school.school_type) return school.school_type;
   const types = [];
-  if (school.boardingAvailable) types.push('boarding');
+  if (school.boarding_available) types.push('boarding');
   types.push('private');
-  if (school.faithBased) types.push(school.faithBased);
+  if (school.faith_based) types.push(school.faith_based);
   return types.join(' ');
 }
 
@@ -109,8 +109,8 @@ function generateSchoolFAQs(school, events) {
   const faqs = [];
 
   // 1. Grades (always if available)
-  if (school.gradesServed || (school.lowestGrade != null && school.highestGrade != null)) {
-    const range = school.gradesServed || `${gradeLabel(school.lowestGrade)} – ${gradeLabel(school.highestGrade)}`;
+  if (school.grades_served || (school.lowest_grade != null && school.highest_grade != null)) {
+    const range = school.grades_served || `${gradeLabel(school.lowest_grade)} – ${gradeLabel(school.highest_grade)}`;
     faqs.push({
       question: `What grades does ${name} serve?`,
       answer: `${name} serves students in grades ${range}.`
@@ -118,62 +118,62 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 2. Tuition
-  const dayMin = school.dayTuition || f(school, 'dayTuitionMin', 'day_tuition_min');
-  const dayMax = f(school, 'dayTuitionMax', 'day_tuition_max');
-  const boardMin = school.boardingTuition || f(school, 'boardingTuitionMin', 'boarding_tuition_min');
-  const boardMax = f(school, 'boardingTuitionMax', 'boarding_tuition_max');
-  const aidPct = f(school, 'financialAidPct', 'financial_aid_pct');
-  const medianAid = f(school, 'medianAidAmount', 'median_aid_amount');
+  const dayMin = school.day_tuition || f(school, 'day_tuition_min');
+  const dayMax = f(school, 'day_tuition_max');
+  const boardMin = school.boarding_tuition || f(school, 'boarding_tuition_min');
+  const boardMax = f(school, 'boarding_tuition_max');
+  const aidPct = f(school, 'financial_aid_pct');
+  const medianAid = f(school, 'median_aid_amount');
   if (dayMin || boardMin) {
     let text = '';
     if (dayMin) text += `Day tuition at ${name} is ${dayMax && dayMax !== dayMin ? `${sym}${dayMin.toLocaleString()}–${sym}${dayMax.toLocaleString()}` : `${sym}${dayMin.toLocaleString()}`}/year. `;
     if (boardMin) text += `Boarding tuition is ${boardMax && boardMax !== boardMin ? `${sym}${boardMin.toLocaleString()}–${sym}${boardMax.toLocaleString()}` : `${sym}${boardMin.toLocaleString()}`}/year. `;
-    if (school.financialAidAvailable) text += `Financial aid is available`;
+    if (school.financial_aid_available) text += `Financial aid is available`;
     if (aidPct) text += `, with ${aidPct}% of students receiving assistance`;
     if (medianAid) text += ` (median package: ${sym}${medianAid.toLocaleString()})`;
-    if (school.financialAidAvailable) text += '. ';
+    if (school.financial_aid_available) text += '. ';
     faqs.push({ question: `How much is tuition at ${name}?`, answer: text.trim() });
   }
 
   // 3. Application / Admissions
-  const deadline = school.dayAdmissionDeadline;
-  const boardDeadline = f(school, 'boardingAdmissionDeadline', 'boarding_admission_deadline');
-  const appProcess = f(school, 'applicationProcess', 'application_process') || [];
-  const entranceReqs = school.admissionRequirements || f(school, 'entranceRequirements', 'entrance_requirements') || [];
-  if (deadline || boardDeadline || appProcess.length > 0 || entranceReqs.length > 0 || school.acceptanceRate) {
+  const deadline = school.day_admission_deadline;
+  const boardDeadline = f(school, 'boarding_admission_deadline');
+  const appProcess = f(school, 'application_process') || [];
+  const entranceReqs = school.admission_requirements || f(school, 'entrance_requirements') || [];
+  if (deadline || boardDeadline || appProcess.length > 0 || entranceReqs.length > 0 || school.acceptance_rate) {
     let text = '';
     if (deadline) text += `The application deadline for day students is ${deadline}. `;
     if (boardDeadline) text += `Boarding application deadline is ${boardDeadline}. `;
     if (entranceReqs.length > 0) text += `Requirements include ${joinProse(entranceReqs)}. `;
     if (appProcess.length > 0) text += `The process involves: ${appProcess.join(', ')}. `;
-    if (school.acceptanceRate) text += `The acceptance rate is ${school.acceptanceRate}%.`;
+    if (school.acceptance_rate) text += `The acceptance rate is ${school.acceptance_rate}%.`;
     faqs.push({ question: `How do I apply to ${name}?`, answer: text.trim() });
   }
 
   // 4. Curriculum
-  if (school.curriculum || school.specializations?.length > 0 || school.teachingPhilosophy) {
+  if (school.curriculum || school.specializations?.length > 0 || school.teaching_philosophy) {
     let text = '';
     if (school.curriculum) text += `${name} offers ${Array.isArray(school.curriculum) ? joinProse(school.curriculum) : school.curriculum} curriculum. `;
     if (school.specializations?.length > 0) text += `The school specializes in ${joinProse(school.specializations)}. `;
-    if (school.teachingPhilosophy) text += school.teachingPhilosophy;
+    if (school.teaching_philosophy) text += school.teaching_philosophy;
     faqs.push({ question: `What curriculum does ${name} offer?`, answer: text.trim() });
   }
 
   // 5. Student-teacher ratio
-  if (school.studentTeacherRatio || school.avgClassSize || school.enrollment) {
+  if (school.student_teacher_ratio || school.avg_class_size || school.enrollment) {
     let text = '';
-    if (school.studentTeacherRatio) text += `The student-teacher ratio at ${name} is ${school.studentTeacherRatio}. `;
-    if (school.avgClassSize) text += `Average class size is ${school.avgClassSize} students. `;
+    if (school.student_teacher_ratio) text += `The student-teacher ratio at ${name} is ${school.student_teacher_ratio}. `;
+    if (school.avg_class_size) text += `Average class size is ${school.avg_class_size} students. `;
     if (school.enrollment) text += `Total enrollment is ${school.enrollment} students.`;
     faqs.push({ question: `What is the student-teacher ratio at ${name}?`, answer: text.trim() });
   }
 
   // 6. Boarding
-  if (school.boardingAvailable !== undefined) {
-    const boardingType = f(school, 'boardingType', 'boarding_type');
-    const boardingPct = f(school, 'boardingPct', 'boarding_pct');
-    const living = f(school, 'livingArrangements', 'living_arrangements') || [];
-    if (school.boardingAvailable) {
+  if (school.boarding_available !== undefined) {
+    const boardingType = f(school, 'boarding_type');
+    const boardingPct = f(school, 'boarding_pct');
+    const living = f(school, 'living_arrangements') || [];
+    if (school.boarding_available) {
       let text = `Yes, ${name} offers ${boardingType || 'boarding'}. `;
       if (boardingPct) text += `${boardingPct}% of students are boarders. `;
       if (living.length > 0) text += `Living arrangements include ${joinProse(living)}. `;
@@ -185,25 +185,25 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 7. Religious school
-  if (school.faithBased) {
-    let text = `Yes, ${name} is a ${school.faithBased} school. `;
+  if (school.faith_based) {
+    let text = `Yes, ${name} is a ${school.faith_based} school. `;
     if (school.values?.length > 0) text += `The school's core values include ${joinProse(school.values)}.`;
     faqs.push({ question: `Is ${name} a religious school?`, answer: text.trim() });
   }
 
   // 8. Sports
-  if (school.sportsPrograms?.length > 0) {
+  if (school.sports_programs?.length > 0) {
     faqs.push({
       question: `What sports does ${name} offer?`,
-      answer: `${name} offers ${school.sportsPrograms.length} sports programs including ${joinProse(school.sportsPrograms)}.`
+      answer: `${name} offers ${school.sports_programs.length} sports programs including ${joinProse(school.sports_programs)}.`
     });
   }
 
   // 9. Arts
-  if (school.artsPrograms?.length > 0) {
+  if (school.arts_programs?.length > 0) {
     faqs.push({
       question: `What arts programs does ${name} have?`,
-      answer: `Arts programs at ${name} include ${joinProse(school.artsPrograms)}.`
+      answer: `Arts programs at ${name} include ${joinProse(school.arts_programs)}.`
     });
   }
 
@@ -216,9 +216,9 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 11. Financial aid
-  if (school.financialAidAvailable) {
-    const scholarships = parseScholarships(f(school, 'scholarshipsJson', 'scholarships_json'));
-    const tuitionNotes = f(school, 'tuitionNotes', 'tuition_notes');
+  if (school.financial_aid_available) {
+    const scholarships = parseScholarships(f(school, 'scholarships_json'));
+    const tuitionNotes = f(school, 'tuition_notes');
     let text = `Yes, ${name} offers financial aid. `;
     if (aidPct) text += `${aidPct}% of students receive assistance. `;
     if (medianAid) text += `The median aid package is ${sym}${medianAid.toLocaleString()}. `;
@@ -228,18 +228,18 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 12. Facilities
-  const facilities = f(school, 'facilities', 'facilities') || [];
-  const campusSize = f(school, 'campusSize', 'campus_size');
+  const facilities = f(school, 'facilities') || [];
+  const campusSize = f(school, 'campus_size');
   if (facilities.length > 0 || campusSize) {
     let text = '';
     if (campusSize) text += `${name} sits on a ${campusSize}-acre campus. `;
     if (facilities.length > 0) text += `Facilities include ${joinProse(facilities)}. `;
-    if (school.virtualTourUrl) text += `A virtual tour is available on the school's profile.`;
+    if (school.virtual_tour_url) text += `A virtual tour is available on the school's profile.`;
     faqs.push({ question: `What are the facilities at ${name}?`, answer: text.trim() });
   }
 
   // 13. Learning support
-  const specialEd = f(school, 'specialEdPrograms', 'special_ed_programs') || [];
+  const specialEd = f(school, 'special_ed_programs') || [];
   if (specialEd.length > 0) {
     faqs.push({
       question: `Does ${name} have learning support?`,
@@ -248,7 +248,7 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 14. Languages
-  const languages = f(school, 'languagesOfInstruction', 'languages_of_instruction') || school.languages || [];
+  const languages = f(school, 'languages_of_instruction') || school.languages || [];
   if (languages.length > 0) {
     faqs.push({
       question: `What languages are taught at ${name}?`,
@@ -257,7 +257,7 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 15. University placements
-  const placements = f(school, 'universityPlacements', 'university_placements') || [];
+  const placements = f(school, 'university_placements') || [];
   if (placements.length > 0) {
     faqs.push({
       question: `Where do ${name} graduates go?`,
@@ -273,8 +273,8 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 17. Mission
-  if (school.missionStatement) {
-    let text = school.missionStatement;
+  if (school.mission_statement) {
+    let text = school.mission_statement;
     if (school.values?.length > 0) text += ` Core values include ${joinProse(school.values)}.`;
     faqs.push({ question: `What is ${name}'s mission?`, answer: text });
   }
@@ -288,19 +288,19 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 19. Transportation
-  const transport = f(school, 'transportationOptions', 'transportation_options') || [];
+  const transport = f(school, 'transportation_options') || [];
   if (transport.length > 0) {
     faqs.push({
       question: `How do I get to ${name}?`,
-      answer: `Transportation options for ${name} include ${joinProse(transport)}.${school.address ? ` The school is located at ${school.address}, ${school.city}, ${school.provinceState}.` : ''}`
+      answer: `Transportation options for ${name} include ${joinProse(transport)}.${school.address ? ` The school is located at ${school.address}, ${school.city}, ${school.province_state}.` : ''}`
     });
   }
 
   // 20. Academic culture
-  const acadCulture = f(school, 'academicCulture', 'academic_culture');
-  const pace = f(school, 'pace', 'pace');
-  const focus = f(school, 'focus', 'focus');
-  const communityVibe = f(school, 'communityVibe', 'community_vibe');
+  const acadCulture = f(school, 'academic_culture');
+  const pace = f(school, 'pace');
+  const focus = f(school, 'focus');
+  const communityVibe = f(school, 'community_vibe');
   if (acadCulture || pace || focus || communityVibe) {
     let text = '';
     if (acadCulture) text += `The academic culture at ${name} is ${acadCulture}. `;
@@ -311,7 +311,7 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 21. Homework load
-  const homework = f(school, 'homeworkByGrade', 'homework_by_grade');
+  const homework = f(school, 'homework_by_grade');
   if (homework) {
     faqs.push({
       question: `What is the homework load at ${name}?`,
@@ -329,7 +329,7 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 23. International students
-  const intlPct = f(school, 'internationalStudentPct', 'international_student_pct');
+  const intlPct = f(school, 'international_student_pct');
   if (intlPct) {
     faqs.push({
       question: `Does ${name} accept international students?`,
@@ -358,18 +358,18 @@ function useSchoolSEO(school, slug, faqs) {
   useEffect(() => {
     if (!school) return;
 
-    const gradeRange = school.gradesServed || '';
+    const gradeRange = school.grades_served || '';
     const city = school.city || '';
-    const province = school.provinceState || '';
+    const province = school.province_state || '';
     const currency = getCurrencySymbol(school.currency);
     const schoolType = getSchoolTypeLabel(school);
 
     document.title = `${school.name} — ${city}, ${province} | Grades ${gradeRange}, Tuition & Reviews | NextSchool`;
 
     const descParts = [
-      `${school.name} is a ${schoolType} ${school.genderPolicy || ''} school in ${city}, ${province} serving grades ${gradeRange}.`,
-      school.dayTuition ? `Day tuition from ${currency}${school.dayTuition.toLocaleString()}.` : '',
-      school.acceptanceRate ? `${school.acceptanceRate}% acceptance rate.` : '',
+      `${school.name} is a ${schoolType} ${school.gender_policy || ''} school in ${city}, ${province} serving grades ${gradeRange}.`,
+      school.day_tuition ? `Day tuition from ${currency}${school.day_tuition.toLocaleString()}.` : '',
+      school.acceptance_rate ? `${school.acceptance_rate}% acceptance rate.` : '',
       school.enrollment ? `${school.enrollment} students.` : ''
     ].filter(Boolean).join(' ');
 
@@ -381,7 +381,7 @@ function useSchoolSEO(school, slug, faqs) {
 
     setMetaProperty('og:title', `${school.name} — ${schoolType} School in ${city} | NextSchool`);
     setMetaProperty('og:description', descParts.substring(0, 200));
-    setMetaProperty('og:image', school.headerPhotoUrl || school.logoUrl || '/logo.png');
+    setMetaProperty('og:image', school.header_photo_url || school.logo_url || '/logo.png');
     setMetaProperty('og:url', canonical);
     setMetaProperty('og:type', 'place');
     setMetaProperty('og:site_name', 'NextSchool');
@@ -432,14 +432,14 @@ function buildSchoolSchema(school, url) {
     '@type': 'School',
     name: school.name,
     url,
-    ...(school.logoUrl && { logo: school.logoUrl }),
-    ...(school.headerPhotoUrl && { image: school.headerPhotoUrl }),
-    description: school.description || school.missionStatement || '',
+    ...(school.logo_url && { logo: school.logo_url }),
+    ...(school.header_photo_url && { image: school.header_photo_url }),
+    description: school.description || school.mission_statement || '',
     address: {
       '@type': 'PostalAddress',
       ...(school.address && { streetAddress: school.address }),
       addressLocality: school.city || '',
-      addressRegion: school.provinceState || '',
+      addressRegion: school.province_state || '',
       addressCountry: school.country || 'CA'
     },
     ...(school.lat && school.lng && {
@@ -455,8 +455,8 @@ function buildSchoolSchema(school, url) {
       '@type': 'OfferCatalog',
       name: 'Tuition',
       itemListElement: [
-        ...(school.dayTuition ? [{ '@type': 'Offer', name: 'Day Tuition', price: String(school.dayTuition), priceCurrency: school.currency || 'CAD' }] : []),
-        ...(school.boardingTuition ? [{ '@type': 'Offer', name: 'Boarding Tuition', price: String(school.boardingTuition), priceCurrency: school.currency || 'CAD' }] : [])
+        ...(school.day_tuition ? [{ '@type': 'Offer', name: 'Day Tuition', price: String(school.day_tuition), priceCurrency: school.currency || 'CAD' }] : []),
+        ...(school.boarding_tuition ? [{ '@type': 'Offer', name: 'Boarding Tuition', price: String(school.boarding_tuition), priceCurrency: school.currency || 'CAD' }] : [])
       ]
     }
   };
@@ -468,7 +468,7 @@ function buildBreadcrumbSchema(school, url) {
     { '@type': 'ListItem', position: pos++, name: 'NextSchool', item: 'https://nextschool.ca' },
     { '@type': 'ListItem', position: pos++, name: 'Schools', item: 'https://nextschool.ca/SchoolDirectory' }
   ];
-  if (school.provinceState) items.push({ '@type': 'ListItem', position: pos++, name: school.provinceState, item: `https://nextschool.ca/SchoolDirectory?province=${encodeURIComponent(school.provinceState)}` });
+  if (school.province_state) items.push({ '@type': 'ListItem', position: pos++, name: school.province_state, item: `https://nextschool.ca/SchoolDirectory?province=${encodeURIComponent(school.province_state)}` });
   if (school.city) items.push({ '@type': 'ListItem', position: pos++, name: school.city, item: `https://nextschool.ca/SchoolDirectory?city=${encodeURIComponent(school.city)}` });
   items.push({ '@type': 'ListItem', position: pos++, name: school.name, item: url });
   return { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items };
@@ -506,7 +506,7 @@ export default function SchoolProfile() {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [relatedSchools, setRelatedSchools] = useState([]);
-  const [sessionId] = useState(() => Math.random().toString(36).substring(2, 11));
+  const [sessionId] = useState(() => crypto.randomUUID());
 
   // Load school by slug or ID
   useEffect(() => {
@@ -548,7 +548,7 @@ export default function SchoolProfile() {
   // Load testimonials
   useEffect(() => {
     if (!school?.id) return;
-    Testimonial.filter({ schoolId: school.id, is_visible: true })
+    Testimonial.filter({ school_id: school.id, is_visible: true })
       .then(setTestimonials)
       .catch(() => {});
   }, [school?.id]);
@@ -558,7 +558,7 @@ export default function SchoolProfile() {
     if (!school?.id) return;
     setLoadingEvents(true);
     const now = new Date().toISOString();
-    SchoolEvent.filter({ schoolId: school.id, isActive: true, date: { $gte: now } })
+    SchoolEvent.filter({ school_id: school.id, is_active: true, date: { $gte: now } })
       .then(events => {
         const sorted = (events || []).sort((a, b) => new Date(a.date) - new Date(b.date));
         setUpcomingEvents(sorted.slice(0, 5));
@@ -582,35 +582,35 @@ export default function SchoolProfile() {
   const highestGradeL = school?.highestGrade != null ? gradeLabel(school.highestGrade) : null;
   const computedGradeRange = lowestGradeL && highestGradeL ? `${lowestGradeL} – ${highestGradeL}` : (school?.gradesServed || '');
 
-  const boardingType = f(school || {}, 'boardingType', 'boarding_type');
-  const boardingPct = f(school || {}, 'boardingPct', 'boarding_pct');
-  const campusSize = f(school || {}, 'campusSize', 'campus_size');
-  const internationalPct = f(school || {}, 'internationalStudentPct', 'international_student_pct');
-  const facilities = f(school || {}, 'facilities', 'facilities') || [];
-  const livingArrangements = f(school || {}, 'livingArrangements', 'living_arrangements') || [];
-  const transportationOptions = f(school || {}, 'transportationOptions', 'transportation_options') || [];
-  const academicCulture = f(school || {}, 'academicCulture', 'academic_culture');
-  const pace = f(school || {}, 'pace', 'pace');
-  const focus = f(school || {}, 'focus', 'focus');
-  const mathApproach = f(school || {}, 'mathApproach', 'math_approach');
-  const scienceApproach = f(school || {}, 'scienceApproach', 'science_approach');
-  const homeworkByGrade = f(school || {}, 'homeworkByGrade', 'homework_by_grade');
-  const specialEdPrograms = f(school || {}, 'specialEdPrograms', 'special_ed_programs') || [];
-  const communityVibe = f(school || {}, 'communityVibe', 'community_vibe');
-  const universityPlacements = f(school || {}, 'universityPlacements', 'university_placements') || [];
-  const applicationProcess = f(school || {}, 'applicationProcess', 'application_process') || [];
-  const boardingDeadline = f(school || {}, 'boardingAdmissionDeadline', 'boarding_admission_deadline');
-  const tuitionNotes = f(school || {}, 'tuitionNotes', 'tuition_notes');
-  const scholarshipsRaw = f(school || {}, 'scholarshipsJson', 'scholarships_json');
+  const boardingType = f(school || {}, 'boarding_type');
+  const boardingPct = f(school || {}, 'boarding_pct');
+  const campusSize = f(school || {}, 'campus_size');
+  const internationalPct = f(school || {}, 'international_student_pct');
+  const facilities = f(school || {}, 'facilities') || [];
+  const livingArrangements = f(school || {}, 'living_arrangements') || [];
+  const transportationOptions = f(school || {}, 'transportation_options') || [];
+  const academicCulture = f(school || {}, 'academic_culture');
+  const pace = f(school || {}, 'pace');
+  const focus = f(school || {}, 'focus');
+  const mathApproach = f(school || {}, 'math_approach');
+  const scienceApproach = f(school || {}, 'science_approach');
+  const homeworkByGrade = f(school || {}, 'homework_by_grade');
+  const specialEdPrograms = f(school || {}, 'special_ed_programs') || [];
+  const communityVibe = f(school || {}, 'community_vibe');
+  const universityPlacements = f(school || {}, 'university_placements') || [];
+  const applicationProcess = f(school || {}, 'application_process') || [];
+  const boardingDeadline = f(school || {}, 'boarding_admission_deadline');
+  const tuitionNotes = f(school || {}, 'tuition_notes');
+  const scholarshipsRaw = f(school || {}, 'scholarships_json');
   const scholarships = parseScholarships(scholarshipsRaw);
-  const dayTuitionMin = school?.dayTuition || f(school || {}, 'dayTuitionMin', 'day_tuition_min');
-  const dayTuitionMax = f(school || {}, 'dayTuitionMax', 'day_tuition_max');
-  const boardingTuitionMin = school?.boardingTuition || f(school || {}, 'boardingTuitionMin', 'boarding_tuition_min');
-  const boardingTuitionMax = f(school || {}, 'boardingTuitionMax', 'boarding_tuition_max');
-  const financialAidPct = f(school || {}, 'financialAidPct', 'financial_aid_pct');
-  const medianAidAmount = f(school || {}, 'medianAidAmount', 'median_aid_amount');
-  const languagesOfInstruction = f(school || {}, 'languagesOfInstruction', 'languages_of_instruction') || school?.languages || [];
-  const entranceRequirements = school?.admissionRequirements || f(school || {}, 'entranceRequirements', 'entrance_requirements') || [];
+  const dayTuitionMin = school?.dayTuition || f(school || {}, 'day_tuition_min');
+  const dayTuitionMax = f(school || {}, 'day_tuition_max');
+  const boardingTuitionMin = school?.boardingTuition || f(school || {}, 'boarding_tuition_min');
+  const boardingTuitionMax = f(school || {}, 'boarding_tuition_max');
+  const financialAidPct = f(school || {}, 'financial_aid_pct');
+  const medianAidAmount = f(school || {}, 'median_aid_amount');
+  const languagesOfInstruction = f(school || {}, 'languages_of_instruction') || school?.languages || [];
+  const entranceRequirements = school?.admission_requirements || f(school || {}, 'entrance_requirements') || [];
 
   // Generate dynamic FAQs
   const dynamicFAQs = useMemo(() => {
@@ -660,10 +660,10 @@ export default function SchoolProfile() {
             <li><Link href="/" className="hover:text-teal-600">NextSchool</Link></li>
             <li><ChevronRight className="h-3 w-3" /></li>
             <li><Link href="/schools" className="hover:text-teal-600">Schools</Link></li>
-            {school.provinceState && (
+            {school.province_state && (
               <>
                 <li><ChevronRight className="h-3 w-3" /></li>
-                <li><Link href={`/SchoolDirectory?province=${encodeURIComponent(school.provinceState)}`} className="hover:text-teal-600">{school.provinceState}</Link></li>
+                <li><Link href={`/SchoolDirectory?province=${encodeURIComponent(school.province_state)}`} className="hover:text-teal-600">{school.province_state}</Link></li>
               </>
             )}
             {school.city && (
@@ -683,8 +683,8 @@ export default function SchoolProfile() {
       {/* ============================================================ */}
       <header className="relative h-56 sm:h-80 lg:h-96 bg-slate-200">
         <img
-          src={school.headerPhotoUrl || school.heroImage || `https://via.placeholder.com/1200x675/e2e8f0/64748b?text=${encodeURIComponent(school.name)}`}
-          alt={`${school.name} campus in ${school.city}, ${school.provinceState}`}
+          src={school.header_photo_url || school.hero_image || `https://via.placeholder.com/1200x675/e2e8f0/64748b?text=${encodeURIComponent(school.name)}`}
+          alt={`${school.name} campus in ${school.city}, ${school.province_state}`}
           className="w-full h-full object-cover"
           loading="eager"
         />
@@ -692,17 +692,17 @@ export default function SchoolProfile() {
         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8 text-white">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-3 mb-2">
-              {school.logoUrl && (
-                <img src={school.logoUrl} alt={`${school.name} logo`}
+              {school.logo_url && (
+                <img src={school.logo_url} alt={`${school.name} logo`}
                   className="h-10 sm:h-14 w-10 sm:w-14 rounded-lg bg-white p-1 sm:p-2 shadow-lg object-contain" loading="eager" />
               )}
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-                {school.name} — {schoolTypeLabel.charAt(0).toUpperCase() + schoolTypeLabel.slice(1)} School in {school.city}, {school.provinceState}
+                {school.name} — {schoolTypeLabel.charAt(0).toUpperCase() + schoolTypeLabel.slice(1)} School in {school.city}, {school.province_state}
               </h1>
             </div>
             <p className="text-sm sm:text-base text-white/90 mb-4">
-              {schoolTypeLabel.charAt(0).toUpperCase() + schoolTypeLabel.slice(1)} · {school.genderPolicy || 'Co-ed'} · Grades {computedGradeRange}
-              {school.faithBased ? ` · ${school.faithBased}` : ''}
+              {schoolTypeLabel.charAt(0).toUpperCase() + schoolTypeLabel.slice(1)} · {school.gender_policy || 'Co-ed'} · Grades {computedGradeRange}
+              {school.faith_based ? ` · ${school.faith_based}` : ''}
               {school.founded ? ` · Est. ${school.founded}` : ''}
             </p>
             <Link href={consultantUrl}>
@@ -726,14 +726,14 @@ export default function SchoolProfile() {
             )}
             <div><dt className="text-xs sm:text-sm text-slate-500">Enrollment</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{school.enrollment ? `${school.enrollment.toLocaleString()} students` : 'N/A'}</dd></div>
             <div><dt className="text-xs sm:text-sm text-slate-500">Day Tuition</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{dayTuitionMin ? `${sym}${dayTuitionMin.toLocaleString()}/yr` : 'N/A'}</dd></div>
-            {school.avgClassSize && (
-              <div><dt className="text-xs sm:text-sm text-slate-500">Class Size</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{school.avgClassSize} students</dd></div>
+            {school.avg_class_size && (
+              <div><dt className="text-xs sm:text-sm text-slate-500">Class Size</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{school.avg_class_size} students</dd></div>
             )}
-            {school.studentTeacherRatio && (
-              <div><dt className="text-xs sm:text-sm text-slate-500">Student-Teacher Ratio</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{school.studentTeacherRatio}</dd></div>
+            {school.student_teacher_ratio && (
+              <div><dt className="text-xs sm:text-sm text-slate-500">Student-Teacher Ratio</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{school.student_teacher_ratio}</dd></div>
             )}
-            {school.acceptanceRate && (
-              <div><dt className="text-xs sm:text-sm text-slate-500">Acceptance Rate</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{school.acceptanceRate}%</dd></div>
+            {school.acceptance_rate && (
+              <div><dt className="text-xs sm:text-sm text-slate-500">Acceptance Rate</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{school.acceptance_rate}%</dd></div>
             )}
             {school.founded && (
               <div><dt className="text-xs sm:text-sm text-slate-500">Founded</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{school.founded}</dd></div>
@@ -744,8 +744,8 @@ export default function SchoolProfile() {
             {internationalPct && (
               <div><dt className="text-xs sm:text-sm text-slate-500">International Students</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{internationalPct}%</dd></div>
             )}
-            {school.genderPolicy && (
-              <div><dt className="text-xs sm:text-sm text-slate-500">Gender Policy</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{school.genderPolicy}</dd></div>
+            {school.gender_policy && (
+              <div><dt className="text-xs sm:text-sm text-slate-500">Gender Policy</dt><dd className="text-base sm:text-xl font-bold text-slate-900">{school.gender_policy}</dd></div>
             )}
           </dl>
         </div>
@@ -764,13 +764,13 @@ export default function SchoolProfile() {
             <ConsultantCTA school={school} text={`Not sure if ${school.name} is right for your child? Talk to a consultant for personalized guidance.`} />
 
             {/* ======== 5. ABOUT ======== */}
-            {(school.description || school.missionStatement || school.teachingPhilosophy || school.values?.length > 0) && (
+            {(school.description || school.mission_statement || school.teaching_philosophy || school.values?.length > 0) && (
               <article className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">About {school.name}</h2>
 
-                {school.missionStatement && (
+                {school.mission_statement && (
                   <blockquote className="border-l-4 border-teal-500 pl-4 my-4 text-slate-700 italic">
-                    {school.missionStatement}
+                    {school.mission_statement}
                   </blockquote>
                 )}
 
@@ -782,12 +782,12 @@ export default function SchoolProfile() {
                   <p className="text-slate-700 mb-3"><strong>Core Values:</strong> {joinProse(school.values)}</p>
                 )}
 
-                {school.teachingPhilosophy && (
-                  <p className="text-slate-700"><strong>Teaching Philosophy:</strong> {school.teachingPhilosophy}</p>
+                {school.teaching_philosophy && (
+                  <p className="text-slate-700"><strong>Teaching Philosophy:</strong> {school.teaching_philosophy}</p>
                 )}
 
-                {school.faithBased && (
-                  <p className="text-slate-700 mt-3"><strong>Faith Tradition:</strong> {school.faithBased}</p>
+                {school.faith_based && (
+                  <p className="text-slate-700 mt-3"><strong>Faith Tradition:</strong> {school.faith_based}</p>
                 )}
               </article>
             )}
@@ -1006,14 +1006,14 @@ export default function SchoolProfile() {
             )}
 
             {/* ======== 12. ADMISSIONS ======== */}
-            {(school.dayAdmissionDeadline || boardingDeadline || applicationProcess.length > 0 || entranceRequirements.length > 0 || school.acceptanceRate || upcomingEvents.length > 0) && (
+            {(school.dayAdmissionDeadline || boardingDeadline || applicationProcess.length > 0 || entranceRequirements.length > 0 || school.acceptance_rate || upcomingEvents.length > 0) && (
               <section className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">Admissions at {school.name}</h2>
 
                 <p className="text-slate-700 mb-4">
                   {school.dayAdmissionDeadline && `The application deadline for day students is ${school.dayAdmissionDeadline}.`}
                   {boardingDeadline && ` Boarding application deadline is ${boardingDeadline}.`}
-                  {school.acceptanceRate && ` The acceptance rate is ${school.acceptanceRate}%.`}
+                  {school.acceptance_rate && ` The acceptance rate is ${school.acceptance_rate}%.`}
                 </p>
 
                 {applicationProcess.length > 0 && (
@@ -1129,8 +1129,8 @@ export default function SchoolProfile() {
             <section className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">Contact {school.name}</h2>
               <address className="not-italic text-slate-700 space-y-2">
-                {school.address && <p>{school.address}, {school.city}, {school.provinceState}{school.country ? `, ${school.country}` : ''}</p>}
-                {!school.address && school.city && <p>{school.city}, {school.provinceState}{school.country ? `, ${school.country}` : ''}</p>}
+                {school.address && <p>{school.address}, {school.city}, {school.province_state}{school.country ? `, ${school.country}` : ''}</p>}
+                {!school.address && school.city && <p>{school.city}, {school.province_state}{school.country ? `, ${school.country}` : ''}</p>}
                 {school.phone && <p>Phone: <a href={`tel:${school.phone}`} className="text-teal-600 hover:underline">{school.phone}</a></p>}
                 {school.email && <p>Email: <a href={`mailto:${school.email}`} className="text-teal-600 hover:underline">{school.email}</a></p>}
                 {websiteUrl && (
@@ -1268,9 +1268,9 @@ export default function SchoolProfile() {
           <p className="flex flex-wrap gap-2">
             <Link href="/schools" className="text-teal-600 hover:underline">Browse all private schools</Link>
             <span>&middot;</span>
-            {school.provinceState && (
+            {school.province_state && (
               <>
-                <Link href={`/SchoolDirectory?province=${encodeURIComponent(school.provinceState)}`} className="text-teal-600 hover:underline">Schools in {school.provinceState}</Link>
+                <Link href={`/SchoolDirectory?province=${encodeURIComponent(school.province_state)}`} className="text-teal-600 hover:underline">Schools in {school.province_state}</Link>
                 <span>&middot;</span>
               </>
             )}

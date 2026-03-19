@@ -2,7 +2,7 @@ import { School, FamilyProfile, SharedShortlist } from '@/lib/entities-server'
 
 // ─── Tuition Band ─────────────────────────────────────────────────────────────
 function getTuitionBand(school: any): string {
-  const val = school.dayTuition ?? school.tuition;
+  const val = school.day_tuition ?? school.tuition;
   if (val == null) return 'Contact school';
   if (val < 15000) return 'Under $15K';
   if (val < 25000) return '$15K\u2013$25K';
@@ -14,24 +14,24 @@ function getTuitionBand(school: any): string {
 function buildCheckmarks(school: any, familyProfile: any): any[] {
   const rows: any[] = [];
 
-  if (school.distanceKm != null) {
-    const match = school.distanceKm <= 50;
-    rows.push({ label: 'Distance', status: match ? 'match' : 'mismatch', detail: `${school.distanceKm.toFixed(1)} km away` });
+  if (school.distance_km != null) {
+    const match = school.distance_km <= 50;
+    rows.push({ label: 'Distance', status: match ? 'match' : 'mismatch', detail: `${school.distance_km.toFixed(1)} km away` });
   }
 
-  if (familyProfile?.childGrade != null) {
-    const grade = Number(familyProfile.childGrade);
-    const lo = school.lowestGrade != null ? Number(school.lowestGrade) : null;
-    const hi = school.highestGrade != null ? Number(school.highestGrade) : null;
+  if (familyProfile?.child_grade != null) {
+    const grade = Number(familyProfile.child_grade);
+    const lo = school.lowest_grade != null ? Number(school.lowest_grade) : null;
+    const hi = school.highest_grade != null ? Number(school.highest_grade) : null;
     if (lo != null && hi != null) {
       const match = grade >= lo && grade <= hi;
       rows.push({ label: 'Grade', status: match ? 'match' : 'mismatch', detail: match ? `Gr ${lo}\u2013${hi} \u2713` : `School: Gr ${lo}\u2013${hi}` });
     }
   }
 
-  if (familyProfile?.maxTuition) {
-    const budget = Number(familyProfile.maxTuition);
-    const tuitionVal = school.dayTuition ?? school.tuition;
+  if (familyProfile?.max_tuition) {
+    const budget = Number(familyProfile.max_tuition);
+    const tuitionVal = school.day_tuition ?? school.tuition;
     if (tuitionVal == null) {
       rows.push({ label: 'Budget', status: 'unknown', detail: 'Contact school' });
     } else {
@@ -40,7 +40,7 @@ function buildCheckmarks(school: any, familyProfile: any): any[] {
   }
 
   if (familyProfile?.gender) {
-    const gp = school.genderPolicy;
+    const gp = school.gender_policy;
     if (gp) {
       let match = true;
       if (gp === 'All-Boys') match = familyProfile.gender === 'male';
@@ -49,17 +49,17 @@ function buildCheckmarks(school: any, familyProfile: any): any[] {
     }
   }
 
-  if (familyProfile?.curriculumPreference?.length > 0) {
-    const prefs = familyProfile.curriculumPreference.map((p: string) => p.toLowerCase());
+  if (familyProfile?.curriculum_preference?.length > 0) {
+    const prefs = familyProfile.curriculum_preference.map((p: string) => p.toLowerCase());
     const ct = (school.curriculum || '').toLowerCase();
     if (ct) {
       rows.push({ label: 'Curriculum', status: prefs.some((p: string) => ct.includes(p) || p.includes(ct)) ? 'match' : 'mismatch', detail: school.curriculum });
     }
   }
 
-  const wantsBoarding = familyProfile?.boardingPreference === 'open_to_boarding' || familyProfile?.boardingPreference === 'boarding_preferred';
-  if (wantsBoarding && school.boardingAvailable != null) {
-    rows.push({ label: 'Boarding', status: school.boardingAvailable ? 'match' : 'mismatch', detail: school.boardingAvailable ? 'Boarding available' : 'Day school only' });
+  const wantsBoarding = familyProfile?.boarding_preference === 'open_to_boarding' || familyProfile?.boarding_preference === 'boarding_preferred';
+  if (wantsBoarding && school.boarding_available != null) {
+    rows.push({ label: 'Boarding', status: school.boarding_available ? 'match' : 'mismatch', detail: school.boarding_available ? 'Boarding available' : 'Day school only' });
   }
 
   return rows.slice(0, 5);
@@ -71,18 +71,18 @@ async function generateRationale(school: any, familyProfile: any): Promise<strin
   if (!OPENROUTER_API_KEY) return `${school.name} is a strong match for your shortlist.`;
 
   const schoolSummary = [
-    `${school.name} in ${school.city}, ${school.provinceState || school.country}`,
+    `${school.name} in ${school.city}, ${school.province_state || school.country}`,
     school.curriculum ? `Curriculum: ${school.curriculum}` : null,
     school.tuition ? `Tuition: $${school.tuition.toLocaleString()}` : null,
-    school.genderPolicy ? `Gender: ${school.genderPolicy}` : null,
-    school.distanceKm ? `Distance: ${school.distanceKm.toFixed(1)} km` : null,
+    school.gender_policy ? `Gender: ${school.gender_policy}` : null,
+    school.distance_km ? `Distance: ${school.distance_km.toFixed(1)} km` : null,
     school.specializations?.length ? `Specializations: ${school.specializations.join(', ')}` : null,
   ].filter(Boolean).join(', ');
 
   const familySummary = [
-    familyProfile?.childGrade != null ? `Grade ${familyProfile.childGrade}` : null,
-    familyProfile?.locationArea ? `based in ${familyProfile.locationArea}` : null,
-    familyProfile?.maxTuition ? `budget up to $${familyProfile.maxTuition.toLocaleString()}` : null,
+    familyProfile?.child_grade != null ? `Grade ${familyProfile.child_grade}` : null,
+    familyProfile?.location_area ? `based in ${familyProfile.location_area}` : null,
+    familyProfile?.max_tuition ? `budget up to $${familyProfile.max_tuition.toLocaleString()}` : null,
     familyProfile?.priorities?.length ? `priorities: ${familyProfile.priorities.slice(0, 3).join(', ')}` : null,
   ].filter(Boolean).join(', ');
 
@@ -171,11 +171,11 @@ export async function generateSharedShortlistLink(params: {
     return {
       id: school.id,
       name: school.name,
-      photoUrl: school.headerPhotoUrl || school.heroImage || null,
+      photoUrl: school.header_photo_url || school.hero_image || null,
       city: school.city,
-      provinceState: school.provinceState,
+      provinceState: school.province_state,
       tuitionBand,
-      distanceKm: school.distanceKm ?? null,
+      distanceKm: school.distance_km ?? null,
       rationale,
       priorityCheckmarks
     };
@@ -189,9 +189,9 @@ export async function generateSharedShortlistLink(params: {
   // Create SharedShortlist record — NO family PII stored
   await SharedShortlist.create({
     hash,
-    schoolIds,
+    school_ids: schoolIds,
     schools: schoolSnapshots,
-    generatedDate: new Date().toISOString()
+    generated_date: new Date().toISOString()
   });
 
   const shareUrl = `https://nextschool.ca/SharedShortlistView?hash=${hash}`;

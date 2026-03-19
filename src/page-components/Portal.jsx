@@ -21,7 +21,7 @@ function fuzzyScore(query, school) {
   const q = normalize(query);
   const name = normalize(school.name || "");
   const city = normalize(school.city || "");
-  const province = normalize(school.provinceState || "");
+  const province = normalize(school.province_state || "");
 
   if (name.includes(q)) return 3;
   if (name.startsWith(q.slice(0, 4))) return 2;
@@ -53,13 +53,13 @@ export default function Portal() {
     setLoading(true);
     try {
       // Fetch a broad set and score client-side for fuzzy matching
-      const allSchools = await School.list("-updated_date", 500);
+      const allSchools = await School.list('-updated_date', undefined, 500);
       const norm = normalize(q);
       const scored = allSchools
         .filter(s => {
           const name = normalize(s.name || "");
           const city = normalize(s.city || "");
-          const province = normalize(s.provinceState || "");
+          const province = normalize(s.province_state || "");
           return name.includes(norm) || norm.split(" ").some(t => t.length >= 3 && (name.includes(t) || city.includes(t) || province.includes(t)));
         })
         .map(s => ({ ...s, _score: fuzzyScore(q, s) }))
@@ -144,7 +144,7 @@ export default function Portal() {
                       <div className="text-left min-w-0">
                         <p className="font-medium text-slate-900 truncate">{school.name}</p>
                         <p className="text-sm text-slate-500 truncate">
-                          {[school.city, school.provinceState].filter(Boolean).join(", ")}
+                          {[school.city, school.province_state].filter(Boolean).join(", ")}
                         </p>
                       </div>
                     </div>

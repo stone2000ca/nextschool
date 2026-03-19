@@ -7,7 +7,7 @@ import { HeaderPhotoDisplay, LogoDisplay } from '@/components/schools/HeaderPhot
 // T-RES-002: Tuition Band Utility
 // =============================================================================
 export function getTuitionBand(school) {
-  const val = school.dayTuition ?? school.tuition;
+  const val = school.day_tuition ?? school.tuition;
   if (val == null) return { label: null, display: 'Contact school' };
   if (val < 15000) return { label: '$', display: '' };
   if (val < 25000) return { label: '$$', display: '' };
@@ -42,24 +42,24 @@ export function buildPriorityChecks(school, familyProfile) {
 
   const rows = [];
 
-  if (school.distanceKm != null) {
-    const match = school.distanceKm <= 50;
-    rows.push({ id: 'distance', rowNum: 0, label: 'Distance', status: match ? 'match' : 'mismatch', detail: `${school.distanceKm.toFixed(1)} km away` });
+  if (school.distance_km != null) {
+    const match = school.distance_km <= 50;
+    rows.push({ id: 'distance', rowNum: 0, label: 'Distance', status: match ? 'match' : 'mismatch', detail: `${school.distance_km.toFixed(1)} km away` });
   }
 
-  if (familyProfile.childGrade != null) {
-    const grade = Number(familyProfile.childGrade);
-    const lo = school.lowestGrade != null ? Number(school.lowestGrade) : null;
-    const hi = school.highestGrade != null ? Number(school.highestGrade) : null;
+  if (familyProfile.child_grade != null) {
+    const grade = Number(familyProfile.child_grade);
+    const lo = school.lowest_grade != null ? Number(school.lowest_grade) : null;
+    const hi = school.highest_grade != null ? Number(school.highest_grade) : null;
     if (lo != null && hi != null) {
       const match = grade >= lo && grade <= hi;
       rows.push({ id: 'grade', rowNum: 1, label: 'Grade', status: match ? 'match' : 'mismatch', detail: match ? `Gr ${lo}–${hi} ✓` : `School: Gr ${lo}–${hi}` });
     }
   }
 
-  if (familyProfile.maxTuition) {
-    const budget = Number(familyProfile.maxTuition);
-    const tuitionVal = school.dayTuition ?? school.tuition;
+  if (familyProfile.max_tuition) {
+    const budget = Number(familyProfile.max_tuition);
+    const tuitionVal = school.day_tuition ?? school.tuition;
     if (tuitionVal == null) {
       rows.push({ id: 'budget', rowNum: 2, label: 'Budget', status: 'unknown', detail: 'Worth asking about' });
     } else {
@@ -67,8 +67,8 @@ export function buildPriorityChecks(school, familyProfile) {
     }
   }
 
-  if (familyProfile.curriculumPreference && familyProfile.curriculumPreference.length > 0) {
-    const prefs = familyProfile.curriculumPreference.map(p => p.toLowerCase());
+  if (familyProfile.curriculum_preference && familyProfile.curriculum_preference.length > 0) {
+    const prefs = familyProfile.curriculum_preference.map(p => p.toLowerCase());
     const ct = Array.isArray(school.curriculum) ? school.curriculum.map(c => c.toLowerCase()) : [];
     const match = ct.length > 0 && prefs.some(p => ct.some(c => c.includes(p) || p.includes(c)));
     if (ct.length === 0) {
@@ -78,27 +78,27 @@ export function buildPriorityChecks(school, familyProfile) {
     }
   }
 
-  if (familyProfile.religiousPreference && !/none|non-denom/i.test(familyProfile.religiousPreference)) {
-    const aff = school.faithBased;
+  if (familyProfile.religious_preference && !/none|non-denom/i.test(familyProfile.religious_preference)) {
+    const aff = school.faith_based;
     if (!aff) {
       rows.push({ id: 'religious', rowNum: 5, label: 'Religious', status: 'unknown', detail: 'Worth asking about' });
     } else {
-      rows.push({ id: 'religious', rowNum: 5, label: 'Religious', status: aff.toLowerCase().includes(familyProfile.religiousPreference.toLowerCase()) ? 'match' : 'mismatch', detail: aff });
+      rows.push({ id: 'religious', rowNum: 5, label: 'Religious', status: aff.toLowerCase().includes(familyProfile.religious_preference.toLowerCase()) ? 'match' : 'mismatch', detail: aff });
     }
   }
 
-  const wantsBoarding = familyProfile.boardingPreference === 'open_to_boarding' || familyProfile.boardingPreference === 'boarding_preferred';
+  const wantsBoarding = familyProfile.boarding_preference === 'open_to_boarding' || familyProfile.boarding_preference === 'boarding_preferred';
   if (wantsBoarding) {
-    if (school.boardingAvailable == null) {
+    if (school.boarding_available == null) {
       rows.push({ id: 'boarding', rowNum: 6, label: 'Boarding', status: 'unknown', detail: 'Worth asking about' });
     } else {
-      rows.push({ id: 'boarding', rowNum: 6, label: 'Boarding', status: school.boardingAvailable ? 'match' : 'mismatch', detail: school.boardingAvailable ? 'Boarding available' : 'Day school only' });
+      rows.push({ id: 'boarding', rowNum: 6, label: 'Boarding', status: school.boarding_available ? 'match' : 'mismatch', detail: school.boarding_available ? 'Boarding available' : 'Day school only' });
     }
   }
 
   const wantsSmallClasses = familyProfile.priorities?.some(p => /class size|small class/i.test(p)) || familyProfile.dealbreakers?.some(p => /class size|small class/i.test(p));
   if (wantsSmallClasses) {
-    const cs = school.avgClassSize ?? school.averageClassSize;
+    const cs = school.avg_class_size ?? school.average_class_size;
     if (cs == null) {
       rows.push({ id: 'classSize', rowNum: 7, label: 'Class Size', status: 'unknown', detail: 'Worth asking about' });
     } else {
@@ -106,22 +106,22 @@ export function buildPriorityChecks(school, familyProfile) {
     }
   }
 
-  const wantsLS = familyProfile.learningDifferences?.length > 0 || familyProfile.priorities?.some(p => /learning support|special needs|adhd/i.test(p));
+  const wantsLS = familyProfile.learning_differences?.length > 0 || familyProfile.priorities?.some(p => /learning support|special needs|adhd/i.test(p));
   if (wantsLS) {
-    const hasLS = school.specialEdPrograms?.length > 0;
-    if (school.specialEdPrograms == null) {
+    const hasLS = school.special_ed_programs?.length > 0;
+    if (school.special_ed_programs == null) {
       rows.push({ id: 'learningSupport', rowNum: 8, label: 'Learning Support', status: 'unknown', detail: 'Worth asking about' });
     } else {
       rows.push({ id: 'learningSupport', rowNum: 8, label: 'Learning Support', status: hasLS ? 'match' : 'mismatch', detail: hasLS ? 'Support programs available' : 'Not listed' });
     }
   }
 
-  if (familyProfile.languagePreference && !/^english$/i.test(familyProfile.languagePreference)) {
-    const li = school.languagesOfInstruction;
+  if (familyProfile.language_preference && !/^english$/i.test(familyProfile.language_preference)) {
+    const li = school.languages_of_instruction;
     if (!li) {
       rows.push({ id: 'language', rowNum: 9, label: 'Language', status: 'unknown', detail: 'Worth asking about' });
     } else {
-      rows.push({ id: 'language', rowNum: 9, label: 'Language', status: li.toLowerCase().includes(familyProfile.languagePreference.toLowerCase()) ? 'match' : 'mismatch', detail: li });
+      rows.push({ id: 'language', rowNum: 9, label: 'Language', status: li.toLowerCase().includes(familyProfile.language_preference.toLowerCase()) ? 'match' : 'mismatch', detail: li });
     }
   }
 
@@ -138,8 +138,8 @@ export function buildPriorityChecks(school, familyProfile) {
   if (rows.length === 0) {
     // No criteria at all — synthesize minimal fallback rows from profile
     const fallback = [];
-    if (familyProfile.childGrade != null) fallback.push({ id: 'grade', rowNum: 1, label: 'Grade', status: 'unknown', detail: '—' });
-    if (familyProfile.maxTuition) fallback.push({ id: 'budget', rowNum: 2, label: 'Budget', status: 'unknown', detail: '—' });
+    if (familyProfile.child_grade != null) fallback.push({ id: 'grade', rowNum: 1, label: 'Grade', status: 'unknown', detail: '—' });
+    if (familyProfile.max_tuition) fallback.push({ id: 'budget', rowNum: 2, label: 'Budget', status: 'unknown', detail: '—' });
     fallback.push({ id: 'distance', rowNum: 0, label: 'Distance', status: 'unknown', detail: '—' });
     return fallback.slice(0, 3);
   }
@@ -168,40 +168,40 @@ export function buildPriorityChecks(school, familyProfile) {
 function buildAlsoWorthKnowing(school, familyProfile) {
   const priorityIds = new Set();
   if (familyProfile) {
-    if (familyProfile.childGrade != null) priorityIds.add('grade');
-    if (familyProfile.maxTuition) priorityIds.add('budget');
+    if (familyProfile.child_grade != null) priorityIds.add('grade');
+    if (familyProfile.max_tuition) priorityIds.add('budget');
 
-    if (familyProfile.curriculumPreference?.length > 0) priorityIds.add('curriculum');
-    if (familyProfile.boardingPreference && familyProfile.boardingPreference !== 'day_only') priorityIds.add('boarding');
-    if (familyProfile.religiousPreference) priorityIds.add('religious');
+    if (familyProfile.curriculum_preference?.length > 0) priorityIds.add('curriculum');
+    if (familyProfile.boarding_preference && familyProfile.boarding_preference !== 'day_only') priorityIds.add('boarding');
+    if (familyProfile.religious_preference) priorityIds.add('religious');
     if (familyProfile.priorities?.some(p => /class size/i.test(p))) priorityIds.add('classSize');
-    if (familyProfile.learningDifferences?.length > 0) priorityIds.add('learningSupport');
+    if (familyProfile.learning_differences?.length > 0) priorityIds.add('learningSupport');
   }
 
   const items = [];
 
   // University placements
-  if (!priorityIds.has('university') && school.universityPlacements) {
+  if (!priorityIds.has('university') && school.university_placements) {
     try {
-      const parsed = typeof school.universityPlacements === 'string' ? JSON.parse(school.universityPlacements) : school.universityPlacements;
+      const parsed = typeof school.university_placements === 'string' ? JSON.parse(school.university_placements) : school.university_placements;
       if (Array.isArray(parsed) && parsed.length > 0) {
         items.push(`Graduates placed at ${parsed.slice(0, 2).join(', ')}`);
       }
     } catch (e) {
-      if (typeof school.universityPlacements === 'string' && school.universityPlacements.length > 5) {
-        items.push(`University placements: ${school.universityPlacements.substring(0, 60)}`);
+      if (typeof school.university_placements === 'string' && school.university_placements.length > 5) {
+        items.push(`University placements: ${school.university_placements.substring(0, 60)}`);
       }
     }
   }
 
   // Arts programs
-  if (school.artsPrograms?.length > 0 && !familyProfile?.interests?.some(i => /art/i.test(i))) {
-    items.push(`Arts: ${school.artsPrograms.slice(0, 2).join(', ')}`);
+  if (school.arts_programs?.length > 0 && !familyProfile?.interests?.some(i => /art/i.test(i))) {
+    items.push(`Arts: ${school.arts_programs.slice(0, 2).join(', ')}`);
   }
 
   // Sports programs
-  if (school.sportsPrograms?.length > 0 && !familyProfile?.interests?.some(i => /sport/i.test(i))) {
-    items.push(`Sports: ${school.sportsPrograms.slice(0, 2).join(', ')}`);
+  if (school.sports_programs?.length > 0 && !familyProfile?.interests?.some(i => /sport/i.test(i))) {
+    items.push(`Sports: ${school.sports_programs.slice(0, 2).join(', ')}`);
   }
 
   // Clubs
@@ -210,14 +210,14 @@ function buildAlsoWorthKnowing(school, familyProfile) {
   }
 
   // Financial aid
-  if (school.financialAidAvailable) {
+  if (school.financial_aid_available) {
     items.push('Financial aid available');
   }
 
   // Scholarships
-  if (!school.financialAidAvailable && school.scholarshipsJson) {
+  if (!school.financial_aid_available && school.scholarships_json) {
     try {
-      const scholarships = typeof school.scholarshipsJson === 'string' ? JSON.parse(school.scholarshipsJson) : school.scholarshipsJson;
+      const scholarships = typeof school.scholarships_json === 'string' ? JSON.parse(school.scholarships_json) : school.scholarships_json;
       if (Array.isArray(scholarships) && scholarships.length > 0) {
         items.push(`Scholarships available`);
       }
@@ -236,8 +236,8 @@ function buildAlsoWorthKnowing(school, familyProfile) {
   }
 
   // Transportation
-  if (school.transportationOptions && items.length < 3) {
-    items.push(school.transportationOptions.substring(0, 60));
+  if (school.transportation_options && items.length < 3) {
+    items.push(school.transportation_options.substring(0, 60));
   }
 
   return items.slice(0, 3);
@@ -303,7 +303,7 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
   const totalChecks = priorityChecks.length;
   const hasChecks = totalChecks > 0;
 
-  const rationale = school.matchExplanations?.[0]?.text?.split('.')[0];
+  const rationale = school.match_explanations?.[0]?.text?.split('.')[0];
 
   return (
     <Card
@@ -322,8 +322,8 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
         <div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-400" />
         <div className="absolute inset-0">
           <HeaderPhotoDisplay
-            headerPhotoUrl={school.headerPhotoUrl}
-            heroImage={school.heroImage}
+            headerPhotoUrl={school.header_photo_url}
+            heroImage={school.hero_image}
             schoolName={school.name}
             height="h-36"
           />
@@ -354,19 +354,19 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
       {/* Collapsed content — always visible */}
       <div className="p-3 flex flex-col gap-1.5">
         <div className="flex items-start gap-2">
-          <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-4 w-4" />
+          <LogoDisplay logoUrl={school.logo_url} schoolName={school.name} schoolWebsite={school.website} size="h-4 w-4" />
           <h3 className="font-bold text-sm leading-tight line-clamp-2 flex-1">{school.name}</h3>
         </div>
 
         <div className="flex items-center gap-1 text-xs text-slate-500">
           <MapPin className="h-3 w-3 flex-shrink-0" />
-          <span className="line-clamp-1">{school.city}{school.provinceState ? `, ${school.provinceState}` : ''}</span>
+          <span className="line-clamp-1">{school.city}{school.province_state ? `, ${school.province_state}` : ''}</span>
         </div>
 
         <div className="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
-          {school.distanceKm != null && (
+          {school.distance_km != null && (
             <span className="inline-flex items-center gap-1 text-teal-700 font-medium">
-              <Navigation className="h-3 w-3" />{school.distanceKm.toFixed(1)} km
+              <Navigation className="h-3 w-3" />{school.distance_km.toFixed(1)} km
             </span>
           )}
           {tuitionBand.label ? (
@@ -382,13 +382,13 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
 
         {/* Grades + curriculum chips */}
         <div className="flex flex-wrap gap-1.5 text-xs">
-          {formatGradeRange(school.lowestGrade, school.highestGrade) && (
-            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{formatGradeRange(school.lowestGrade, school.highestGrade)}</span>
+          {formatGradeRange(school.lowest_grade, school.highest_grade) && (
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{formatGradeRange(school.lowest_grade, school.highest_grade)}</span>
           )}
           {school.curriculum && (
             <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{Array.isArray(school.curriculum) ? school.curriculum.slice(0, 2).join(', ') : school.curriculum}</span>
           )}
-          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{school.genderPolicy || 'Co-ed'}</span>
+          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">{school.gender_policy || 'Co-ed'}</span>
         </div>
 
         {/* Matching criteria — always visible */}
@@ -418,9 +418,9 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
                 </div>
               );
             })()}
-            {!hasChecks && school.matchExplanations?.length > 0 && (
+            {!hasChecks && school.match_explanations?.length > 0 && (
               <div className="space-y-1.5">
-                {school.matchExplanations.map((m, i) => (
+                {school.match_explanations.map((m, i) => (
                   <div key={i} className="flex items-start gap-2 text-xs">
                     {m.type === 'positive'
                       ? <Check className="h-3.5 w-3.5 text-green-600 flex-shrink-0 mt-0.5" />

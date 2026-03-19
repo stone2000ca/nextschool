@@ -104,7 +104,7 @@ async function callOpenRouter(options: any) {
   const fullPromptStr = messages.map((m: any) => `[${m.role}] ${m.content}`).join('\n');
 
   const controller = new AbortController();
-  const TIMEOUT_MS = 8000;
+  const TIMEOUT_MS = 25000;
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
@@ -130,7 +130,7 @@ async function callOpenRouter(options: any) {
       if (_logContext) {
         const isTest = _logContext.is_test === true;
         LLMLog.create({
-          conversationId: _logContext.conversationId || 'unknown',
+          conversation_id: _logContext.conversationId || 'unknown',
           phase: _logContext.phase || 'unknown',
           model: 'unknown',
           prompt_summary: fullPromptStr.substring(0, 500),
@@ -155,7 +155,7 @@ async function callOpenRouter(options: any) {
     if (_logContext) {
       const isTest = _logContext.is_test === true;
       LLMLog.create({
-        conversationId: _logContext.conversationId || 'unknown',
+        conversation_id: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: data.model || 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -189,7 +189,7 @@ async function callOpenRouter(options: any) {
     if (isNetworkError && _logContext) {
       const isTest = _logContext.is_test === true;
       LLMLog.create({
-        conversationId: _logContext.conversationId || 'unknown',
+        conversation_id: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -303,7 +303,7 @@ Commute preference: ${commuteDisplay}`;
           try {
             const chatSessions = await ChatSession.filter({ id: conversationId });
             if (chatSessions.length > 0) {
-              await ChatSession.update(conversationId, { aiNarrative });
+              await ChatSession.update(conversationId, { ai_narrative: aiNarrative });
               console.log('[WC10] ChatSession updated with aiNarrative');
             }
           } catch (updateError: any) {
@@ -399,14 +399,14 @@ Commute preference: ${commuteDisplay}`;
       // Fire-and-forget TourRequest creation
       if (userId && conversationId) {
         TourRequest.create({
-          parentUserId: userId,
-          schoolId: jMatched.id,
-          requestedAt: new Date().toISOString(),
+          parent_user_id: userId,
+          school_id: jMatched.id,
+          requested_at: new Date().toISOString(),
           status: 'pending',
-          tourType: 'in_person',
+          tour_type: 'in_person',
           message: `Tour request initiated from RESULTS state for ${jMatched.name}`,
-          conversationId: conversationId,
-          childGrade: conversationFamilyProfile?.childGrade || undefined,
+          conversation_id: conversationId,
+          child_grade: conversationFamilyProfile?.childGrade || undefined,
         }).catch((err: any) => console.error('[E29-005-AC7] TourRequest creation failed:', err?.message));
       }
       return { message: `Great choice! Let me pull up the tour request form for ${jMatched.name}.`, state: STATES.RESULTS, briefStatus: briefStatus, schools: jSchoolPool, familyProfile: conversationFamilyProfile, conversationContext: context, actions: [{ type: 'INITIATE_TOUR', payload: { schoolId: jMatched.id }, timing: 'immediate' }] };
@@ -491,7 +491,9 @@ Commute preference: ${commuteDisplay}`;
     return { message: "I'm having trouble searching for schools right now. Could you tell me a bit more about your preferences?", state: STATES.RESULTS, briefStatus, schools: [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
   }
 
-  schools = schools.filter((s: any) => s.schoolTypeLabel !== 'Special Needs' && s.schoolTypeLabel !== 'Public');
+  const preFilterCount = schools.length;
+  schools = schools.filter((s: any) => s.school_type_label !== 'Special Needs' && s.school_type_label !== 'Public');
+  console.log(`[FILTER STAGE] handleResults post-search type filter: ${preFilterCount} → ${schools.length} (removed Special Needs/Public)`);
   const seen = new Set();
   const deduplicated: any[] = [];
   for (const school of schools) { if (!seen.has(school.name)) { seen.add(school.name); deduplicated.push(school); } }
@@ -510,7 +512,7 @@ Commute preference: ${commuteDisplay}`;
       const conversationSummary = recentMessages.map((msg: any) => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`).join('\n');
 
       const schoolContext = `\n\nSCHOOLS (${matchingSchools.length}):\n` +
-        matchingSchools.map((s: any) => { const tuitionStr = s.tuition ? `$${s.tuition}` : 'N/A'; return `${s.name} | ${s.city} | Grade ${s.lowestGrade}-${s.highestGrade} | Tuition: ${tuitionStr}`; }).join('\n');
+        matchingSchools.map((s: any) => { const tuitionStr = s.tuition ? `$${s.tuition}` : 'N/A'; return `${s.name} | ${s.city} | Grade ${s.lowest_grade}-${s.highest_grade} | Tuition: ${tuitionStr}`; }).join('\n');
 
       const schoolCount = matchingSchools.length;
       const isFirstResults = !autoRefresh && conversationHistory?.filter((m: any) => m.role === 'assistant' && m.content?.includes('school')).length === 0;

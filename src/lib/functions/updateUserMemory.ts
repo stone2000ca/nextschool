@@ -25,7 +25,7 @@ export async function updateUserMemory(params: {
   }
 
   // Fetch all existing memory records for this user
-  const existingRecords = await UserMemory.filter({ userId });
+  const existingRecords = await UserMemory.filter({ user_id: userId });
 
   // AC6: Backward compat — normalize legacy records missing category
   for (const mem of existingRecords) {
@@ -35,7 +35,7 @@ export async function updateUserMemory(params: {
           category: 'context',
           confidence: 0.5,
           source: 'legacy',
-          lastAccessed: (mem as any).lastAccessed || new Date().toISOString()
+          last_accessed: (mem as any).last_accessed || new Date().toISOString()
         });
       } catch(e) {}
     }
@@ -56,18 +56,18 @@ export async function updateUserMemory(params: {
 
     if (duplicate) {
       // Update lastAccessed only
-      await UserMemory.update(duplicate.id, { lastAccessed: now });
+      await UserMemory.update(duplicate.id, { last_accessed: now });
       updated++;
     } else {
       // Enforce max cap
       if (currentCount + created >= MAX_MEMORIES) continue;
 
       await UserMemory.create({
-        userId,
+        user_id: userId,
         content,
         category: detectCategory(content),
         confidence: 0.8,
-        lastAccessed: now,
+        last_accessed: now,
         source: 'extraction'
       });
       created++;

@@ -21,7 +21,7 @@ export async function processTokenTransaction(params: {
   }
 
   // Check if premium user (unlimited tokens)
-  if (user.subscriptionPlan === 'premium') {
+  if (user.subscription_plan === 'premium') {
     return {
       success: true,
       unlimited: true,
@@ -30,7 +30,7 @@ export async function processTokenTransaction(params: {
   }
 
   const tokensNeeded = tokenCosts[action] || 1;
-  const currentBalance = user.tokenBalance || 0;
+  const currentBalance = user.token_balance || 0;
 
   // Check if enough tokens
   if (currentBalance < tokensNeeded) {
@@ -52,11 +52,11 @@ export async function processTokenTransaction(params: {
 
   // Log transaction
   await TokenTransaction.create({
-    userId: user.id,
+    user_id: user.id,
     action,
-    tokensDeducted: tokensNeeded,
-    remainingBalance: newBalance,
-    sessionId: sessionId || 'unknown'
+    tokens_deducted: tokensNeeded,
+    remaining_balance: newBalance,
+    session_id: sessionId || 'unknown'
   });
 
   return {

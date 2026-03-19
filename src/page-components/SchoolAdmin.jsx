@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
 import { School, SchoolAdmin as SchoolAdminEntity, SchoolClaim, User, SchoolInquiry, EnrichmentDiff, PhotoCandidate } from '@/lib/entities';
@@ -19,7 +19,29 @@ import AdmissionsSection from '@/components/school-admin/AdmissionsSection';
 import EnrichmentReviewSection from '@/components/school-admin/EnrichmentReviewSection';
 import PhotoReviewSection from '@/components/school-admin/PhotoReviewSection';
 
+// Map of camelCase field names used in ProfileEditor to their snake_case DB columns
+const CAMEL_TO_SNAKE = {
+  livingArrangements: 'living_arrangements',
+  languagesOfInstruction: 'languages_of_instruction',
+  artsPrograms: 'arts_programs',
+  sportsPrograms: 'sports_programs',
+  specialEdPrograms: 'special_ed_programs',
+  teachingPhilosophy: 'teaching_philosophy',
+  verifiedFields: 'verified_fields',
+  aiEnrichedFields: 'ai_enriched_fields',
+};
+
+function toSnakeCase(data) {
+  const result = {};
+  for (const [key, value] of Object.entries(data)) {
+    result[CAMEL_TO_SNAKE[key] || key] = value;
+  }
+  return result;
+}
+
 export default function SchoolAdmin() {
+  const { user: authUser, isLoadingAuth } = useAuth();
+
   const [user, setUser] = useState(null);
   const [school, setSchool] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,16 +54,41 @@ export default function SchoolAdmin() {
   const [enrichError, setEnrichError] = useState(null);
   const [pendingClaim, setPendingClaim] = useState(null);
   const [pendingSchool, setPendingSchool] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
-    loadSchoolData();
+    // Wait for auth to resolve before loading school data
+    if (isLoadingAuth || !authUser) return;
+    loadSchoolData(authUser);
+  }, [authUser, isLoadingAuth]);
+
+  // F5.5: Warn on browser navigation when there are unsaved changes
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
+  const handleDirtyChange = useCallback((dirty) => {
+    setIsDirty(dirty);
   }, []);
 
-  const { user: authUser } = useAuth();
+  const handleViewChange = useCallback((viewId) => {
+    if (isDirty) {
+      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+      if (!confirmed) return;
+    }
+    setIsDirty(false);
+    setCurrentView(viewId);
+  }, [isDirty]);
 
-  const loadSchoolData = async () => {
+  const loadSchoolData = async (userData) => {
     try {
-      const userData = authUser;
       setUser(userData);
 
       let resolvedSchool = null;
@@ -63,23 +110,21 @@ export default function SchoolAdmin() {
 
       // --- PATH A: SchoolAdmin record lookup ---
       if (!resolvedSchool) {
-        const adminRecords = await SchoolAdminEntity.filter({ userId: userData.id, isActive: true });
+        const adminRecords = await SchoolAdminEntity.filter({ user_id: userData.id, is_active: true });
 
         if (adminRecords && adminRecords.length > 0) {
-          const schoolData = await School.filter({ id: adminRecords[0].schoolId });
+          const schoolData = await School.filter({ id: adminRecords[0].school_id });
           if (schoolData && schoolData.length > 0) {
             resolvedSchool = schoolData[0];
             setSchool(resolvedSchool);
-            // Fire-and-forget: recalculate completeness score on every admin login
             invokeFunction('calculateCompletenessScore', { schoolId: resolvedSchool.id }).catch(() => {});
           }
         } else {
           // --- PATH B: Legacy adminUserId fallback ---
-          const schools = await School.filter({ adminUserId: userData.id });
+          const schools = await School.filter({ admin_user_id: userData.id });
           if (schools && schools.length > 0) {
             resolvedSchool = schools[0];
             setSchool(resolvedSchool);
-            // Fire-and-forget: recalculate completeness score on every admin login
             invokeFunction('calculateCompletenessScore', { schoolId: resolvedSchool.id }).catch(() => {});
           }
         }
@@ -87,12 +132,11 @@ export default function SchoolAdmin() {
 
       // --- PATH C: URL param with verified SchoolClaim (non-admin users) ---
       if (!resolvedSchool) {
-        const urlParams2 = new URLSearchParams(window.location.search);
-        const urlSchoolId = urlParams2.get('schoolId');
+        const urlSchoolId = urlParams.get('schoolId');
         if (urlSchoolId) {
           const claims = await SchoolClaim.filter({
-            userId: userData.id,
-            schoolId: urlSchoolId,
+            user_id: userData.id,
+            school_id: urlSchoolId,
             status: 'verified'
           });
           if (claims && claims.length > 0) {
@@ -108,12 +152,12 @@ export default function SchoolAdmin() {
       // --- PATH D: Pending/rejected claim state ---
       if (!resolvedSchool) {
         try {
-          const claims = await SchoolClaim.filter({ userId: userData.id });
+          const claims = await SchoolClaim.filter({ user_id: userData.id });
           if (claims && claims.length > 0) {
-            const latest = claims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+            const latest = claims.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
             setPendingClaim(latest);
-            if (latest.schoolId) {
-              const schoolData = await School.filter({ id: latest.schoolId });
+            if (latest.school_id) {
+              const schoolData = await School.filter({ id: latest.school_id });
               if (schoolData && schoolData.length > 0) setPendingSchool(schoolData[0]);
             }
           }
@@ -123,23 +167,24 @@ export default function SchoolAdmin() {
       // Load badges for resolved school
       if (resolvedSchool) {
         try {
-          const inquiries = await SchoolInquiry.filter({ schoolId: resolvedSchool.id, inquiryType: 'tour_request' });
-          const newCount = inquiries.filter(i => !i.tourStatus || i.tourStatus === 'new').length;
+          const inquiries = await SchoolInquiry.filter({ school_id: resolvedSchool.id, inquiry_type: 'tour_request' });
+          const newCount = inquiries.filter(i => !i.tour_status || i.tour_status === 'new').length;
           setNewInquiryCount(newCount);
         } catch (e) { /* non-blocking */ }
 
         try {
-          const diffs = await EnrichmentDiff.filter({ schoolId: resolvedSchool.id, status: 'pending' });
+          const diffs = await EnrichmentDiff.filter({ school_id: resolvedSchool.id, status: 'pending' });
           setPendingDiffCount(diffs.length);
         } catch (e) { /* non-blocking */ }
 
         try {
-          const photos = await PhotoCandidate.filter({ schoolId: resolvedSchool.id, status: 'pending' });
+          const photos = await PhotoCandidate.filter({ school_id: resolvedSchool.id, status: 'pending' });
           setPendingPhotoCount(photos.length);
         } catch (e) { /* non-blocking */ }
       }
     } catch (error) {
       console.error('Failed to load school data:', error);
+      setLoadError('Failed to load school data. Please refresh the page or try again later.');
     } finally {
       setLoading(false);
     }
@@ -147,17 +192,19 @@ export default function SchoolAdmin() {
 
   const handleSaveSchool = async (updatedData) => {
     if (!school) return;
-    
+
     setIsSaving(true);
     try {
-      await School.update(school.id, updatedData);
+      const snakeCaseData = toSnakeCase(updatedData);
+      await School.update(school.id, snakeCaseData);
       const updated = { ...school, ...updatedData };
       setSchool(updated);
+      setIsDirty(false);
       // Post-save: recalculate completeness score server-side (non-blocking)
       invokeFunction('calculateCompletenessScore', { schoolId: school.id })
         .then(res => {
-          if (res?.data?.completenessScore != null) {
-            setSchool(s => ({ ...s, completenessScore: res.data.completenessScore }));
+          if (res?.data?.completeness_score != null) {
+            setSchool(s => ({ ...s, completeness_score: res.data.completeness_score }));
           }
         })
         .catch(e => console.warn('completenessScore update failed:', e));
@@ -183,11 +230,11 @@ export default function SchoolAdmin() {
         return;
       }
       try {
-        const diffs = await EnrichmentDiff.filter({ schoolId: school.id, status: 'pending' });
+        const diffs = await EnrichmentDiff.filter({ school_id: school.id, status: 'pending' });
         setPendingDiffCount(diffs.length);
       } catch {}
       try {
-        const photos = await PhotoCandidate.filter({ schoolId: school.id, status: 'pending' });
+        const photos = await PhotoCandidate.filter({ school_id: school.id, status: 'pending' });
         setPendingPhotoCount(photos.length);
       } catch {}
       setCurrentView('enrichment');
@@ -206,6 +253,21 @@ export default function SchoolAdmin() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center max-w-md rounded-xl border border-red-200 bg-red-50 p-12">
+          <XCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-red-900 mb-2">Something Went Wrong</h2>
+          <p className="text-red-700 text-sm mb-4">{loadError}</p>
+          <Button onClick={() => { setLoadError(null); setLoading(true); loadSchoolData(authUser); }} className="bg-red-600 hover:bg-red-700 text-white">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!school) {
     if (pendingClaim && (pendingClaim.status === 'pending' || pendingClaim.status === 'pending_review')) {
       return (
@@ -215,7 +277,7 @@ export default function SchoolAdmin() {
             <h2 className="text-2xl font-bold text-blue-900 mb-2">Submission Under Review</h2>
             <p className="text-blue-700 text-sm">
               Your submission for <span className="font-semibold">{pendingSchool?.name || 'your school'}</span> was received on{' '}
-              {new Date(pendingClaim.createdAt).toLocaleDateString('en-CA')}.
+              {new Date(pendingClaim.created_at).toLocaleDateString('en-CA')}.
             </p>
             <p className="text-blue-600 text-sm mt-2">We're reviewing your submission. You'll get access once approved.</p>
           </div>
@@ -270,7 +332,7 @@ export default function SchoolAdmin() {
   };
 
   const TIER_MIGRATION = { free: 'standard', basic: 'growth', premium: 'pro', professional: 'pro' };
-  const tier = TIER_MIGRATION[school.schoolTier] || school.schoolTier || 'standard';
+  const tier = TIER_MIGRATION[school.school_tier] || school.school_tier || 'standard';
   const hasTourFeatures = tier === 'growth' || tier === 'pro';
   const hasAllFeatures = tier === 'pro';
 
@@ -304,7 +366,7 @@ export default function SchoolAdmin() {
       label: 'Admin',
       items: [
         { id: 'subscription', label: 'Subscription', icon: CreditCard },
-        { id: 'account', label: 'Account', icon: User },
+        { id: 'account', label: 'Account', icon: UserIcon },
       ],
     },
   ];
@@ -324,6 +386,11 @@ export default function SchoolAdmin() {
         </div>
 
         <div className="flex items-center gap-3">
+          {isDirty && (
+            <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+              Unsaved changes
+            </span>
+          )}
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${tierColors[tier]}`}>
             {tierIcons[tier]}
             <span className="uppercase">{tierLabel[tier]}</span>
@@ -350,7 +417,7 @@ export default function SchoolAdmin() {
                   const Icon = item.icon;
                   const isAction = !!item.action;
                   const isActive = !isAction && currentView === item.id;
-                  const handleClick = isAction ? item.action : () => setCurrentView(item.id);
+                  const handleClick = isAction ? item.action : () => handleViewChange(item.id);
                   return (
                     <button
                       key={item.id}
@@ -398,7 +465,7 @@ export default function SchoolAdmin() {
         {/* Main Content */}
         <main className="flex-1">
           {currentView === 'profile' && (
-            <ProfileEditor school={school} onSave={handleSaveSchool} isSaving={isSaving} />
+            <ProfileEditor school={school} onSave={handleSaveSchool} isSaving={isSaving} onDirtyChange={handleDirtyChange} />
           )}
           {currentView === 'media' && (
             <div className="p-6 max-w-3xl mx-auto">
@@ -425,7 +492,7 @@ export default function SchoolAdmin() {
              <Analytics school={school} />
            )}
            {currentView === 'subscription' && (
-            <Subscription school={school} onUpdate={loadSchoolData} />
+            <Subscription school={school} onUpdate={() => loadSchoolData(authUser)} />
           )}
           {currentView === 'account' && (
             <AccountSection school={school} />

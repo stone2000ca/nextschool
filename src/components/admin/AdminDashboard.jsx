@@ -45,7 +45,7 @@ export default function AdminDashboard({ onViewChange }) {
       // Revenue — based on User.subscriptionPlan
       const tierRevenue = { free: 0, basic: 99, premium: 249, pro: 499, enterprise: 999 };
       const revenue = users.reduce((sum, user) => {
-        return sum + (tierRevenue[user.subscriptionPlan] || 0);
+        return sum + (tierRevenue[user.subscription_plan] || 0);
       }, 0);
 
       setStats({

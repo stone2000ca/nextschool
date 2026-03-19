@@ -1,6 +1,6 @@
 /**
  * Function invocation helper (client-side)
- * Replaces base44.functions.invoke('name', payload)
+ * Maps function names to API routes and invokes them
  */
 
 const ROUTE_MAP: Record<string, string> = {
@@ -35,6 +35,7 @@ const ROUTE_MAP: Record<string, string> = {
   exportShortlist: 'export-shortlist',
   fetchSchoolProfile: 'fetch-school-profile',
   geocodeSchools: 'geocode-schools',
+  listSchools: 'list-schools',
   getNearbySchools: 'get-nearby-schools',
   scrapeSchoolPhotos: 'scrape-school-photos',
   updateSchoolPhotos: 'update-school-photos',

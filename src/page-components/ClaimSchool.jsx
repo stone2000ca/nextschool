@@ -1,13 +1,11 @@
-// force rebuild
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { School, SchoolClaim, SchoolAdmin, User } from '@/lib/entities';
-import { invokeFunction } from '@/lib/functions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, CheckCircle2, AlertTriangle, Upload, Loader2, Search, HelpCircle, Lock, Clock } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Search, HelpCircle, Lock, Clock } from 'lucide-react';
 import Navbar from '@/components/navigation/Navbar';
 import Footer from '@/components/navigation/Footer';
 import Link from 'next/link';
@@ -15,7 +13,6 @@ import { debounce } from 'lodash';
 import DisputeForm from '@/components/claim/DisputeForm';
 
 const STATUS_LABELS = {
-  pending_email: 'Email Verification Pending',
   pending_review: 'Under Review',
   verified: 'Approved'
 };
@@ -41,17 +38,9 @@ export default function ClaimSchool() {
     role: '',
     email: ''
   });
-  const [verificationCode, setVerificationCode] = useState('');
-  const [documentFile, setDocumentFile] = useState(null);
-  const [claimId, setClaimId] = useState(null);
-  const [emailDomainMatch, setEmailDomainMatch] = useState(null);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [codeError, setCodeError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [sendingEmail, setSendingEmail] = useState(false);
-  const [codeExpiryTime, setCodeExpiryTime] = useState(null);
-  const [alreadyClaimed, setAlreadyClaimed] = useState(null); // { domain: string } | null
+  const [formError, setFormError] = useState('');
+  const [alreadyClaimed, setAlreadyClaimed] = useState(null);
   const [showDisputeForm, setShowDisputeForm] = useState(false);
 
   const handleSchoolSelect = (selectedSchoolId) => {
@@ -90,23 +79,26 @@ export default function ClaimSchool() {
 
   useEffect(() => {
     const init = async () => {
-      const isAuth = authIsAuthenticated;
-      if (!isAuth) {
+      if (!authIsAuthenticated) {
         navigateToLogin(pathname + (typeof window !== 'undefined' ? window.location.search : ''));
         return;
       }
       const userData = authUser;
       setUser(userData);
 
-      // Check if user already has an active claim
-      const claims = await SchoolClaim.filter({ userId: userData.id });
-      const activeClaim = claims.find(c => ['pending_email', 'pending_review', 'verified'].includes(c.status));
-      if (activeClaim) {
-        const schools = await School.filter({ id: activeClaim.schoolId });
-        setClaimSchoolName(schools[0]?.name || '');
-        setExistingClaim(activeClaim);
-        setLoading(false);
-        return;
+      try {
+        // Check if user already has an active claim
+        const claims = await SchoolClaim.filter({ claimed_by: userData.id });
+        const activeClaim = claims.find(c => ['pending_review', 'verified'].includes(c.status));
+        if (activeClaim) {
+          const schools = await School.filter({ id: activeClaim.school_id });
+          setClaimSchoolName(schools[0]?.name || '');
+          setExistingClaim(activeClaim);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to check existing claims:', err);
       }
 
       if (schoolId) {
@@ -116,7 +108,7 @@ export default function ClaimSchool() {
       }
     };
     init();
-  }, [schoolId]);
+  }, [schoolId, authIsAuthenticated]);
 
   const loadSchool = async () => {
     try {
@@ -125,10 +117,10 @@ export default function ClaimSchool() {
         const s = schools[0];
         setSchool(s);
         // Check if already claimed by another user
-        if (s.claimStatus === 'claimed') {
-          const admins = await SchoolAdmin.filter({ schoolId: schoolId, role: 'owner', isActive: true });
-          if (admins.length > 0 && admins[0].userId) {
-            const users = await User.filter({ id: admins[0].userId });
+        if (s.claim_status === 'claimed') {
+          const admins = await SchoolAdmin.filter({ school_id: schoolId, role: 'owner', is_active: true });
+          if (admins.length > 0 && admins[0].user_id) {
+            const users = await User.filter({ id: admins[0].user_id });
             const ownerEmail = users[0]?.email || '';
             const domain = ownerEmail.split('@')[1] || null;
             setAlreadyClaimed({ domain });
@@ -144,221 +136,36 @@ export default function ClaimSchool() {
     }
   };
 
-  const extractDomain = (url) => {
-    if (!url) return null;
-    try {
-      let cleanUrl = url;
-      if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
-        cleanUrl = 'https://' + cleanUrl;
-      }
-      const domain = new URL(cleanUrl).hostname;
-      return domain.replace('www.', '');
-    } catch {
-      return null;
-    }
-  };
-
-  const checkEmailDomain = (email) => {
-    if (!email || !school?.website) {
-      setEmailDomainMatch(null);
-      return;
-    }
-
-    const emailDomain = email.split('@')[1]?.toLowerCase();
-    const schoolDomain = extractDomain(school.website)?.toLowerCase();
-
-    if (emailDomain && schoolDomain && emailDomain === schoolDomain) {
-      setEmailDomainMatch(true);
-    } else {
-      setEmailDomainMatch(false);
-    }
-  };
-
-  const handleEmailChange = (e) => {
-    const email = e.target.value;
-    setFormData({ ...formData, email });
-    checkEmailDomain(email);
-  };
-
   const handleStep2Submit = async () => {
     if (!formData.name || !formData.role || !formData.email) {
-      alert('Please fill in all fields');
+      setFormError('Please fill in all fields.');
       return;
     }
-
+    setFormError('');
     setIsSubmitting(true);
-    setEmailError('');
-    try {
-      // Determine verification method and initial status
-      const method = emailDomainMatch ? 'email_domain' : 'document_upload';
-      const status = emailDomainMatch ? 'pending_email' : 'pending_review';
-
-      // Create SchoolClaim record (no code stored client-side)
-      const claim = await SchoolClaim.create({
-        schoolId,
-        userId: user?.id,
-        claimantName: formData.name,
-        claimantRole: formData.role,
-        claimantEmail: formData.email,
-        verificationMethod: method,
-        status
-      });
-
-      setClaimId(claim.id);
-
-      // If domain matches, server generates and sends the code
-      if (emailDomainMatch) {
-        setSendingEmail(true);
-        try {
-          const emailRes = await invokeFunction('sendClaimEmail', {
-            emailType: 'VERIFICATION_CODE',
-            claimData: {
-              claimantName: formData.name,
-              claimantEmail: formData.email,
-            },
-            schoolData: {
-              name: school.name,
-              id: schoolId,
-              claimId: claim.id
-            }
-          });
-          const expiresInMinutes = emailRes?.data?.expiresInMinutes ?? 15;
-          setCodeExpiryTime(new Date(Date.now() + expiresInMinutes * 60 * 1000));
-          setStep(3);
-        } catch (emailErr) {
-          console.error('Email send failed:', emailErr);
-          setEmailError('Failed to send verification email. Please try again.');
-        } finally {
-          setSendingEmail(false);
-        }
-      } else {
-        setStep(3.5);
-      }
-    } catch (error) {
-      console.error('Failed to create claim:', error);
-      alert('Failed to create claim. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleResendEmail = async () => {
-    if (!claimId) return;
-
-    setSendingEmail(true);
-    setEmailError('');
-    try {
-      const emailRes = await invokeFunction('sendClaimEmail', {
-        emailType: 'VERIFICATION_CODE',
-        claimData: {
-          claimantName: formData.name,
-          claimantEmail: formData.email,
-        },
-        schoolData: {
-          name: school.name,
-          id: schoolId,
-          claimId
-        }
-      });
-      const expiresInMinutes = emailRes?.data?.expiresInMinutes ?? 15;
-      setCodeExpiryTime(new Date(Date.now() + expiresInMinutes * 60 * 1000));
-      alert('Verification code resent!');
-    } catch (error) {
-      console.error('Resend failed:', error);
-      setEmailError('Failed to resend email. Please try again.');
-    } finally {
-      setSendingEmail(false);
-    }
-  };
-
-  const handleCodeSubmit = async () => {
-    setCodeError('');
-    setIsVerifying(true);
 
     try {
-      const result = await invokeFunction('verifyClaimCode', { claimId, code: verificationCode });
-      const { success, error } = result.data;
-
-      if (!success) {
-        setCodeError(error || 'Invalid code. Please try again.');
-        return;
-      }
-
-      // Send approval email (best-effort)
-      try {
-        await invokeFunction('sendClaimEmail', {
-          emailType: 'CLAIM_APPROVED',
-          claimData: {
-            claimantName: formData.name,
-            claimantEmail: formData.email
-          },
-          schoolData: {
-            name: school.name,
-            id: schoolId
-          }
-        });
-      } catch (emailErr) {
-        console.error('Approval email failed:', emailErr);
-      }
-
-      setStep(4);
-    } catch (error) {
-      console.error('Verification failed:', error);
-      setCodeError('An error occurred. Please try again.');
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  const handleDocumentSubmit = async () => {
-    if (!documentFile) {
-      alert('Please upload a document');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      // Upload document via API route
-      const formData = new FormData();
-      formData.append('file', documentFile);
-      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-      if (!uploadRes.ok) throw new Error('Upload failed');
-      const uploadResult = await uploadRes.json();
-      const documentUrl = uploadResult.file_url;
-
-      // Update claim with document and pending_review status
-      await SchoolClaim.update(claimId, {
-        documentUrl,
+      // Create SchoolClaim record — goes straight to pending_review for admin approval
+      await SchoolClaim.create({
+        school_id: schoolId,
+        claimed_by: user?.id,
+        claimant_name: formData.name,
+        claimant_role: formData.role,
+        claimant_email: formData.email,
+        verification_method: 'admin_review',
         status: 'pending_review'
       });
 
-      // Update School claim status to pending
+      // Update school claim status to pending
       await School.update(schoolId, {
-        claimStatus: 'pending'
+        claim_status: 'pending'
       });
 
-      // Send document received email
-      try {
-        await invokeFunction('sendClaimEmail', {
-          emailType: 'DOCUMENT_RECEIVED',
-          claimData: {
-            claimantName: formData.name,
-            claimantEmail: formData.email
-          },
-          schoolData: {
-            name: school.name,
-            id: schoolId
-          }
-        });
-      } catch (emailErr) {
-        console.error('Document received email failed:', emailErr);
-      }
-
       // Go to success step
-      setStep(4);
+      setStep(3);
     } catch (error) {
-      console.error('Document upload failed:', error);
-      alert('Failed to upload document. Please try again.');
+      console.error('Failed to create claim:', error);
+      setFormError(error?.message || error?.details || 'Failed to submit claim. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -370,7 +177,7 @@ export default function ClaimSchool() {
     try {
       await SchoolClaim.update(existingClaim.id, { status: 'cancelled' });
       if (existingClaim.status === 'pending_review') {
-        await School.update(existingClaim.schoolId, { claimStatus: null });
+        await School.update(existingClaim.school_id, { claim_status: null });
       }
       setExistingClaim(null);
       setShowCancelConfirm(false);
@@ -396,9 +203,9 @@ export default function ClaimSchool() {
           <Card className="p-8">
             <h1 className="text-3xl font-bold text-slate-900 mb-4 text-center">Claim Your School Profile</h1>
             <p className="text-slate-600 mb-8 text-center">
-              Search for your school to begin the verification process.
+              Search for your school to begin the claim process.
             </p>
-            
+
             <div className="relative mb-6">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <Input
@@ -426,7 +233,7 @@ export default function ClaimSchool() {
                   >
                     <div className="flex flex-col">
                       <span className="font-medium text-slate-800">{result.name}</span>
-                      <span className="text-sm text-slate-500">{result.city}, {result.provinceState}</span>
+                      <span className="text-sm text-slate-500">{result.city}, {result.province_state}</span>
                     </div>
                   </Button>
                 ))}
@@ -434,7 +241,7 @@ export default function ClaimSchool() {
             ) : searchTerm.length >= 2 && !searchingSchools ? (
               <div className="text-center py-8">
                 <AlertCircle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
-                <p className="text-slate-600">No schools found for "{searchTerm}"</p>
+                <p className="text-slate-600">No schools found for &quot;{searchTerm}&quot;</p>
               </div>
             ) : (
               <div className="text-center py-8 text-slate-500">Start typing to search for your school.</div>
@@ -444,7 +251,7 @@ export default function ClaimSchool() {
               <div className="flex items-start gap-3 text-sm text-slate-600">
                 <HelpCircle className="h-4 w-4 flex-shrink-0 mt-0.5 text-slate-400" />
                 <div>
-                  <p className="font-medium text-slate-700 mb-1">Don't see your school?</p>
+                  <p className="font-medium text-slate-700 mb-1">Don&apos;t see your school?</p>
                   <p>
                     <Link href="/contact" className="text-teal-600 hover:underline">Contact us</Link> to have your school added to our database.
                   </p>
@@ -485,9 +292,9 @@ export default function ClaimSchool() {
               </div>
               <h1 className="text-2xl font-bold text-slate-900 mb-2">Claim Approved!</h1>
               <p className="text-lg text-slate-700 font-medium mb-2">{claimSchoolName}</p>
-              <p className="text-slate-600 mb-8">Your school claim has been verified. You can now manage your school's profile.</p>
+              <p className="text-slate-600 mb-8">Your school claim has been verified. You can now manage your school&apos;s profile.</p>
               <Button
-                onClick={() => router.push(`/school-admin?schoolId=${existingClaim.schoolId}`)}
+                onClick={() => router.push(`/school-admin?schoolId=${existingClaim.school_id}`)}
                 className="bg-teal-600 hover:bg-teal-700 px-8"
               >
                 Go to School Admin
@@ -511,12 +318,12 @@ export default function ClaimSchool() {
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-slate-700">Status</span>
                 <span className="text-sm font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                  {STATUS_LABELS[existingClaim.status]}
+                  {STATUS_LABELS[existingClaim.status] || existingClaim.status}
                 </span>
               </div>
-              {existingClaim.createdAt && (
+              {existingClaim.created_at && (
                 <p className="text-xs text-slate-500 mt-1">
-                  Submitted {new Date(existingClaim.createdAt).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  Submitted {new Date(existingClaim.created_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               )}
               <p className="text-xs text-slate-500 mt-2">Most claims are reviewed within 1–2 business days.</p>
@@ -588,9 +395,9 @@ export default function ClaimSchool() {
           <Card className="p-8">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-slate-900 mb-4">Claim {school.name}</h1>
-              <p className="text-slate-600 mb-8 text-lg">Manage your school's profile on NextSchool</p>
+              <p className="text-slate-600 mb-8 text-lg">Manage your school&apos;s profile on NextSchool</p>
               <p className="text-slate-600 mb-8">
-                Verified school admins can update school information, manage inquiries, and access analytics.
+                Submit a claim request and an admin will review it. Once approved, you can update school information, manage inquiries, and access analytics.
               </p>
               <Button
                 onClick={() => setStep(2)}
@@ -605,17 +412,17 @@ export default function ClaimSchool() {
         {/* Step 2: Claim Information */}
         {!existingClaim && !alreadyClaimed && step === 2 && (
           <Card className="p-8">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">Verify Your Identity</h2>
-            
-            {emailError && (
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Your Information</h2>
+
+            {formError && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-red-800 text-sm">{emailError}</p>
+                  <p className="text-red-800 text-sm">{formError}</p>
                 </div>
               </div>
             )}
-            
+
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
@@ -644,28 +451,13 @@ export default function ClaimSchool() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">School Email</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
                 <Input
                   type="email"
                   value={formData.email}
-                  onChange={handleEmailChange}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="your.name@school.edu"
                 />
-                {emailDomainMatch !== null && (
-                  <div className={`mt-2 flex items-center gap-2 text-sm ${emailDomainMatch ? 'text-green-600' : 'text-amber-600'}`}>
-                    {emailDomainMatch ? (
-                      <>
-                        <CheckCircle2 className="h-4 w-4" />
-                        Email domain matches school website
-                      </>
-                    ) : (
-                      <>
-                        <AlertTriangle className="h-4 w-4" />
-                        Email domain doesn't match. You'll verify with a document instead.
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -683,143 +475,27 @@ export default function ClaimSchool() {
                 className="flex-1 bg-teal-600 hover:bg-teal-700"
               >
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Continue
+                Submit Claim
               </Button>
             </div>
           </Card>
         )}
 
-        {/* Step 3: Email Verification Code */}
+        {/* Step 3: Success */}
         {!existingClaim && !alreadyClaimed && step === 3 && (
-          <Card className="p-8">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Enter Verification Code</h2>
-            <p className="text-slate-600 mb-2">We sent a 6-digit code to {formData.email}</p>
-            
-            {emailError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-red-800 text-sm">{emailError}</p>
-                  <Button 
-                    variant="link" 
-                    size="sm" 
-                    onClick={handleResendEmail}
-                    disabled={sendingEmail}
-                    className="text-red-700 p-0 h-auto"
-                  >
-                    {sendingEmail ? 'Sending...' : 'Click to retry'}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 mb-2">Verification Code</label>
-              <input
-                type="text"
-                maxLength="6"
-                value={verificationCode}
-                onChange={(e) => {
-                  setVerificationCode(e.target.value.replace(/\D/g, ''));
-                  setCodeError('');
-                }}
-                placeholder="000000"
-                className="w-full px-4 py-3 border-2 rounded-lg text-2xl text-center tracking-widest font-mono"
-              />
-              {codeError && (
-                <p className="text-red-600 text-sm mt-2">{codeError}</p>
-              )}
-              {codeExpiryTime && (
-                <p className="text-slate-500 text-xs mt-2">
-                  Code expires: {codeExpiryTime.toLocaleString()}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <Button
-                onClick={handleCodeSubmit}
-                disabled={isVerifying || verificationCode.length !== 6}
-                className="w-full bg-teal-600 hover:bg-teal-700"
-              >
-                {isVerifying ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Verify Code
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResendEmail}
-                disabled={sendingEmail}
-                className="w-full text-sm"
-              >
-                {sendingEmail ? 'Sending...' : 'Resend code'}
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {/* Step 3.5: Document Upload */}
-        {!existingClaim && !alreadyClaimed && step === 3.5 && (
-          <Card className="p-8">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Verify with Document</h2>
-            <p className="text-slate-600 mb-6">
-              Since your email domain doesn't match, please upload a verification document (staff ID, business card, or letterhead).
-            </p>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
-                <Upload className="h-4 w-4" />
-                Upload Document
-              </label>
-              <input
-                type="file"
-                onChange={(e) => setDocumentFile(e.target.files?.[0] || null)}
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="w-full px-4 py-2 border rounded-lg"
-              />
-              <p className="text-xs text-slate-500 mt-2">PDF, JPG, or PNG • Max 5MB</p>
-              {documentFile && (
-                <p className="text-sm text-green-600 mt-2">✓ {documentFile.name}</p>
-              )}
-            </div>
-
-            <div className="flex gap-4">
-              <Button
-                onClick={() => setStep(2)}
-                variant="outline"
-                className="flex-1"
-              >
-                Back
-              </Button>
-              <Button
-                onClick={handleDocumentSubmit}
-                disabled={isSubmitting || !documentFile}
-                className="flex-1 bg-teal-600 hover:bg-teal-700"
-              >
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Submit Document
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {/* Step 4: Success */}
-        {!existingClaim && !alreadyClaimed && step === 4 && (
           <Card className="p-8">
             <div className="text-center">
               <CheckCircle2 className="h-16 w-16 text-green-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                {emailDomainMatch ? 'School Claimed!' : 'Verification Submitted'}
-              </h2>
-              <p className="text-slate-600 mb-8">
-                {emailDomainMatch
-                  ? 'You can now manage your school profile and access the admin dashboard.'
-                  : 'Your verification document has been submitted. Our team will review it within 24-48 hours.'}
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Claim Submitted!</h2>
+              <p className="text-slate-600 mb-4">
+                Your claim has been submitted for admin review. Most claims are reviewed within 1–2 business days.
               </p>
-              <Link href={`/school-admin?schoolId=${schoolId}`}>
+              <p className="text-sm text-slate-500 mb-8">
+                You&apos;ll be notified once your claim is approved.
+              </p>
+              <Link href="/">
                 <Button className="bg-teal-600 hover:bg-teal-700 px-8">
-                  Go to Admin Dashboard
+                  Back to Home
                 </Button>
               </Link>
             </div>

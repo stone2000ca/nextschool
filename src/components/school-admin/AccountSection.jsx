@@ -21,7 +21,7 @@ export default function AccountSection({ school }) {
       setUser(authUser);
 
       // Load SchoolAdmin record
-      const admins = await SchoolAdmin.filter({ schoolId: school?.id });
+      const admins = await SchoolAdmin.filter({ school_id: school?.id });
       if (admins && admins.length > 0) {
         setAdminRecord(admins[0]);
       }

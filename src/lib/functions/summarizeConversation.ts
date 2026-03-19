@@ -17,7 +17,7 @@ export async function summarizeConversation(params: {
     throw Object.assign(new Error('Conversation not found'), { statusCode: 404 });
   }
 
-  if ((conversations[0] as any)?.userId !== userId) {
+  if ((conversations[0] as any)?.user_id !== userId) {
     throw Object.assign(new Error('Access denied'), { statusCode: 403 });
   }
 
@@ -78,10 +78,10 @@ Return JSON with:
 
   // Update conversation
   await ChatHistory.update(conversationId, {
-    longTermSummary: summary.longTermSummary,
-    shortTermContext: summary.shortTermContext,
-    conversationContext: {
-      ...conversation.conversationContext,
+    long_term_summary: summary.longTermSummary,
+    short_term_context: summary.shortTermContext,
+    conversation_context: {
+      ...conversation.conversation_context,
       ...summary.extractedPreferences
     }
   });

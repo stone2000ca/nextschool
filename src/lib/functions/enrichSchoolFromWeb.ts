@@ -18,14 +18,14 @@ function stripHtml(html: string) {
 }
 
 const ENRICHABLE_FIELDS = [
-  'name', 'description', 'dayTuition', 'boardingTuition', 'enrollment',
-  'avgClassSize', 'studentTeacherRatio', 'curriculum', 'address', 'city',
-  'provinceState', 'country', 'phone', 'email', 'website', 'missionStatement',
-  'teachingPhilosophy', 'specializations', 'artsPrograms', 'sportsPrograms',
-  'clubs', 'languages', 'faithBased', 'genderPolicy', 'schoolTypeLabel',
-  'facilities', 'financialAidAvailable', 'financialAidDetails',
-  'dayAdmissionDeadline', 'admissionRequirements', 'entranceRequirements',
-  'lowestGrade', 'highestGrade'
+  'name', 'description', 'day_tuition', 'boarding_tuition', 'enrollment',
+  'avg_class_size', 'student_teacher_ratio', 'curriculum', 'address', 'city',
+  'province_state', 'country', 'phone', 'email', 'website', 'mission_statement',
+  'teaching_philosophy', 'specializations', 'arts_programs', 'sports_programs',
+  'clubs', 'languages', 'faith_based', 'gender_policy', 'school_type_label',
+  'facilities', 'financial_aid_available', 'financial_aid_details',
+  'day_admission_deadline', 'admission_requirements', 'entrance_requirements',
+  'lowest_grade', 'highest_grade'
 ];
 
 function buildResponseSchema() {
@@ -148,10 +148,10 @@ export async function enrichSchoolFromWebLogic(params: { schoolId: string; websi
     if (proposedStr === currentStr) continue;
 
     await EnrichmentDiff.create({
-      schoolId, field, currentValue: currentStr, proposedValue: proposedStr,
+      school_id: schoolId, field, current_value: currentStr, proposed_value: proposedStr,
       confidence: CONFIDENCE_MAP[extraction.confidence] ?? 0.3,
-      source: 'school website', sourceUrl: targetUrl,
-      status: 'pending', batchId, createdAt: new Date().toISOString()
+      source: 'school website', source_url: targetUrl,
+      status: 'pending', batch_id: batchId, created_at: new Date().toISOString()
     });
     diffsCreated++;
   }

@@ -80,33 +80,34 @@ export interface SendEmailOptions {
 
 /**
  * Sends email — replaces legacy SDK.asServiceRole.integrations.Core.SendEmail
- * TODO: Wire up to your actual email provider (SendGrid, Resend, SES, etc.)
+  * Uses Resend API (RESEND_API_KEY env var)
  */
 export async function sendEmail(options: SendEmailOptions): Promise<void> {
   // Placeholder: integrate with your email provider
   // For now, log the email attempt
   console.log(`[sendEmail] To: ${options.to}, Subject: ${options.subject}`)
 
-  const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY
-  if (SENDGRID_API_KEY) {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+  const RESEND_API_KEY = process.env.RESEND_API_KEY
+  if (RESEND_API_KEY) {
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${SENDGRID_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        personalizations: [{ to: [{ email: options.to }] }],
-        from: { email: process.env.FROM_EMAIL || 'noreply@nextschool.ca', name: options.from_name },
-        subject: options.subject,
-        content: [{ type: 'text/html', value: options.body }],
-      }),
-    })
-    if (!response.ok) {
-      const errText = await response.text()
-      throw new Error(`Email send failed (${response.status}): ${errText}`)
-    }
-    return
+          from: `${options.from_name} <${process.env.FROM_EMAIL || 'noreply@nextschool.ca'}>`,
+          to: [options.to],
+          subject: options.subject,
+          html: options.body,
+          }),
+      })
+
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(`Email send failed (${response.status}): ${errText}`)
+      }
+      return
   }
 
   // If no email provider configured, warn but don't fail

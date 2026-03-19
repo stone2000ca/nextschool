@@ -100,11 +100,11 @@ export default function SchoolSearchProfile({
   const [shareUrl, setShareUrl] = useState(null);
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
   const [editData, setEditData] = useState({
-    childGrade: session.childGrade,
-    maxTuition: session.maxTuition,
-    locationArea: session.locationArea,
+    childGrade: session.child_grade,
+    maxTuition: session.max_tuition,
+    locationArea: session.location_area,
     priorities: session.priorities || [],
-    learningDifferences: session.learningDifferences || [],
+    learningDifferences: session.learning_differences || [],
   });
 
   const handleViewMatches = () => {
@@ -129,11 +129,11 @@ export default function SchoolSearchProfile({
     try {
       // Update ONLY the editable session fields — never touch familyBrief or FamilyProfile
       const sessionUpdate = {
-        childGrade: editData.childGrade ?? null,
-        maxTuition: editData.maxTuition ?? null,
-        locationArea: editData.locationArea ?? null,
+        child_grade: editData.childGrade ?? null,
+        max_tuition: editData.maxTuition ?? null,
+        location_area: editData.locationArea ?? null,
         priorities: editData.priorities,
-        learningDifferences: editData.learningDifferences,
+        learning_differences: editData.learningDifferences,
       };
       await ChatSession.update(session.id, sessionUpdate);
 
@@ -172,7 +172,7 @@ export default function SchoolSearchProfile({
     try {
       // Generate UUID for shareToken
       const shareToken = crypto.randomUUID();
-      await ChatSession.update(session.id, { shareToken });
+      await ChatSession.update(session.id, { share_token: shareToken });
       const url = `https://nextschool.ca/SharedProfile?token=${shareToken}`;
       setShareUrl(url);
       setShowShareModal(true);
@@ -191,7 +191,7 @@ export default function SchoolSearchProfile({
 
   const handleRemoveSharing = async () => {
     try {
-      await ChatSession.update(session.id, { shareToken: null });
+      await ChatSession.update(session.id, { share_token: null });
       setShowShareModal(false);
       setShareUrl(null);
     } catch (err) {
@@ -206,8 +206,8 @@ export default function SchoolSearchProfile({
   let matchedCount = 0;
   let matchedSchools = [];
   try {
-    if (session.matchedSchools && typeof session.matchedSchools === 'string') {
-      matchedSchools = JSON.parse(session.matchedSchools);
+    if (session.matched_schools && typeof session.matched_schools === 'string') {
+      matchedSchools = JSON.parse(session.matched_schools);
       matchedCount = Array.isArray(matchedSchools) ? matchedSchools.length : 0;
     }
   } catch (e) {
@@ -215,14 +215,14 @@ export default function SchoolSearchProfile({
   }
 
   // Get child initial for avatar
-  const initial = session.childName ? session.childName.charAt(0).toUpperCase() : '?';
+  const initial = session.child_name ? session.child_name.charAt(0).toUpperCase() : '?';
 
   // Prioritize tags (if priorities exist)
   const priorities = session.priorities || [];
 
   // Format budget range
-  const budgetRange = session.maxTuition
-    ? `$${(session.maxTuition / 1000).toFixed(0)}K`
+  const budgetRange = session.max_tuition
+    ? `$${(session.max_tuition / 1000).toFixed(0)}K`
     : 'Not set';
 
   // Best match school (first in matched)
@@ -249,14 +249,14 @@ export default function SchoolSearchProfile({
             <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
               {initial}
             </div>
-            <span className="font-semibold text-white text-sm truncate">{session.childName || 'Student'}</span>
+            <span className="font-semibold text-white text-sm truncate">{session.child_name || 'Student'}</span>
           </div>
 
           {/* META */}
           <div className="px-3 pt-2 flex items-center gap-2 flex-wrap">
-            {session.childGrade != null && (
+            {session.child_grade != null && (
               <span className="text-xs bg-white/10 rounded-full px-2 py-0.5 text-gray-300">
-                Grade {session.childGrade}
+                Grade {session.child_grade}
               </span>
             )}
             <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -285,10 +285,10 @@ export default function SchoolSearchProfile({
             <p className="text-sm">
               <span className="text-teal-400 font-semibold">{matchedCount}</span>
               <span className="text-white/50"> matches</span>
-              {session.shortlistedCount > 0 && (
+              {session.shortlisted_count > 0 && (
                 <>
                   <span className="text-white/30"> · </span>
-                  <span className="text-teal-400 font-semibold">{session.shortlistedCount}</span>
+                  <span className="text-teal-400 font-semibold">{session.shortlisted_count}</span>
                   <span className="text-white/50"> shortlisted</span>
                 </>
               )}
@@ -402,11 +402,11 @@ export default function SchoolSearchProfile({
               onClick={() => {
                 setIsEditMode(false);
                 setEditData({
-                  childGrade: session.childGrade,
-                  maxTuition: session.maxTuition,
-                  locationArea: session.locationArea,
+                  childGrade: session.child_grade,
+                  maxTuition: session.max_tuition,
+                  locationArea: session.location_area,
                   priorities: session.priorities || [],
-                  learningDifferences: session.learningDifferences || [],
+                  learningDifferences: session.learning_differences || [],
                 });
               }}
               disabled={isSaving}

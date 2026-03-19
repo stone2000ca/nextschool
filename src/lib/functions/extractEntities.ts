@@ -2,7 +2,7 @@
 // Purpose: Extract and persist family profile data from parent messages with intent classification
 // Entities: FamilyProfile
 // Last Modified: 2026-03-09
-// Dependencies: Base44 InvokeLLM
+// Dependencies: InvokeLLM
 // WC-1: F11 FIX — strip non-schema keys before DB write to prevent Firestore rejection
 // WC-2: LLM model upgrade — MiniMax M2.5 as primary model in callOpenRouter waterfall
 // WC-3: S122 extraction bug fixes — location false positive, interests list, gender keywords
@@ -123,16 +123,16 @@ export async function extractEntitiesLogic({ message: rawMessage, aiReply, conve
     const t1 = Date.now();
 
     const knownData = conversationFamilyProfile ? {
-      childName: conversationFamilyProfile.childName,
-      childGrade: conversationFamilyProfile.childGrade,
-      locationArea: conversationFamilyProfile.locationArea,
-      maxTuition: conversationFamilyProfile.maxTuition,
+      childName: conversationFamilyProfile.child_name,
+      childGrade: conversationFamilyProfile.child_grade,
+      locationArea: conversationFamilyProfile.location_area,
+      maxTuition: conversationFamilyProfile.max_tuition,
       interests: conversationFamilyProfile.interests,
       priorities: conversationFamilyProfile.priorities,
       dealbreakers: conversationFamilyProfile.dealbreakers,
-      curriculumPreference: conversationFamilyProfile.curriculumPreference,
-      religiousPreference: conversationFamilyProfile.religiousPreference,
-      boardingPreference: conversationFamilyProfile.boardingPreference
+      curriculumPreference: conversationFamilyProfile.curriculum_preference,
+      religiousPreference: conversationFamilyProfile.religious_preference,
+      boardingPreference: conversationFamilyProfile.boarding_preference
     } : {};
 
     const conversationSummary = conversationHistory?.slice(-5)
@@ -478,11 +478,26 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     }
     if (updatedFamilyProfile?.id) {
       try {
-        // F11 FIX: Strip non-schema keys before DB write to prevent Firestore rejection
+        // F11 FIX: Strip non-schema keys before DB write to prevent rejection
         const NON_SCHEMA_KEYS = ['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers', 'gender'];
-        const profileToSave = { ...updatedFamilyProfile };
+        const PROFILE_CAMEL_TO_SNAKE: Record<string, string> = {
+          childName: 'child_name', childGrade: 'child_grade', childGender: 'child_gender',
+          locationArea: 'location_area', maxTuition: 'max_tuition', priorities: 'priorities',
+          interests: 'interests', dealbreakers: 'dealbreakers', learningDifferences: 'learning_differences',
+          curriculumPreference: 'curriculum_preference', schoolTypeLabel: 'school_type_label',
+          academicStrengths: 'academic_strengths', parentNotes: 'parent_notes',
+          schoolGenderExclusions: 'school_gender_exclusions', schoolGenderPreference: 'school_gender_preference',
+          religiousPreference: 'religious_preference', boardingPreference: 'boarding_preference',
+          conversationId: 'conversation_id', userId: 'user_id',
+        };
+        const rawProfile = { ...updatedFamilyProfile };
         for (const key of NON_SCHEMA_KEYS) {
-          delete profileToSave[key];
+          delete rawProfile[key];
+        }
+        // Convert camelCase keys to snake_case for DB
+        const profileToSave: Record<string, any> = {};
+        for (const [k, v] of Object.entries(rawProfile)) {
+          profileToSave[PROFILE_CAMEL_TO_SNAKE[k] || k] = v;
         }
         const persistedProfile = await FamilyProfile.update(updatedFamilyProfile.id, profileToSave);
         Object.assign(updatedFamilyProfile, persistedProfile);

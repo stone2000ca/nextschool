@@ -123,7 +123,7 @@ export default function SharedShortlistView() {
   }, []);
 
   const formattedDate = shortlist?.generatedDate
-    ? new Date(shortlist.generatedDate).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(shortlist.generated_date).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
 
   if (loading) {
