@@ -194,7 +194,7 @@ export async function generateSharedShortlistLink(params: {
     generated_date: new Date().toISOString()
   });
 
-  const shareUrl = `https://nextschool.ca/SharedShortlistView?hash=${hash}`;
+  const shareUrl = `https://nextschool.ca/shared/shortlist/${hash}`;
 
   return { hash, shareUrl };
 }

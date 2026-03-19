@@ -4,7 +4,7 @@ import { Check, X, Circle, MapPin, Navigation, DollarSign, ExternalLink } from '
 
 // =============================================================================
 // T-SL-006: Shared Shortlist View — public read-only page, no login required
-// Loaded via /SharedShortlistView?hash=<hash>
+// Loaded via /shared/shortlist/<hash>
 // =============================================================================
 
 function CheckIcon({ status }) {
@@ -98,8 +98,9 @@ export default function SharedShortlistView() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const hash = params.get('hash');
+    // Extract hash from path: /shared/shortlist/<hash>
+    const pathSegments = window.location.pathname.split('/');
+    const hash = pathSegments[pathSegments.length - 1] || null;
 
     if (!hash) {
       setError('No shortlist hash provided.');
