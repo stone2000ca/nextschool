@@ -16,7 +16,7 @@ export async function geocodeSchoolsLogic(params: { limit?: number }) {
   // (the Supabase filter can't easily express "has address AND missing lat/lng")
   const allWithAddress = await School.filter({
     address: { $ne: null }
-  }, '-updated_date', limit * 5);
+  }, '-updatedAt', limit * 5);
   const schools = allWithAddress.filter((s: any) =>
     s.address && s.address.trim() !== '' && (s.lat === null || s.lat === undefined || s.lat === '' || s.lng === null || s.lng === undefined || s.lng === '')
   ).slice(0, limit);
