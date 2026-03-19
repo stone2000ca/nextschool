@@ -9,12 +9,14 @@ interface UserProfile {
   email: string
   full_name?: string
   role?: string
-  subscriptionPlan?: string
-  tokenBalance?: number
-  maxSessions?: number
-  stripeCustomerId?: string
-  lastSignedOn?: string
-  profileRegion?: string
+  subscription_plan?: string
+  token_balance?: number
+  max_sessions?: number
+  stripe_customer_id?: string
+  last_signed_on?: string
+  profile_region?: string
+  created_at?: string
+  updated_at?: string
   [key: string]: any
 }
 
@@ -64,24 +66,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         email: authUser.email || '',
         full_name: authUser.user_metadata?.full_name,
         role: 'user',
-        tokenBalance: 3,
-        maxSessions: 3,
+        token_balance: 3,
+        max_sessions: 3,
       }
     }
 
-    // Convert snake_case DB row to camelCase for frontend compat
+    // Return snake_case fields directly from DB
     return {
       id: data.id,
       email: data.email,
       full_name: data.full_name,
-      fullName: data.full_name,
       role: data.role,
-      subscriptionPlan: data.subscription_plan,
-      tokenBalance: data.token_balance,
-      maxSessions: data.max_sessions,
-      stripeCustomerId: data.stripe_customer_id,
-      lastSignedOn: data.last_signed_on,
-      profileRegion: data.profile_region,
+      subscription_plan: data.subscription_plan,
+      token_balance: data.token_balance,
+      max_sessions: data.max_sessions,
+      stripe_customer_id: data.stripe_customer_id,
+      last_signed_on: data.last_signed_on,
+      profile_region: data.profile_region,
       created_at: data.created_at,
       updated_at: data.updated_at,
     }
@@ -223,17 +224,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const updateMe = async (updates: Record<string, any>) => {
     if (!user) throw new Error('Not authenticated')
 
-    // Convert camelCase to snake_case for DB
-    const snakeUpdates: Record<string, any> = {}
-    for (const [key, value] of Object.entries(updates)) {
-      const snakeKey = key.replace(/[A-Z]/g, (l) => `_${l.toLowerCase()}`)
-      snakeUpdates[snakeKey] = value
-    }
-    snakeUpdates.updated_at = new Date().toISOString()
+    // Updates should already use snake_case keys matching DB columns
+    const dbUpdates = { ...updates, updated_at: new Date().toISOString() }
 
     const { error } = await supabase
       .from('user_profiles')
-      .update(snakeUpdates)
+      .update(dbUpdates)
       .eq('id', user.id)
 
     if (error) throw error

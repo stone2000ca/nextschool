@@ -39,23 +39,23 @@ export default function SchoolCardUnified({
 
   // Tuition display logic
   const renderTuition = () => {
-    if (school.dayTuition && school.boardingTuition) {
+    if (school.day_tuition && school.boarding_tuition) {
       return (
         <span className="text-xs sm:text-sm">
-          {getCurrencySymbol(school.currency)}{school.dayTuition.toLocaleString()} (day) / {getCurrencySymbol(school.currency)}{school.boardingTuition.toLocaleString()} (boarding)
+          {getCurrencySymbol(school.currency)}{school.day_tuition.toLocaleString()} (day) / {getCurrencySymbol(school.currency)}{school.boarding_tuition.toLocaleString()} (boarding)
         </span>
       );
-    } else if (school.dayTuition) {
+    } else if (school.day_tuition) {
       return (
         <>
-          {getCurrencySymbol(school.currency)}{school.dayTuition.toLocaleString()}
+          {getCurrencySymbol(school.currency)}{school.day_tuition.toLocaleString()}
           <span className="text-xs text-slate-500 font-normal ml-1">(day)</span>
         </>
       );
-    } else if (school.boardingTuition) {
+    } else if (school.boarding_tuition) {
       return (
         <>
-          {getCurrencySymbol(school.currency)}{school.boardingTuition.toLocaleString()}
+          {getCurrencySymbol(school.currency)}{school.boarding_tuition.toLocaleString()}
           <span className="text-xs text-slate-500 font-normal ml-1">(boarding)</span>
         </>
       );
@@ -115,15 +115,15 @@ export default function SchoolCardUnified({
         <div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-400" />
         <div className="absolute inset-0 group-hover:scale-105 transition-transform duration-300">
           <HeaderPhotoDisplay 
-            headerPhotoUrl={school.headerPhotoUrl}
-            heroImage={school.heroImage}
+            headerPhotoUrl={school.header_photo_url}
+            heroImage={school.hero_image}
             schoolName={school.name}
             height={isCompact ? "h-32" : isFeatured ? "h-56" : "h-48"}
           />
         </div>
         
         {/* Managed badge */}
-        {school.claimStatus === 'claimed' && (
+        {school.claim_status === 'claimed' && (
           <div className="absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium bg-teal-600 text-white flex items-center gap-1">
             <Award className="h-3 w-3" />
             Managed by school
@@ -134,7 +134,7 @@ export default function SchoolCardUnified({
       {/* Content */}
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-start gap-2 mb-2">
-          <LogoDisplay logoUrl={school.logoUrl} schoolName={school.name} schoolWebsite={school.website} size="h-5 w-5" />
+          <LogoDisplay logoUrl={school.logo_url} schoolName={school.name} schoolWebsite={school.website} size="h-5 w-5" />
           <h3 className={`font-bold ${isCompact ? 'text-base' : 'text-lg'} line-clamp-2 flex-1`}>
             {school.name}
           </h3>
@@ -142,35 +142,35 @@ export default function SchoolCardUnified({
         
         <div className="flex items-center gap-1 text-sm text-slate-600 mb-3">
           <MapPin className="h-3 w-3 flex-shrink-0" />
-          <span className="line-clamp-1">{school.city}, {school.provinceState}</span>
+          <span className="line-clamp-1">{school.city}, {school.province_state}</span>
         </div>
         
         {/* Distance badge */}
-        {school.distanceKm && (
+        {school.distance_km && (
           <div className="mb-3">
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-teal-50 text-teal-700 rounded-md text-xs font-medium">
               <Navigation className="h-3 w-3" />
-              {school.distanceKm.toFixed(1)} km away
+              {school.distance_km.toFixed(1)} km away
             </span>
           </div>
         )}
 
         {/* Enriched chips */}
         <div className="flex flex-wrap gap-1.5 mb-3 text-xs">
-          {formatGradeRange(school.lowestGrade, school.highestGrade) && (
+          {formatGradeRange(school.lowest_grade, school.highest_grade) && (
             <Badge variant="secondary" className="bg-slate-100 text-slate-700">
               <GraduationCap className="h-3 w-3 mr-1" />
-              {formatGradeRange(school.lowestGrade, school.highestGrade)}
+              {formatGradeRange(school.lowest_grade, school.highest_grade)}
             </Badge>
           )}
-          {school.genderPolicy && school.genderPolicy !== 'Co-ed' && (
-            <Badge variant="secondary" className="bg-slate-100 text-slate-700">{school.genderPolicy}</Badge>
+          {school.gender_policy && school.gender_policy !== 'Co-ed' && (
+            <Badge variant="secondary" className="bg-slate-100 text-slate-700">{school.gender_policy}</Badge>
           )}
-          {school.boardingAvailable && (
+          {school.boarding_available && (
             <Badge variant="secondary" className="bg-blue-50 text-blue-700">Boarding</Badge>
           )}
-          {school.faithBased && (
-            <Badge variant="secondary" className="bg-amber-50 text-amber-700">{school.faithBased}</Badge>
+          {school.faith_based && (
+            <Badge variant="secondary" className="bg-amber-50 text-amber-700">{school.faith_based}</Badge>
           )}
           {school.curriculum && (Array.isArray(school.curriculum) ? school.curriculum : [school.curriculum]).slice(0, 2).map((c, i) => (
             <Badge key={i} variant="secondary" className="bg-teal-50 text-teal-700">{c}</Badge>
@@ -184,7 +184,7 @@ export default function SchoolCardUnified({
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500 mb-3">
           {school.enrollment && <span>{school.enrollment.toLocaleString()} students</span>}
           {school.founded && <span>Est. {school.founded}</span>}
-          {school.acceptanceRate && <span>{school.acceptanceRate}% acceptance</span>}
+          {school.acceptance_rate && <span>{school.acceptance_rate}% acceptance</span>}
         </div>
 
         {/* Tuition */}
@@ -194,11 +194,11 @@ export default function SchoolCardUnified({
         </div>
 
         {/* Match Explanations */}
-        {!isCompact && school.matchExplanations && school.matchExplanations.length > 0 && (
+        {!isCompact && school.match_explanations && school.match_explanations.length > 0 && (
           <>
             <div className="my-3 border-t border-slate-200" />
             <div className="space-y-2 text-xs flex-1">
-              {school.matchExplanations.map((match, idx) => (
+              {school.match_explanations.map((match, idx) => (
                 <div key={idx} className="flex items-start gap-2">
                   {match.type === 'positive' ? (
                     <Check className="h-3.5 w-3.5 text-green-600 flex-shrink-0 mt-0.5" />

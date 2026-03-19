@@ -177,7 +177,7 @@ export async function restoreSessionFromParam(
           lastDeepDiveSchoolName = latest.schoolName || 'School';
           console.log('[RESTORE] Fallback: found', recentAnalyses.length, 'SchoolAnalysis rows, active school:', lastDeepDiveSchoolId);
           if (setDeepDiveAnalysis) {
-            const mappedAnalysis = analysesMap[latest.schoolId] || latest;
+            const mappedAnalysis = analysesMap[latest.school_id] || latest;
             setDeepDiveAnalysis(mappedAnalysis);
             // WC-2: Inject analysis onto last assistant message so E39-S4a can find it
             const injectedMsgs = [...restoredMessages];
@@ -205,7 +205,7 @@ export async function restoreSessionFromParam(
     } else {
       // BUG-LOCATION-EXTRACT-S97 FIX: Prefer extractedEntities.locationArea from ChatHistory context
       // over ChatSession.locationArea which may contain stale/invalid values (e.g. 'Grade')
-      const restoredLocationArea = chatHistory?.conversationContext?.extractedEntities?.locationArea || chatSession.location_area;
+      const restoredLocationArea = chatHistory?.conversation_context?.extractedEntities?.locationArea || chatSession.location_area;
 
       restoredProfile = {
         childName: chatSession.child_name,
@@ -225,7 +225,7 @@ export async function restoreSessionFromParam(
     setOnboardingPhase(STATES.RESULTS);
 
     // Restore deep dive state from message scan (BUG-RN-05)
-    const conversationContext = chatHistory?.conversationContext || {};
+    const conversationContext = chatHistory?.conversation_context || {};
     const hasDeepDiveRestore = !!lastDeepDiveSchoolId;
     if (lastDeepDiveSchoolId && setSelectedSchool) {
       console.log('[RESTORE] Found deep dive in messages for school:', lastDeepDiveSchoolId, lastDeepDiveSchoolName);
@@ -251,7 +251,7 @@ export async function restoreSessionFromParam(
     }
     if (chatHistory) {
       const restoredContext = {
-        ...(chatHistory.conversationContext || {}),
+        ...(chatHistory.conversation_context || {}),
         state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (conversationContext.resumeView || conversationContext.state || STATES.RESULTS),
         schools: restoredSchools
       };
@@ -353,7 +353,7 @@ export async function restoreMostRecentConversation(
     }
 
     // 3. Restore consultant from conversationContext
-    const ctx = latest.conversationContext || {};
+    const ctx = latest.conversation_context || {};
     if (ctx.consultant) {
       setSelectedConsultant(ctx.consultant);
     }

@@ -107,7 +107,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
       <div>
         <h3 className="font-semibold text-slate-900 mb-4">School Logo</h3>
         <p className="text-xs text-slate-600 mb-4">Recommended: Square, 400x400px, PNG/JPG</p>
-        {school?.logoUrl && (
+        {school?.logo_url && (
           <div className="mb-4 flex items-center gap-4">
             <img src={school.logo_url} alt="Logo" className="h-24 w-24 rounded-lg border object-cover" />
             <Button
@@ -148,7 +148,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
       <div>
         <h3 className="font-semibold text-slate-900 mb-4">Header Photo</h3>
         <p className="text-xs text-slate-600 mb-4">Recommended: Landscape, 1200x400px</p>
-        {school?.headerPhotoUrl && (
+        {school?.header_photo_url && (
           <div className="mb-4 flex flex-col gap-3">
             <img src={school.header_photo_url} alt="Header" className="h-32 w-full rounded-lg border object-cover" />
             <Button
@@ -190,9 +190,9 @@ export default function PhotosMediaSection({ school, onUpdate }) {
       <div>
         <h3 className="font-semibold text-slate-900 mb-2">Photo Gallery</h3>
         <p className="text-xs text-slate-600 mb-4">
-          {(school?.photoGallery?.length || 0)} of 3 minimum for complete profile
+          {(school?.photo_gallery?.length || 0)} of 3 minimum for complete profile
         </p>
-        {(school?.photoGallery || []).length > 0 && (
+        {(school?.photo_gallery || []).length > 0 && (
           <div className="mb-4 grid grid-cols-3 gap-4">
             {school.photo_gallery.map((url, idx) => (
               <div key={idx} className="relative">
