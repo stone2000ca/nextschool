@@ -44,6 +44,8 @@ const ROUTE_MAP: Record<string, string> = {
   sendClaimEmail: 'send-claim-email',
   verifyClaimCode: 'verify-claim-code',
   approveClaim: 'approve-claim',
+  rejectClaim: 'reject-claim',
+  adminClaims: 'admin-claims',
   adminStats: 'admin-stats',
 }
 
