@@ -93,23 +93,26 @@ export default function ClaimSchool() {
 
   useEffect(() => {
     const init = async () => {
-      const isAuth = authIsAuthenticated;
-      if (!isAuth) {
+      if (!authIsAuthenticated) {
         navigateToLogin(pathname + (typeof window !== 'undefined' ? window.location.search : ''));
         return;
       }
       const userData = authUser;
       setUser(userData);
 
-      // Check if user already has an active claim
-      const claims = await SchoolClaim.filter({ user_id: userData.id });
-      const activeClaim = claims.find(c => ['pending_email', 'pending_review', 'verified'].includes(c.status));
-      if (activeClaim) {
-        const schools = await School.filter({ id: activeClaim.school_id });
-        setClaimSchoolName(schools[0]?.name || '');
-        setExistingClaim(activeClaim);
-        setLoading(false);
-        return;
+      try {
+        // Check if user already has an active claim
+        const claims = await SchoolClaim.filter({ user_id: userData.id });
+        const activeClaim = claims.find(c => ['pending_email', 'pending_review', 'verified'].includes(c.status));
+        if (activeClaim) {
+          const schools = await School.filter({ id: activeClaim.school_id });
+          setClaimSchoolName(schools[0]?.name || '');
+          setExistingClaim(activeClaim);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to check existing claims:', err);
       }
 
       if (schoolId) {
@@ -119,7 +122,7 @@ export default function ClaimSchool() {
       }
     };
     init();
-  }, [schoolId]);
+  }, [schoolId, authIsAuthenticated]);
 
   const loadSchool = async () => {
     try {
