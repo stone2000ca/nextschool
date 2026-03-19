@@ -115,7 +115,7 @@ export default function Dashboard() {
       await ChatSession.update(sessionToArchive.id, { status: 'archived' });
       setShowArchiveChoiceModal(false);
       // Refresh sessions
-      await checkAuthAndLoadSessions();
+      await loadSessions();
       router.push('/consultant');
     } catch (err) {
       console.error('Failed to archive session:', err);
@@ -136,7 +136,7 @@ export default function Dashboard() {
     try {
       await ChatSession.update(archivedSession.id, { status: 'active' });
       setReactivateError(null);
-      await checkAuthAndLoadSessions();
+      await loadSessions();
     } catch (err) {
       console.error('Failed to reactivate session:', err);
       setReactivateError('Failed to reactivate. Please try again.');
@@ -160,7 +160,7 @@ export default function Dashboard() {
         status: 'deleted',
         is_active: false
       });
-      await checkAuthAndLoadSessions();
+      await loadSessions();
     } catch (err) {
       console.error('Failed to delete session:', err);
     }
@@ -184,7 +184,7 @@ export default function Dashboard() {
       await ChatSession.update(activeSession.id, { status: 'archived' });
       setShowNewSearchModal(false);
       // Refresh sessions
-      await checkAuthAndLoadSessions();
+      await loadSessions();
       router.push('/consultant');
     } catch (err) {
       console.error('Failed to archive session:', err);
@@ -194,7 +194,7 @@ export default function Dashboard() {
   };
 
   const handleSessionArchived = async () => {
-    await checkAuthAndLoadSessions();
+    await loadSessions();
   };
 
   const handleDeleteAll = async () => {
