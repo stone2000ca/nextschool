@@ -127,33 +127,27 @@ export default function SchoolDirectory() {
 
   const loadSchools = async () => {
     try {
-      // Load schools via server API (bypasses RLS) and events independently
-      const [schoolsResult, eventsResult] = await Promise.allSettled([
-        invokeFunction('listSchools', { status: 'active', sort: '-updated_at', limit: 1000 }),
-        SchoolEvent.filter({}),
-      ]);
-
-      const schoolsRaw = schoolsResult.status === 'fulfilled' ? schoolsResult.value : [];
+      // Load schools via server API (bypasses RLS)
+      const schoolsRaw = await invokeFunction('listSchools', { status: 'active', sort: '-updated_at', limit: 1000 });
       const schools = Array.isArray(schoolsRaw) ? schoolsRaw : (schoolsRaw?.data || []);
-      const events = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
-
-      if (schoolsResult.status === 'rejected') {
-        console.error('Failed to load schools:', schoolsResult.reason);
-      }
-      if (eventsResult.status === 'rejected') {
-        console.error('Failed to load events:', eventsResult.reason);
-      }
-
+      console.log('[SchoolDirectory] Loaded schools:', schools.length, 'first:', schools[0]?.name);
       setAllSchools(schools || []);
+    } catch (error) {
+      console.error('[SchoolDirectory] Failed to load schools:', error);
+    } finally {
+      setLoading(false);
+    }
+
+    // Load events separately — don't let it block school rendering
+    try {
+      const events = await SchoolEvent.filter({});
       const today = new Date().toISOString();
       const withEvents = new Set(
         (events || []).filter(e => e.date && e.date >= today).map(e => e.schoolId)
       );
       setSchoolsWithEvents(withEvents);
     } catch (error) {
-      console.error('Failed to load schools:', error);
-    } finally {
-      setLoading(false);
+      console.error('[SchoolDirectory] Failed to load events:', error);
     }
   };
 
