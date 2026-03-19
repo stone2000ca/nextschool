@@ -26,7 +26,11 @@ export function generateProgrammaticBrief(profile) {
   if (profile.locationArea) lines.push(`**Location:** ${profile.locationArea}`);
 
   // Budget
-  if (profile.maxTuition) lines.push(`**Budget:** Up to $${Number(profile.maxTuition).toLocaleString()}`);
+  if (profile.maxTuition) {
+    const tuition = profile.maxTuition;
+    const budgetStr = tuition === 'unlimited' ? 'Flexible' : typeof tuition === 'number' ? `Up to $${tuition.toLocaleString()}` : String(tuition);
+    lines.push(`**Budget:** ${budgetStr}`);
+  }
 
   // Priorities
   if (profile.priorities?.length) lines.push(`**Priorities:** ${profile.priorities.join(', ')}`);

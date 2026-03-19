@@ -192,6 +192,8 @@ export async function handleBriefLogic(params: any) {
       budgetDisplay = 'Budget is flexible';
     } else if (maxTuition && typeof maxTuition === 'number') {
       budgetDisplay = `$${maxTuition.toLocaleString()}/year`;
+    } else if (maxTuition && typeof maxTuition === 'string') {
+      budgetDisplay = maxTuition;
     }
 
     const briefChildGenderLabel = localProfile?.gender === 'male'
@@ -216,7 +218,7 @@ export async function handleBriefLogic(params: any) {
       }
       if (locationArea) briefLines.push(`- **Location:** ${locationArea}`);
       if (maxTuition) {
-        const budgetStr = maxTuition === 'unlimited' ? 'Flexible' : `Up to $${Number(maxTuition).toLocaleString()}`;
+        const budgetStr = maxTuition === 'unlimited' ? 'Flexible' : typeof maxTuition === 'number' ? `Up to $${maxTuition.toLocaleString()}` : String(maxTuition);
         briefLines.push(`- **Budget:** ${budgetStr}`);
       }
       if ((priorities || []).length > 0) briefLines.push(`- **Priorities:** ${(priorities || []).join(', ')}`);
@@ -236,7 +238,7 @@ export async function handleBriefLogic(params: any) {
         "Here's what I'm hearing from you so far:\n",
         childName || childGrade !== null && childGrade !== undefined ? `- **Child:** ${childDisplay}${childGrade !== null && childGrade !== undefined ? ', Grade ' + childGrade : ''}` : null,
         locationArea ? `- **Location:** ${locationArea}` : null,
-        maxTuition ? `- **Budget:** ${maxTuition === 'unlimited' ? 'Flexible' : `Up to $${Number(maxTuition).toLocaleString()}`}` : null,
+        maxTuition ? `- **Budget:** ${maxTuition === 'unlimited' ? 'Flexible' : typeof maxTuition === 'number' ? `Up to $${maxTuition.toLocaleString()}` : String(maxTuition)}` : null,
         (priorities || []).length > 0 ? `- **Priorities:** ${(priorities || []).join(', ')}` : null,
         (interests || []).length > 0 ? `- **Interests:** ${(interests || []).join(', ')}` : null,
         (dealbreakers || []).length > 0 ? `- **Dealbreakers:** ${(dealbreakers || []).join(', ')}` : null,
