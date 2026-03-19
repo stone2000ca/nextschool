@@ -1477,6 +1477,7 @@ Object.assign(context, safeUpdatedContext);
         previousSchoolId,
         userMessage: processMessage,
         tier1CompletedTurn: context.tier1CompletedTurn || null,
+        briefStatus: context.briefStatus || null,
         context
       });
       

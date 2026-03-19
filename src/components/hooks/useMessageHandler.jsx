@@ -114,7 +114,7 @@ export const useMessageHandler = ({
       localStorage.setItem('guestConversationData', JSON.stringify({
         messages,
         consultant: selectedConsultant,
-        conversationContext: currentConversation?.conversationContext || {},
+        conversationContext: currentConversation?.conversation_context || currentConversation?.conversationContext || {},
         familyProfile: familyProfile || {},
         briefStatus: briefStatus || null,
         extractedEntitiesData: extractedEntitiesData || {},
@@ -192,7 +192,7 @@ export const useMessageHandler = ({
       const response = await invokeFunction('orchestrateConversation', {
         message: messageText,
         conversationHistory: messages.slice(-10),
-        conversationContext: currentConversation?.conversationContext || {},
+        conversationContext: currentConversation?.conversation_context || currentConversation?.conversationContext || {},
         region: user?.profileRegion || 'Canada',
         userId: user?.id,
         consultantName: selectedConsultant,
@@ -325,27 +325,30 @@ export const useMessageHandler = ({
       // CRITICAL FIX: Merge backend's full context (including extractedEntities) with frontend state
       const responseState = response.data?.state;
       const deepDiveSchoolId = response.data?.deepDiveAnalysis?.schoolId || selectedSchool?.id || resolvedSchoolId || null;
+      const prevContext = currentConversation?.conversation_context || currentConversation?.conversationContext || {};
       const updatedContext = {
-        ...(currentConversation?.conversationContext || {}),
+        ...prevContext,
         ...(response.data?.conversationContext || {}),
         state: responseState,
         briefStatus: newBriefStatus,
         schools: response.data?.schools || [],
         conversationId: conversationIdRef.current || currentConversation?.id || null,
         resumeView: responseState || null,
-        lastDeepDiveSchoolId: (responseState === 'DEEP_DIVE' || deepDiveSchoolId) ? deepDiveSchoolId : (currentConversation?.conversationContext?.lastDeepDiveSchoolId || null),
+        lastDeepDiveSchoolId: (responseState === 'DEEP_DIVE' || deepDiveSchoolId) ? deepDiveSchoolId : (prevContext?.lastDeepDiveSchoolId || null),
       };
 
       // BUG-RN-PERSIST Fix A: Use functional updater to avoid stale-closure overwrite
       // of currentConversation.id that was set by the RESULTS ChatHistory.create block.
+      // E45-FIX: Set BOTH conversation_context (for Consultant.jsx) and conversationContext (for backward compat)
       setCurrentConversation(prev => ({
         ...(prev || { id: null, messages: [] }),
+        conversation_context: updatedContext,
         conversationContext: updatedContext,
       }));
 
-      // E42-PERSIST: Primary conversationContext persist (non-blocking)
+      // E42-PERSIST: Primary conversation_context persist (non-blocking)
       if (typeof conversationIdRef.current === 'string' && conversationIdRef.current) {
-        retryWithBackoff(() => ChatHistory.update(conversationIdRef.current, { conversationContext: updatedContext })).catch(err => console.error('[E42-PERSIST] Primary context save failed:', err));
+        retryWithBackoff(() => ChatHistory.update(conversationIdRef.current, { conversation_context: updatedContext })).catch(err => console.error('[E42-PERSIST] Primary context save failed:', err));
       }
 
       // BUG-DD-001 FIX: selectedSchool is SINGLE SOURCE OF TRUTH - NEVER clear it based on AI state
@@ -437,7 +440,7 @@ export const useMessageHandler = ({
                 user_id: user.id,
                 title: profileName,
                 messages: updatedMessages,
-                conversationContext: updatedContext,
+                conversation_context: updatedContext,
                 is_active: true
               });
               // BUG-RN-PERSIST Fix A2 + Fix 1: Patch both updatedContext and the ref immediately
@@ -448,7 +451,7 @@ export const useMessageHandler = ({
               } else {
                 console.warn('[E42-GUARD] Invalid chatHistoryRecord.id, skipping ref assignment:', chatHistoryRecord.id);
               }
-              setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversationContext: updatedContext }));
+              setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversation_context: updatedContext, conversationContext: updatedContext }));
               console.log('[SESSION] Created ChatHistory with id:', chatHistoryRecord.id);
             } catch (e) {
               console.error('Failed to create ChatHistory before ChatSession:', e);
@@ -621,7 +624,7 @@ export const useMessageHandler = ({
           try {
             await retryWithBackoff(() => ChatHistory.update(currentConversation.id, {
               messages: finalMessages,
-              conversationContext: updatedContext
+              conversation_context: updatedContext
             }));
           } catch (persistErr) {
             console.error('[PERSIST] ChatHistory.update failed — messages may be lost on refresh:', persistErr);
