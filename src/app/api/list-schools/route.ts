@@ -14,16 +14,13 @@ function keysToCamel(obj: Record<string, any>): Record<string, any> {
   return result
 }
 
-// Map frontend/camelCase field names to actual DB column names
-const COLUMN_ALIASES: Record<string, string> = {
-    updatedAt: 'updated_date',
-    createdAt: 'created_date',
-    updated_at: 'updated_date',
-    created_at: 'created_date',
-}
+// Safe columns known to exist in production — used for sorting validation
+const SAFE_SORT_COLUMNS = new Set([
+  'id', 'name', 'slug', 'city', 'country', 'status',
+])
 
 async function listSchools(params: { status?: string; sort?: string; limit?: number }) {
-  const { status, sort, limit } = params
+  const { status, limit } = params
   const supabase = getAdminClient()
 
   let query = supabase.from('schools').select('*')
@@ -32,11 +29,19 @@ async function listSchools(params: { status?: string; sort?: string; limit?: num
     query = query.eq('status', status)
   }
 
-  if (sort) {
-    const descending = sort.startsWith('-')
-    const rawField = descending ? sort.slice(1) : sort
-    const field = COLUMN_ALIASES[rawField] || rawField
-    query = query.order(field, { ascending: !descending })
+  // Only sort by columns we know exist in production to avoid 500s.
+  // Default sort by name if the requested column isn't safe.
+  if (params.sort) {
+    const descending = params.sort.startsWith('-')
+    const rawField = descending ? params.sort.slice(1) : params.sort
+    // Strip any alias mapping — just validate against known columns
+    const field = rawField.replace(/([A-Z])/g, '_$1').toLowerCase() // camelCase -> snake_case
+    if (SAFE_SORT_COLUMNS.has(field)) {
+      query = query.order(field, { ascending: !descending })
+    } else {
+      // Fallback: sort by name ascending
+      query = query.order('name', { ascending: true })
+    }
   }
 
   if (limit) {
@@ -50,7 +55,7 @@ async function listSchools(params: { status?: string; sort?: string; limit?: num
     throw new Error(error.message)
   }
 
-  console.log(`[list-schools] Returned ${(data || []).length} schools (status=${status}, sort=${sort}, limit=${limit})`)
+  console.log(`[list-schools] Returned ${(data || []).length} schools (status=${status}, limit=${limit})`)
 
   return (data || []).map(keysToCamel)
 }
