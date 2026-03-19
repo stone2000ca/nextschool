@@ -6,7 +6,7 @@ export async function rejectClaim({ claimId }: { claimId: string }) {
   const db = getAdminClient()
   const { error } = await db
     .from('school_claims')
-    .update({ status: 'rejected' })
+    .update({ status: 'rejected' } as any)
     .eq('id', claimId)
 
   if (error) throw error

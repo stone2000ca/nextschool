@@ -29,8 +29,8 @@ export async function adminClaims() {
   const userMap = new Map((usersRes.data || []).map((u: any) => [u.id, u]))
 
   return claims.map((claim: any) => {
-    const school = schoolMap.get(claim.school_id)
-    const user = userMap.get(claim.claimed_by)
+    const school = schoolMap.get(claim.school_id) as any
+    const user = userMap.get(claim.claimed_by) as any
     return {
       ...claim,
       _schoolName: school?.name || 'Unknown School',
