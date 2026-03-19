@@ -194,7 +194,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
         </p>
         {(school?.photoGallery || []).length > 0 && (
           <div className="mb-4 grid grid-cols-3 gap-4">
-            {school.photoGallery.map((url, idx) => (
+            {school.photo_gallery.map((url, idx) => (
               <div key={idx} className="relative">
                 <img src={url} alt={`Gallery ${idx + 1}`} className="h-32 w-full rounded-lg border object-cover" />
                 <button

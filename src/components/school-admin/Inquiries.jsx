@@ -47,7 +47,7 @@ const GENERAL_STATUS_CONFIG = {
 // ─── TOUR REQUEST CARD ────────────────────────────────────────────────────────
 
 function TourRequestCard({ inquiry, onTourStatusChange }) {
-  const tourStatus = inquiry.tourStatus || 'new';
+  const tourStatus = inquiry.tour_status || 'new';
   const cfg = TOUR_STATUS_CONFIG[tourStatus] || TOUR_STATUS_CONFIG.new;
   const [updating, setUpdating] = useState(false);
 
@@ -58,9 +58,9 @@ function TourRequestCard({ inquiry, onTourStatusChange }) {
   };
 
   // E16c: Extract and format family context fields
-  const hasMaxTuition = inquiry.maxTuition != null;
-  const hasPriorities = inquiry.prioritiesSnapshot;
-  const hasBoardingPref = inquiry.boardingPreference;
+  const hasMaxTuition = inquiry.max_tuition != null;
+  const hasPriorities = inquiry.priorities_snapshot;
+  const hasBoardingPref = inquiry.boarding_preference;
   const hasAnyFamilyContext = hasMaxTuition || hasPriorities || hasBoardingPref;
 
   const formatCurrency = (value) => {
@@ -75,15 +75,15 @@ function TourRequestCard({ inquiry, onTourStatusChange }) {
   const parsedPriorities = (() => {
     if (!hasPriorities) return null;
     try {
-      const parsed = JSON.parse(inquiry.prioritiesSnapshot);
+      const parsed = JSON.parse(inquiry.priorities_snapshot);
       return Array.isArray(parsed) ? parsed.join(', ') : null;
     } catch {
       return null;
     }
   })();
 
-  const snapshotDateLabel = inquiry.profileSnapshotAt
-    ? `Context from ${new Date(inquiry.profileSnapshotAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}`
+  const snapshotDateLabel = inquiry.profile_snapshot_at
+    ? `Context from ${new Date(inquiry.profile_snapshot_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}`
     : null;
 
   return (
@@ -93,66 +93,66 @@ function TourRequestCard({ inquiry, onTourStatusChange }) {
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <Badge className="bg-teal-100 text-teal-700 font-semibold">Tour Request</Badge>
           <Badge className={cfg.color}>{cfg.label}</Badge>
-          <span className="ml-auto text-xs text-slate-400">{formatDate(inquiry.createdAt)}</span>
+          <span className="ml-auto text-xs text-slate-400">{formatDate(inquiry.created_at)}</span>
         </div>
 
         {/* Parent info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-4">
-          {inquiry.parentName && (
+          {inquiry.parent_name && (
             <div className="flex items-center gap-2 text-slate-700">
               <User className="h-4 w-4 text-slate-400 flex-shrink-0" />
-              <span className="font-medium">{inquiry.parentName}</span>
+              <span className="font-medium">{inquiry.parent_name}</span>
             </div>
           )}
-          {inquiry.parentEmail && (
+          {inquiry.parent_email && (
             <div className="flex items-center gap-2 text-slate-700">
               <Mail className="h-4 w-4 text-slate-400 flex-shrink-0" />
-              <a href={`mailto:${inquiry.parentEmail}`} className="text-teal-600 hover:underline truncate">
-                {inquiry.parentEmail}
+              <a href={`mailto:${inquiry.parent_email}`} className="text-teal-600 hover:underline truncate">
+                {inquiry.parent_email}
               </a>
             </div>
           )}
-          {inquiry.childGrade != null && (
+          {inquiry.child_grade != null && (
             <div className="flex items-center gap-2 text-slate-700">
               <BookOpen className="h-4 w-4 text-slate-400 flex-shrink-0" />
-              <span>{formatGrade(inquiry.childGrade)}</span>
+              <span>{formatGrade(inquiry.child_grade)}</span>
             </div>
           )}
-          {inquiry.tourType && (
+          {inquiry.tour_type && (
             <div className="flex items-center gap-2 text-slate-700">
               <CalendarDays className="h-4 w-4 text-slate-400 flex-shrink-0" />
-              <span>{inquiry.tourType === 'in_person' ? 'In-Person Tour' : 'Virtual Tour'}</span>
+              <span>{inquiry.tour_type === 'in_person' ? 'In-Person Tour' : 'Virtual Tour'}</span>
             </div>
           )}
         </div>
 
         {/* Dates */}
         <div className="space-y-1 text-sm mb-4">
-          {inquiry.preferredDate && (
+          {inquiry.preferred_date && (
             <div className="flex gap-2">
               <span className="text-slate-500 w-32 flex-shrink-0">Preferred date:</span>
-              <span className="text-slate-800 font-medium">{formatDate(inquiry.preferredDate)}</span>
+              <span className="text-slate-800 font-medium">{formatDate(inquiry.preferred_date)}</span>
             </div>
           )}
-          {inquiry.preferredDateAlt && (
+          {inquiry.preferred_dateAlt && (
             <div className="flex gap-2">
               <span className="text-slate-500 w-32 flex-shrink-0">Alternative date:</span>
-              <span className="text-slate-800">{formatDate(inquiry.preferredDateAlt)}</span>
+              <span className="text-slate-800">{formatDate(inquiry.preferred_dateAlt)}</span>
             </div>
           )}
-          {inquiry.numberOfVisitors && (
+          {inquiry.number_of_visitors && (
             <div className="flex gap-2">
               <span className="text-slate-500 w-32 flex-shrink-0">Visitors:</span>
-              <span className="text-slate-800">{inquiry.numberOfVisitors}</span>
+              <span className="text-slate-800">{inquiry.number_of_visitors}</span>
             </div>
           )}
         </div>
 
         {/* Special requests */}
-        {inquiry.specialRequests && (
+        {inquiry.special_requests && (
           <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-700 mb-4 border border-slate-100">
             <p className="text-xs font-semibold text-slate-500 mb-1">Special Requests</p>
-            <p className="whitespace-pre-wrap">{inquiry.specialRequests}</p>
+            <p className="whitespace-pre-wrap">{inquiry.special_requests}</p>
           </div>
         )}
 
@@ -162,13 +162,13 @@ function TourRequestCard({ inquiry, onTourStatusChange }) {
             <p className="text-xs font-semibold text-blue-700 mb-2">Family Context</p>
             <div className="space-y-1.5 text-slate-700">
               {hasMaxTuition && (
-                <div><span className="text-slate-500">Budget:</span> <span className="font-medium">{formatCurrency(inquiry.maxTuition)}</span></div>
+                <div><span className="text-slate-500">Budget:</span> <span className="font-medium">{formatCurrency(inquiry.max_tuition)}</span></div>
               )}
               {parsedPriorities && (
                 <div><span className="text-slate-500">Priorities:</span> <span className="font-medium">{parsedPriorities}</span></div>
               )}
               {hasBoardingPref && (
-                <div><span className="text-slate-500">Boarding:</span> <span className="font-medium">{inquiry.boardingPreference}</span></div>
+                <div><span className="text-slate-500">Boarding:</span> <span className="font-medium">{inquiry.boarding_preference}</span></div>
               )}
             </div>
             {snapshotDateLabel && <p className="text-xs text-slate-500 mt-2">{snapshotDateLabel}</p>}
@@ -214,13 +214,13 @@ function GeneralInquiryCard({ inquiry, expandedId, onToggleExpand, responses, on
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-slate-900 text-sm">Parent Inquiry</h3>
-            {inquiry.parentName && <span className="text-sm text-slate-500">— {inquiry.parentName}</span>}
+            {inquiry.parent_name && <span className="text-sm text-slate-500">— {inquiry.parent_name}</span>}
             <Badge className={statusCfg.color}>
               <Icon className="h-3 w-3 mr-1" />
               {statusCfg.label}
             </Badge>
           </div>
-          <span className="text-xs text-slate-400 flex-shrink-0 ml-2">{formatDate(inquiry.createdAt)}</span>
+          <span className="text-xs text-slate-400 flex-shrink-0 ml-2">{formatDate(inquiry.created_at)}</span>
         </div>
         <p className="text-slate-700 text-sm line-clamp-2">{inquiry.message}</p>
       </button>
@@ -294,8 +294,8 @@ export default function Inquiries({ schoolId }) {
 
   const loadInquiries = async () => {
     try {
-      const data = await SchoolInquiry.filter({ schoolId });
-      setInquiries(data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      const data = await SchoolInquiry.filter({ school_id: schoolId });
+      setInquiries(data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
     } catch (error) {
       console.error('Failed to load inquiries:', error);
     } finally {
@@ -320,20 +320,20 @@ export default function Inquiries({ schoolId }) {
   };
 
   const handleTourStatusChange = async (inquiryId, newStatus) => {
-    await SchoolInquiry.update(inquiryId, { tourStatus: newStatus });
-    setInquiries(inquiries.map(inq => inq.id === inquiryId ? { ...inq, tourStatus: newStatus } : inq));
+    await SchoolInquiry.update(inquiryId, { tour_status: newStatus });
+    setInquiries(inquiries.map(inq => inq.id === inquiryId ? { ...inq, tour_status: newStatus } : inq));
   };
 
   // Tab filtering
   const filtered = inquiries.filter(inq => {
-    if (activeTab === 'tour') return inq.inquiryType === 'tour_request';
-    if (activeTab === 'general') return inq.inquiryType !== 'tour_request';
+    if (activeTab === 'tour') return inq.inquiry_type === 'tour_request';
+    if (activeTab === 'general') return inq.inquiry_type !== 'tour_request';
     return true;
   });
 
-  const tourCount = inquiries.filter(i => i.inquiryType === 'tour_request').length;
-  const generalCount = inquiries.filter(i => i.inquiryType !== 'tour_request').length;
-  const newTourCount = inquiries.filter(i => i.inquiryType === 'tour_request' && (!i.tourStatus || i.tourStatus === 'new')).length;
+  const tourCount = inquiries.filter(i => i.inquiry_type === 'tour_request').length;
+  const generalCount = inquiries.filter(i => i.inquiry_type !== 'tour_request').length;
+  const newTourCount = inquiries.filter(i => i.inquiry_type === 'tour_request' && (!i.tour_status || i.tour_status === 'new')).length;
 
   const tabs = [
     { id: 'all',     label: 'All',           count: inquiries.length },
@@ -394,7 +394,7 @@ export default function Inquiries({ schoolId }) {
       ) : (
         <div className="space-y-4">
           {filtered.map((inquiry) =>
-            inquiry.inquiryType === 'tour_request' ? (
+            inquiry.inquiry_type === 'tour_request' ? (
               <TourRequestCard
                 key={inquiry.id}
                 inquiry={inquiry}

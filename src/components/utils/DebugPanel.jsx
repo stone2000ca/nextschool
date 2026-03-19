@@ -58,8 +58,8 @@ export default function DebugPanel({ debugState }) {
     try {
       const conversationId = debugState?.conversationContext?.conversationId;
       const logs = conversationId
-        ? await LLMLog.filter({ conversationId: conversationId }, '-createdDate', 100)
-        : await LLMLog.list('-createdDate', undefined, 50);
+        ? await LLMLog.filter({ conversation_id: conversationId }, '-created_date', 100)
+        : await LLMLog.list('-created_date', undefined, 50);
       setLlmLogs(logs);
     } catch (e) {
       console.error('[WC7] Failed to fetch LLMLog:', e);
@@ -153,7 +153,7 @@ export default function DebugPanel({ debugState }) {
                           <td className="px-2 py-1 border border-amber-200 font-mono">{log.to}</td>
                           <td className="px-2 py-1 border border-amber-200 font-mono">{log.status}</td>
                           <td className="px-2 py-1 border border-amber-200 font-mono">{log.test_scenario || '—'}</td>
-                          <td className="px-2 py-1 border border-amber-200 font-mono">{log.createdAt ? new Date(log.createdAt).toLocaleString() : '—'}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono">{log.created_date ? new Date(log.created_date).toLocaleString() : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -193,7 +193,7 @@ export default function DebugPanel({ debugState }) {
                           <td className="px-2 py-1 border border-amber-200 font-mono text-right">{log.token_count_out}</td>
                           <td className="px-2 py-1 border border-amber-200 font-mono max-w-48 truncate" title={log.prompt_summary}>{(log.prompt_summary || '').substring(0, 100)}</td>
                           <td className="px-2 py-1 border border-amber-200 font-mono max-w-48 truncate" title={log.response_summary}>{(log.response_summary || '').substring(0, 100)}</td>
-                          <td className="px-2 py-1 border border-amber-200 font-mono whitespace-nowrap">{log.createdAt ? new Date(log.createdAt).toLocaleString() : '—'}</td>
+                          <td className="px-2 py-1 border border-amber-200 font-mono whitespace-nowrap">{log.created_date ? new Date(log.created_date).toLocaleString() : '—'}</td>
                         </tr>
                       ))}
                     </tbody>

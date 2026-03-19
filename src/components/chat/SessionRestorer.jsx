@@ -410,7 +410,7 @@ export async function restoreMostRecentConversation(
           lastDeepDiveSchoolId = la.school_id;
           console.log('[RESTORE-LATEST] Fallback: found', recentAnalyses.length, 'SchoolAnalysis rows, active school:', la.school_id);
           if (setDeepDiveAnalysis) {
-            const mappedAnalysis = analysesMap[la.schoolId] || la;
+            const mappedAnalysis = analysesMap[la.school_id] || la;
             setDeepDiveAnalysis(mappedAnalysis);
             // Inject onto last assistant message so downstream components find it
             const injectedMsgs = [...msgs];

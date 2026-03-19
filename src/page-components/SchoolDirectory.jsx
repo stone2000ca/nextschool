@@ -43,11 +43,11 @@ export default function SchoolDirectory() {
     const provincesSet = new Set();
     
     allSchools.forEach(school => {
-      if (school.country === selectedCountryValue && school.provinceState) {
+      if (school.country === selectedCountryValue && school.province_state) {
         // Normalize US state abbreviations to full names
         const normalizedName = selectedCountryValue === 'United States' 
-          ? normalizeStateName(school.provinceState) 
-          : school.provinceState;
+          ? normalizeStateName(school.province_state) 
+          : school.province_state;
         provincesSet.add(normalizedName);
       }
     });
@@ -66,17 +66,17 @@ export default function SchoolDirectory() {
         if (authenticated) {
           userId = authUser?.id;
           // Update lastSignedOn timestamp
-          await updateMe({ lastSignedOn: new Date().toISOString() });
+          await updateMe({ last_signed_on: new Date().toISOString() });
         }
 
         // Log visitor
         await VisitorLog.create({
-          userId,
-          sessionId,
+          user_id: userId,
+          session_id: sessionId,
           timestamp: new Date().toISOString(),
           page: 'SchoolDirectory',
           referrer: document.referrer || null,
-          userAgent: navigator.userAgent
+          user_agent: navigator.userAgent
         });
       } catch (err) {
         console.error('Failed to log visitor:', err);
@@ -143,7 +143,7 @@ export default function SchoolDirectory() {
       const events = await SchoolEvent.filter({});
       const today = new Date().toISOString();
       const withEvents = new Set(
-        (events || []).filter(e => e.date && e.date >= today).map(e => e.schoolId)
+        (events || []).filter(e => e.date && e.date >= today).map(e => e.school_id)
       );
       setSchoolsWithEvents(withEvents);
     } catch (error) {
@@ -189,10 +189,10 @@ export default function SchoolDirectory() {
       (filterCountry === 'UK' && school.country === 'United Kingdom')
     );
     const matchesProvince = filterProvince === 'all' || (
-      school.provinceState === filterProvince ||
-      (school.country === 'United States' && normalizeStateName(school.provinceState) === filterProvince)
+      school.province_state === filterProvince ||
+      (school.country === 'United States' && normalizeStateName(school.province_state) === filterProvince)
     );
-    const matchesGrade = filterGrade === 'all' || (school.gradesServed && school.gradesServed.includes(filterGrade.charAt(0)));
+    const matchesGrade = filterGrade === 'all' || (school.grades_served && school.grades_served.includes(filterGrade.charAt(0)));
     const matchesTuition = filterTuition === 'all' || matchesTuitionRange(school.tuition, filterTuition);
     const matchesCurriculum = filterCurriculum === 'all' || (school.curriculum && school.curriculum.some(c => c === filterCurriculum)) || school.curriculum?.includes(filterCurriculum);
     const matchesEvents = !hasEventsFilter || schoolsWithEvents.has(school.id);
@@ -419,8 +419,8 @@ export default function SchoolDirectory() {
                       {/* Header Photo */}
                       <div className="h-32 sm:h-40 relative overflow-hidden">
                         <HeaderPhotoDisplay
-                          headerPhotoUrl={school.headerPhotoUrl}
-                          heroImage={school.heroImage}
+                          headerPhotoUrl={school.header_photo_url}
+                          heroImage={school.hero_image}
                           schoolName={school.name}
                           height="h-32 sm:h-40"
                         />
@@ -435,9 +435,9 @@ export default function SchoolDirectory() {
                       <div className="p-3 sm:p-4">
                         {/* Logo and Name */}
                         <div className="flex gap-2 sm:gap-3 mb-2 sm:mb-3">
-                          {school.logoUrl && (
+                          {school.logo_url && (
                             <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
-                              <img src={school.logoUrl} alt={`${school.name} logo`} className="w-full h-full object-contain" />
+                              <img src={school.logo_url} alt={`${school.name} logo`} className="w-full h-full object-contain" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
@@ -448,24 +448,24 @@ export default function SchoolDirectory() {
                         {/* Location */}
                         <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 mb-2">
                           <MapPin className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
-                          <span className="truncate">{school.city}, {school.provinceState || school.country}</span>
+                          <span className="truncate">{school.city}, {school.province_state || school.country}</span>
                         </div>
 
                         {/* Enriched chips: grades, tuition, gender, boarding, faith */}
                         <div className="flex flex-wrap gap-1.5 mb-3">
-                          {school.gradesServed && (
+                          {school.grades_served && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">
-                              <GraduationCap className="h-3 w-3" /> {school.gradesServed}
+                              <GraduationCap className="h-3 w-3" /> {school.grades_served}
                             </span>
                           )}
-                          {school.genderPolicy && school.genderPolicy !== 'Co-ed' && (
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">{school.genderPolicy}</span>
+                          {school.gender_policy && school.gender_policy !== 'Co-ed' && (
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">{school.gender_policy}</span>
                           )}
-                          {school.boardingAvailable && (
+                          {school.boarding_available && (
                             <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">Boarding</span>
                           )}
-                          {school.faithBased && (
-                            <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-medium">{school.faithBased}</span>
+                          {school.faith_based && (
+                            <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-medium">{school.faith_based}</span>
                           )}
                           {school.curriculum && Array.isArray(school.curriculum) && school.curriculum.slice(0, 2).map((c, i) => (
                             <span key={i} className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded text-xs font-medium">{c}</span>
@@ -477,11 +477,11 @@ export default function SchoolDirectory() {
 
                         {/* Tuition + Enrollment + Founded */}
                         <div className="space-y-1 text-xs sm:text-sm text-slate-600 mb-3">
-                          {(school.dayTuition || school.tuition) && (
+                          {(school.day_tuition || school.tuition) && (
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0" />
                               <span className="truncate font-semibold text-slate-900">
-                                From {getCurrencySymbol(school.currency)}{(school.dayTuition || school.tuition).toLocaleString()}/yr
+                                From {getCurrencySymbol(school.currency)}{(school.day_tuition || school.tuition).toLocaleString()}/yr
                               </span>
                             </div>
                           )}
@@ -491,8 +491,8 @@ export default function SchoolDirectory() {
                               <span>{school.enrollment.toLocaleString()} students</span>
                             </div>
                           )}
-                          {school.acceptanceRate && (
-                            <span className="text-xs text-slate-500">{school.acceptanceRate}% acceptance</span>
+                          {school.acceptance_rate && (
+                            <span className="text-xs text-slate-500">{school.acceptance_rate}% acceptance</span>
                           )}
                           {school.founded && (
                             <span className="text-xs text-slate-500 ml-2">Est. {school.founded}</span>

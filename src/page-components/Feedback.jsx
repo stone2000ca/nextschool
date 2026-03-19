@@ -34,7 +34,14 @@ export default function Feedback() {
 
     try {
       await BetaFeedback.create({
-        ...formData,
+        tester_name: formData.testerName,
+        tester_email: formData.testerEmail,
+        consultant_used: formData.consultantUsed,
+        what_were_you_hoping_to_find: formData.whatWereYouHopingToFind,
+        did_you_find_it: formData.didYouFindIt,
+        what_frustrated_you: formData.whatFrustratedYou,
+        would_you_recommend: formData.wouldYouRecommend,
+        additional_comments: formData.additionalComments,
         timestamp: new Date().toISOString(),
         source: 'InApp'
       });

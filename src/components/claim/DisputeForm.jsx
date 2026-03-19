@@ -16,7 +16,7 @@ export default function DisputeForm({ schoolId, schoolName, onCancel }) {
     }
     setSubmitting(true);
     await DisputeRequest.create({
-      schoolId: schoolId,
+      school_id: schoolId,
       requester_name: form.name,
       requester_role: form.role,
       requester_email: form.email,

@@ -8,25 +8,25 @@ const TIERS = [
     id: 'tier1',
     label: 'Required',
     color: '#ef4444',
-    fields: ['name', 'city', 'provinceState', 'country', 'lowestGrade', 'highestGrade', 'genderPolicy', 'dayTuition', 'schoolTypeLabel', 'email', 'address', 'phone', 'lat', 'lng'],
+    fields: ['name', 'city', 'province_state', 'country', 'lowest_grade', 'highest_grade', 'gender_policy', 'day_tuition', 'school_type_label', 'email', 'address', 'phone', 'lat', 'lng'],
   },
   {
     id: 'tier2',
     label: 'Important',
     color: '#f59e0b',
-    fields: ['description', 'missionStatement', 'website', 'livingArrangements', 'faithBased', 'languagesOfInstruction', 'avgClassSize', 'studentTeacherRatio', 'founded', 'enrollment', 'virtualTourUrl', 'campusFeel', 'financialAidAvailable'],
+    fields: ['description', 'mission_statement', 'website', 'living_arrangements', 'faith_based', 'languages_of_instruction', 'avg_class_size', 'student_teacher_ratio', 'founded', 'enrollment', 'virtual_tour_url', 'campus_feel', 'financial_aid_available'],
   },
   {
     id: 'tier3',
     label: 'Enrichment',
     color: '#14b8a6',
-    fields: ['artsPrograms', 'sportsPrograms', 'clubs', 'facilities', 'specialEdPrograms', 'curriculum', 'accreditations', 'specializations', 'values', 'teachingPhilosophy', 'highlights'],
+    fields: ['arts_programs', 'sports_programs', 'clubs', 'facilities', 'special_ed_programs', 'curriculum', 'accreditations', 'specializations', 'values', 'teaching_philosophy', 'highlights'],
   },
   {
     id: 'tier4',
     label: 'Media',
     color: '#6366f1',
-    fields: ['logoUrl', 'headerPhotoUrl', 'photoGallery'],
+    fields: ['logo_url', 'header_photo_url', 'photo_gallery'],
   },
 ];
 
@@ -38,7 +38,7 @@ function isFilled(value) {
 }
 
 export default function ProfileCompletenessRing({ school }) {
-  const score = school?.completenessScore ?? 0;
+  const score = school?.completeness_score ?? 0;
 
   const circumference = 2 * Math.PI * 45;
   const offset = circumference - (score / 100) * circumference;

@@ -59,7 +59,7 @@ export default function Portal() {
         .filter(s => {
           const name = normalize(s.name || "");
           const city = normalize(s.city || "");
-          const province = normalize(s.provinceState || "");
+          const province = normalize(s.province_state || "");
           return name.includes(norm) || norm.split(" ").some(t => t.length >= 3 && (name.includes(t) || city.includes(t) || province.includes(t)));
         })
         .map(s => ({ ...s, _score: fuzzyScore(q, s) }))

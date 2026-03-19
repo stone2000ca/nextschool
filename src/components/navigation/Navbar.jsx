@@ -22,7 +22,7 @@ export default function Navbar({ variant = "default" }) {
         setUser(authUser);
 
         try {
-          const adminRecords = await SchoolAdminEntity.filter({ userId: authUser.id, isActive: true });
+          const adminRecords = await SchoolAdminEntity.filter({ user_id: authUser.id, is_active: true });
           if (adminRecords && adminRecords.length > 0) {
             setIsSchoolAdmin(true);
           }
