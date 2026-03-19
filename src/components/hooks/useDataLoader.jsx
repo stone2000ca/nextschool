@@ -39,7 +39,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
 
       // E30-007: Build schoolAnalyses map with full record (excluding internal metadata)
       const analysesMap = {};
-      const METADATA_KEYS = new Set(['id', 'createdAt', 'updated_date', 'created_by']);
+      const METADATA_KEYS = new Set(['id', 'createdAt', 'updatedAt', 'createdBy']);
       for (const analysis of analyses) {
         if (analysis.schoolId) {
           const entry = {};
@@ -88,7 +88,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
     if (!user?.id || !currentConversation?.id) return;
 
     // Guard: if familyProfile already has meaningful data from orchestrateConversation, skip DB fetch
-    const METADATA_KEYS = ['id', 'userId', 'conversationId', 'createdAt', 'updated_date', 'created_by'];
+    const METADATA_KEYS = ['id', 'userId', 'conversationId', 'createdAt', 'updatedAt', 'createdBy'];
     const hasRealData = familyProfile && Object.entries(familyProfile).some(
       ([k, v]) => !METADATA_KEYS.includes(k) && v != null && v !== '' && !(Array.isArray(v) && v.length === 0)
     );

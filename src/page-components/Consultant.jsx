@@ -332,7 +332,7 @@ export default function Consultant() {
   // Whether the Family Brief toggle should be visible
   const isBriefState = true; // T045: FamilyBrief visible in all states
   const hasFamilyProfileData = familyProfile && Object.entries(familyProfile).some(
-    ([k, v]) => !['id', 'userId', 'conversationId', 'createdAt', 'updated_date', 'created_by', 'onboardingPhase', 'onboardingComplete'].includes(k)
+    ([k, v]) => !['id', 'userId', 'conversationId', 'createdAt', 'updatedAt', 'createdBy', 'onboardingPhase', 'onboardingComplete'].includes(k)
       && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0) && v !== ''
   );
   const showBriefToggle = isBriefState && hasFamilyProfileData;
@@ -684,7 +684,7 @@ export default function Consultant() {
       const sorted = convos.sort((a, b) => {
         if (a.starred && !b.starred) return -1;
         if (!a.starred && b.starred) return 1;
-        return new Date(b.updated_date) - new Date(a.updated_date);
+        return new Date(b.updatedAt) - new Date(a.updatedAt);
       });
       setConversations(sorted);
     } catch (error) {

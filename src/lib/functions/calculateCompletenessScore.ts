@@ -19,7 +19,7 @@ const HIGH_FIELDS = [
 
 // Fields that are system-managed, derived, or intentionally excluded from scoring
 const EXCLUDED_FIELDS = new Set([
-  'id', 'createdAt', 'updated_date', 'created_by', 'createdById',
+  'id', 'createdAt', 'updatedAt', 'createdBy', 'createdById',
   'slug', 'status', 'verified', 'claimStatus',
   'schoolTier', 'completenessScore',
   'adminUserId', 'is_sample', 'source', 'dataSource', 'governmentId',

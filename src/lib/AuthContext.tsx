@@ -82,8 +82,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       stripeCustomerId: data.stripe_customer_id,
       lastSignedOn: data.last_signed_on,
       profileRegion: data.profile_region,
-      created_date: data.created_date,
-      updated_date: data.updated_date,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
     }
   }, [supabase])
 
@@ -229,7 +229,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const snakeKey = key.replace(/[A-Z]/g, (l) => `_${l.toLowerCase()}`)
       snakeUpdates[snakeKey] = value
     }
-    snakeUpdates.updated_date = new Date().toISOString()
+    snakeUpdates.updated_at = new Date().toISOString()
 
     const { error } = await supabase
       .from('user_profiles')
