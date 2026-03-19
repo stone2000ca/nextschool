@@ -19,7 +19,29 @@ import AdmissionsSection from '@/components/school-admin/AdmissionsSection';
 import EnrichmentReviewSection from '@/components/school-admin/EnrichmentReviewSection';
 import PhotoReviewSection from '@/components/school-admin/PhotoReviewSection';
 
+// Map of camelCase field names used in ProfileEditor to their snake_case DB columns
+const CAMEL_TO_SNAKE = {
+  livingArrangements: 'living_arrangements',
+  languagesOfInstruction: 'languages_of_instruction',
+  artsPrograms: 'arts_programs',
+  sportsPrograms: 'sports_programs',
+  specialEdPrograms: 'special_ed_programs',
+  teachingPhilosophy: 'teaching_philosophy',
+  verifiedFields: 'verified_fields',
+  aiEnrichedFields: 'ai_enriched_fields',
+};
+
+function toSnakeCase(data) {
+  const result = {};
+  for (const [key, value] of Object.entries(data)) {
+    result[CAMEL_TO_SNAKE[key] || key] = value;
+  }
+  return result;
+}
+
 export default function SchoolAdmin() {
+  const { user: authUser, isLoadingAuth } = useAuth();
+
   const [user, setUser] = useState(null);
   const [school, setSchool] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,14 +56,13 @@ export default function SchoolAdmin() {
   const [pendingSchool, setPendingSchool] = useState(null);
 
   useEffect(() => {
-    loadSchoolData();
-  }, []);
+    // Wait for auth to resolve before loading school data
+    if (isLoadingAuth || !authUser) return;
+    loadSchoolData(authUser);
+  }, [authUser, isLoadingAuth]);
 
-  const { user: authUser } = useAuth();
-
-  const loadSchoolData = async () => {
+  const loadSchoolData = async (userData) => {
     try {
-      const userData = authUser;
       setUser(userData);
 
       let resolvedSchool = null;
@@ -70,7 +91,6 @@ export default function SchoolAdmin() {
           if (schoolData && schoolData.length > 0) {
             resolvedSchool = schoolData[0];
             setSchool(resolvedSchool);
-            // Fire-and-forget: recalculate completeness score on every admin login
             invokeFunction('calculateCompletenessScore', { schoolId: resolvedSchool.id }).catch(() => {});
           }
         } else {
@@ -79,7 +99,6 @@ export default function SchoolAdmin() {
           if (schools && schools.length > 0) {
             resolvedSchool = schools[0];
             setSchool(resolvedSchool);
-            // Fire-and-forget: recalculate completeness score on every admin login
             invokeFunction('calculateCompletenessScore', { schoolId: resolvedSchool.id }).catch(() => {});
           }
         }
@@ -87,8 +106,7 @@ export default function SchoolAdmin() {
 
       // --- PATH C: URL param with verified SchoolClaim (non-admin users) ---
       if (!resolvedSchool) {
-        const urlParams2 = new URLSearchParams(window.location.search);
-        const urlSchoolId = urlParams2.get('schoolId');
+        const urlSchoolId = urlParams.get('schoolId');
         if (urlSchoolId) {
           const claims = await SchoolClaim.filter({
             user_id: userData.id,
@@ -147,10 +165,11 @@ export default function SchoolAdmin() {
 
   const handleSaveSchool = async (updatedData) => {
     if (!school) return;
-    
+
     setIsSaving(true);
     try {
-      await School.update(school.id, updatedData);
+      const snakeCaseData = toSnakeCase(updatedData);
+      await School.update(school.id, snakeCaseData);
       const updated = { ...school, ...updatedData };
       setSchool(updated);
       // Post-save: recalculate completeness score server-side (non-blocking)
@@ -304,7 +323,7 @@ export default function SchoolAdmin() {
       label: 'Admin',
       items: [
         { id: 'subscription', label: 'Subscription', icon: CreditCard },
-        { id: 'account', label: 'Account', icon: User },
+        { id: 'account', label: 'Account', icon: UserIcon },
       ],
     },
   ];
@@ -425,7 +444,7 @@ export default function SchoolAdmin() {
              <Analytics school={school} />
            )}
            {currentView === 'subscription' && (
-            <Subscription school={school} onUpdate={loadSchoolData} />
+            <Subscription school={school} onUpdate={() => loadSchoolData(authUser)} />
           )}
           {currentView === 'account' && (
             <AccountSection school={school} />
