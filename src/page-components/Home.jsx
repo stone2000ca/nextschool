@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, X, Star } from "lucide-react";
 import Link from 'next/link';
 import Navbar from "@/components/navigation/Navbar";
 import { invokeFunction } from '@/lib/functions';
@@ -255,6 +255,98 @@ export default function Home() {
         </div>
       </section>
 
+      {/* DIY vs NEXTSCHOOL COMPARISON */}
+      <section className="py-12 sm:py-20 lg:py-28 bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
+              Stop Googling. Start <span className="text-teal-400">matching.</span>
+            </h2>
+            <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto">
+              See why families switch from DIY research to NextSchool.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
+            {/* DIY Search Column */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-red-400 mb-6">DIY Search</h3>
+              <div className="space-y-5">
+                <div className="flex gap-3">
+                  <X className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-white">27 open tabs</p>
+                    <p className="text-slate-400 text-sm">Juggling school websites, forums, and outdated blog posts with no way to organize what you find.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <X className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-white">Can't compare apples to apples</p>
+                    <p className="text-slate-400 text-sm">Every school presents information differently, making it impossible to evaluate them side by side.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <X className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-white">Weeks of research</p>
+                    <p className="text-slate-400 text-sm">Evenings and weekends spent reading, only to feel like you're going in circles.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <X className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-white">Decision overwhelm</p>
+                    <p className="text-slate-400 text-sm">Too many options and too little clarity leave you second-guessing every choice.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* NextSchool Column */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-green-400 mb-6">NextSchool</h3>
+              <div className="space-y-5">
+                <div className="flex gap-3">
+                  <Check className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-white">One guided conversation</p>
+                    <p className="text-slate-400 text-sm">Tell us about your child and family priorities — our AI consultant handles the research for you.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Check className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-white">Fit scores you can trust</p>
+                    <p className="text-slate-400 text-sm">Every recommendation comes with a clear explanation of why it matches your family's needs.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Check className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-white">Shortlist in one evening</p>
+                    <p className="text-slate-400 text-sm">Go from "where do I start?" to a focused shortlist in a single conversation.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Check className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-white">Calm and supported</p>
+                    <p className="text-slate-400 text-sm">No pressure, no sales pitch — just clear guidance to help you make the right decision.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-10 sm:mt-12">
+            <Link href="/consultant" className="ns-btn-primary inline-flex items-center">
+              Start your free chat <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* FEATURED SCHOOLS */}
       <section className="py-12 sm:py-20 lg:py-28 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -297,6 +389,107 @@ export default function Home() {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* TESTIMONIALS */}
+      <section className="py-12 sm:py-20 lg:py-28 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+              Real families, real decisions
+            </h2>
+            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+              See how Canadian parents found the right school for their child.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
+            {/* Sarah M. */}
+            <div className="ns-card p-6">
+              <span className="inline-block bg-teal-100 text-teal-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                Relocating Family
+              </span>
+              <div className="flex gap-0.5 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-slate-700 leading-relaxed mb-4">
+                "We were moving from Calgary to Toronto with two weeks to figure out schools. NextSchool narrowed 200+ options to five that genuinely fit our kids — in one evening."
+              </p>
+              <p className="text-teal-600 text-sm font-semibold mb-4">
+                Enrolled both children within three weeks of moving.
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="bg-teal-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-sm">
+                  SM
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900 text-sm">Sarah M.</p>
+                  <p className="text-slate-500 text-xs">Toronto, ON</p>
+                </div>
+              </div>
+            </div>
+
+            {/* David L. */}
+            <div className="ns-card p-6">
+              <span className="inline-block bg-teal-100 text-teal-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                First-Time Parent
+              </span>
+              <div className="flex gap-0.5 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-slate-700 leading-relaxed mb-4">
+                "As a first-time parent, I had no idea where to start. The consultant asked the right questions and helped me understand what actually matters for my daughter's learning style."
+              </p>
+              <p className="text-teal-600 text-sm font-semibold mb-4">
+                Found a Montessori program that matched their family values perfectly.
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="bg-teal-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-sm">
+                  DL
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900 text-sm">David L.</p>
+                  <p className="text-slate-500 text-xs">Vancouver, BC</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Priya K. */}
+            <div className="ns-card p-6">
+              <span className="inline-block bg-teal-100 text-teal-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                ADHD Support
+              </span>
+              <div className="flex gap-0.5 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-slate-700 leading-relaxed mb-4">
+                "My son has ADHD and I needed a school that truly understands neurodivergent learners — not just one that says they do. NextSchool helped me find schools with real support programs."
+              </p>
+              <p className="text-teal-600 text-sm font-semibold mb-4">
+                Son thriving at a school with dedicated learning support specialists.
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="bg-teal-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-sm">
+                  PK
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900 text-sm">Priya K.</p>
+                  <p className="text-slate-500 text-xs">Ottawa, ON</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-slate-400 italic mt-8">
+            Illustrative examples based on common family experiences
+          </p>
         </div>
       </section>
 
