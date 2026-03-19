@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, MessageSquare, Zap, BarChart3, CheckCircle2, Check } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import Link from 'next/link';
 import Navbar from "@/components/navigation/Navbar";
 import { invokeFunction } from '@/lib/functions';
@@ -171,71 +171,86 @@ export default function Home() {
       </section>
 
 
-      {/* HOW IT WORKS */}
-      <section className="py-12 sm:py-20 lg:py-28 bg-slate-50">
+      {/* STATS BAR (WC-2) */}
+      <section className="py-12 sm:py-16 bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-center mb-12 sm:mb-16 text-slate-900">How It Works</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            <div className="ns-card p-8">
-              <div className="h-14 w-14 bg-teal-100 rounded-lg flex items-center justify-center mb-6">
-                <MessageSquare className="h-7 w-7 text-teal-600" />
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-10">
+            {[
+              { value: '1,000+', label: 'Schools in our database' },
+              { value: '6-phase', label: 'Guided consultation' },
+              { value: '5 min', label: 'To your first matches' },
+              { value: '$0', label: 'Free to start' },
+            ].map((stat) => (
+              <div key={stat.value} className="text-center">
+                <p className="text-4xl font-bold text-white mb-1">{stat.value}</p>
+                <p className="text-sm text-white/60">{stat.label}</p>
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-slate-900">Tell Us About Your Child</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Share your child's needs, interests, and your family's priorities through a natural conversation.
-              </p>
-            </div>
-            
-            <div className="ns-card p-8">
-              <div className="h-14 w-14 bg-amber-100 rounded-lg flex items-center justify-center mb-6">
-                <Zap className="h-7 w-7 text-amber-600" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3 text-slate-900">Get Personalized Matches</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Our AI consultant cross-references your needs with detailed school data to find real fits — not generic lists.
-              </p>
-            </div>
-            
-            <div className="ns-card p-8">
-              <div className="h-14 w-14 bg-teal-100 rounded-lg flex items-center justify-center mb-6">
-                <BarChart3 className="h-7 w-7 text-teal-600" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3 text-slate-900">Compare, Shortlist & Decide</h3>
-              <p className="text-slate-600 leading-relaxed">
-                See why each school made the list, compare side-by-side, and build your shortlist with confidence.
-              </p>
+            ))}
+          </div>
+
+          {/* School pills */}
+          <div className="text-center">
+            <p className="ns-label mb-4">FAMILIES DISCOVER TOP SCHOOLS INCLUDING</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {['Upper Canada College', 'Havergal', 'Ridley', 'Appleby', 'Bayview Glen'].map((name) => (
+                <span key={name} className="border border-white/20 rounded-full px-4 py-1.5 text-sm text-white/80">
+                  {name}
+                </span>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* SOCIAL PROOF / TRUST SIGNALS */}
-      <section className="py-20 sm:py-28 bg-white">
+      {/* YOUR JOURNEY (WC-3) */}
+      <section className="py-16 sm:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="mb-4">
-                <p className="text-5xl font-bold text-teal-600 mb-2">283+</p>
-                <p className="text-xl text-slate-700 font-semibold">Schools</p>
+          {/* Section header */}
+          <div className="text-center mb-12 sm:mb-16">
+            <p className="ns-label mb-3">YOUR JOURNEY</p>
+            <h2 className="ns-heading text-3xl sm:text-4xl mb-3">
+              From first question to <strong className="text-teal-600">confident decision</strong>
+            </h2>
+            <p className="text-slate-600 text-lg">Three steps. One evening. Zero overwhelm.</p>
+          </div>
+
+          {/* 3 steps */}
+          <div className="grid md:grid-cols-3 gap-8 md:gap-4 relative">
+            {[
+              { step: 1, title: 'Tell us about your child', output: 'Your FamilyBrief' },
+              { step: 2, title: 'Get personalized matches', output: 'Ranked shortlist with fit scores' },
+              { step: 3, title: 'Decide with confidence', output: 'A clear enrollment decision' },
+            ].map((item, i) => (
+              <div key={item.step} className="flex flex-col items-center text-center relative">
+                {/* Arrow connector (desktop only, between steps) */}
+                {i < 2 && (
+                  <div className="hidden md:block absolute top-5 -right-2 translate-x-1/2 text-slate-300">
+                    <ArrowRight className="h-5 w-5" />
+                  </div>
+                )}
+
+                {/* Numbered badge */}
+                <div className="bg-teal-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-lg font-bold mb-4">
+                  {item.step}
+                </div>
+
+                <h3 className="text-xl font-bold text-slate-900 mb-2">{item.title}</h3>
+
+                {/* Output tag */}
+                <p className="text-sm text-teal-600 font-medium bg-teal-50 rounded-full px-4 py-1.5">
+                  {item.output}
+                </p>
               </div>
-              <p className="text-slate-600">Verified school profiles across Canada</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="mb-4">
-                <CheckCircle2 className="h-16 w-16 text-amber-500 mx-auto mb-2" />
-                <p className="text-xl text-slate-700 font-semibold">Personalized Matches</p>
-              </div>
-              <p className="text-slate-600">Every recommendation explains why it fits your family</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="mb-4">
-                <p className="text-5xl font-bold text-teal-600 mb-2">Free</p>
-                <p className="text-xl text-slate-700 font-semibold">To Start</p>
-              </div>
-              <p className="text-slate-600">Full consultation with no signup required</p>
-            </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div className="text-center mt-12">
+            <Link href="/consultant" className="ns-btn-primary inline-flex items-center">
+              Start your FamilyBrief
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
