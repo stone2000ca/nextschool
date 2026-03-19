@@ -24,7 +24,7 @@ export default function SchoolDirectory() {
   const [filterCurriculum, setFilterCurriculum] = useState('all');
   const [displayedCount, setDisplayedCount] = useState(20);
   const [user, setUser] = useState(null);
-  const [sessionId] = useState(Math.random().toString(36).substring(2, 11));
+  const [sessionId] = useState(() => crypto.randomUUID());
   // E16a-018: Has Upcoming Events filter
   const [hasEventsFilter, setHasEventsFilter] = useState(false);
   const SCHOOLS_PER_PAGE = 20;
