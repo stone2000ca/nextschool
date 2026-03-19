@@ -1156,7 +1156,7 @@ export async function orchestrateConversationLogic(params: any) {
     var briefStatus;
 
     try {
-      const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userLocation, selectedSchoolId, conversationId: conversationIdFromPayload, returningUserContext, journeyContext } = params;
+      const { message, conversationHistory, conversationContext, region, userId, consultantName, currentSchools, userLocation, selectedSchoolId, conversationId: conversationIdFromPayload, returningUserContext, journeyContext, familyBrief } = params;
 
       // WC6: Build RETURNING USER CONTEXT block if present
       let returningUserContextBlock = null;
@@ -1323,6 +1323,35 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         };
       }
       
+      // E47: Seed FamilyProfile from guided intro FamilyBrief (pre-extracted entities)
+      if (familyBrief && conversationFamilyProfile) {
+        const briefToProfile: Record<string, any> = {};
+        if (familyBrief.childName && !conversationFamilyProfile.childName) briefToProfile.childName = familyBrief.childName;
+        if (familyBrief.grade != null && conversationFamilyProfile.childGrade == null) {
+          // Parse grade string to number if needed (e.g. "7" → 7, "JK" → -1)
+          const gradeMap: Record<string, number> = { 'PK': -2, 'JK': -1, 'SK': 0, 'K': 0 };
+          const gradeStr = String(familyBrief.grade).toUpperCase();
+          briefToProfile.childGrade = gradeMap[gradeStr] !== undefined ? gradeMap[gradeStr] : parseInt(gradeStr) || null;
+        }
+        if (familyBrief.location && !conversationFamilyProfile.locationArea) briefToProfile.locationArea = familyBrief.location;
+        if (familyBrief.budget && conversationFamilyProfile.maxTuition == null) briefToProfile.maxTuition = familyBrief.budget;
+        if (familyBrief.schoolTypePreferences?.length > 0 && (!conversationFamilyProfile.schoolTypeLabel)) {
+          briefToProfile.schoolTypeLabel = familyBrief.schoolTypePreferences.join(', ');
+        }
+        if (Object.keys(briefToProfile).length > 0) {
+          Object.assign(conversationFamilyProfile, briefToProfile);
+          // Persist to DB if profile has an id
+          if (conversationFamilyProfile.id) {
+            try {
+              await FamilyProfile.update(conversationFamilyProfile.id, briefToProfile);
+              console.log('[E47] Seeded FamilyProfile from familyBrief:', Object.keys(briefToProfile));
+            } catch (e: any) {
+              console.warn('[E47] FamilyProfile seed persist failed (non-blocking):', e.message);
+            }
+          }
+        }
+      }
+
       const isFirstMessage = conversationHistory?.length === 0;
       let extractionResult = null;
       let intentSignal = 'continue';

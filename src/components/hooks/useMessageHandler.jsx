@@ -61,6 +61,8 @@ export const useMessageHandler = ({
   loadMoreSchools,
   setActivePanel,
   applyDistances,
+  // E47: FamilyBrief from guided intro for pre-extracted entity injection
+  familyBrief,
 }, isPremiumParam = isPremium) => {
     // BUG-RN-PERSIST Fix 1: Ref tracks the latest conversationId immediately,
     // bypassing React's batched state updates so deep dive closures always get the real id.
@@ -206,7 +208,9 @@ export const useMessageHandler = ({
             selectedSchoolId: resolvedSchoolId || lastResolvedSchoolId || selectedSchool?.id || null,
         conversationId: (typeof conversationIdRef.current === 'string' && conversationIdRef.current.length > 0) ? conversationIdRef.current : (() => { console.warn('[E42-GUARD] Invalid conversationIdRef.current, using null:', conversationIdRef.current); return null; })(),
         returningUserContext,
-        ...(restoredSessionData && activeJourney ? { journeyContext: activeJourney } : {})
+        ...(restoredSessionData && activeJourney ? { journeyContext: activeJourney } : {}),
+        // E47: Pass familyBrief as pre-extracted entities so backend skips collection
+        ...(familyBrief ? { familyBrief } : {})
       });
 
       // DEFENSIVE CHECK: Ensure response.data exists
