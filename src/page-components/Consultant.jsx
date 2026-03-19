@@ -1884,6 +1884,15 @@ export default function Consultant() {
         getPlanLimits={getPlanLimits}
         showLoginGate={showLoginGate}
         setShowLoginGate={setShowLoginGate}
+        onLoginGateClose={() => {
+          setShowLoginGate(false);
+          // Ensure loading overlay is dismissed when login gate closes
+          // (briefStatus may still be 'confirmed' if set before login gate appeared)
+          if (briefStatus === 'confirmed') {
+            setBriefStatus(null);
+            setShowLoadingOverlay(false);
+          }
+        }}
         selectedConsultant={selectedConsultant}
         familyProfile={familyProfile}
         isDebugMode={isDebugMode}

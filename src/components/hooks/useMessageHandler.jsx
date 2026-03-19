@@ -121,6 +121,9 @@ export const useMessageHandler = ({
         sessionId
       }));
 
+      // Reset briefStatus so the loading overlay doesn't stay stuck
+      // (no API call will run since we return early)
+      setBriefStatus(null);
       setShowLoginGate(true);
       return;
     }

@@ -18,7 +18,7 @@ export default function ConsultantDialogs({
   // Upgrade modals
   showUpgradeModal, setShowUpgradeModal, tokenBalance, getPlanLimits,
   // Login gate
-  showLoginGate, setShowLoginGate, selectedConsultant, familyProfile,
+  showLoginGate, setShowLoginGate, onLoginGateClose, selectedConsultant, familyProfile,
   // Debug panel
   isDebugMode, extractedEntitiesData, currentConversation,
   // E39-S11: Deep dive & navigation data for Notepad tab
@@ -192,7 +192,7 @@ export default function ConsultantDialogs({
         <LoginGateModal
           consultantName={selectedConsultant}
           childName={familyProfile?.childName || 'your child'}
-          onClose={() => setShowLoginGate(false)}
+          onClose={onLoginGateClose || (() => setShowLoginGate(false))}
         />
       )}
 
