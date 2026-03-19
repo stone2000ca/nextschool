@@ -138,6 +138,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(profile)
           setIsAuthenticated(true)
           setIsLoadingAuth(false)
+        } else if (event === 'INITIAL_SESSION' && !session) {
+          // No session on initial load — user is unauthenticated
+          setUser(null)
+          setIsAuthenticated(false)
+          setIsLoadingAuth(false)
         } else if (event === 'SIGNED_OUT') {
           if (explicitLogoutRef.current) {
             // User clicked "Logout" — honour immediately
