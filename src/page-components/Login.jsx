@@ -36,12 +36,18 @@ export default function Login() {
 
     try {
       await login(email, password)
-      // signInWithPassword succeeded — navigate immediately.
-      // The onAuthStateChange listener will update isAuthenticated in parallel,
-      // and the useEffect above acts as a fallback redirect.
-      router.replace(returnTo)
+      // signInWithPassword succeeded — use hard navigation so the new page
+      // loads with fresh auth cookies.  Soft navigation (router.replace) can
+      // race with cookie propagation and the middleware's route protection,
+      // leaving the page stuck on "Logging in…".  This matches the pattern
+      // used by logout() and navigateToLogin() in AuthContext.
+      window.location.href = returnTo
     } catch (err) {
       setError(err.message || 'Invalid email or password')
+    } finally {
+      // Always reset so the button never stays stuck on "Logging in…".
+      // On success the page is navigating away, but if the navigation is
+      // slow this keeps the UI interactive.
       setIsSubmitting(false)
     }
   }
