@@ -264,7 +264,7 @@ function ImageUploadField({ label, field, hint, formData, onChange }) {
 // =============================================================================
 // Main ProfileEditor
 // =============================================================================
-export default function ProfileEditor({ school, onSave, isSaving }) {
+export default function ProfileEditor({ school, onSave, isSaving, onDirtyChange }) {
   const [formData, setFormData] = useState(school);
   const [dirtyFields, setDirtyFields] = useState({});
   const [autoSaved, setAutoSaved] = useState(false);
@@ -282,6 +282,10 @@ export default function ProfileEditor({ school, onSave, isSaving }) {
         .catch(() => {});
     }
   }, [school]);
+
+  useEffect(() => {
+    onDirtyChange?.(Object.keys(dirtyFields).length > 0);
+  }, [dirtyFields, onDirtyChange]);
 
   const handleChange = (field, value) => {
     const updatedVerified = verifiedFields[field] ? verifiedFields : { ...verifiedFields, [field]: true };

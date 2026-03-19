@@ -53,6 +53,9 @@ export default function ClaimSchool() {
   const [codeExpiryTime, setCodeExpiryTime] = useState(null);
   const [alreadyClaimed, setAlreadyClaimed] = useState(null); // { domain: string } | null
   const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [documentError, setDocumentError] = useState('');
+  const [resendSuccess, setResendSuccess] = useState('');
 
   const handleSchoolSelect = (selectedSchoolId) => {
     setSchoolId(selectedSchoolId);
@@ -182,9 +185,10 @@ export default function ClaimSchool() {
 
   const handleStep2Submit = async () => {
     if (!formData.name || !formData.role || !formData.email) {
-      alert('Please fill in all fields');
+      setFormError('Please fill in all fields.');
       return;
     }
+    setFormError('');
 
     setIsSubmitting(true);
     setEmailError('');
@@ -236,7 +240,7 @@ export default function ClaimSchool() {
       }
     } catch (error) {
       console.error('Failed to create claim:', error);
-      alert('Failed to create claim. Please try again.');
+      setFormError('Failed to create claim. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -247,6 +251,7 @@ export default function ClaimSchool() {
 
     setSendingEmail(true);
     setEmailError('');
+    setResendSuccess('');
     try {
       const emailRes = await invokeFunction('sendClaimEmail', {
         emailType: 'VERIFICATION_CODE',
@@ -262,7 +267,7 @@ export default function ClaimSchool() {
       });
       const expiresInMinutes = emailRes?.expiresInMinutes ?? 15;
       setCodeExpiryTime(new Date(Date.now() + expiresInMinutes * 60 * 1000));
-      alert('Verification code resent!');
+      setResendSuccess('Verification code resent! Check your inbox.');
     } catch (error) {
       console.error('Resend failed:', error);
       setEmailError('Failed to resend email. Please try again.');
@@ -302,6 +307,10 @@ export default function ClaimSchool() {
       }
 
       setStep(4);
+      // Auto-navigate to school admin after a brief delay
+      setTimeout(() => {
+        router.push(`/school-admin?schoolId=${schoolId}`);
+      }, 2000);
     } catch (error) {
       console.error('Verification failed:', error);
       setCodeError('An error occurred. Please try again.');
@@ -312,9 +321,10 @@ export default function ClaimSchool() {
 
   const handleDocumentSubmit = async () => {
     if (!documentFile) {
-      alert('Please upload a document');
+      setDocumentError('Please upload a document before submitting.');
       return;
     }
+    setDocumentError('');
 
     setIsSubmitting(true);
     try {
@@ -358,7 +368,7 @@ export default function ClaimSchool() {
       setStep(4);
     } catch (error) {
       console.error('Document upload failed:', error);
-      alert('Failed to upload document. Please try again.');
+      setDocumentError('Failed to upload document. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -607,15 +617,15 @@ export default function ClaimSchool() {
           <Card className="p-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-6">Verify Your Identity</h2>
             
-            {emailError && (
+            {(formError || emailError) && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-red-800 text-sm">{emailError}</p>
+                  <p className="text-red-800 text-sm">{formError || emailError}</p>
                 </div>
               </div>
             )}
-            
+
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
@@ -694,7 +704,14 @@ export default function ClaimSchool() {
           <Card className="p-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Enter Verification Code</h2>
             <p className="text-slate-600 mb-2">We sent a 6-digit code to {formData.email}</p>
-            
+
+            {resendSuccess && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                <p className="text-green-800 text-sm">{resendSuccess}</p>
+              </div>
+            )}
+
             {emailError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
@@ -767,6 +784,13 @@ export default function ClaimSchool() {
               Since your email domain doesn't match, please upload a verification document (staff ID, business card, or letterhead).
             </p>
 
+            {documentError && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-red-800 text-sm">{documentError}</p>
+              </div>
+            )}
+
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
                 <Upload className="h-4 w-4" />
@@ -817,6 +841,12 @@ export default function ClaimSchool() {
                   ? 'You can now manage your school profile and access the admin dashboard.'
                   : 'Your verification document has been submitted. Our team will review it within 24-48 hours.'}
               </p>
+              {emailDomainMatch && (
+                <p className="text-sm text-slate-500 mb-4 flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Redirecting to admin dashboard...
+                </p>
+              )}
               <Link href={`/school-admin?schoolId=${schoolId}`}>
                 <Button className="bg-teal-600 hover:bg-teal-700 px-8">
                   Go to Admin Dashboard

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
 import { School, SchoolAdmin as SchoolAdminEntity, SchoolClaim, User, SchoolInquiry, EnrichmentDiff, PhotoCandidate } from '@/lib/entities';
@@ -54,12 +54,38 @@ export default function SchoolAdmin() {
   const [enrichError, setEnrichError] = useState(null);
   const [pendingClaim, setPendingClaim] = useState(null);
   const [pendingSchool, setPendingSchool] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     // Wait for auth to resolve before loading school data
     if (isLoadingAuth || !authUser) return;
     loadSchoolData(authUser);
   }, [authUser, isLoadingAuth]);
+
+  // F5.5: Warn on browser navigation when there are unsaved changes
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
+  const handleDirtyChange = useCallback((dirty) => {
+    setIsDirty(dirty);
+  }, []);
+
+  const handleViewChange = useCallback((viewId) => {
+    if (isDirty) {
+      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+      if (!confirmed) return;
+    }
+    setIsDirty(false);
+    setCurrentView(viewId);
+  }, [isDirty]);
 
   const loadSchoolData = async (userData) => {
     try {
@@ -158,6 +184,7 @@ export default function SchoolAdmin() {
       }
     } catch (error) {
       console.error('Failed to load school data:', error);
+      setLoadError('Failed to load school data. Please refresh the page or try again later.');
     } finally {
       setLoading(false);
     }
@@ -172,6 +199,7 @@ export default function SchoolAdmin() {
       await School.update(school.id, snakeCaseData);
       const updated = { ...school, ...updatedData };
       setSchool(updated);
+      setIsDirty(false);
       // Post-save: recalculate completeness score server-side (non-blocking)
       invokeFunction('calculateCompletenessScore', { schoolId: school.id })
         .then(res => {
@@ -221,6 +249,21 @@ export default function SchoolAdmin() {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50">
         <div className="animate-spin h-8 w-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center max-w-md rounded-xl border border-red-200 bg-red-50 p-12">
+          <XCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-red-900 mb-2">Something Went Wrong</h2>
+          <p className="text-red-700 text-sm mb-4">{loadError}</p>
+          <Button onClick={() => { setLoadError(null); setLoading(true); loadSchoolData(authUser); }} className="bg-red-600 hover:bg-red-700 text-white">
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
@@ -343,6 +386,11 @@ export default function SchoolAdmin() {
         </div>
 
         <div className="flex items-center gap-3">
+          {isDirty && (
+            <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+              Unsaved changes
+            </span>
+          )}
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${tierColors[tier]}`}>
             {tierIcons[tier]}
             <span className="uppercase">{tierLabel[tier]}</span>
@@ -369,7 +417,7 @@ export default function SchoolAdmin() {
                   const Icon = item.icon;
                   const isAction = !!item.action;
                   const isActive = !isAction && currentView === item.id;
-                  const handleClick = isAction ? item.action : () => setCurrentView(item.id);
+                  const handleClick = isAction ? item.action : () => handleViewChange(item.id);
                   return (
                     <button
                       key={item.id}
@@ -417,7 +465,7 @@ export default function SchoolAdmin() {
         {/* Main Content */}
         <main className="flex-1">
           {currentView === 'profile' && (
-            <ProfileEditor school={school} onSave={handleSaveSchool} isSaving={isSaving} />
+            <ProfileEditor school={school} onSave={handleSaveSchool} isSaving={isSaving} onDirtyChange={handleDirtyChange} />
           )}
           {currentView === 'media' && (
             <div className="p-6 max-w-3xl mx-auto">
