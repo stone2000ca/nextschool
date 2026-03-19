@@ -246,12 +246,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   const signup = async (email: string, password: string, metadata?: any) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: metadata },
     })
     if (error) throw error
+
+    // If email confirmation is required, Supabase returns a user but no
+    // session.  Signal this to the caller so the UI can show a "check your
+    // email" message instead of redirecting to a protected route.
+    if (data?.user && !data.session) {
+      const err: any = new Error('Please check your email to confirm your account.')
+      err.code = 'email_confirmation_required'
+      throw err
+    }
   }
 
   const logout = async (shouldRedirect = true) => {
@@ -275,10 +284,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Updates should already use snake_case keys matching DB columns
     const dbUpdates = { ...updates, updated_at: new Date().toISOString() }
 
+    // Use upsert so this works even if the user_profiles row hasn't been
+    // created yet (e.g. trigger delay or missing trigger).
     const { error } = await supabase
       .from('user_profiles')
-      .update(dbUpdates)
-      .eq('id', user.id)
+      .upsert({ id: user.id, email: user.email, ...dbUpdates }, { onConflict: 'id' })
 
     if (error) throw error
 
