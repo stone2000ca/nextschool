@@ -8,7 +8,7 @@ import { CONSULTANT_AVATARS } from '@/lib/brand-assets';
  * Uses layoutId="consultant-avatar" so framer-motion auto-animates
  * the position/size morph from the selection card.
  */
-export default function ConsultantAvatarBadge({ consultant, className = '' }) {
+export default function ConsultantAvatarBadge({ consultant, className = '', onClick }) {
   const shouldReduceMotion = useReducedMotion();
 
   if (!consultant) return null;
@@ -19,7 +19,11 @@ export default function ConsultantAvatarBadge({ consultant, className = '' }) {
   return (
     <motion.div
       layoutId="consultant-avatar"
-      className={`z-50 flex items-center gap-2 ${className}`}
+      className={`z-50 flex items-center gap-2 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(e); } } : undefined}
       transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
     >
       <div

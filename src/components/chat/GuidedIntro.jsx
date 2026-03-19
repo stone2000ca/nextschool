@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { CONSULTANT_AVATARS } from '@/lib/brand-assets';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Pencil } from 'lucide-react';
 
 // ─── Persona copy variants ───────────────────────────────────────────
 const COPY = {
@@ -71,8 +71,10 @@ export default function GuidedIntro({ consultantName, onComplete }) {
   const [location, setLocation] = useState('');
   const [budget, setBudget] = useState('');
   const [schoolTypes, setSchoolTypes] = useState([]);
+  const [showSummary, setShowSummary] = useState(false);
 
   const inputRef = useRef(null);
+  const overlayRef = useRef(null);
   const stepKey = STEP_KEYS[stepIndex];
 
   // Focus text inputs when step changes
@@ -83,6 +85,49 @@ export default function GuidedIntro({ consultantName, onComplete }) {
       return () => clearTimeout(t);
     }
   }, [stepKey]);
+
+  // ─── Answer summary for overlay ─────────────────────────────────
+  const collectedAnswers = [
+    { stepIndex: 0, label: 'Your name', value: parentName },
+    { stepIndex: 1, label: "Child's name", value: childName },
+    { stepIndex: 2, label: 'Grade', value: grade },
+    { stepIndex: 3, label: 'Location', value: location },
+    { stepIndex: 4, label: 'Budget', value: budget },
+    { stepIndex: 5, label: 'School type', value: schoolTypes.length > 0 ? schoolTypes.join(', ') : '' },
+  ].filter((a) => a.value && a.stepIndex < stepIndex);
+
+  const jumpToStep = useCallback((targetIndex) => {
+    if (animating) return;
+    setShowSummary(false);
+    if (targetIndex === stepIndex) return;
+    setDirection(targetIndex < stepIndex ? 'back' : 'forward');
+    setAnimating(true);
+    setTimeout(() => {
+      setStepIndex(targetIndex);
+      setAnimating(false);
+    }, 300);
+  }, [animating, stepIndex]);
+
+  // Dismiss overlay on Escape or click outside
+  useEffect(() => {
+    if (!showSummary) return;
+    const handleKey = (e) => {
+      if (e.key === 'Escape') setShowSummary(false);
+    };
+    const handleClick = (e) => {
+      if (overlayRef.current && !overlayRef.current.contains(e.target)) {
+        setShowSummary(false);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    // Delay click listener to avoid catching the opening click
+    const t = setTimeout(() => document.addEventListener('mousedown', handleClick), 0);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('mousedown', handleClick);
+      clearTimeout(t);
+    };
+  }, [showSummary]);
 
   // ─── Navigation ──────────────────────────────────────────────────
   const goNext = useCallback(() => {
@@ -320,12 +365,18 @@ export default function GuidedIntro({ consultantName, onComplete }) {
       </div>
 
       {/* Consultant avatar badge */}
-      <div className="relative z-10 p-6">
-        <div className="flex items-center gap-3">
+      <div className="relative z-20 p-6">
+        <button
+          type="button"
+          onClick={() => { if (collectedAnswers.length > 0) setShowSummary((s) => !s); }}
+          className={`flex items-center gap-3 group ${collectedAnswers.length > 0 ? 'cursor-pointer' : 'cursor-default'}`}
+          aria-label="Review your answers"
+          aria-expanded={showSummary}
+        >
           <div className="relative">
             <div
-              className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-lg"
-              style={{ borderColor: accent }}
+              className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-lg transition-shadow duration-200 group-hover:shadow-xl"
+              style={{ borderColor: accent, boxShadow: showSummary ? `0 0 16px ${accent}60` : undefined }}
             >
               <img
                 src={CONSULTANT_AVATARS[consultantName]}
@@ -334,13 +385,53 @@ export default function GuidedIntro({ consultantName, onComplete }) {
               />
             </div>
             {/* Pulse ring */}
-            <div
-              className="absolute inset-0 rounded-full animate-ping opacity-20"
-              style={{ borderWidth: 2, borderStyle: 'solid', borderColor: accent }}
-            />
+            {!showSummary && (
+              <div
+                className="absolute inset-0 rounded-full animate-ping opacity-20"
+                style={{ borderWidth: 2, borderStyle: 'solid', borderColor: accent }}
+              />
+            )}
+            {/* Edit hint badge — shows once there are answers to review */}
+            {collectedAnswers.length > 0 && !showSummary && (
+              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-slate-700 border border-white/20 flex items-center justify-center">
+                <Pencil className="w-2.5 h-2.5 text-white/70" />
+              </div>
+            )}
           </div>
           <span className="text-white/60 text-sm font-medium">{consultantName}</span>
-        </div>
+        </button>
+
+        {/* Answer summary overlay */}
+        {showSummary && collectedAnswers.length > 0 && (
+          <div
+            ref={overlayRef}
+            className="absolute top-full left-6 mt-1 w-72 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+            role="dialog"
+            aria-label="Your answers so far"
+          >
+            <div className="px-4 pt-4 pb-2">
+              <p className="text-white/50 text-xs font-medium uppercase tracking-wide">
+                Want to change anything?
+              </p>
+            </div>
+            <div className="px-2 pb-2">
+              {collectedAnswers.map((a) => (
+                <button
+                  key={a.stepIndex}
+                  type="button"
+                  onClick={() => jumpToStep(a.stepIndex)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group/item text-left"
+                >
+                  <div className="min-w-0">
+                    <span className="text-white/40 text-xs block">{a.label}</span>
+                    <span className="text-white text-sm font-medium truncate block">{a.value}</span>
+                  </div>
+                  <Pencil className="w-3.5 h-3.5 text-white/20 group-hover/item:text-white/50 flex-shrink-0 ml-2 transition-colors" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main content area */}
