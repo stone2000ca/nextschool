@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, MessageSquare, Zap, BarChart3, CheckCircle2 } from "lucide-react";
+import { ArrowRight, MessageSquare, Zap, BarChart3, CheckCircle2, Check } from "lucide-react";
 import Link from 'next/link';
 import Navbar from "@/components/navigation/Navbar";
 import { invokeFunction } from '@/lib/functions';
@@ -9,6 +10,8 @@ import { School } from '@/lib/entities';
 import SchoolCardUnified from '@/components/schools/SchoolCardUnified';
 
 export default function Home() {
+  const router = useRouter();
+  const [heroQuery, setHeroQuery] = useState('');
   const [schools, setSchools] = useState([]);
   const [loadingSchools, setLoadingSchools] = useState(true);
   const [sessionId] = useState(() => crypto.randomUUID());
@@ -110,38 +113,60 @@ export default function Home() {
       <Navbar />
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden min-h-[70vh] flex items-center justify-center">
-        {/* Video Background */}
-        <video
-          autoPlay
-          muted
-          loop
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ zIndex: 0 }}
-        >
-          <source src="https://jamesshi.com/wp-content/uploads/2026/02/nextschool_hero_video.mp4" type="video/mp4" />
-        </video>
-        
-        {/* Overlay for text readability */}
-        <div className="absolute inset-0 bg-black/40" style={{ zIndex: 1 }} />
-        
-        <div id="main-content" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center" style={{ zIndex: 2 }}>
-          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-            You Know Your Child.<br /> We Know the Schools.
+      <section className="bg-gradient-to-br from-slate-900 to-slate-800 min-h-[70vh] flex items-center justify-center py-20 sm:py-28">
+        <div id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="ns-display text-white text-3xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6 leading-tight">
+            Find a school your child will{' '}
+            <em className="text-teal-400 not-italic">love</em>
           </h1>
-          <p className="text-lg sm:text-xl lg:text-2xl text-slate-200 mb-8 sm:mb-10 max-w-3xl mx-auto font-light">
-            Tell us what matters to your family, and we'll narrow hundreds of options down to the few that actually fit.
+          <p className="text-lg sm:text-xl text-slate-300 mb-8 sm:mb-10 max-w-3xl mx-auto font-light">
+            Chat with an AI consultant that narrows 1,000+ Canadian private schools down to the few that truly fit your child.
           </p>
-          <Link href="/consultant">
-            <Button 
-              size="lg" 
-              className="bg-teal-500 hover:bg-teal-600 text-white px-6 sm:px-8 py-5 sm:py-7 text-base sm:text-lg focus:ring-2 focus:ring-teal-400 focus:ring-offset-2"
-              aria-label="Start conversation with AI consultant"
-            >
-              Start a Conversation
-              <ArrowRight className="ml-2 h-4 sm:h-5 w-4 sm:w-5" />
-            </Button>
-          </Link>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const trimmed = heroQuery.trim();
+              router.push(trimmed ? `/consultant?q=${encodeURIComponent(trimmed)}` : '/consultant');
+            }}
+            className="max-w-2xl mx-auto mb-4"
+          >
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={heroQuery}
+                onChange={(e) => setHeroQuery(e.target.value)}
+                placeholder="Tell us about your child and what you're looking for..."
+                className="flex-1 bg-teal-900/40 border border-teal-700/50 text-white placeholder:text-white/50 rounded-full px-5 py-3 text-base focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+              />
+              <button
+                type="submit"
+                className="h-12 w-12 flex-shrink-0 rounded-full bg-teal-500 hover:bg-teal-600 text-white flex items-center justify-center transition-colors"
+                aria-label="Start conversation with AI consultant"
+              >
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            </div>
+          </form>
+
+          <p className="text-sm text-slate-400 italic mb-10 max-w-2xl mx-auto">
+            Try: &ldquo;We&rsquo;re in Toronto looking for a Grade 5 spot for a shy but creative kid...&rdquo;
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-300">
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-teal-400 flex-shrink-0" />
+              Free to use
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-teal-400 flex-shrink-0" />
+              1,000+ Canadian schools
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-teal-400 flex-shrink-0" />
+              Private &amp; secure
+            </span>
+          </div>
         </div>
       </section>
 
