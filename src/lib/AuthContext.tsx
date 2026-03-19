@@ -194,8 +194,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     )
 
-    // Also run an explicit check with getUser() for server-validated session
-    checkAppState()
+    // The onAuthStateChange listener above handles INITIAL_SESSION, SIGNED_IN,
+    // TOKEN_REFRESHED, and SIGNED_OUT — so we do NOT call checkAppState() here.
+    // Previously, checkAppState() was called alongside the listener, but it
+    // re-sets isLoadingAuth to true (line 93) AFTER the listener already set it
+    // to false, causing a race that left protected pages stuck on a spinner.
+    // The INITIAL_SESSION event from the listener is sufficient for initial load.
 
     // Safety timeout: guarantee isLoadingAuth resolves within 5 seconds
     // so the UI never gets stuck in an infinite spinner
