@@ -222,7 +222,7 @@ export default function ClaimSchool() {
               claimId: claim.id
             }
           });
-          const expiresInMinutes = emailRes?.data?.expiresInMinutes ?? 15;
+          const expiresInMinutes = emailRes?.expiresInMinutes ?? 15;
           setCodeExpiryTime(new Date(Date.now() + expiresInMinutes * 60 * 1000));
           setStep(3);
         } catch (emailErr) {
@@ -260,7 +260,7 @@ export default function ClaimSchool() {
           claimId
         }
       });
-      const expiresInMinutes = emailRes?.data?.expiresInMinutes ?? 15;
+      const expiresInMinutes = emailRes?.expiresInMinutes ?? 15;
       setCodeExpiryTime(new Date(Date.now() + expiresInMinutes * 60 * 1000));
       alert('Verification code resent!');
     } catch (error) {
@@ -276,8 +276,8 @@ export default function ClaimSchool() {
     setIsVerifying(true);
 
     try {
-      const result = await invokeFunction('verifyClaimCode', { claimId, code: verificationCode });
-      const { success, error } = result.data;
+      const result = await invokeFunction('verifyClaimCode', { claimId, code: verificationCode, userId: user?.id });
+      const { success, error } = result;
 
       if (!success) {
         setCodeError(error || 'Invalid code. Please try again.');
@@ -319,9 +319,9 @@ export default function ClaimSchool() {
     setIsSubmitting(true);
     try {
       // Upload document via API route
-      const formData = new FormData();
-      formData.append('file', documentFile);
-      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+      const uploadData = new FormData();
+      uploadData.append('file', documentFile);
+      const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadData });
       if (!uploadRes.ok) throw new Error('Upload failed');
       const uploadResult = await uploadRes.json();
       const documentUrl = uploadResult.file_url;
