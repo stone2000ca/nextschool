@@ -53,38 +53,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const explicitLogoutRef = useRef(false)
 
   const fetchUserProfile = useCallback(async (authUser: SupabaseUser): Promise<UserProfile | null> => {
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', authUser.id)
-      .single()
+    // Fetch from both user_profiles and public.users in parallel.
+    // The admin role is stored in public.users, while user_profiles has
+    // subscription/token data. We need both to build a complete profile.
+    const [profileResult, usersResult] = await Promise.all([
+      supabase.from('user_profiles').select('*').eq('id', authUser.id).single(),
+      supabase.from('users').select('role').eq('id', authUser.id).single(),
+    ])
 
-    if (error || !data) {
+    const profile = profileResult.data
+    const usersRow = usersResult.data
+
+    if (!profile) {
       // Profile might not exist yet (trigger delay); return basic info
       return {
         id: authUser.id,
         email: authUser.email || '',
         full_name: authUser.user_metadata?.full_name,
-        role: 'user',
+        role: usersRow?.role || 'user',
         token_balance: 3,
         max_sessions: 3,
       }
     }
 
+    // Prefer the role from public.users (where admin role is assigned),
+    // falling back to user_profiles.role
+    const role = usersRow?.role || profile.role || 'user'
+
     // Return snake_case fields directly from DB
     return {
-      id: data.id,
-      email: data.email,
-      full_name: data.full_name,
-      role: data.role,
-      subscription_plan: data.subscription_plan,
-      token_balance: data.token_balance,
-      max_sessions: data.max_sessions,
-      stripe_customer_id: data.stripe_customer_id,
-      last_signed_on: data.last_signed_on,
-      profile_region: data.profile_region,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
+      id: profile.id,
+      email: profile.email,
+      full_name: profile.full_name,
+      role,
+      subscription_plan: profile.subscription_plan,
+      token_balance: profile.token_balance,
+      max_sessions: profile.max_sessions,
+      stripe_customer_id: profile.stripe_customer_id,
+      last_signed_on: profile.last_signed_on,
+      profile_region: profile.profile_region,
+      created_at: profile.created_at,
+      updated_at: profile.updated_at,
     }
   }, [supabase])
 
