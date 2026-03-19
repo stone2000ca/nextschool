@@ -658,11 +658,15 @@ export default function Consultant() {
         await loadConversations(userData.id);
         await loadShortlist();
       } else {
-        // For guest users, check localStorage for balance
+        // Unauthenticated users must not access the consultant — redirect to login
+        // (Dev mode bypass: allow ?dev=true for local development)
+        if (!isDevMode) {
+          window.location.href = '/login?returnTo=/consultant';
+          return;
+        }
+        // Dev mode: allow guest usage with localStorage balance
         const guestBalance = parseInt(localStorage.getItem('guestTokenBalance') || '100');
         setTokenBalance(guestBalance);
-        
-        // Show welcome message
         const greeting = {
           role: 'assistant',
           content: DEFAULT_GREETING,
