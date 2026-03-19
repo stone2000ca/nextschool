@@ -129,16 +129,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener FIRST, then check current state.
     // Handle ALL events: INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT.
     // This ensures auth persists across navigations when middleware refreshes tokens.
+    // IMPORTANT: This callback must NOT be async.  In supabase-js v2.64+,
+    // signInWithPassword() internally awaits all onAuthStateChange callbacks
+    // via _notifyAllSubscribers().  If this callback is async and the awaited
+    // work (e.g. fetchUserProfile DB query) stalls, signInWithPassword() hangs
+    // forever — which is the root cause of the "Logging in…" infinite spinner.
+    // Instead, we fire-and-forget the async profile fetch so the callback
+    // returns synchronously and never blocks the auth flow.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (
           (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') &&
           session?.user
         ) {
-          const profile = await fetchUserProfile(session.user)
-          setUser(profile)
+          // Set authenticated immediately (synchronous) so the UI updates fast.
+          // Profile fetch happens in the background.
           setIsAuthenticated(true)
           setIsLoadingAuth(false)
+          fetchUserProfile(session.user)
+            .then((profile) => { if (profile) setUser(profile) })
+            .catch((err) => console.error('Failed to fetch user profile:', err))
         } else if (event === 'INITIAL_SESSION' && !session) {
           // No session on initial load — user is unauthenticated
           setUser(null)
@@ -154,25 +164,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           } else {
             // Automatic SIGNED_OUT (e.g. failed token refresh).  Before
             // wiping auth state, double-check whether cookies still hold a
-            // valid session.  A stale gotrue-js in-memory refresh token can
-            // trigger a spurious SIGNED_OUT even though the middleware just
-            // set fresh cookies.
-            try {
-              const { data: { user: recovered } } = await supabase.auth.getUser()
-              if (recovered) {
-                // Cookies are still valid — re-establish auth state
-                const profile = await fetchUserProfile(recovered)
-                setUser(profile)
-                setIsAuthenticated(true)
+            // valid session.  Fire-and-forget to avoid blocking the callback.
+            supabase.auth.getUser()
+              .then(({ data: { user: recovered } }) => {
+                if (recovered) {
+                  setIsAuthenticated(true)
+                  setIsLoadingAuth(false)
+                  fetchUserProfile(recovered)
+                    .then((profile) => { if (profile) setUser(profile) })
+                    .catch((err) => console.error('Failed to fetch recovered profile:', err))
+                } else {
+                  setUser(null)
+                  setIsAuthenticated(false)
+                  setIsLoadingAuth(false)
+                }
+              })
+              .catch(() => {
+                // getUser also failed — session is truly gone
+                setUser(null)
+                setIsAuthenticated(false)
                 setIsLoadingAuth(false)
-                return
-              }
-            } catch {
-              // getUser also failed — session is truly gone
-            }
-            setUser(null)
-            setIsAuthenticated(false)
-            setIsLoadingAuth(false)
+              })
           }
         } else {
           // Fallback: for any unhandled event (USER_UPDATED, PASSWORD_RECOVERY, etc.)
