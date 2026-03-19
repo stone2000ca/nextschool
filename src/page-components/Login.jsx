@@ -34,20 +34,23 @@ export default function Login() {
     setError('')
     setIsSubmitting(true)
 
+    // Safety timeout: if login takes more than 10 seconds, reset the button
+    // so the user is never stuck on "Logging in…" indefinitely.
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false)
+      setError('Login is taking too long. Please check your connection and try again.')
+    }, 10000)
+
     try {
       await login(email, password)
+      clearTimeout(timeoutId)
       // signInWithPassword succeeded — use hard navigation so the new page
-      // loads with fresh auth cookies.  Soft navigation (router.replace) can
-      // race with cookie propagation and the middleware's route protection,
-      // leaving the page stuck on "Logging in…".  This matches the pattern
-      // used by logout() and navigateToLogin() in AuthContext.
+      // loads with fresh auth cookies.
       window.location.href = returnTo
     } catch (err) {
+      clearTimeout(timeoutId)
       setError(err.message || 'Invalid email or password')
     } finally {
-      // Always reset so the button never stays stuck on "Logging in…".
-      // On success the page is navigating away, but if the navigation is
-      // slow this keeps the UI interactive.
       setIsSubmitting(false)
     }
   }
