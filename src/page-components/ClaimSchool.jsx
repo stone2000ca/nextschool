@@ -145,10 +145,15 @@ export default function ClaimSchool() {
     setIsSubmitting(true);
 
     try {
+      if (!authUser?.id) {
+        setFormError('You must be logged in to submit a claim.');
+        return;
+      }
+
       // Create SchoolClaim record — goes straight to pending_review for admin approval
       await SchoolClaim.create({
         school_id: schoolId,
-        claimed_by: user?.id,
+        claimed_by: authUser.id,
         claimant_name: formData.name,
         claimant_role: formData.role,
         claimant_email: formData.email,
@@ -156,10 +161,8 @@ export default function ClaimSchool() {
         status: 'pending_review'
       });
 
-      // Update school claim status to pending
-      await School.update(schoolId, {
-        claim_status: 'pending'
-      });
+      // Note: claim_status on the schools table is updated server-side
+      // during admin approval (requires service-role to bypass RLS).
 
       // Go to success step
       setStep(3);
@@ -176,9 +179,8 @@ export default function ClaimSchool() {
     setCancellingClaim(true);
     try {
       await SchoolClaim.update(existingClaim.id, { status: 'cancelled' });
-      if (existingClaim.status === 'pending_review') {
-        await School.update(existingClaim.school_id, { claim_status: null });
-      }
+      // Note: claim_status on the schools table is managed server-side
+      // (requires service-role to bypass RLS).
       setExistingClaim(null);
       setShowCancelConfirm(false);
       setClaimSchoolName('');
