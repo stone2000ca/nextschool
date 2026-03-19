@@ -32,7 +32,7 @@ export default function AdminUsers() {
 
   const loadUsers = async () => {
     try {
-      const data = await UserEntity.list('-createdDate');
+      const data = await UserEntity.list('-created_date');
       setUsers(data);
     } catch (error) {
       console.error('Failed to load users:', error);
@@ -47,7 +47,7 @@ export default function AdminUsers() {
       (user.email || '').toLowerCase().includes(q) ||
       (user.full_name || '').toLowerCase().includes(q);
     const matchesRole = roleFilter === 'all' || (user.role || 'user') === roleFilter;
-    const matchesPlan = planFilter === 'all' || (user.subscriptionPlan || 'free') === planFilter;
+    const matchesPlan = planFilter === 'all' || (user.subscription_plan || 'free') === planFilter;
     return matchesSearch && matchesRole && matchesPlan;
   });
 
@@ -56,8 +56,8 @@ export default function AdminUsers() {
       ...prev,
       [user.id]: {
         role: user.role || 'user',
-        subscriptionPlan: user.subscriptionPlan || 'free',
-        tokenBalance: user.tokenBalance ?? 0,
+        subscriptionPlan: user.subscription_plan || 'free',
+        tokenBalance: user.token_balance ?? 0,
       }
     }));
   };
@@ -101,15 +101,15 @@ export default function AdminUsers() {
     setSavingId(user.id);
     await UserEntity.update(user.id, {
       role: newRole,
-      subscriptionPlan: edits.subscriptionPlan,
-      tokenBalance: Number(edits.tokenBalance),
+      subscription_plan: edits.subscriptionPlan,
+      token_balance: Number(edits.tokenBalance),
       updated_by: currentUser?.email,
-      updatedAt: new Date().toISOString(),
+      updated_date: new Date().toISOString(),
     });
 
     setUsers(prev => prev.map(u =>
       u.id === user.id
-        ? { ...u, role: newRole, subscriptionPlan: edits.subscriptionPlan, tokenBalance: Number(edits.tokenBalance) }
+        ? { ...u, role: newRole, subscription_plan: edits.subscriptionPlan, token_balance: Number(edits.tokenBalance) }
         : u
     ));
     cancelEdit(user.id);
@@ -238,7 +238,7 @@ export default function AdminUsers() {
                           </SelectContent>
                         </Select>
                       ) : (
-                        user.subscriptionPlan || 'free'
+                        user.subscription_plan || 'free'
                       )}
                     </td>
 
@@ -253,12 +253,12 @@ export default function AdminUsers() {
                           className="w-24 h-8 text-sm"
                         />
                       ) : (
-                        user.tokenBalance ?? 0
+                        user.token_balance ?? 0
                       )}
                     </td>
 
                     <td className="p-4 text-sm text-slate-600">
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {new Date(user.created_date).toLocaleDateString()}
                     </td>
 
                     {/* Actions */}

@@ -98,7 +98,7 @@ async function callOpenRouter(options) {
       if (_logContext) {
         const isTest = _logContext.is_test === true;
         LLMLog.create({
-          conversationId: _logContext.conversationId || 'unknown',
+          conversation_id: _logContext.conversationId || 'unknown',
           phase: _logContext.phase || 'unknown',
           model: 'unknown',
           prompt_summary: fullPromptStr.substring(0, 500),
@@ -127,7 +127,7 @@ async function callOpenRouter(options) {
     if (_logContext) {
       const isTest = _logContext.is_test === true;
       LLMLog.create({
-        conversationId: _logContext.conversationId || 'unknown',
+        conversation_id: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: data.model || 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -167,7 +167,7 @@ async function callOpenRouter(options) {
     if (isNetworkError && _logContext) {
       const isTest = _logContext.is_test === true;
       LLMLog.create({
-        conversationId: _logContext.conversationId || 'unknown',
+        conversation_id: _logContext.conversationId || 'unknown',
         phase: _logContext.phase || 'unknown',
         model: 'unknown',
         prompt_summary: fullPromptStr.substring(0, 500),
@@ -243,7 +243,7 @@ function validateActions(rawToolCalls, validSchoolIds, conversationId) {
 }
 
 async function logDroppedAction( conversationId, action, reason) {
-  try { await LLMLog.create({ conversationId: conversationId || 'unknown', phase: 'ACTION_VALIDATION', status: 'ACTION_DROPPED', prompt_summary: JSON.stringify(action).substring(0, 100), response_summary: reason }); } catch (e) { console.error('[E32] Failed to log dropped action:', e.message); }
+  try { await LLMLog.create({ conversation_id: conversationId || 'unknown', phase: 'ACTION_VALIDATION', status: 'ACTION_DROPPED', prompt_summary: JSON.stringify(action).substring(0, 100), response_summary: reason }); } catch (e) { console.error('[E32] Failed to log dropped action:', e.message); }
 }
 
 // =============================================================================
@@ -764,15 +764,15 @@ async function handleVisitDebriefInternal(selectedSchoolId, processMessage, conv
     let deepDiveArtifacts: any[] = [];
     if (context?.conversationId) {
       [artifacts, deepDiveArtifacts] = await Promise.all([
-        GeneratedArtifact.filter({ 
-          conversationId: context.conversationId,
-          schoolId: selectedSchoolId,
-          artifactType: 'visit_prep'
+        GeneratedArtifact.filter({
+          conversation_id: context.conversationId,
+          school_id: selectedSchoolId,
+          artifact_type: 'visit_prep'
         }),
-        GeneratedArtifact.filter({ 
-          conversationId: context.conversationId,
-          schoolId: selectedSchoolId,
-          artifactType: 'deep_dive_analysis'
+        GeneratedArtifact.filter({
+          conversation_id: context.conversationId,
+          school_id: selectedSchoolId,
+          artifact_type: 'deep_dive_analysis'
         })
       ]);
     }
@@ -896,9 +896,9 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
         };
 
         const existingArtifacts = await GeneratedArtifact.filter({
-          conversationId: context.conversationId,
-          schoolId: selectedSchoolId,
-          artifactType: 'visit_debrief'
+          conversation_id: context.conversationId,
+          school_id: selectedSchoolId,
+          artifact_type: 'visit_debrief'
         });
 
         if (existingArtifacts && existingArtifacts.length > 0) {
@@ -910,16 +910,16 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
           console.log('[E13a] Debrief Q&A appended to artifact:', artifact.id);
         } else {
           const created = await GeneratedArtifact.create({
-            userId: context.userId,
-            conversationId: context.conversationId,
-            schoolId: selectedSchoolId,
-            artifactType: 'visit_debrief',
+            user_id: context.userId,
+            conversation_id: context.conversationId,
+            school_id: selectedSchoolId,
+            artifact_type: 'visit_debrief',
             title: 'Visit Debrief - ' + schoolName,
             content: { qaPairs: [newQAPair], schoolName: schoolName },
             status: 'ready',
-            isShared: false,
-            pdfUrl: null,
-            shareToken: null
+            is_shared: false,
+            pdf_url: null,
+            share_token: null
           });
           console.log('[E13a] Debrief artifact created:', created.id);
         }
@@ -934,7 +934,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
         try {
           const journeys = context.journeyId
             ? await FamilyJourney.filter({ id: context.journeyId })
-            : await FamilyJourney.filter({ userId: context.userId }, undefined, 1);
+            : await FamilyJourney.filter({ user_id: context.userId }, undefined, 1);
           const familyJourney = journeys?.[0];
           if (!familyJourney) return;
 
@@ -1005,7 +1005,7 @@ Return ONLY this JSON (no markdown): { "debriefSummary": "<2-3 sentences summari
 
           // E29-015: Phase auto-advancement → DECIDE if all non-removed schools are now visited
           try {
-            const allSchoolJourneys = await SchoolJourney.filter({ familyJourneyId: familyJourney.id });
+            const allSchoolJourneys = await SchoolJourney.filter({ family_journey_id: familyJourney.id });
             const activeJourneys = allSchoolJourneys.filter(sj => sj.status !== 'removed');
             const allVisited = activeJourneys.length > 0 && activeJourneys.every(sj => sj.status === 'visited');
             if (allVisited && familyJourney.currentPhase !== 'DECIDE') {
@@ -1285,7 +1285,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
       
       if (userId && conversationId) {
         try {
-          const profiles = await FamilyProfile.filter({ userId, conversationId });
+          const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
           conversationFamilyProfile = profiles.length > 0 ? profiles[0] : null;
           
           if (!conversationFamilyProfile) {
@@ -1788,7 +1788,7 @@ Object.assign(context, safeUpdatedContext);
                     }
                   }
                   if (Object.keys(updatePayload).length > 0) {
-                    const profiles = await FamilyProfile.filter({ userId, conversationId });
+                    const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
                     if (profiles && profiles.length > 0) {
                       await FamilyProfile.update(profiles[0].id, updatePayload);
                       console.log('[E42-PERSIST] FamilyProfile updated (EDIT_CRITERIA):', profiles[0].id, Object.keys(updatePayload));
@@ -1848,7 +1848,7 @@ Object.assign(context, safeUpdatedContext);
                   }
                 }
                 if (Object.keys(updatePayload).length > 0) {
-                  const profiles = await FamilyProfile.filter({ userId, conversationId });
+                  const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
                   if (profiles && profiles.length > 0) {
                     await FamilyProfile.update(profiles[0].id, updatePayload);
                     console.log('[E42-PERSIST] FamilyProfile updated:', profiles[0].id, Object.keys(updatePayload));

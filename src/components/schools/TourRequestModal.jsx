@@ -54,7 +54,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
     // Fetch FamilyProfile for Family Snapshot section in email
     let familyProfile = null;
     try {
-      const profiles = await FamilyProfile.filter({ userId: user.id });
+      const profiles = await FamilyProfile.filter({ user_id: user.id });
       if (profiles && profiles.length > 0) {
         familyProfile = profiles[0];
       }
@@ -74,23 +74,23 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
 
     // E29-005-AC7: Create TourRequest entity (primary) for runtime verification
     const tourRequest = await TourRequest.create({
-      parentUserId: user.id,
-      schoolId: school.id,
+      parent_user_id: user.id,
+      school_id: school.id,
       requestedAt: new Date().toISOString(),
       status: 'pending',
-      parentName: user.full_name || '',
-      parentEmail: user.email || '',
-      tourType: form.tourType,
+      parent_name: user.full_name || '',
+      parent_email: user.email || '',
+      tour_type: form.tourType,
       message: messageParts,
-      preferredDate: preferredDate || undefined,
+      preferred_date: preferredDate || undefined,
       preferredDateAlt: preferredDateAlt || undefined,
       eventId: primaryEvent?.id || undefined,
       numberOfVisitors: Number(form.numberOfVisitors),
-      childGrade: form.childGrade !== '' ? Number(form.childGrade) : undefined,
+      child_grade: form.childGrade !== '' ? Number(form.childGrade) : undefined,
       specialRequests: form.specialRequests || undefined,
       // E16c: Family context snapshot fields (only if profile exists)
       ...(familyProfile && {
-        maxTuition: familyProfile.maxTuition || undefined,
+        max_tuition: familyProfile.maxTuition || undefined,
         prioritiesSnapshot: familyProfile.priorities ? JSON.stringify(familyProfile.priorities) : undefined,
         boardingPreference: familyProfile.boardingPreference || undefined,
         profileSnapshotAt: new Date().toISOString(),
@@ -99,22 +99,22 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
 
     // Also create SchoolInquiry for backward compatibility and school notifications
     const inquiry = await SchoolInquiry.create({
-      parentUserId: user.id,
-      schoolId: school.id,
-      inquiryType: 'tour_request',
+      parent_user_id: user.id,
+      school_id: school.id,
+      inquiry_type: 'tour_request',
       message: messageParts,
       status: 'pending',
-      parentName: user.full_name || '',
-      parentEmail: user.email || '',
-      tourType: form.tourType,
-      preferredDate: preferredDate || undefined,
+      parent_name: user.full_name || '',
+      parent_email: user.email || '',
+      tour_type: form.tourType,
+      preferred_date: preferredDate || undefined,
       preferredDateAlt: preferredDateAlt || undefined,
       eventId: primaryEvent?.id || undefined,
       numberOfVisitors: Number(form.numberOfVisitors),
-      childGrade: form.childGrade !== '' ? Number(form.childGrade) : undefined,
+      child_grade: form.childGrade !== '' ? Number(form.childGrade) : undefined,
       specialRequests: form.specialRequests || undefined,
       ...(familyProfile && {
-        maxTuition: familyProfile.maxTuition || undefined,
+        max_tuition: familyProfile.maxTuition || undefined,
         prioritiesSnapshot: familyProfile.priorities ? JSON.stringify(familyProfile.priorities) : undefined,
         boardingPreference: familyProfile.boardingPreference || undefined,
         profileSnapshotAt: new Date().toISOString(),
@@ -129,13 +129,13 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         const me = authUser;
         if (!me?.id) return;
 
-        const journeys = await FamilyJourney.filter({ userId: me.id }, '-updatedDate', 1);
+        const journeys = await FamilyJourney.filter({ user_id: me.id }, '-updated_date', 1);
         if (!journeys || journeys.length === 0) return;
         const familyJourney = journeys[0];
 
         const existing = await SchoolJourney.filter({
-          familyJourneyId: familyJourney.id,
-          schoolId: school.id,
+          family_journey_id: familyJourney.id,
+          school_id: school.id,
         });
 
         if (existing && existing.length > 0) {
@@ -146,9 +146,9 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
           });
         } else {
           await SchoolJourney.create({
-            familyJourneyId: familyJourney.id,
-            schoolId: school.id,
-            schoolName: school.name,
+            family_journey_id: familyJourney.id,
+            school_id: school.id,
+            school_name: school.name,
             status: 'touring',
             tourRequestId: inquiry?.id || null,
             tourDate: preferredDate || null,
@@ -158,12 +158,12 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         console.log('[E29-005] SchoolJourney tour sync completed for', school.name);
 
         // E29-015: Phase auto-advancement EVALUATE → EXPERIENCE on tour request
-        if (familyJourney.currentPhase === 'EVALUATE') {
+        if (familyJourney.current_phase === 'EVALUATE') {
           try {
-            const currentHistory = Array.isArray(familyJourney.phaseHistory) ? familyJourney.phaseHistory : [];
+            const currentHistory = Array.isArray(familyJourney.phase_history) ? familyJourney.phase_history : [];
             await FamilyJourney.update(familyJourney.id, {
-              currentPhase: 'EXPERIENCE',
-              phaseHistory: [...currentHistory, { phase: 'EXPERIENCE', enteredAt: new Date().toISOString() }],
+              current_phase: 'EXPERIENCE',
+              phase_history: [...currentHistory, { phase: 'EXPERIENCE', enteredAt: new Date().toISOString() }],
             });
             console.log('[E29-015] FamilyJourney advanced EVALUATE → EXPERIENCE');
           } catch (phaseErr) {
@@ -175,8 +175,8 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         try {
           // Get the SchoolJourney id we just upserted
           const sjRecords = await SchoolJourney.filter({
-            familyJourneyId: familyJourney.id,
-            schoolId: school.id,
+            family_journey_id: familyJourney.id,
+            school_id: school.id,
           });
           const sjId = sjRecords?.[0]?.id;
           if (!sjId) throw new Error('SchoolJourney record not found after upsert');
@@ -184,12 +184,12 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
           // Load family profile for personalization
           let fp = null;
           try {
-            const fps = await FamilyProfile.filter({ userId: me.id });
+            const fps = await FamilyProfile.filter({ user_id: me.id });
             fp = fps?.[0] || null;
           } catch (_) {}
 
           const priorities = fp?.priorities?.slice(0, 4).join(', ') || 'general fit, academics, community';
-          const childGrade = fp?.childGrade ?? form.childGrade ?? 'unknown';
+          const childGrade = fp?.child_grade ?? form.childGrade ?? 'unknown';
           const tourTypeLabel = form.tourType === 'in_person' ? 'in-person' : 'virtual';
 
           const prepPrompt = `You are an education consultant preparing a family for a ${tourTypeLabel} tour at ${school.name}.
@@ -315,7 +315,7 @@ ${familySnapshotHtml}
 
   const dateOptions = upcomingEvents.map(ev => ({
     value: ev.id,
-    label: `${EVENT_TYPE_LABELS[ev.eventType] || ev.eventType} — ${new Date(ev.date).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })}`,
+    label: `${EVENT_TYPE_LABELS[ev.event_type] || ev.event_type} — ${new Date(ev.date).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })}`,
   }));
 
   return (

@@ -17,7 +17,7 @@ export async function summarizeConversationMessages(params: {
     throw Object.assign(new Error('Conversation not found'), { statusCode: 404 });
   }
 
-  if ((conversation[0] as any)?.userId !== userId) {
+  if ((conversation[0] as any)?.user_id !== userId) {
     throw Object.assign(new Error('Access denied'), { statusCode: 403 });
   }
 
@@ -35,7 +35,7 @@ export async function summarizeConversationMessages(params: {
 
   // Check if summary already exists
   const existingSummary = await ConversationSummary.filter({
-    conversationId
+    conversation_id: conversationId
   });
 
   // Create summary of old messages
@@ -58,29 +58,29 @@ Return a concise summary.`;
   if (existingSummary && existingSummary.length > 0) {
     await ConversationSummary.update(existingSummary[0].id, {
       summary: String(summary).trim(),
-      messageCount: oldMessages.length,
-      lastSummarizedAt: new Date().toISOString()
+      message_count: oldMessages.length,
+      last_summarized_at: new Date().toISOString()
     });
   } else {
     await ConversationSummary.create({
-      userId: conv.userId,
-      conversationId,
+      user_id: conv.user_id,
+      conversation_id: conversationId,
       summary: String(summary).trim(),
-      messageCount: oldMessages.length,
-      lastSummarizedAt: new Date().toISOString()
+      message_count: oldMessages.length,
+      last_summarized_at: new Date().toISOString()
     });
   }
 
   // Archive old messages before truncating
-  const existingArchive = conv.archivedMessages || [];
+  const existingArchive = conv.archived_messages || [];
   const archivedMessages = [...existingArchive, ...oldMessages];
   if (archivedMessages.length > 500) archivedMessages.splice(0, archivedMessages.length - 500);
 
   // Update conversation to only keep recent messages + reference to summary
   await ChatHistory.update(conversationId, {
     messages: recentMessages,
-    longTermSummary: String(summary).trim(),
-    archivedMessages
+    long_term_summary: String(summary).trim(),
+    archived_messages: archivedMessages
   });
 
   return {

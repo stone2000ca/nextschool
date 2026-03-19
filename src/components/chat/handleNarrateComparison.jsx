@@ -34,24 +34,24 @@ export async function handleNarrateComparison({
 
   // E11b: Build detailed school data for LLM evaluation
   const schoolDataForMatrix = comparedSchools.map(s => {
-    const tuition = s.dayTuition ?? s.tuition;
+    const tuition = s.day_tuition ?? s.tuition;
     const isVisited = visitedSchoolIds.has(s.id);
     return {
       id: s.id,
       name: s.name,
       city: s.city,
-      distanceKm: s.distanceKm,
+      distanceKm: s.distance_km,
       tuition,
       currency: s.currency,
       curriculum: s.curriculum,
-      genderPolicy: s.genderPolicy,
-      boardingAvailable: s.boardingAvailable,
-      avgClassSize: s.avgClassSize,
+      genderPolicy: s.gender_policy,
+      boardingAvailable: s.boarding_available,
+      avgClassSize: s.avg_class_size,
       enrollment: s.enrollment,
-      studentTeacherRatio: s.studentTeacherRatio,
-      artsPrograms: s.artsPrograms,
-      sportsPrograms: s.sportsPrograms,
-      universityPlacements: s.universityPlacements,
+      studentTeacherRatio: s.student_teacher_ratio,
+      artsPrograms: s.arts_programs,
+      sportsPrograms: s.sports_programs,
+      universityPlacements: s.university_placements,
       specializations: s.specializations,
       highlights: s.highlights,
       isVisited
@@ -241,11 +241,11 @@ For each school, identify 1-2 key trade-offs worth mentioning (e.g., "Higher cos
         try {
           const schoolIds = comparedSchools.map(s => s.id).filter(Boolean);
           await GeneratedArtifact.create({
-            artifactType: 'comparison',
-            familyProfileId: familyProfile.id,
+            artifact_type: 'comparison',
+            family_profile_id: familyProfile.id,
             content: JSON.stringify({ matrix: result.comparisonMatrix, narrative: narrativeText }),
-            schoolIds,
-            createdAt: new Date().toISOString()
+            school_ids: schoolIds,
+            created_date: new Date().toISOString()
           });
         } catch (artifactError) {
           console.warn('[E11b] Failed to persist comparison artifact (non-blocking):', artifactError.message);

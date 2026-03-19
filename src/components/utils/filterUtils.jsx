@@ -42,9 +42,9 @@ export function applyReligiousFilter(school, familyProfile, payload) {
     typeof d === 'string' && religiousDealbreakTerms.some(term => d.toLowerCase().includes(term))
   );
   if (hasReligiousDealbreaker) {
-    const affiliationNorm = (school.faithBased || '').toLowerCase().trim();
-    if (school.faithBased && !nonReligiousAffiliations.has(affiliationNorm)) {
-      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation (${school.faithBased})`);
+    const affiliationNorm = (school.faith_based || '').toLowerCase().trim();
+    if (school.faith_based && !nonReligiousAffiliations.has(affiliationNorm)) {
+      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: religious affiliation (${school.faith_based})`);
       return false;
     }
     const schoolNameLower = school.name?.toLowerCase() || '';
@@ -61,7 +61,7 @@ export function applyReligiousFilter(school, familyProfile, payload) {
  * Aligned with server-side version in searchSchools.ts.
  */
 export function applyGenderFilter(school, familyProfile) {
-  const gp = school.genderPolicy || null;
+  const gp = school.gender_policy || null;
   if (gp === null) return true;
   const exclusions = familyProfile?.schoolGenderExclusions || [];
   if (Array.isArray(exclusions) && exclusions.length > 0) {

@@ -45,9 +45,9 @@ export async function handleStripeWebhookLogic(rawBody: string, signature: strin
 
     // Update user subscription tier
     await User.update(userId, {
-      subscriptionPlan: 'pro',
-      maxSessions: 5,
-      stripeCustomerId: session.customer,
+      subscription_plan: 'pro',
+      max_sessions: 5,
+      stripe_customer_id: session.customer,
     });
 
     console.log(`User ${userId} upgraded to pro`);

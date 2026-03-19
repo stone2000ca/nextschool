@@ -32,7 +32,7 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const records = await PhotoCandidate.filter({ schoolId: school.id });
+      const records = await PhotoCandidate.filter({ school_id: school.id });
       const u = authUser;
       setUser(u);
       setCandidates(records);
@@ -55,23 +55,23 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
     try {
       await PhotoCandidate.update(candidate.id, {
         status: 'approved',
-        approvedAs,
-        reviewedAt: new Date().toISOString(),
+        approved_as: approvedAs,
+        reviewed_at: new Date().toISOString(),
       });
 
       if (approvedAs === 'headerPhoto') {
-        await School.update(school.id, { headerPhotoUrl: candidate.imageUrl });
-        onUpdate && onUpdate('headerPhotoUrl', candidate.imageUrl);
+        await School.update(school.id, { header_photo_url: candidate.image_url });
+        onUpdate && onUpdate('header_photo_url', candidate.image_url);
       } else {
-        const gallery = Array.isArray(school.photoGallery) ? school.photoGallery : [];
-        if (!gallery.includes(candidate.imageUrl)) {
-          const updated = [...gallery, candidate.imageUrl];
-          await School.update(school.id, { photoGallery: updated });
-          onUpdate && onUpdate('photoGallery', updated);
+        const gallery = Array.isArray(school.photo_gallery) ? school.photo_gallery : [];
+        if (!gallery.includes(candidate.image_url)) {
+          const updated = [...gallery, candidate.image_url];
+          await School.update(school.id, { photo_gallery: updated });
+          onUpdate && onUpdate('photo_gallery', updated);
         }
       }
       setCandidates(prev => {
-        const next = prev.map(c => c.id === candidate.id ? { ...c, status: 'approved', approvedAs } : c);
+        const next = prev.map(c => c.id === candidate.id ? { ...c, status: 'approved', approved_as: approvedAs } : c);
         onCountChange && onCountChange(next.filter(c => c.status === 'pending').length);
         return next;
       });
@@ -85,11 +85,11 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
     try {
       await PhotoCandidate.update(id, {
         status: 'rejected',
-        rejectionReason: reason || '',
-        reviewedAt: new Date().toISOString(),
+        rejection_reason: reason || '',
+        reviewed_at: new Date().toISOString(),
       });
       setCandidates(prev => {
-        const next = prev.map(c => c.id === id ? { ...c, status: 'rejected', rejectionReason: reason } : c);
+        const next = prev.map(c => c.id === id ? { ...c, status: 'rejected', rejection_reason: reason } : c);
         onCountChange && onCountChange(next.filter(c => c.status === 'pending').length);
         return next;
       });
@@ -173,8 +173,8 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
                 {/* Thumbnail */}
                 <div className="relative aspect-video bg-slate-100">
                   <img
-                    src={candidate.imageUrl}
-                    alt={candidate.altText || ''}
+                    src={candidate.image_url}
+                    alt={candidate.alt_text || ''}
                     className="w-full h-full object-cover"
                     onError={() => setHiddenIds(prev => new Set([...prev, candidate.id]))}
                   />
@@ -186,22 +186,22 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
                     {isSelected && <span className="text-white text-xs">✓</span>}
                   </button>
                   {/* Type badge */}
-                  <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_BADGE[candidate.inferredType] || TYPE_BADGE.general}`}>
-                    {candidate.inferredType}
+                  <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_BADGE[candidate.inferred_type] || TYPE_BADGE.general}`}>
+                    {candidate.inferred_type}
                   </span>
                 </div>
 
                 {/* Meta */}
                 <div className="px-2 pt-2 pb-1 space-y-0.5">
-                  {candidate.altText && (
-                    <p className="text-xs text-slate-500 truncate" title={candidate.altText}>{candidate.altText}</p>
+                  {candidate.alt_text && (
+                    <p className="text-xs text-slate-500 truncate" title={candidate.alt_text}>{candidate.alt_text}</p>
                   )}
                   <div className="flex items-center justify-between">
-                    {formatKB(candidate.fileSizeBytes) && (
-                      <span className="text-xs text-slate-400">{formatKB(candidate.fileSizeBytes)}</span>
+                    {formatKB(candidate.file_size_bytes) && (
+                      <span className="text-xs text-slate-400">{formatKB(candidate.file_size_bytes)}</span>
                     )}
                     <a
-                      href={candidate.pageUrl}
+                      href={candidate.page_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-slate-400 hover:text-teal-600 ml-auto"

@@ -1,19 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase/admin'
 
-function snakeToCamel(str: string): string {
-  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
-}
-
-function keysToCamel(obj: Record<string, any>): Record<string, any> {
-  if (obj === null || obj === undefined) return obj
-  const result: Record<string, any> = {}
-  for (const [key, value] of Object.entries(obj)) {
-    result[snakeToCamel(key)] = value
-  }
-  return result
-}
-
 // Safe columns known to exist in production — used for sorting validation
 const SAFE_SORT_COLUMNS = new Set([
   'id', 'name', 'slug', 'city', 'country', 'status',
@@ -34,8 +21,8 @@ async function listSchools(params: { status?: string; sort?: string; limit?: num
   if (params.sort) {
     const descending = params.sort.startsWith('-')
     const rawField = descending ? params.sort.slice(1) : params.sort
-    // Strip any alias mapping — just validate against known columns
-    const field = rawField.replace(/([A-Z])/g, '_$1').toLowerCase() // camelCase -> snake_case
+    // Sort field should already be snake_case; normalize just in case
+    const field = rawField.replace(/([A-Z])/g, '_$1').toLowerCase()
     if (SAFE_SORT_COLUMNS.has(field)) {
       query = query.order(field, { ascending: !descending })
     } else {
@@ -57,7 +44,7 @@ async function listSchools(params: { status?: string; sort?: string; limit?: num
 
   console.log(`[list-schools] Returned ${(data || []).length} schools (status=${status}, limit=${limit})`)
 
-  return (data || []).map(keysToCamel)
+  return data || []
 }
 
 export async function GET(req: NextRequest) {

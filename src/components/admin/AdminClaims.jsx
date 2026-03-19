@@ -30,15 +30,15 @@ export default function AdminClaims() {
       const enriched = await Promise.all(
         rawClaims.map(async (claim) => {
           const [schools, users] = await Promise.all([
-            School.filter({ id: claim.schoolId }),
-            claim.userId ? UserEntity.filter({ id: claim.userId }) : Promise.resolve([]),
+            School.filter({ id: claim.school_id }),
+            claim.user_id ? UserEntity.filter({ id: claim.user_id }) : Promise.resolve([]),
           ]);
           return {
             ...claim,
             _schoolName: schools[0]?.name || 'Unknown School',
             _schoolCity: schools[0]?.city || '',
             _schoolRegion: schools[0]?.region || '',
-            _userEmail: users[0]?.email || claim.claimantEmail || 'Unknown',
+            _userEmail: users[0]?.email || claim.claimant_email || 'Unknown',
           };
         })
       );
@@ -56,16 +56,16 @@ export default function AdminClaims() {
     setProcessingId(claim.id);
     try {
       await SchoolClaim.update(claim.id, { status: 'verified' });
-      await School.update(claim.schoolId, {
+      await School.update(claim.school_id, {
         verified: true,
-        claimStatus: 'claimed',
-        membershipTier: 'basic',
+        claim_status: 'claimed',
+        membership_tier: 'basic',
       });
       await SchoolAdmin.create({
-        userId: claim.userId,
-        schoolId: claim.schoolId,
+        user_id: claim.user_id,
+        school_id: claim.school_id,
         role: 'owner',
-        isActive: true,
+        is_active: true,
       });
       setClaims(prev => prev.filter(c => c.id !== claim.id));
       toast.success(`Claim approved for ${claim._schoolName}`);
@@ -129,10 +129,10 @@ export default function AdminClaims() {
                     </div>
                     <div className="space-y-1 text-sm text-slate-600">
                       <div><span className="font-medium">Location:</span> {[claim._schoolCity, claim._schoolRegion].filter(Boolean).join(', ') || 'N/A'}</div>
-                      <div><span className="font-medium">Claimant:</span> {claim.claimantName || 'N/A'} — {claim._userEmail}</div>
-                      <div><span className="font-medium">Role at school:</span> {claim.claimantRole || 'N/A'}</div>
-                      <div><span className="font-medium">Verification:</span> {claim.verificationMethod || 'N/A'}</div>
-                      <div><span className="font-medium">Submitted:</span> {new Date(claim.createdAt).toLocaleDateString('en-CA')}</div>
+                      <div><span className="font-medium">Claimant:</span> {claim.claimant_name || 'N/A'} — {claim._userEmail}</div>
+                      <div><span className="font-medium">Role at school:</span> {claim.claimant_role || 'N/A'}</div>
+                      <div><span className="font-medium">Verification:</span> {claim.verification_method || 'N/A'}</div>
+                      <div><span className="font-medium">Submitted:</span> {new Date(claim.created_date).toLocaleDateString('en-CA')}</div>
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0">

@@ -54,27 +54,27 @@ export async function restoreSessionFromParam(
     // WC6: Store session data for returning user context
     setRestoredSessionData({
       sessionId: chatSession.id,
-      profileName: chatSession.profileName,
-      consultantName: chatSession.consultantSelected,
-      matchedSchoolsCount: chatSession.matchedSchools ? JSON.parse(chatSession.matchedSchools).length : 0,
-      createdDate: chatSession.createdAt,
-      updatedDate: chatSession.updatedAt
+      profileName: chatSession.profile_name,
+      consultantName: chatSession.consultant_selected,
+      matchedSchoolsCount: chatSession.matched_schools ? JSON.parse(chatSession.matched_schools).length : 0,
+      createdDate: chatSession.created_date,
+      updatedDate: chatSession.updated_date
     });
 
     // CRITICAL: Restore consultant selection FIRST so chat panel can render correctly
-    if (chatSession.consultantSelected) {
-      setSelectedConsultant(chatSession.consultantSelected);
+    if (chatSession.consultant_selected) {
+      setSelectedConsultant(chatSession.consultant_selected);
     }
 
     // DIRECT SEARCH CALL - Match orchestrateConversation's pattern
     let restoredSchools = [];
     try {
-      const locationArea = chatSession.locationArea;
+      const locationArea = chatSession.location_area;
       const searchParams = {
         limit: 50,
-        minGrade: chatSession.childGrade,
-        maxGrade: chatSession.childGrade,
-        maxTuition: chatSession.maxTuition
+        minGrade: chatSession.child_grade,
+        maxGrade: chatSession.child_grade,
+        maxTuition: chatSession.max_tuition
       };
 
       if (locationArea) {
@@ -104,7 +104,7 @@ export async function restoreSessionFromParam(
       }
 
       const response = await invokeFunction('searchSchools', searchParams);
-      setDebugInfo('location=' + locationArea + ' | city=' + (searchParams.city || 'N/A') + ' grade=' + chatSession.childGrade + ' tuition=' + chatSession.maxTuition + ' | schools=' + (response?.data?.schools?.length || 0));
+      setDebugInfo('location=' + locationArea + ' | city=' + (searchParams.city || 'N/A') + ' grade=' + chatSession.child_grade + ' tuition=' + chatSession.max_tuition + ' | schools=' + (response?.data?.schools?.length || 0));
       restoredSchools = response?.data?.schools || [];
     } catch (err) {
       setDebugInfo('searchSchools ERROR: ' + err.message);
@@ -113,8 +113,8 @@ export async function restoreSessionFromParam(
 
     // Fetch and restore ChatHistory messages and context
     let chatHistory = null;
-    if (chatSession.chatHistoryId) {
-      chatHistory = await ChatHistory.get(chatSession.chatHistoryId);
+    if (chatSession.chat_history_id) {
+      chatHistory = await ChatHistory.get(chatSession.chat_history_id);
       if (chatHistory?.messages) {
         setMessages(chatHistory.messages);
       }
@@ -146,16 +146,16 @@ export async function restoreSessionFromParam(
     if (!lastDeepDiveSchoolId && isAuthenticated && user?.id) {
       try {
         // BUG-RN-PERSIST Fix E: Omit conversationId when falsy to avoid matching empty-string rows
-        const restoreFilter = { userId: user.id };
-        if (chatHistory?.id) restoreFilter.conversationId = chatHistory.id;
+        const restoreFilter = { user_id: user.id };
+        if (chatHistory?.id) restoreFilter.conversation_id = chatHistory.id;
         const recentAnalyses = await SchoolAnalysis.filter(restoreFilter);
         if (recentAnalyses?.length > 0) {
           // Bug 2: Merge ALL analyses into schoolAnalyses, set most recent as active
           const analysesMap = {};
           for (const analysis of recentAnalyses) {
-            if (analysis.schoolId) {
+            if (analysis.school_id) {
               const mapped = {
-                schoolId: analysis.schoolId,
+                schoolId: analysis.school_id,
                 schoolName: analysis.schoolName || 'School',
                 fitScore: analysis.fitScore,
                 fitLabel: analysis.fitLabel,
@@ -164,20 +164,20 @@ export async function restoreSessionFromParam(
                 tradeOffs: analysis.tradeOffs || analysis.tradeoffs || [],
                 ...analysis
               };
-              analysesMap[analysis.schoolId] = mapped;
+              analysesMap[analysis.school_id] = mapped;
             }
           }
           if (setSchoolAnalyses && Object.keys(analysesMap).length > 0) {
             setSchoolAnalyses(prev => ({ ...prev, ...analysesMap }));
           }
 
-          const sorted = recentAnalyses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          const sorted = recentAnalyses.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
           const latest = sorted[0];
-          lastDeepDiveSchoolId = latest.schoolId;
+          lastDeepDiveSchoolId = latest.school_id;
           lastDeepDiveSchoolName = latest.schoolName || 'School';
           console.log('[RESTORE] Fallback: found', recentAnalyses.length, 'SchoolAnalysis rows, active school:', lastDeepDiveSchoolId);
           if (setDeepDiveAnalysis) {
-            const mappedAnalysis = analysesMap[latest.schoolId] || latest;
+            const mappedAnalysis = analysesMap[latest.school_id] || latest;
             setDeepDiveAnalysis(mappedAnalysis);
             // WC-2: Inject analysis onto last assistant message so E39-S4a can find it
             const injectedMsgs = [...restoredMessages];
@@ -197,23 +197,23 @@ export async function restoreSessionFromParam(
 
     // Fetch and restore FamilyProfile
     let restoredProfile = null;
-    if (chatSession.familyProfileId) {
-      restoredProfile = await FamilyProfile.get(chatSession.familyProfileId);
+    if (chatSession.family_profile_id) {
+      restoredProfile = await FamilyProfile.get(chatSession.family_profile_id);
       if (restoredProfile) {
         setFamilyProfile(restoredProfile);
       }
     } else {
       // BUG-LOCATION-EXTRACT-S97 FIX: Prefer extractedEntities.locationArea from ChatHistory context
       // over ChatSession.locationArea which may contain stale/invalid values (e.g. 'Grade')
-      const restoredLocationArea = chatHistory?.conversationContext?.extractedEntities?.locationArea || chatSession.locationArea;
+      const restoredLocationArea = chatHistory?.conversation_context?.extractedEntities?.locationArea || chatSession.location_area;
 
       restoredProfile = {
-        childName: chatSession.childName,
-        childGrade: chatSession.childGrade,
+        childName: chatSession.child_name,
+        childGrade: chatSession.child_grade,
         locationArea: restoredLocationArea,
-        maxTuition: chatSession.maxTuition,
+        maxTuition: chatSession.max_tuition,
         priorities: chatSession.priorities || [],
-        learningDifferences: chatSession.learningDifferences || []
+        learningDifferences: chatSession.learning_differences || []
       };
       setFamilyProfile(restoredProfile);
     }
@@ -225,7 +225,7 @@ export async function restoreSessionFromParam(
     setOnboardingPhase(STATES.RESULTS);
 
     // Restore deep dive state from message scan (BUG-RN-05)
-    const conversationContext = chatHistory?.conversationContext || {};
+    const conversationContext = chatHistory?.conversation_context || {};
     const hasDeepDiveRestore = !!lastDeepDiveSchoolId;
     if (lastDeepDiveSchoolId && setSelectedSchool) {
       console.log('[RESTORE] Found deep dive in messages for school:', lastDeepDiveSchoolId, lastDeepDiveSchoolName);
@@ -251,12 +251,12 @@ export async function restoreSessionFromParam(
     }
     if (chatHistory) {
       const restoredContext = {
-        ...(chatHistory.conversationContext || {}),
+        ...(chatHistory.conversation_context || {}),
         state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (conversationContext.resumeView || conversationContext.state || STATES.RESULTS),
         schools: restoredSchools
       };
       // S97-WC3: Hydrate schools from matchedSchools on reload (parse JSON string and fetch full records)
-      let schoolIds = chatSession?.matchedSchools;
+      let schoolIds = chatSession?.matched_schools;
       if (typeof schoolIds === 'string') {
         try { schoolIds = JSON.parse(schoolIds); } catch (_) { schoolIds = []; }
       }
@@ -276,7 +276,7 @@ export async function restoreSessionFromParam(
         schools: restoredSchools
       };
       // S97-WC3: Hydrate schools from matchedSchools on reload (parse JSON string and fetch full records)
-      let schoolIds = chatSession?.matchedSchools;
+      let schoolIds = chatSession?.matched_schools;
       if (typeof schoolIds === 'string') {
         try { schoolIds = JSON.parse(schoolIds); } catch (_) { schoolIds = []; }
       }
@@ -293,7 +293,7 @@ export async function restoreSessionFromParam(
 
 
     // Add welcome-back message
-    const childName = chatSession.childName || 'your child';
+    const childName = chatSession.child_name || 'your child';
     const welcomeMsg = {
       role: 'assistant',
       content: `Welcome back! I see we were exploring schools for ${childName}. Want to pick up where we left off or update anything?`,
@@ -338,12 +338,12 @@ export async function restoreMostRecentConversation(
 
   try {
     // 1. Fetch all active conversations for this user, pick the most recent
-    const convos = await ChatHistory.filter({ userId: user.id, isActive: true });
+    const convos = await ChatHistory.filter({ user_id: user.id, is_active: true });
     if (!convos || convos.length === 0) {
       console.log('[RESTORE-LATEST] No active conversations found');
       return;
     }
-    const sorted = convos.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    const sorted = convos.sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
     const latest = sorted[0];
     console.log('[RESTORE-LATEST] Restoring most recent conversation:', latest.id);
 
@@ -353,7 +353,7 @@ export async function restoreMostRecentConversation(
     }
 
     // 3. Restore consultant from conversationContext
-    const ctx = latest.conversationContext || {};
+    const ctx = latest.conversation_context || {};
     if (ctx.consultant) {
       setSelectedConsultant(ctx.consultant);
     }
@@ -380,16 +380,16 @@ export async function restoreMostRecentConversation(
     // 4b. Fallback: check SchoolAnalysis entity if messages lack deepDiveAnalysis
     if (!lastDeepDiveSchoolId && user.id) {
       try {
-        const latestFilter = { userId: user.id };
-        if (latest.id) latestFilter.conversationId = latest.id;
+        const latestFilter = { user_id: user.id };
+        if (latest.id) latestFilter.conversation_id = latest.id;
         const recentAnalyses = await SchoolAnalysis.filter(latestFilter);
         if (recentAnalyses?.length > 0) {
           // Bug 2: Merge ALL analyses into schoolAnalyses, set most recent as active
           const analysesMap = {};
           for (const analysis of recentAnalyses) {
-            if (analysis.schoolId) {
+            if (analysis.school_id) {
               const mapped = {
-                schoolId: analysis.schoolId,
+                schoolId: analysis.school_id,
                 schoolName: analysis.schoolName || 'School',
                 fitScore: analysis.fitScore,
                 fitLabel: analysis.fitLabel,
@@ -398,19 +398,19 @@ export async function restoreMostRecentConversation(
                 tradeOffs: analysis.tradeOffs || analysis.tradeoffs || [],
                 ...analysis
               };
-              analysesMap[analysis.schoolId] = mapped;
+              analysesMap[analysis.school_id] = mapped;
             }
           }
           if (setSchoolAnalyses && Object.keys(analysesMap).length > 0) {
             setSchoolAnalyses(prev => ({ ...prev, ...analysesMap }));
           }
 
-          const sortedAnalyses = recentAnalyses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          const sortedAnalyses = recentAnalyses.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
           const la = sortedAnalyses[0];
-          lastDeepDiveSchoolId = la.schoolId;
-          console.log('[RESTORE-LATEST] Fallback: found', recentAnalyses.length, 'SchoolAnalysis rows, active school:', la.schoolId);
+          lastDeepDiveSchoolId = la.school_id;
+          console.log('[RESTORE-LATEST] Fallback: found', recentAnalyses.length, 'SchoolAnalysis rows, active school:', la.school_id);
           if (setDeepDiveAnalysis) {
-            const mappedAnalysis = analysesMap[la.schoolId] || la;
+            const mappedAnalysis = analysesMap[la.school_id] || la;
             setDeepDiveAnalysis(mappedAnalysis);
             // Inject onto last assistant message so downstream components find it
             const injectedMsgs = [...msgs];

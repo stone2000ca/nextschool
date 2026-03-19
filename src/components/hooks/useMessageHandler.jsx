@@ -434,11 +434,11 @@ export const useMessageHandler = ({
           if ((!currentConversation?.id) && isAuthenticated && user) {
             try {
               chatHistoryRecord = await ChatHistory.create({
-                userId: user.id,
+                user_id: user.id,
                 title: profileName,
                 messages: updatedMessages,
                 conversationContext: updatedContext,
-                isActive: true
+                is_active: true
               });
               // BUG-RN-PERSIST Fix A2 + Fix 1: Patch both updatedContext and the ref immediately
               // so that deep dive closures read the real id without waiting for React re-render.
@@ -463,32 +463,32 @@ export const useMessageHandler = ({
           ;(async () => {
             if (!user?.id) return;
             try {
-              const existingJourneys = await FamilyJourney.filter({ userId: user.id });
-              const activeJourneyList = existingJourneys.filter(j => !j.isArchived);
+              const existingJourneys = await FamilyJourney.filter({ user_id: user.id });
+              const activeJourneyList = existingJourneys.filter(j => !j.is_archived);
               if (activeJourneyList.length === 0) {
                 const childName = profileForSession?.childName || 'My Child';
                 const newJourney = await FamilyJourney.create({
-                  userId: user.id,
-                  childName: childName,
-                  profileLabel: childName + "'s School Search",
-                  currentPhase: 'MATCH',
-                  phaseHistory: JSON.stringify([
+                  user_id: user.id,
+                  child_name: childName,
+                  profile_label: childName + "'s School Search",
+                  current_phase: 'MATCH',
+                  phase_history: JSON.stringify([
                     { phase: 'UNDERSTAND', enteredAt: new Date().toISOString(), completedAt: new Date().toISOString() },
                     { phase: 'MATCH', enteredAt: new Date().toISOString() }
                   ]),
-                  familyProfileId: familyProfile?.id || null,
-                  briefSnapshot: JSON.stringify(profileForSession || {}),
+                  family_profile_id: familyProfile?.id || null,
+                  brief_snapshot: JSON.stringify(profileForSession || {}),
                   consultantId: selectedConsultant || 'jackie',
-                  totalSessions: 1,
-                  isArchived: false,
-                  lastActiveAt: new Date().toISOString(),
+                  total_sessions: 1,
+                  is_archived: false,
+                  last_active_at: new Date().toISOString(),
                 });
                 console.log('[E29-003] FamilyJourney created:', newJourney.id);
                 if (typeof setActiveJourney === 'function') {
                   setActiveJourney(newJourney);
                 }
                 if (chatSession?.id && newJourney?.id) {
-                  ChatSession.update(chatSession.id, { journeyId: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
+                  ChatSession.update(chatSession.id, { journey_id: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
                 }
               } else {
                 console.log('[E29-003] Active FamilyJourney already exists, skipping creation. Journey ID:', activeJourneyList[0].id);
@@ -503,19 +503,19 @@ export const useMessageHandler = ({
 
           const chatSession = await ChatSession.create({
             sessionToken: sessionId,
-            userId: user?.id,
-            familyProfileId: profileForSession?.id || null,
-            chatHistoryId: chatHistoryRecord?.id || currentConversation?.id,
+            user_id: user?.id,
+            family_profile_id: profileForSession?.id || null,
+            chat_history_id: chatHistoryRecord?.id || currentConversation?.id,
             status: 'active',
-            consultantSelected: selectedConsultant,
-            childName: profileForSession?.childName,
-            childGrade: profileForSession?.childGrade,
-            locationArea: safeLocationArea,
-            maxTuition: profileForSession?.maxTuition,
+            consultant_selected: selectedConsultant,
+            child_name: profileForSession?.childName,
+            child_grade: profileForSession?.childGrade,
+            location_area: safeLocationArea,
+            max_tuition: profileForSession?.maxTuition,
             priorities: profileForSession?.priorities,
-            matchedSchools: JSON.stringify(matchedSchoolIds),
-            profileName,
-            journeyId: null,
+            matched_schools: JSON.stringify(matchedSchoolIds),
+            profile_name: profileName,
+            journey_id: null,
           });
 
           // Update URL with entity id (not sessionToken)
@@ -662,7 +662,7 @@ export const useMessageHandler = ({
           if (isAuthenticated && user && !isPremium) {
             const newTokenBalance = Math.max(0, tokenBalance - 1);
             setTokenBalance(newTokenBalance);
-            await User.update(user.id, { tokenBalance: newTokenBalance });
+            await User.update(user.id, { token_balance: newTokenBalance });
           }
 
           // Save AI memories with deduplication and filtering

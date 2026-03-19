@@ -33,7 +33,7 @@ export async function sendSchoolEmail({
   test_scenario = null,
 }) {
   const schoolId = school?.id;
-  const claimStatus = school?.claimStatus;
+  const claimStatus = school?.claim_status;
 
   // E18b-001: Test mode check - block email and log as test_blocked
   if (test_mode) {
@@ -41,13 +41,13 @@ export async function sendSchoolEmail({
       await EmailLog.create({
         type,
         to,
-        fromName,
+        from_name: fromName,
         subject,
-        schoolId,
-        userId,
-        inquiryId,
-        conversationId,
-        claimStatus,
+        school_id: schoolId,
+        user_id: userId,
+        inquiry_id: inquiryId,
+        conversation_id: conversationId,
+        claim_status: claimStatus,
         status: 'blocked_test',
         is_test: true,
         test_scenario,
@@ -59,18 +59,18 @@ export async function sendSchoolEmail({
   }
 
   // WC4: Block emails to unclaimed schools (first layer check)
-  if (school && school.claimStatus !== 'claimed') {
+  if (school && school.claim_status !== 'claimed') {
     try {
       await EmailLog.create({
         type,
         to,
-        fromName,
+        from_name: fromName,
         subject,
-        schoolId,
-        userId,
-        inquiryId,
-        conversationId,
-        claimStatus,
+        school_id: schoolId,
+        user_id: userId,
+        inquiry_id: inquiryId,
+        conversation_id: conversationId,
+        claim_status: claimStatus,
         status: 'blocked_unclaimed',
         is_test: false,
         test_scenario: null,
@@ -95,13 +95,13 @@ export async function sendSchoolEmail({
       await EmailLog.create({
         type,
         to,
-        fromName,
+        from_name: fromName,
         subject,
-        schoolId,
-        userId,
-        inquiryId,
-        conversationId,
-        claimStatus,
+        school_id: schoolId,
+        user_id: userId,
+        inquiry_id: inquiryId,
+        conversation_id: conversationId,
+        claim_status: claimStatus,
         status: 'sent',
         is_test: false,
         test_scenario: null,
@@ -117,15 +117,15 @@ export async function sendSchoolEmail({
       await EmailLog.create({
         type,
         to,
-        fromName,
+        from_name: fromName,
         subject,
-        schoolId,
-        userId,
-        inquiryId,
-        conversationId,
-        claimStatus,
+        school_id: schoolId,
+        user_id: userId,
+        inquiry_id: inquiryId,
+        conversation_id: conversationId,
+        claim_status: claimStatus,
         status: 'failed',
-        errorMessage: error.message,
+        error_message: error.message,
         is_test: false,
         test_scenario: null,
       });

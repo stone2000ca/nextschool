@@ -35,7 +35,7 @@ export default function AdminFeedback() {
       }
 
       // Load feedback
-      const allFeedback = await BetaFeedback.list('-createdDate', undefined, 1000);
+      const allFeedback = await BetaFeedback.list('-created_date', undefined, 1000);
       setFeedback(allFeedback);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -71,7 +71,7 @@ export default function AdminFeedback() {
 
   // Filter feedback
   const filteredFeedback = feedback.filter(item => {
-    if (filters.consultant !== 'all' && item.consultantUsed !== filters.consultant) {
+    if (filters.consultant !== 'all' && item.consultant_used !== filters.consultant) {
       return false;
     }
     if (filters.startDate && new Date(item.timestamp) < new Date(filters.startDate)) {
@@ -85,7 +85,7 @@ export default function AdminFeedback() {
 
   // Calculate stats
   const recommendationCounts = feedback.reduce((acc, item) => {
-    acc[item.wouldYouRecommend] = (acc[item.wouldYouRecommend] || 0) + 1;
+    acc[item.would_you_recommend] = (acc[item.would_you_recommend] || 0) + 1;
     return acc;
   }, {});
 
@@ -95,8 +95,8 @@ export default function AdminFeedback() {
   ).toFixed(0) || 0;
 
   const frustrations = feedback
-    .filter(item => item.whatFrustratedYou)
-    .map(item => item.whatFrustratedYou)
+    .filter(item => item.what_frustrated_you)
+    .map(item => item.what_frustrated_you)
     .join(' | ')
     .split('|')
     .map(f => f.trim())
@@ -173,7 +173,7 @@ export default function AdminFeedback() {
             <div className="text-center">
               <p className="text-slate-600 mb-2">Found What They Needed</p>
               <p className="text-4xl font-bold text-teal-600">
-                {(((feedback.filter(f => f.didYouFindIt === 'Yes').length) / feedback.length * 100) || 0).toFixed(0)}%
+                {(((feedback.filter(f => f.did_you_find_it === 'Yes').length) / feedback.length * 100) || 0).toFixed(0)}%
               </p>
             </div>
           </Card>
@@ -227,28 +227,28 @@ export default function AdminFeedback() {
                       <td className="py-3 text-xs text-slate-500">
                         {new Date(item.timestamp).toLocaleDateString()}
                       </td>
-                      <td className="py-3 font-medium text-slate-900">{item.testerName}</td>
-                      <td className="py-3 text-slate-700">{item.consultantUsed}</td>
+                      <td className="py-3 font-medium text-slate-900">{item.tester_name}</td>
+                      <td className="py-3 text-slate-700">{item.consultant_used}</td>
                       <td className="py-3">
                         <span className={`text-xs px-2 py-1 rounded-full ${
-                          item.didYouFindIt === 'Yes' ? 'bg-green-100 text-green-800' :
-                          item.didYouFindIt === 'Partially' ? 'bg-yellow-100 text-yellow-800' :
+                          item.did_you_find_it === 'Yes' ? 'bg-green-100 text-green-800' :
+                          item.did_you_find_it === 'Partially' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-red-100 text-red-800'
                         }`}>
-                          {item.didYouFindIt}
+                          {item.did_you_find_it}
                         </span>
                       </td>
                       <td className="py-3">
                         <span className={`text-xs px-2 py-1 rounded-full ${
-                          item.wouldYouRecommend === 'Yes' ? 'bg-green-100 text-green-800' :
-                          item.wouldYouRecommend === 'Maybe' ? 'bg-yellow-100 text-yellow-800' :
+                          item.would_you_recommend === 'Yes' ? 'bg-green-100 text-green-800' :
+                          item.would_you_recommend === 'Maybe' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-red-100 text-red-800'
                         }`}>
-                          {item.wouldYouRecommend}
+                          {item.would_you_recommend}
                         </span>
                       </td>
                       <td className="py-3 text-slate-600 truncate max-w-xs">
-                        {item.whatFrustratedYou || item.additionalComments || '-'}
+                        {item.what_frustrated_you || item.additional_comments || '-'}
                       </td>
                     </tr>
                   ))}

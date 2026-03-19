@@ -25,7 +25,7 @@ export function getShortlistNudge({
     if (newCount >= 3) {
       // Check: does this pick contradict the brief? (above budget)
       const budget = familyProfile?.maxTuition;
-      const schoolTuition = school?.dayTuition ?? school?.tuition;
+      const schoolTuition = school?.day_tuition ?? school?.tuition;
       
       if (budget && schoolTuition && schoolTuition > budget) {
         return isJackie
@@ -36,7 +36,7 @@ export function getShortlistNudge({
       // Check similarity: all same curriculum or school type
       const curriculums = shortlistData.map(s => s.curriculum).filter(c => c && c.length > 0);
       const allSameCurriculum = curriculums.length >= 2 && curriculums.every(c => JSON.stringify([...c].sort()) === JSON.stringify([...curriculums[0]].sort()));
-      const types = shortlistData.map(s => s.schoolTypeLabel).filter(Boolean);
+      const types = shortlistData.map(s => s.school_type_label).filter(Boolean);
       const allSameType = types.length >= 2 && types.every(t => t === types[0]);
       
       if (allSameCurriculum || allSameType) {

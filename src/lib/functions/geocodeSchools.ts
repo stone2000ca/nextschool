@@ -16,7 +16,7 @@ export async function geocodeSchoolsLogic(params: { limit?: number }) {
   // (the Supabase filter can't easily express "has address AND missing lat/lng")
   const allWithAddress = await School.filter({
     address: { $ne: null }
-  }, '-updatedAt', limit * 5);
+  }, '-updated_at', limit * 5);
   const schools = allWithAddress.filter((s: any) =>
     s.address && s.address.trim() !== '' && (s.lat === null || s.lat === undefined || s.lat === '' || s.lng === null || s.lng === undefined || s.lng === '')
   ).slice(0, limit);
@@ -35,7 +35,7 @@ export async function geocodeSchoolsLogic(params: { limit?: number }) {
 
     for (const school of batch) {
       try {
-        const parts = [school.address, school.city, school.provinceState, school.country].filter((p: any) => p && p.trim());
+        const parts = [school.address, school.city, school.province_state, school.country].filter((p: any) => p && p.trim());
         const query = parts.join(', ');
         if (!query || query.trim().length === 0) { failed++; errors.push(`School ${school.id}: No valid address parts`); processed++; continue; }
 

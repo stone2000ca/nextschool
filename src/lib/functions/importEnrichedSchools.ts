@@ -88,16 +88,16 @@ export async function importEnrichedSchoolsLogic(params: any) {
     if (existingRun?.status === 'success') { skippedChunks++; results.push({ filename, status: 'skipped', reason: 'already imported' }); continue; }
 
     let runRecord = existingRun;
-    if (runRecord) await ImportRun.update(runRecord.id, { status: 'pending', processedAt: new Date().toISOString(), errorMessage: null });
-    else runRecord = await ImportRun.create({ filename, status: 'pending', processedAt: new Date().toISOString() });
+    if (runRecord) await ImportRun.update(runRecord.id, { status: 'pending', processed_at: new Date().toISOString(), error_message: null });
+    else runRecord = await ImportRun.create({ filename, status: 'pending', processed_at: new Date().toISOString() });
 
     try {
       const chunkResult = await processChunk(url, filename, i + 1, totalChunks);
-      await ImportRun.update(runRecord.id, { status: 'success', processedAt: new Date().toISOString(), rowCount: chunkResult.rowCount, created: chunkResult.created, updated: chunkResult.updated, skippedDupes: chunkResult.skippedDupes, errorMessage: chunkResult.rowErrors.length > 0 ? `${chunkResult.rowErrors.length} row errors` : null });
+      await ImportRun.update(runRecord.id, { status: 'success', processed_at: new Date().toISOString(), row_count: chunkResult.rowCount, created: chunkResult.created, updated: chunkResult.updated, skipped_dupes: chunkResult.skippedDupes, error_message: chunkResult.rowErrors.length > 0 ? `${chunkResult.rowErrors.length} row errors` : null });
       processedChunks++;
       results.push({ filename, status: 'success', ...chunkResult });
     } catch (err: any) {
-      await ImportRun.update(runRecord.id, { status: 'error', processedAt: new Date().toISOString(), errorMessage: err.message });
+      await ImportRun.update(runRecord.id, { status: 'error', processed_at: new Date().toISOString(), error_message: err.message });
       results.push({ filename, status: 'error', error: err.message });
     }
   }

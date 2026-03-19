@@ -45,19 +45,19 @@ export async function handleJourneyOutcome(params: {
   }
 
   // 3. Validate ownership and state
-  if (journey.userId !== userId) {
+  if (journey.user_id !== userId) {
     throw Object.assign(
       new Error('Unauthorized: userId does not match journey owner'),
       { statusCode: 403 }
     );
   }
 
-  if (journey.isArchived === true) {
+  if (journey.is_archived === true) {
     throw Object.assign(new Error('Journey is already archived'), { statusCode: 409 });
   }
 
   // 4. Parse schoolJourneys and validate outcomeSchoolId exists
-  let schoolJourneys = journey.schoolJourneys || [];
+  let schoolJourneys = journey.school_journeys || [];
   if (typeof schoolJourneys === 'string') {
     try {
       schoolJourneys = JSON.parse(schoolJourneys);
@@ -67,17 +67,17 @@ export async function handleJourneyOutcome(params: {
     }
   }
 
-  const matchingSchool = schoolJourneys.find((sj: any) => sj.schoolId === outcomeSchoolId);
+  const matchingSchool = schoolJourneys.find((sj: any) => sj.school_id === outcomeSchoolId);
   if (!matchingSchool) {
     throw Object.assign(
-      new Error(`School ID ${outcomeSchoolId} not found in journey schoolJourneys`),
+      new Error(`School ID ${outcomeSchoolId} not found in journey school_journeys`),
       { statusCode: 422 }
     );
   }
 
   // 5. Update the matching SchoolJourneyItem status
   const updatedSchoolJourneys = schoolJourneys.map((sj: any) =>
-    sj.schoolId === outcomeSchoolId ? { ...sj, status: 'ENROLLED' } : sj
+    sj.school_id === outcomeSchoolId ? { ...sj, status: 'ENROLLED' } : sj
   );
 
   // 6. WRITE SEQUENCE: outcome fields FIRST, then archive SECOND
@@ -87,16 +87,16 @@ export async function handleJourneyOutcome(params: {
     // 6a. First update: set outcome fields
     await FamilyJourney.update(journeyId, {
       outcome,
-      outcomeSchoolId,
-      outcomeDate,
-      currentPhase: 'ACT',
-      schoolJourneys: updatedSchoolJourneys
+      outcome_school_id: outcomeSchoolId,
+      outcome_date: outcomeDate,
+      current_phase: 'ACT',
+      school_journeys: updatedSchoolJourneys
     });
     console.log('[E29-019] Outcome fields updated:', { journeyId, outcome, outcomeSchoolId, outcomeDate });
 
     // 6b. Second update: archive the journey
     await FamilyJourney.update(journeyId, {
-      isArchived: true
+      is_archived: true
     });
     console.log('[E29-019] Journey archived:', journeyId);
   } catch (updateErr: any) {
@@ -108,9 +108,9 @@ export async function handleJourneyOutcome(params: {
   const response = {
     success: true,
     outcome,
-    schoolName: matchingSchool.schoolName,
-    childName: journey.childName,
-    message: `Congratulations! ${journey.childName} is heading to ${matchingSchool.schoolName}!`,
+    schoolName: matchingSchool.school_name,
+    childName: journey.child_name,
+    message: `Congratulations! ${journey.child_name} is heading to ${matchingSchool.school_name}!`,
     journeyId,
     outcomeDate
   };

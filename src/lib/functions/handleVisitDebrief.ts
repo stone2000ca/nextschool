@@ -24,14 +24,14 @@ export async function handleVisitDebriefLogic(params: {
     const [schoolResults, artifacts, deepDiveArtifacts] = await Promise.all([
       School.filter({ id: selectedSchoolId }),
       GeneratedArtifact.filter({
-        conversationId: context.conversationId,
-        schoolId: selectedSchoolId,
-        artifactType: 'visit_prep'
+        conversation_id: context.conversationId,
+        school_id: selectedSchoolId,
+        artifact_type: 'visit_prep'
       }),
       GeneratedArtifact.filter({
-        conversationId: context.conversationId,
-        schoolId: selectedSchoolId,
-        artifactType: 'deep_dive_analysis'
+        conversation_id: context.conversationId,
+        school_id: selectedSchoolId,
+        artifact_type: 'deep_dive_analysis'
       })
     ]);
     const school = schoolResults?.[0];
@@ -112,9 +112,9 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
       const newQAPair = { question: nextQuestion, answer: processMessage, timestamp: new Date().toISOString() };
 
       GeneratedArtifact.filter({
-        conversationId: context.conversationId,
-        schoolId: selectedSchoolId,
-        artifactType: 'visit_debrief'
+        conversation_id: context.conversationId,
+        school_id: selectedSchoolId,
+        artifact_type: 'visit_debrief'
       }).then(async (existingArtifacts: any[]) => {
         if (existingArtifacts && existingArtifacts.length > 0) {
           const artifact = existingArtifacts[0];
@@ -122,16 +122,16 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
           await GeneratedArtifact.update(artifact.id, { content: { ...artifact.content, qaPairs: updatedQAPairs } });
         } else {
           await GeneratedArtifact.create({
-            userId: context.userId,
-            conversationId: context.conversationId,
-            schoolId: selectedSchoolId,
-            artifactType: 'visit_debrief',
+            user_id: context.userId,
+            conversation_id: context.conversationId,
+            school_id: selectedSchoolId,
+            artifact_type: 'visit_debrief',
             title: 'Visit Debrief - ' + schoolName,
             content: { qaPairs: [newQAPair], schoolName },
             status: 'ready',
-            isShared: false,
-            pdfUrl: null,
-            shareToken: null
+            is_shared: false,
+            pdf_url: null,
+            share_token: null
           });
         }
       }).catch((e: any) => console.error('[E13a] Debrief persistence failed:', e.message));
@@ -141,17 +141,17 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
     if (isDebriefComplete && deepDiveAnalysis && context.userId) {
       (async () => {
         try {
-          const debriefArtifacts = await GeneratedArtifact.filter({ conversationId: context.conversationId, schoolId: selectedSchoolId, artifactType: 'visit_debrief' });
+          const debriefArtifacts = await GeneratedArtifact.filter({ conversation_id: context.conversationId, school_id: selectedSchoolId, artifact_type: 'visit_debrief' });
           const debriefArtifact = debriefArtifacts?.[0];
           if (!debriefArtifact?.content?.qaPairs?.length) return;
 
           // Sync to FamilyJourney
           const journey = context.journeyId
             ? (await FamilyJourney.filter({ id: context.journeyId }))?.[0]
-            : (await FamilyJourney.filter({ userId: context.userId }))?.[0];
+            : (await FamilyJourney.filter({ user_id: context.userId }))?.[0];
 
           if (journey) {
-            const schoolJourneys = Array.isArray(journey.schoolJourneys) ? [...journey.schoolJourneys] : [];
+            const schoolJourneys = Array.isArray(journey.school_journeys) ? [...journey.school_journeys] : [];
             let item = schoolJourneys.find((sj: any) => sj.schoolId === selectedSchoolId);
             const nowIso = new Date().toISOString();
             if (item) {
@@ -162,8 +162,8 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
               schoolJourneys.push({ schoolId: selectedSchoolId, schoolName, status: 'VISITED', addedVia: 'DEBRIEF', visitedAt: nowIso, debriefCompletedAt: nowIso });
             }
             const hasTouring = schoolJourneys.some((sj: any) => sj.status === 'TOURING');
-            const updatePayload: any = { schoolJourneys };
-            if (!hasTouring && journey.currentPhase === 'EXPERIENCE') updatePayload.currentPhase = 'DECIDE';
+            const updatePayload: any = { school_journeys: schoolJourneys };
+            if (!hasTouring && journey.current_phase === 'EXPERIENCE') updatePayload.current_phase = 'DECIDE';
             await FamilyJourney.update(journey.id, updatePayload);
           }
 
@@ -181,10 +181,10 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
           });
 
           if (reevalResult) {
-            await GeneratedArtifact.create({ userId: context.userId, conversationId: context.conversationId, schoolId: selectedSchoolId, artifactType: 'fit_reevaluation', title: 'Fit Re-evaluation - ' + schoolName, content: { ...reevalResult, originalFitLabel: originalAnalysis.fitLabel || 'unknown', debriefTimestamp: new Date().toISOString() }, status: 'ready', isShared: false, pdfUrl: null, shareToken: null });
+            await GeneratedArtifact.create({ user_id: context.userId, conversation_id: context.conversationId, school_id: selectedSchoolId, artifact_type: 'fit_reevaluation', title: 'Fit Re-evaluation - ' + schoolName, content: { ...reevalResult, originalFitLabel: originalAnalysis.fitLabel || 'unknown', debriefTimestamp: new Date().toISOString() }, status: 'ready', is_shared: false, pdf_url: null, share_token: null });
 
             if (journey) {
-              const sjs = Array.isArray(journey.schoolJourneys) ? [...journey.schoolJourneys] : [];
+              const sjs = Array.isArray(journey.school_journeys) ? [...journey.school_journeys] : [];
               const sjItem = sjs.find((sj: any) => sj.schoolId === selectedSchoolId);
               if (sjItem) {
                 sjItem.postVisitFitLabel = reevalResult.updatedFitLabel;
@@ -193,7 +193,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
                 sjItem.revisedStrengths = reevalResult.revisedStrengths;
                 sjItem.revisedConcerns = reevalResult.revisedConcerns;
               }
-              await FamilyJourney.update(journey.id, { schoolJourneys: sjs });
+              await FamilyJourney.update(journey.id, { school_journeys: sjs });
             }
           }
         } catch (e: any) {

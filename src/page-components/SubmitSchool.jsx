@@ -125,7 +125,7 @@ export default function SubmitSchool() {
 
     // T-SP-009: Duplicate check
     setChecking(true);
-    const allSchools = await School.list('-updatedDate', undefined, 500);
+    const allSchools = await School.list('-updated_date', undefined, 500);
     const dupes = findDuplicates(form.name, form.city, allSchools);
     setChecking(false);
 
@@ -140,30 +140,30 @@ export default function SubmitSchool() {
     const newSchool = await School.create({
       name: form.name.trim(),
       city: form.city.trim(),
-      provinceState: form.provinceState.trim(),
+      province_state: form.provinceState.trim(),
       country: form.country,
       region: form.country === "Canada" ? "Canada" : form.country === "United States" ? "United States" : form.country === "United Kingdom" ? "United Kingdom" : "Europe",
-      schoolTypeLabel: form.schoolTypeLabel,
-      lowestGrade: Number(form.lowestGrade),
-      highestGrade: Number(form.highestGrade),
-      genderPolicy: form.genderPolicy,
+      school_type_label: form.schoolTypeLabel,
+      lowest_grade: Number(form.lowestGrade),
+      highest_grade: Number(form.highestGrade),
+      gender_policy: form.genderPolicy,
       slug,
       status: "draft",
-      claimStatus: "unclaimed",
+      claim_status: "unclaimed",
       source: "school_submitted",
       verified: false,
-      userId: currentUser.id,
+      user_id: currentUser.id,
     });
 
     // Create SchoolClaim record
     await SchoolClaim.create({
-      schoolId: newSchool.id,
-      claimantEmail: form.email,
-      claimantName: form.name,
-      claimantRole: 'submitter',
+      school_id: newSchool.id,
+      claimant_email: form.email,
+      claimant_name: form.name,
+      claimant_role: 'submitter',
       status: 'pending',
-      userId: currentUser.id,
-      verificationMethod: 'email_domain',
+      user_id: currentUser.id,
+      verification_method: 'email_domain',
     });
 
     setSubmitting(false);
@@ -222,7 +222,7 @@ export default function SubmitSchool() {
                 <div key={d.id} className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-amber-200">
                   <div>
                     <p className="font-medium text-slate-900 text-sm">{d.name}</p>
-                    <p className="text-xs text-slate-500">{[d.city, d.provinceState].filter(Boolean).join(", ")}</p>
+                    <p className="text-xs text-slate-500">{[d.city, d.province_state].filter(Boolean).join(", ")}</p>
                   </div>
                   <Link href={"/claim-school" + `?schoolId=${d.id}`}>
                     <Button size="sm" variant="outline" className="text-teal-700 border-teal-300 gap-1">

@@ -23,7 +23,7 @@ export default function AdminSchools() {
 
   const loadSchools = async () => {
     try {
-      const data = await School.list('-updatedDate');
+      const data = await School.list('-updated_date');
       setSchools(data);
     } catch (error) {
       console.error('Failed to load schools:', error);
@@ -206,8 +206,8 @@ export default function AdminSchools() {
                   <td className="p-4 text-sm text-slate-600">{school.city}</td>
                   <td className="p-4 text-sm text-slate-600">{school.region}</td>
                   <td className="p-4">
-                    <Badge className={tierColors[school.schoolTier || 'free']}>
-                      {(school.schoolTier || 'free').toUpperCase()}
+                    <Badge className={tierColors[school.school_tier || 'free']}>
+                      {(school.school_tier || 'free').toUpperCase()}
                     </Badge>
                   </td>
                   <td className="p-4">
@@ -218,7 +218,7 @@ export default function AdminSchools() {
                     )}
                   </td>
                   <td className="p-4 text-sm text-slate-600">
-                    {new Date(school.updatedAt).toLocaleDateString()}
+                    {new Date(school.updated_date).toLocaleDateString()}
                   </td>
                   <td className="p-4 text-sm">
                     {school.website ? (

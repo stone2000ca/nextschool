@@ -231,9 +231,9 @@ export async function onboardUser(params: {
   let profile = familyProfileData;
   if (!profile) {
     profile = {
-      userId,
-      onboardingPhase: 'open_warm',
-      onboardingComplete: false,
+      user_id: userId,
+      onboarding_phase: 'open_warm',
+      onboarding_complete: false,
       academicStrengths: [],
       academicStruggles: [],
       learningDifferences: [],
@@ -248,7 +248,7 @@ export async function onboardUser(params: {
     profile = created;
   }
 
-  const currentPhase = profile.onboardingPhase;
+  const currentPhase = profile.onboarding_phase;
 
   // Extract structured data for current phase
   const extractedData = await extractPhaseData(message, currentPhase, profile);
@@ -291,9 +291,9 @@ export async function onboardUser(params: {
   // Update profile in database
   const updatedProfile = await FamilyProfile.update(profile.id, {
     ...profile,
-    onboardingPhase: nextPhase,
-    onboardingComplete: onboardingComplete,
-    familyBrief: currentPhase === 'confirm_brief' && requiredFieldsMet ? aiMessage : profile.familyBrief
+    onboarding_phase: nextPhase,
+    onboarding_complete: onboardingComplete,
+    family_brief: currentPhase === 'confirm_brief' && requiredFieldsMet ? aiMessage : profile.family_brief
   });
 
   return {
