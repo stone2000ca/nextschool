@@ -16,10 +16,10 @@ function keysToCamel(obj: Record<string, any>): Record<string, any> {
 
 // Map frontend/camelCase field names to actual DB column names
 const COLUMN_ALIASES: Record<string, string> = {
-  updated_at: 'updated_date',
-  created_at: 'created_date',
-  updatedAt: 'updated_date',
-  createdAt: 'created_date',
+    updatedAt: 'updated_at',
+    createdAt: 'created_at',
+    updated_date: 'updated_at',
+    created_date: 'created_at',
 }
 
 async function listSchools(params: { status?: string; sort?: string; limit?: number }) {
