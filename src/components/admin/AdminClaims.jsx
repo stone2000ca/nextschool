@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { SchoolClaim, School, User as UserEntity, SchoolAdmin } from '@/lib/entities';
+import { SchoolClaim, School, User as UserEntity } from '@/lib/entities';
+import { invokeFunction } from '@/lib/functions';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
@@ -55,17 +56,10 @@ export default function AdminClaims() {
   const handleApprove = async (claim) => {
     setProcessingId(claim.id);
     try {
-      await SchoolClaim.update(claim.id, { status: 'verified' });
-      await School.update(claim.school_id, {
-        verified: true,
-        claim_status: 'claimed',
-        membership_tier: 'basic',
-      });
-      await SchoolAdmin.create({
-        user_id: claim.user_id,
-        school_id: claim.school_id,
-        role: 'owner',
-        is_active: true,
+      await invokeFunction('approveClaim', {
+        claimId: claim.id,
+        schoolId: claim.school_id,
+        userId: claim.user_id,
       });
       setClaims(prev => prev.filter(c => c.id !== claim.id));
       toast.success(`Claim approved for ${claim._schoolName}`);
@@ -132,7 +126,7 @@ export default function AdminClaims() {
                       <div><span className="font-medium">Claimant:</span> {claim.claimant_name || 'N/A'} — {claim._userEmail}</div>
                       <div><span className="font-medium">Role at school:</span> {claim.claimant_role || 'N/A'}</div>
                       <div><span className="font-medium">Verification:</span> {claim.verification_method || 'N/A'}</div>
-                      <div><span className="font-medium">Submitted:</span> {new Date(claim.created_date).toLocaleDateString('en-CA')}</div>
+                      <div><span className="font-medium">Submitted:</span> {claim.created_at ? new Date(claim.created_at).toLocaleDateString('en-CA') : 'N/A'}</div>
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0">

@@ -43,6 +43,7 @@ const ROUTE_MAP: Record<string, string> = {
   createCheckoutSession: 'create-checkout-session',
   sendClaimEmail: 'send-claim-email',
   verifyClaimCode: 'verify-claim-code',
+  approveClaim: 'approve-claim',
 }
 
 export async function invokeFunction<T = any>(name: string, payload: any): Promise<T> {
