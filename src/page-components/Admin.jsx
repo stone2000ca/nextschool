@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { User } from '@/lib/entities';
+import { createClient } from '@/lib/supabase/client';
 import { Shield, ShieldX, LayoutDashboard, Building2, Users, ClipboardCheck, BarChart3, PlusSquare, ShieldAlert } from 'lucide-react';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminSchools from '@/components/admin/AdminSchools';
@@ -16,29 +16,48 @@ export default function Admin() {
   const [unauthorized, setUnauthorized] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
 
-  const { user: authUser, isLoadingAuth } = useAuth();
+  const { user: authUser, isAuthenticated, isLoadingAuth } = useAuth();
 
   useEffect(() => {
     if (isLoadingAuth) return;
-    if (!authUser) {
+
+    // Use isAuthenticated to distinguish "not logged in" from "profile still loading".
+    // authUser (profile) is loaded asynchronously after isLoadingAuth becomes false,
+    // so we must not redirect just because authUser is null yet.
+    if (!isAuthenticated) {
       window.location.href = '/';
       return;
     }
+
+    // Wait for the profile to be loaded before checking admin role
+    if (!authUser) return;
+
     checkAdmin();
-  }, [authUser, isLoadingAuth]);
+  }, [authUser, isAuthenticated, isLoadingAuth]);
 
   const checkAdmin = async () => {
     try {
-      const userData = authUser;
-      const users = await User.filter({ email: userData.email });
-      const userRecord = users?.[0];
+      // Check role from auth context first (populated from public.users)
+      if (authUser.role === 'admin') {
+        setUser(authUser);
+        setLoading(false);
+        return;
+      }
 
-      if (!userRecord || userRecord.role !== 'admin') {
+      // Fallback: query public.users directly in case context hasn't refreshed
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', authUser.id)
+        .single();
+
+      if (data?.role !== 'admin') {
         setUnauthorized(true);
         return;
       }
 
-      setUser({ ...userData, ...userRecord });
+      setUser({ ...authUser, role: 'admin' });
     } catch (error) {
       setUnauthorized(true);
     } finally {
