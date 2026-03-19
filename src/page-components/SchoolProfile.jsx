@@ -19,8 +19,8 @@ function gradeLabel(grade) {
   return String(grade);
 }
 
-function f(school, camel, snake) {
-  return school[camel] ?? school[snake] ?? null;
+function f(school, key) {
+  return school[key] ?? null;
 }
 
 function getCurrencySymbol(currency) {
@@ -56,12 +56,12 @@ function joinProse(arr, conjunction = 'and') {
 }
 
 function getSchoolTypeLabel(school) {
-  if (school.schoolTypeLabel) return school.schoolTypeLabel;
-  if (school.schoolType) return school.schoolType;
+  if (school.school_type_label) return school.school_type_label;
+  if (school.school_type) return school.school_type;
   const types = [];
-  if (school.boardingAvailable) types.push('boarding');
+  if (school.boarding_available) types.push('boarding');
   types.push('private');
-  if (school.faithBased) types.push(school.faithBased);
+  if (school.faith_based) types.push(school.faith_based);
   return types.join(' ');
 }
 
@@ -109,8 +109,8 @@ function generateSchoolFAQs(school, events) {
   const faqs = [];
 
   // 1. Grades (always if available)
-  if (school.gradesServed || (school.lowestGrade != null && school.highestGrade != null)) {
-    const range = school.gradesServed || `${gradeLabel(school.lowestGrade)} – ${gradeLabel(school.highestGrade)}`;
+  if (school.grades_served || (school.lowest_grade != null && school.highest_grade != null)) {
+    const range = school.grades_served || `${gradeLabel(school.lowest_grade)} – ${gradeLabel(school.highest_grade)}`;
     faqs.push({
       question: `What grades does ${name} serve?`,
       answer: `${name} serves students in grades ${range}.`
@@ -118,62 +118,62 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 2. Tuition
-  const dayMin = school.dayTuition || f(school, 'dayTuitionMin', 'day_tuition_min');
-  const dayMax = f(school, 'dayTuitionMax', 'day_tuition_max');
-  const boardMin = school.boardingTuition || f(school, 'boardingTuitionMin', 'boarding_tuition_min');
-  const boardMax = f(school, 'boardingTuitionMax', 'boarding_tuition_max');
-  const aidPct = f(school, 'financialAidPct', 'financial_aid_pct');
-  const medianAid = f(school, 'medianAidAmount', 'median_aid_amount');
+  const dayMin = school.day_tuition || f(school, 'day_tuition_min');
+  const dayMax = f(school, 'day_tuition_max');
+  const boardMin = school.boarding_tuition || f(school, 'boarding_tuition_min');
+  const boardMax = f(school, 'boarding_tuition_max');
+  const aidPct = f(school, 'financial_aid_pct');
+  const medianAid = f(school, 'median_aid_amount');
   if (dayMin || boardMin) {
     let text = '';
     if (dayMin) text += `Day tuition at ${name} is ${dayMax && dayMax !== dayMin ? `${sym}${dayMin.toLocaleString()}–${sym}${dayMax.toLocaleString()}` : `${sym}${dayMin.toLocaleString()}`}/year. `;
     if (boardMin) text += `Boarding tuition is ${boardMax && boardMax !== boardMin ? `${sym}${boardMin.toLocaleString()}–${sym}${boardMax.toLocaleString()}` : `${sym}${boardMin.toLocaleString()}`}/year. `;
-    if (school.financialAidAvailable) text += `Financial aid is available`;
+    if (school.financial_aid_available) text += `Financial aid is available`;
     if (aidPct) text += `, with ${aidPct}% of students receiving assistance`;
     if (medianAid) text += ` (median package: ${sym}${medianAid.toLocaleString()})`;
-    if (school.financialAidAvailable) text += '. ';
+    if (school.financial_aid_available) text += '. ';
     faqs.push({ question: `How much is tuition at ${name}?`, answer: text.trim() });
   }
 
   // 3. Application / Admissions
-  const deadline = school.dayAdmissionDeadline;
-  const boardDeadline = f(school, 'boardingAdmissionDeadline', 'boarding_admission_deadline');
-  const appProcess = f(school, 'applicationProcess', 'application_process') || [];
-  const entranceReqs = school.admissionRequirements || f(school, 'entranceRequirements', 'entrance_requirements') || [];
-  if (deadline || boardDeadline || appProcess.length > 0 || entranceReqs.length > 0 || school.acceptanceRate) {
+  const deadline = school.day_admission_deadline;
+  const boardDeadline = f(school, 'boarding_admission_deadline');
+  const appProcess = f(school, 'application_process') || [];
+  const entranceReqs = school.admission_requirements || f(school, 'entrance_requirements') || [];
+  if (deadline || boardDeadline || appProcess.length > 0 || entranceReqs.length > 0 || school.acceptance_rate) {
     let text = '';
     if (deadline) text += `The application deadline for day students is ${deadline}. `;
     if (boardDeadline) text += `Boarding application deadline is ${boardDeadline}. `;
     if (entranceReqs.length > 0) text += `Requirements include ${joinProse(entranceReqs)}. `;
     if (appProcess.length > 0) text += `The process involves: ${appProcess.join(', ')}. `;
-    if (school.acceptanceRate) text += `The acceptance rate is ${school.acceptanceRate}%.`;
+    if (school.acceptance_rate) text += `The acceptance rate is ${school.acceptance_rate}%.`;
     faqs.push({ question: `How do I apply to ${name}?`, answer: text.trim() });
   }
 
   // 4. Curriculum
-  if (school.curriculum || school.specializations?.length > 0 || school.teachingPhilosophy) {
+  if (school.curriculum || school.specializations?.length > 0 || school.teaching_philosophy) {
     let text = '';
     if (school.curriculum) text += `${name} offers ${Array.isArray(school.curriculum) ? joinProse(school.curriculum) : school.curriculum} curriculum. `;
     if (school.specializations?.length > 0) text += `The school specializes in ${joinProse(school.specializations)}. `;
-    if (school.teachingPhilosophy) text += school.teachingPhilosophy;
+    if (school.teaching_philosophy) text += school.teaching_philosophy;
     faqs.push({ question: `What curriculum does ${name} offer?`, answer: text.trim() });
   }
 
   // 5. Student-teacher ratio
-  if (school.studentTeacherRatio || school.avgClassSize || school.enrollment) {
+  if (school.student_teacher_ratio || school.avg_class_size || school.enrollment) {
     let text = '';
-    if (school.studentTeacherRatio) text += `The student-teacher ratio at ${name} is ${school.studentTeacherRatio}. `;
-    if (school.avgClassSize) text += `Average class size is ${school.avgClassSize} students. `;
+    if (school.student_teacher_ratio) text += `The student-teacher ratio at ${name} is ${school.student_teacher_ratio}. `;
+    if (school.avg_class_size) text += `Average class size is ${school.avg_class_size} students. `;
     if (school.enrollment) text += `Total enrollment is ${school.enrollment} students.`;
     faqs.push({ question: `What is the student-teacher ratio at ${name}?`, answer: text.trim() });
   }
 
   // 6. Boarding
-  if (school.boardingAvailable !== undefined) {
-    const boardingType = f(school, 'boardingType', 'boarding_type');
-    const boardingPct = f(school, 'boardingPct', 'boarding_pct');
-    const living = f(school, 'livingArrangements', 'living_arrangements') || [];
-    if (school.boardingAvailable) {
+  if (school.boarding_available !== undefined) {
+    const boardingType = f(school, 'boarding_type');
+    const boardingPct = f(school, 'boarding_pct');
+    const living = f(school, 'living_arrangements') || [];
+    if (school.boarding_available) {
       let text = `Yes, ${name} offers ${boardingType || 'boarding'}. `;
       if (boardingPct) text += `${boardingPct}% of students are boarders. `;
       if (living.length > 0) text += `Living arrangements include ${joinProse(living)}. `;
@@ -185,25 +185,25 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 7. Religious school
-  if (school.faithBased) {
-    let text = `Yes, ${name} is a ${school.faithBased} school. `;
+  if (school.faith_based) {
+    let text = `Yes, ${name} is a ${school.faith_based} school. `;
     if (school.values?.length > 0) text += `The school's core values include ${joinProse(school.values)}.`;
     faqs.push({ question: `Is ${name} a religious school?`, answer: text.trim() });
   }
 
   // 8. Sports
-  if (school.sportsPrograms?.length > 0) {
+  if (school.sports_programs?.length > 0) {
     faqs.push({
       question: `What sports does ${name} offer?`,
-      answer: `${name} offers ${school.sportsPrograms.length} sports programs including ${joinProse(school.sportsPrograms)}.`
+      answer: `${name} offers ${school.sports_programs.length} sports programs including ${joinProse(school.sports_programs)}.`
     });
   }
 
   // 9. Arts
-  if (school.artsPrograms?.length > 0) {
+  if (school.arts_programs?.length > 0) {
     faqs.push({
       question: `What arts programs does ${name} have?`,
-      answer: `Arts programs at ${name} include ${joinProse(school.artsPrograms)}.`
+      answer: `Arts programs at ${name} include ${joinProse(school.arts_programs)}.`
     });
   }
 
@@ -216,9 +216,9 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 11. Financial aid
-  if (school.financialAidAvailable) {
-    const scholarships = parseScholarships(f(school, 'scholarshipsJson', 'scholarships_json'));
-    const tuitionNotes = f(school, 'tuitionNotes', 'tuition_notes');
+  if (school.financial_aid_available) {
+    const scholarships = parseScholarships(f(school, 'scholarships_json'));
+    const tuitionNotes = f(school, 'tuition_notes');
     let text = `Yes, ${name} offers financial aid. `;
     if (aidPct) text += `${aidPct}% of students receive assistance. `;
     if (medianAid) text += `The median aid package is ${sym}${medianAid.toLocaleString()}. `;
@@ -234,7 +234,7 @@ function generateSchoolFAQs(school, events) {
     let text = '';
     if (campusSize) text += `${name} sits on a ${campusSize}-acre campus. `;
     if (facilities.length > 0) text += `Facilities include ${joinProse(facilities)}. `;
-    if (school.virtualTourUrl) text += `A virtual tour is available on the school's profile.`;
+    if (school.virtual_tour_url) text += `A virtual tour is available on the school's profile.`;
     faqs.push({ question: `What are the facilities at ${name}?`, answer: text.trim() });
   }
 
@@ -273,8 +273,8 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 17. Mission
-  if (school.missionStatement) {
-    let text = school.missionStatement;
+  if (school.mission_statement) {
+    let text = school.mission_statement;
     if (school.values?.length > 0) text += ` Core values include ${joinProse(school.values)}.`;
     faqs.push({ question: `What is ${name}'s mission?`, answer: text });
   }

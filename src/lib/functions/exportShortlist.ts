@@ -70,8 +70,8 @@ export async function exportShortlistLogic(params: { userId: string; schoolIds: 
     htmlContent += `
   <div class="school-card">
     <h2>${school.name}</h2>
-    <div class="info-row"><span class="label">Location:</span><span>${school.city}, ${school.provinceState || school.country}</span></div>
-    <div class="info-row"><span class="label">Grades:</span><span>${school.gradesServed || 'N/A'}</span></div>
+    <div class="info-row"><span class="label">Location:</span><span>${school.city}, ${school.province_state || school.country}</span></div>
+    <div class="info-row"><span class="label">Grades:</span><span>${school.grades_served || 'N/A'}</span></div>
     <div class="info-row"><span class="label">Tuition:</span><span>${tuition}/year</span></div>
     <div class="info-row"><span class="label">Enrollment:</span><span>${school.enrollment || 'N/A'} students</span></div>
     <div class="info-row"><span class="label">Curriculum:</span><span>${school.curriculum || 'N/A'}</span></div>
@@ -88,9 +88,9 @@ export async function exportShortlistLogic(params: { userId: string; schoolIds: 
     <thead><tr><th>Criteria</th>${schools.map((s: any) => `<th>${s.name}</th>`).join('')}</tr></thead>
     <tbody>
       <tr><td class="label">Tuition</td>${schools.map((s: any) => `<td>${s.tuition ? `${currencySymbols[s.currency] || '$'}${s.tuition.toLocaleString()}` : 'N/A'}</td>`).join('')}</tr>
-      <tr><td class="label">Class Size</td>${schools.map((s: any) => `<td>${s.avgClassSize || 'N/A'}</td>`).join('')}</tr>
+      <tr><td class="label">Class Size</td>${schools.map((s: any) => `<td>${s.avg_class_size || 'N/A'}</td>`).join('')}</tr>
       <tr><td class="label">Curriculum</td>${schools.map((s: any) => `<td>${s.curriculum || 'N/A'}</td>`).join('')}</tr>
-      <tr><td class="label">Financial Aid</td>${schools.map((s: any) => `<td>${s.financialAidAvailable ? 'Yes' : 'No'}</td>`).join('')}</tr>
+      <tr><td class="label">Financial Aid</td>${schools.map((s: any) => `<td>${s.financial_aid_available ? 'Yes' : 'No'}</td>`).join('')}</tr>
     </tbody>
   </table>
 `;

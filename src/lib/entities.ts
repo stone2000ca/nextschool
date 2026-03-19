@@ -1,40 +1,8 @@
 /**
  * Entity data access layer (client-side)
- * Wraps Supabase queries with camelCase/snake_case translation
- * Translates camelCase field names to snake_case for Supabase
+ * Wraps Supabase queries — callers must use snake_case field names directly
  */
 import { createClient } from '@/lib/supabase/client'
-
-// ─── camelCase ↔ snake_case helpers ──────────────────────────────────
-
-function camelToSnake(str: string): string {
-  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
-}
-
-function snakeToCamel(str: string): string {
-  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
-}
-
-function keysToSnake(obj: Record<string, any>): Record<string, any> {
-  const result: Record<string, any> = {}
-  for (const [key, value] of Object.entries(obj)) {
-    result[camelToSnake(key)] = value
-  }
-  return result
-}
-
-function keysToCamel(obj: Record<string, any>): Record<string, any> {
-  if (obj === null || obj === undefined) return obj
-  const result: Record<string, any> = {}
-  for (const [key, value] of Object.entries(obj)) {
-    result[snakeToCamel(key)] = value
-  }
-  return result
-}
-
-function rowsToCamel(rows: Record<string, any>[]): Record<string, any>[] {
-  return rows.map(keysToCamel)
-}
 
 // ─── Entity → Table mapping ─────────────────────────────────────────
 
@@ -88,37 +56,31 @@ function getTableName(entityName: string): string {
 
 function applyFilters(query: any, filterObj: Record<string, any>) {
   for (const [key, value] of Object.entries(filterObj)) {
-    const col = camelToSnake(key)
-
     if (value === null || value === undefined) {
-      query = query.is(col, null)
+      query = query.is(key, null)
     } else if (Array.isArray(value)) {
-      // { field: [v1, v2] } → .in()
-      query = query.in(col, value)
+      query = query.in(key, value)
     } else if (typeof value === 'object' && value !== null) {
-      // Operator objects
       if ('$in' in value) {
-        query = query.in(col, value.$in)
+        query = query.in(key, value.$in)
       }
       if ('$contains' in value) {
-        query = query.contains(col, Array.isArray(value.$contains) ? value.$contains : [value.$contains])
+        query = query.contains(key, Array.isArray(value.$contains) ? value.$contains : [value.$contains])
       }
       if ('$gte' in value) {
-        query = query.gte(col, value.$gte)
+        query = query.gte(key, value.$gte)
       }
       if ('$lte' in value) {
-        query = query.lte(col, value.$lte)
+        query = query.lte(key, value.$lte)
       }
       if ('$ne' in value) {
-        query = query.neq(col, value.$ne)
+        query = query.neq(key, value.$ne)
       }
       if ('$regex' in value) {
-        // Supabase ilike for case-insensitive regex-like matching
-        const pattern = value.$regex.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        query = query.ilike(col, `%${value.$regex}%`)
+        query = query.ilike(key, `%${value.$regex}%`)
       }
     } else {
-      query = query.eq(col, value)
+      query = query.eq(key, value)
     }
   }
   return query
@@ -128,7 +90,7 @@ function applySortString(query: any, sort: string) {
   if (!sort) return query
   const descending = sort.startsWith('-')
   const field = descending ? sort.slice(1) : sort
-  return query.order(camelToSnake(field), { ascending: !descending })
+  return query.order(field, { ascending: !descending })
 }
 
 // ─── Entity client factory ───────────────────────────────────────────
@@ -156,7 +118,7 @@ function createEntity(entityName: string): EntityClient {
       if (limit) query = query.limit(limit)
       const { data, error } = await query
       if (error) throw error
-      return rowsToCamel(data || [])
+      return data || []
     },
 
     async list(sort?: string, filter?: Record<string, any>, limit?: number): Promise<any[]> {
@@ -166,23 +128,21 @@ function createEntity(entityName: string): EntityClient {
     async get(id: string): Promise<any> {
       const { data, error } = await db().select('*').eq('id', id).single()
       if (error) throw error
-      return keysToCamel(data)
+      return data
     },
 
     async create(data: Record<string, any>): Promise<any> {
-      const snakeData = keysToSnake(data)
-      snakeData.updated_at = new Date().toISOString()
-      const { data: result, error } = await db().insert(snakeData).select().single()
+      const row = { ...data, updated_date: new Date().toISOString() }
+      const { data: result, error } = await db().insert(row).select().single()
       if (error) throw error
-      return keysToCamel(result)
+      return result
     },
 
     async update(id: string, data: Record<string, any>): Promise<any> {
-      const snakeData = keysToSnake(data)
-      snakeData.updated_at = new Date().toISOString()
-      const { data: result, error } = await db().update(snakeData).eq('id', id).select().single()
+      const row = { ...data, updated_date: new Date().toISOString() }
+      const { data: result, error } = await db().update(row).eq('id', id).select().single()
       if (error) throw error
-      return keysToCamel(result)
+      return result
     },
 
     async delete(id: string): Promise<void> {

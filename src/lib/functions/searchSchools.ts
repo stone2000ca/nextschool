@@ -20,11 +20,11 @@ function applyReligiousFilter(school: any, familyProfile: any, payload: any) {
     typeof d === 'string' && religiousDealbreakTerms.some(term => d.toLowerCase().includes(term))
   );
   if (hasReligiousDealbreaker) {
-    const schoolAffiliation = (school.faithBased || '').toLowerCase().trim().replace(/[\s-]+/g, ' ');
+    const schoolAffiliation = (school.faith_based || '').toLowerCase().trim().replace(/[\s-]+/g, ' ');
     const secularValues = ['', 'non-sectarian', 'nonsectarian', 'secular', 'none', 'n/a'];
     // Only exclude schools with a confirmed religious faithBased value
-    if (school.faithBased && !secularValues.includes(schoolAffiliation)) {
-      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: faithBased="${school.faithBased}"`);
+    if (school.faith_based && !secularValues.includes(schoolAffiliation)) {
+      console.log(`[RELIGIOUS FILTER] Excluded ${school.name}: faith_based="${school.faith_based}"`);
       return false;
     }
   }
@@ -32,10 +32,10 @@ function applyReligiousFilter(school: any, familyProfile: any, payload: any) {
 }
 
 function applyGenderFilter(school: any, familyProfile: any) {
-  const gp = school.genderPolicy || null;
+  const gp = school.gender_policy || null;
   if (gp === null) return true;
 
-  const rawGender = (familyProfile?.childGender || familyProfile?.gender || '').toLowerCase().trim();
+  const rawGender = (familyProfile?.child_gender || familyProfile?.gender || '').toLowerCase().trim();
   const MALE_TERMS = ['male', 'boy', 'son', 'm', 'he', 'him'];
   const FEMALE_TERMS = ['female', 'girl', 'daughter', 'f', 'she', 'her'];
   const childGender = MALE_TERMS.includes(rawGender) ? 'male' : FEMALE_TERMS.includes(rawGender) ? 'female' : null;
@@ -54,7 +54,7 @@ function applyGenderFilter(school: any, familyProfile: any) {
     return false;
   }
 
-  const exclusions = familyProfile?.schoolGenderExclusions || [];
+  const exclusions = familyProfile?.school_gender_exclusions || [];
   if (Array.isArray(exclusions) && exclusions.length > 0) {
     const excluded = exclusions.some((ex: string) => {
       const exL = ex.toLowerCase();
@@ -66,7 +66,7 @@ function applyGenderFilter(school: any, familyProfile: any) {
     if (excluded) { console.log(`[GENDER] Excluded (exclusion) ${school.name}: genderPolicy="${gp}"`); return false; }
   }
 
-  const genderPref = familyProfile?.schoolGenderPreference || null;
+  const genderPref = familyProfile?.school_gender_preference || null;
   if (genderPref) {
     const prefLower = genderPref.toLowerCase();
     let matches = false;
@@ -247,8 +247,8 @@ async function performSearch(payload: any) {
     );
   } else if (aliasedProvinces.length > 0) {
     locationFiltered = locationFiltered.filter((s: any) => {
-      if (!s.provinceState) return false;
-      const schoolPS = s.provinceState.toLowerCase();
+      if (!s.province_state) return false;
+      const schoolPS = s.province_state.toLowerCase();
       return aliasedProvinces.some(p => schoolPS === p.toLowerCase());
     });
   }
@@ -282,9 +282,9 @@ async function performSearch(payload: any) {
     const normalizedProvince = fullProvinceName || toTitleCase(provinceState.trim());
     const provinceRegex = new RegExp(`^${normalizedProvince}$`, 'i');
     locationFiltered = locationFiltered.filter((s: any) => {
-      const schoolPS = s.provinceState?.toUpperCase().trim();
-      const expandedSchoolPS = provinceAbbreviations[schoolPS] || stateAbbreviations[schoolPS] || s.provinceState;
-      return provinceRegex.test(expandedSchoolPS) || provinceRegex.test(s.provinceState);
+      const schoolPS = s.province_state?.toUpperCase().trim();
+      const expandedSchoolPS = provinceAbbreviations[schoolPS] || stateAbbreviations[schoolPS] || s.province_state;
+      return provinceRegex.test(expandedSchoolPS) || provinceRegex.test(s.province_state);
     });
   }
 
@@ -318,8 +318,8 @@ async function performSearch(payload: any) {
   let hardFiltered = locationFiltered.filter((school: any) => {
     const parsedMinGrade = minGrade !== undefined && minGrade !== null ? parseInt(minGrade) : null;
     if (parsedMinGrade !== null) {
-      let sLow = parseInt(school.lowestGrade);
-      let sHigh = parseInt(school.highestGrade);
+      let sLow = parseInt(school.lowest_grade);
+      let sHigh = parseInt(school.highest_grade);
       if (!isNaN(sLow) && !isNaN(sHigh)) {
         const distanceOutsideRange = parsedMinGrade < sLow ? sLow - parsedMinGrade : (parsedMinGrade > sHigh ? parsedMinGrade - sHigh : 0);
         if (distanceOutsideRange > 0) {
@@ -331,7 +331,7 @@ async function performSearch(payload: any) {
       }
     }
 
-    const schoolTuition = school.dayTuition || school.effectiveTuition || school.boardingTuition || null;
+    const schoolTuition = school.day_tuition || school.effective_tuition || school.boarding_tuition || null;
     if (maxTuition && maxTuition !== 'unlimited') {
       if (schoolTuition && schoolTuition > maxTuition) {
         console.log(`[BUDGET FILTER] Filtered out ${school.name}: tuition $${schoolTuition} exceeds budget $${maxTuition}`);
@@ -342,10 +342,10 @@ async function performSearch(payload: any) {
     if (!applyReligiousFilter(school, familyProfile, payload)) return false;
     if (!applyGenderFilter(school, familyProfile)) return false;
 
-    if (familyProfile?.commuteToleranceMinutes && school.distanceKm) {
-      const estimatedCommute = school.distanceKm * 2;
-      if (estimatedCommute > familyProfile.commuteToleranceMinutes) {
-        console.log(`Hard-filtered ${school.name}: commute ${estimatedCommute}min exceeds tolerance ${familyProfile.commuteToleranceMinutes}min`);
+    if (familyProfile?.commute_tolerance_minutes && school.distance_km) {
+      const estimatedCommute = school.distance_km * 2;
+      if (estimatedCommute > familyProfile.commute_tolerance_minutes) {
+        console.log(`Hard-filtered ${school.name}: commute ${estimatedCommute}min exceeds tolerance ${familyProfile.commute_tolerance_minutes}min`);
         return false;
       }
     }
@@ -362,8 +362,8 @@ async function performSearch(payload: any) {
     schoolsToRank = locationFiltered.filter((school: any) => {
       const parsedMinGrade = minGrade !== undefined && minGrade !== null ? parseInt(minGrade) : null;
       if (parsedMinGrade !== null) {
-        let sLow = parseInt(school.lowestGrade);
-        let sHigh = parseInt(school.highestGrade);
+        let sLow = parseInt(school.lowest_grade);
+        let sHigh = parseInt(school.highest_grade);
         if (!isNaN(sLow) && !isNaN(sHigh)) {
           const distanceOutsideRange = parsedMinGrade < sLow ? sLow - parsedMinGrade : (parsedMinGrade > sHigh ? parsedMinGrade - sHigh : 0);
           if (distanceOutsideRange > 1) {
@@ -394,10 +394,10 @@ async function performSearch(payload: any) {
 
     if (minGrade !== undefined) {
       const targetGrade = minGrade !== undefined ? minGrade : maxGrade;
-      if (school.lowestGrade <= targetGrade && school.highestGrade >= targetGrade) {
+      if (school.lowest_grade <= targetGrade && school.highest_grade >= targetGrade) {
         score += 2;
       } else {
-        const distanceOutsideRange = targetGrade < school.lowestGrade ? school.lowestGrade - targetGrade : (targetGrade > school.highestGrade ? targetGrade - school.highestGrade : 0);
+        const distanceOutsideRange = targetGrade < school.lowest_grade ? school.lowest_grade - targetGrade : (targetGrade > school.highest_grade ? targetGrade - school.highest_grade : 0);
         if (distanceOutsideRange <= 2) {
           score -= 1;
           console.log(`[GRADE SCORE] Soft penalty for ${school.name}: ${distanceOutsideRange} grade(s) outside range`);
@@ -405,7 +405,7 @@ async function performSearch(payload: any) {
       }
     }
 
-    const scoreTuition = school.dayTuition || school.effectiveTuition || school.boardingTuition || null;
+    const scoreTuition = school.day_tuition || school.effective_tuition || school.boarding_tuition || null;
     if (maxTuition !== undefined && scoreTuition) {
       if (scoreTuition <= maxTuition) {
         score += 2;
@@ -416,7 +416,7 @@ async function performSearch(payload: any) {
       score += 3;
     }
 
-    if (schoolTypeLabel && school.schoolTypeLabel === schoolTypeLabel) {
+    if (schoolTypeLabel && school.school_type_label === schoolTypeLabel) {
       score += 2;
     }
 
@@ -438,16 +438,16 @@ async function performSearch(payload: any) {
 
     if (familyProfile?.interests?.length > 0) {
       const interestLower = familyProfile.interests.map((i: string) => i.toLowerCase());
-      const schoolArts = (school.artsPrograms || []).map((a: string) => a.toLowerCase());
-      const schoolSports = (school.sportsPrograms || []).map((s: string) => s.toLowerCase());
+      const schoolArts = (school.arts_programs || []).map((a: string) => a.toLowerCase());
+      const schoolSports = (school.sports_programs || []).map((s: string) => s.toLowerCase());
       const artMatches = interestLower.filter((i: string) => schoolArts.some((a: string) => a.includes(i) || i.includes(a))).length;
       const sportMatches = interestLower.filter((i: string) => schoolSports.some((s: string) => s.includes(i) || i.includes(s))).length;
       score += Math.min(artMatches + sportMatches, 3);
     }
 
-    if (familyProfile?.academicStruggles?.length > 0 || familyProfile?.learningDifferences?.length > 0) {
-      if (school.avgClassSize && school.avgClassSize <= 18) score += 1;
-      if (school.studentTeacherRatio && parseFloat(school.studentTeacherRatio) <= 10) score += 1;
+    if (familyProfile?.academic_struggles?.length > 0 || familyProfile?.learning_differences?.length > 0) {
+      if (school.avg_class_size && school.avg_class_size <= 18) score += 1;
+      if (school.student_teacher_ratio && parseFloat(school.student_teacher_ratio) <= 10) score += 1;
       const supportKeywords = ['learning support', 'special needs', 'differentiated', 'individualized', 'ld support', 'resource'];
       const specLower = (school.specializations || []).map((s: string) => s.toLowerCase());
       if (supportKeywords.some(kw => specLower.some((s: string) => s.includes(kw)))) score += 2;
@@ -462,45 +462,45 @@ async function performSearch(payload: any) {
     schools = schools.map((school: any) => {
       if (school.lat && school.lng) {
         const distance = calculateDistance(finalLat, finalLng, school.lat, school.lng);
-        return { ...school, distanceKm: distance };
+        return { ...school, distance_km: distance };
       }
       return school;
     });
 
     if (maxDistanceKm) {
-      schools = schools.filter((s: any) => !s.distanceKm || s.distanceKm <= maxDistanceKm);
+      schools = schools.filter((s: any) => !s.distance_km || s.distance_km <= maxDistanceKm);
     }
 
     if (schools.length === 0 && schoolsToRank.length > 0) {
       console.log('[S151-WC2] Post-scoring distance filter killed all results - falling back');
       schools = scored
-        .filter((s: any) => !s.school.distanceKm || s.school.distanceKm <= 150)
+        .filter((s: any) => !s.school.distance_km || s.school.distance_km <= 150)
         .sort((a: any, b: any) => b.score - a.score)
         .map((s: any) => s.school);
     }
 
     schools.sort((a: any, b: any) => {
-      const scoreA = (a._matchScore || 0) - ((a.distanceKm || 0) * 0.1);
-      const scoreB = (b._matchScore || 0) - ((b.distanceKm || 0) * 0.1);
+      const scoreA = (a._matchScore || 0) - ((a.distance_km || 0) * 0.1);
+      const scoreB = (b._matchScore || 0) - ((b.distance_km || 0) * 0.1);
       return scoreB - scoreA;
     });
   }
 
   if (familyProfile) {
     schools = schools.filter((school: any) => {
-      if (familyProfile.commuteToleranceMinutes && school.distanceKm) {
-        const estimatedCommute = school.distanceKm * 2;
-        const tolerance = familyProfile.commuteToleranceMinutes;
+      if (familyProfile.commute_tolerance_minutes && school.distance_km) {
+        const estimatedCommute = school.distance_km * 2;
+        const tolerance = familyProfile.commute_tolerance_minutes;
         if (estimatedCommute > tolerance + 50) {
           console.log(`Filtered out ${school.name}: commute ${estimatedCommute}min exceeds tolerance ${tolerance}min by 50+min`);
           return false;
         }
       }
 
-      const postTuition = school.dayTuition || school.effectiveTuition || school.boardingTuition || null;
-      if (familyProfile.maxTuition && postTuition) {
-        if (postTuition > familyProfile.maxTuition * 2) {
-          console.log(`Filtered out ${school.name}: tuition $${postTuition} is 2x+ budget $${familyProfile.maxTuition}`);
+      const postTuition = school.day_tuition || school.effective_tuition || school.boarding_tuition || null;
+      if (familyProfile.max_tuition && postTuition) {
+        if (postTuition > familyProfile.max_tuition * 2) {
+          console.log(`Filtered out ${school.name}: tuition $${postTuition} is 2x+ budget $${familyProfile.max_tuition}`);
           return false;
         }
       }
@@ -525,26 +525,26 @@ async function performSearch(payload: any) {
     name: s.name,
     slug: s.slug,
     city: s.city,
-    provinceState: s.provinceState,
-    gradesServed: `${s.lowestGrade}-${s.highestGrade}`,
-    lowestGrade: s.lowestGrade,
-    highestGrade: s.highestGrade,
+    province_state: s.province_state,
+    gradesServed: `${s.lowest_grade}-${s.highest_grade}`,
+    lowest_grade: s.lowest_grade,
+    highest_grade: s.highest_grade,
     tuition: s.tuition,
-    dayTuition: s.dayTuition,
+    day_tuition: s.day_tuition,
     currency: s.currency,
     curriculum: s.curriculum,
-    genderPolicy: s.genderPolicy,
+    gender_policy: s.gender_policy,
     region: s.region,
     specializations: s.specializations,
-    distanceKm: s.distanceKm,
-    schoolTypeLabel: s.schoolTypeLabel,
-    headerPhotoUrl: s.headerPhotoUrl,
-    logoUrl: s.logoUrl,
-    artsPrograms: s.artsPrograms?.slice(0, 5) || [],
-    sportsPrograms: s.sportsPrograms?.slice(0, 5) || [],
-    avgClassSize: s.avgClassSize || null,
-    schoolTier: s.schoolTier || null,
-    claimStatus: s.claimStatus || null,
+    distance_km: s.distance_km,
+    school_type_label: s.school_type_label,
+    header_photo_url: s.header_photo_url,
+    logo_url: s.logo_url,
+    arts_programs: s.arts_programs?.slice(0, 5) || [],
+    sports_programs: s.sports_programs?.slice(0, 5) || [],
+    avg_class_size: s.avg_class_size || null,
+    school_tier: s.school_tier || null,
+    claim_status: s.claim_status || null,
     relaxedMatch: isRelaxedPass
   }));
 
@@ -553,7 +553,7 @@ async function performSearch(payload: any) {
       schoolName: s.name,
       score: scored.find((sc: any) => sc.school.id === s.id)?.score || 0,
       reasons: [
-        s.distanceKm ? `${s.distanceKm.toFixed(1)}km away` : null,
+        s.distance_km ? `${s.distance_km.toFixed(1)}km away` : null,
         s.tuition && maxTuition && s.tuition <= maxTuition ? 'Within budget' : null,
         s.curriculum?.includes(curriculum) ? `${curriculum} curriculum` : null,
         s.specializations?.some((spec: string) => specializations?.includes(spec)) ? 'Matches specializations' : null
@@ -562,7 +562,7 @@ async function performSearch(payload: any) {
 
     await SearchLog.create({
       query: searchQuery || `Search for grade ${minGrade} in ${city || region || 'unspecified'}`,
-      inputFilters: {
+      input_filters: {
         city,
         provinceState,
         region,
@@ -575,10 +575,10 @@ async function performSearch(payload: any) {
         maxDistanceKm,
         dealbreakers: payload.dealbreakers || familyProfile?.dealbreakers || []
       },
-      totalSchoolsPassingFilters: originalFilteredCount,
-      topResults: topResultsForLog,
-      conversationId,
-      userId
+      total_schools_passing_filters: originalFilteredCount,
+      top_results: topResultsForLog,
+      conversation_id: conversationId,
+      user_id: userId
     });
   } catch (logError) {
     console.error('Failed to create SearchLog:', logError);

@@ -54,16 +54,16 @@ function calculateMatchScore(school, familyProfile) {
   let score = 0;
   const childGrade = familyProfile.childGrade;
   if (childGrade !== null && childGrade !== undefined) {
-    if (childGrade >= school.lowestGrade && childGrade <= school.highestGrade) score += 2;
+    if (childGrade >= school.lowest_grade && childGrade <= school.highest_grade) score += 2;
   }
-  if (familyProfile.maxTuition && school.dayTuition) {
-    if (school.dayTuition <= familyProfile.maxTuition) score += 2;
-    else if (school.dayTuition <= familyProfile.maxTuition * 1.2) score += 1;
+  if (familyProfile.maxTuition && school.day_tuition) {
+    if (school.day_tuition <= familyProfile.maxTuition) score += 2;
+    else if (school.day_tuition <= familyProfile.maxTuition * 1.2) score += 1;
   }
-  if (familyProfile.gender && school.genderPolicy) {
-    const isSingleGender = school.genderPolicy.includes(familyProfile.gender === 'male' ? 'Boy' : 'Girl');
+  if (familyProfile.gender && school.gender_policy) {
+    const isSingleGender = school.gender_policy.includes(familyProfile.gender === 'male' ? 'Boy' : 'Girl');
     if (isSingleGender && familyProfile.boardingPreference === 'no') score += 1;
-    if (school.genderPolicy === 'Co-ed' && !isSingleGender) score += 1;
+    if (school.gender_policy === 'Co-ed' && !isSingleGender) score += 1;
   }
   if (familyProfile.priorities?.length > 0) {
     const specializations = (school.specializations || []).map(s => s.toLowerCase());
@@ -84,11 +84,11 @@ function getMatchReasons(school, familyProfile) {
   const reasons = [];
   if (!familyProfile) return reasons;
   const childGrade = familyProfile.childGrade;
-  if (childGrade !== null && childGrade !== undefined && childGrade >= school.lowestGrade && childGrade <= school.highestGrade) {
+  if (childGrade !== null && childGrade !== undefined && childGrade >= school.lowest_grade && childGrade <= school.highest_grade) {
     reasons.push(`Serves Grade ${gradeLabel(childGrade)}`);
   }
-  if (familyProfile.maxTuition && school.dayTuition && school.dayTuition <= familyProfile.maxTuition) {
-    reasons.push(`Within budget ($${school.dayTuition.toLocaleString()})`);
+  if (familyProfile.maxTuition && school.day_tuition && school.day_tuition <= familyProfile.maxTuition) {
+    reasons.push(`Within budget ($${school.day_tuition.toLocaleString()})`);
   }
   if (familyProfile.priorities?.length > 0) {
     const specializations = (school.specializations || []).map(s => s.toLowerCase());
@@ -676,7 +676,7 @@ export default function SchoolDetailPanel({
       return;
     }
     let isMounted = true;
-    SchoolEvent.filter({ schoolId: school.id })
+    SchoolEvent.filter({ school_id: school.id })
       .then((data) => {
         if (!isMounted) return;
         setSchoolEvents(Array.isArray(data) ? data : []);
@@ -690,7 +690,7 @@ export default function SchoolDetailPanel({
 
   if (!school) return null;
 
-  const hasTourFeatures = school.schoolTier === 'growth' || school.schoolTier === 'pro';
+  const hasTourFeatures = school.school_tier === 'growth' || school.school_tier === 'pro';
 
   return (
     <div className="h-full flex flex-col text-[#e8e6e1]" style={{ background: '#141a1f', fontFamily: "'Inter', -apple-system, sans-serif" }}>

@@ -148,10 +148,10 @@ export async function enrichSchoolFromWebLogic(params: { schoolId: string; websi
     if (proposedStr === currentStr) continue;
 
     await EnrichmentDiff.create({
-      schoolId, field, currentValue: currentStr, proposedValue: proposedStr,
+      school_id: schoolId, field, current_value: currentStr, proposed_value: proposedStr,
       confidence: CONFIDENCE_MAP[extraction.confidence] ?? 0.3,
-      source: 'school website', sourceUrl: targetUrl,
-      status: 'pending', batchId, createdAt: new Date().toISOString()
+      source: 'school website', source_url: targetUrl,
+      status: 'pending', batch_id: batchId, created_at: new Date().toISOString()
     });
     diffsCreated++;
   }

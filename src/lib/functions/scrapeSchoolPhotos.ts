@@ -113,7 +113,7 @@ export async function scrapeSchoolPhotosLogic(params: { schoolId: string; websit
     if (!/\.(jpe?g|png|webp)(\?|$)/i.test(candidate.imageUrl)) continue;
     const fileSize = await getFileSize(candidate.imageUrl);
     if (fileSize !== null && fileSize < 20480) continue;
-    records.push({ schoolId, schoolName: school.name, imageUrl: candidate.imageUrl, pageUrl: candidate.pageUrl, source: 'website', altText: candidate.altText || '', inferredType: inferType(candidate.imageUrl, candidate.altText || '', candidate.pageUrl), widthAttr: candidate.widthAttr, heightAttr: candidate.heightAttr, fileSizeBytes: fileSize, status: 'pending', batchId, createdDate: now });
+    records.push({ school_id: schoolId, school_name: school.name, image_url: candidate.imageUrl, page_url: candidate.pageUrl, source: 'website', alt_text: candidate.altText || '', inferred_type: inferType(candidate.imageUrl, candidate.altText || '', candidate.pageUrl), width_attr: candidate.widthAttr, height_attr: candidate.heightAttr, file_size_bytes: fileSize, status: 'pending', batch_id: batchId, created_date: now });
   }
 
   const CHUNK = 20;

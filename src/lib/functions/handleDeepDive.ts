@@ -128,12 +128,12 @@ export async function handleDeepDiveLogic(params: any) {
     userId ? User.filter({ id: userId }).catch(() => []) : Promise.resolve([]),
     selectedSchoolId ? School.filter({ id: selectedSchoolId }).catch(() => []) : Promise.resolve([]),
     (userId && selectedSchoolId) ? Promise.all([
-      GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'deep_dive_recommendation' }),
-      GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'visit_prep_kit' }),
-      GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType: 'action_plan' })
+      GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'deep_dive_recommendation' }),
+      GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'visit_prep_kit' }),
+      GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'action_plan' })
     ]).catch(() => [[], [], []]) : Promise.resolve([[], [], []]),
-    selectedSchoolId ? SchoolEvent.filter({ schoolId: selectedSchoolId, isActive: true }).catch(() => []) : Promise.resolve([]),
-    selectedSchoolId ? Testimonial.filter({ schoolId: selectedSchoolId, is_visible: true }).catch(() => []) : Promise.resolve([])
+    selectedSchoolId ? SchoolEvent.filter({ school_id: selectedSchoolId, is_active: true }).catch(() => []) : Promise.resolve([]),
+    selectedSchoolId ? Testimonial.filter({ school_id: selectedSchoolId, is_visible: true }).catch(() => []) : Promise.resolve([])
   ]);
 
   const userTier = (userRecords as any)?.[0]?.tier || 'free';
@@ -161,12 +161,12 @@ export async function handleDeepDiveLogic(params: any) {
       try { cachedActionPlan = isPremiumUser ? (typeof plan.content === 'string' ? JSON.parse(plan.content) : plan.content) : null; } catch (e) {}
       let cachedDeepDiveAnalysis: any = null;
       try {
-        const saFilter: any = { userId, schoolId: selectedSchoolId };
-        if (conversationId) saFilter.conversationId = conversationId;
+        const saFilter: any = { user_id: userId, school_id: selectedSchoolId };
+        if (conversationId) saFilter.conversation_id = conversationId;
         const analyses = await SchoolAnalysis.filter(saFilter);
         if (analyses?.[0]) cachedDeepDiveAnalysis = analyses[0];
       } catch (e) {}
-      const isPremiumSchool = selectedSchool.schoolTier === 'growth' || selectedSchool.schoolTier === 'pro';
+      const isPremiumSchool = selectedSchool.school_tier === 'growth' || selectedSchool.school_tier === 'pro';
       return { message: extractConciseSummary(rec.content), state: currentState, briefStatus, schools: currentSchools || [], familyProfile: conversationFamilyProfile, conversationContext: { ...(context || {}), [`deepDiveFollowUpShown_${selectedSchoolId}`]: true }, deepDiveAnalysis: cachedDeepDiveAnalysis, visitPrepKit: cachedVisitPrepKit, actionPlan: cachedActionPlan, tourRequestOffered: isPremiumSchool, fromCache: true, rawToolCalls: [] };
     }
   }
@@ -178,18 +178,18 @@ export async function handleDeepDiveLogic(params: any) {
 
   const compressedSchoolData = {
     name: selectedSchool.name,
-    tuitionFee: selectedSchool.tuition || selectedSchool.dayTuition || 'Not specified',
-    location: `${selectedSchool.city}, ${selectedSchool.provinceState || selectedSchool.country}`,
-    genderPolicy: selectedSchool.genderPolicy || 'Co-ed',
+    tuitionFee: selectedSchool.tuition || selectedSchool.day_tuition || 'Not specified',
+    location: `${selectedSchool.city}, ${selectedSchool.province_state || selectedSchool.country}`,
+    genderPolicy: selectedSchool.gender_policy || 'Co-ed',
     curriculum: selectedSchool.curriculum || null,
     specializations: selectedSchool.specializations || [],
-    avgClassSize: selectedSchool.avgClassSize || null,
-    studentTeacherRatio: selectedSchool.studentTeacherRatio || null,
-    sportsPrograms: selectedSchool.sportsPrograms?.slice(0, 5) || [],
-    artsPrograms: selectedSchool.artsPrograms?.slice(0, 5) || [],
-    boardingAvailable: !!(selectedSchool.boardingTuition || selectedSchool.boardingAvailable),
-    financialAidAvailable: selectedSchool.financialAidAvailable || false,
-    faithBased: selectedSchool.faithBased || null,
+    avgClassSize: selectedSchool.avg_class_size || null,
+    studentTeacherRatio: selectedSchool.student_teacher_ratio || null,
+    sportsPrograms: selectedSchool.sports_programs?.slice(0, 5) || [],
+    artsPrograms: selectedSchool.arts_programs?.slice(0, 5) || [],
+    boardingAvailable: !!(selectedSchool.boarding_tuition || selectedSchool.boarding_available),
+    financialAidAvailable: selectedSchool.financial_aid_available || false,
+    faithBased: selectedSchool.faith_based || null,
     enrollment: selectedSchool.enrollment || null,
     description: selectedSchool.description?.substring(0, 300) || null
   };
@@ -202,15 +202,15 @@ export async function handleDeepDiveLogic(params: any) {
   } catch (e) {}
 
   // Build event context
-  const subscriptionTier = selectedSchool.subscriptionTier || 'free';
+  const subscriptionTier = selectedSchool.subscription_tier || 'free';
   const schoolContactEmail = selectedSchool.email || null;
   let eventContext = '';
   if (upcomingEvents.length > 0) {
     const eventLines = upcomingEvents.map((e: any) => {
-      const confidenceTag = (e.isConfirmed === true) ? '[confirmed]' : '[estimated — verify with school]';
+      const confidenceTag = (e.is_confirmed === true) ? '[confirmed]' : '[estimated — verify with school]';
       const dateStr = new Date(e.date).toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-      const typeLabel = (e.eventType || '').replace(/_/g, ' ');
-      const regUrl = e.registrationUrl ? ` | Register: ${e.registrationUrl}` : '';
+      const typeLabel = (e.event_type || '').replace(/_/g, ' ');
+      const regUrl = e.registration_url ? ` | Register: ${e.registration_url}` : '';
       return `- ${e.title || typeLabel} (${typeLabel}) — ${dateStr} ${confidenceTag}${regUrl}`;
     });
     eventContext = `UPCOMING EVENTS (${upcomingEvents.length} found):\n${eventLines.join('\n')}`;
@@ -304,13 +304,13 @@ Generate the DEEPDIVE card for this family-school match.`;
   // Save to SchoolAnalysis
   if (userId && selectedSchoolId && deepDiveAnalysis) {
     try {
-      const persistFilter: any = { userId, schoolId: selectedSchoolId };
-      if (conversationId) persistFilter.conversationId = conversationId;
+      const persistFilter: any = { user_id: userId, school_id: selectedSchoolId };
+      if (conversationId) persistFilter.conversation_id = conversationId;
       const existing = await SchoolAnalysis.filter(persistFilter);
       if (existing?.length > 0) {
-        await SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, schoolName: selectedSchool.name, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || null });
+        await SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, school_name: selectedSchool.name, last_analyzed_at: new Date().toISOString(), conversation_id: conversationId || null });
       } else {
-        await SchoolAnalysis.create({ userId, schoolId: selectedSchoolId, schoolName: selectedSchool.name, ...deepDiveAnalysis, lastAnalyzedAt: new Date().toISOString(), conversationId: conversationId || null });
+        await SchoolAnalysis.create({ user_id: userId, school_id: selectedSchoolId, school_name: selectedSchool.name, ...deepDiveAnalysis, last_analyzed_at: new Date().toISOString(), conversation_id: conversationId || null });
         const childName = conversationFamilyProfile?.childName || null;
         const schoolName = selectedSchool.name;
         if (consultantName === 'Jackie') {
@@ -348,7 +348,7 @@ Generate the DEEPDIVE card for this family-school match.`;
   let generatedActionPlan: any = null;
   if (deepDiveAnalysis && selectedSchool && userId) {
     const visitWindow = upcomingEvents.length > 0
-      ? { recommendedAction: `Attend ${upcomingEvents[0].title} on ${new Date(upcomingEvents[0].date).toLocaleDateString('en-CA')}`, events: upcomingEvents.map((e: any) => ({ title: e.title, date: e.date, type: e.eventType })) }
+      ? { recommendedAction: `Attend ${upcomingEvents[0].title} on ${new Date(upcomingEvents[0].date).toLocaleDateString('en-CA')}`, events: upcomingEvents.map((e: any) => ({ title: e.title, date: e.date, type: e.event_type })) }
       : { recommendedAction: 'Contact admissions to schedule a campus tour', events: [] };
 
     const docChecklist = [
@@ -356,25 +356,25 @@ Generate the DEEPDIVE card for this family-school match.`;
       { item: 'Teacher reference letter', status: 'pending' },
       { item: 'Standardized test scores (if available)', status: 'pending' }
     ];
-    if (selectedSchool.financialAidAvailable) docChecklist.push({ item: 'Financial aid application', status: 'pending' });
+    if (selectedSchool.financial_aid_available) docChecklist.push({ item: 'Financial aid application', status: 'pending' });
 
-    generatedActionPlan = { visitTimeline: visitWindow, dayAdmissionDeadlines: { deadline: selectedSchool.dayAdmissionDeadline || null, financialAidDeadline: selectedSchool.financialAidDeadline || null, isEstimated: !selectedSchool.dayAdmissionDeadline }, documentChecklist: docChecklist, followUpQuestions: deepDiveAnalysis.visitQuestions || [], fitSummary: deepDiveAnalysis.fitLabel };
+    generatedActionPlan = { visitTimeline: visitWindow, dayAdmissionDeadlines: { deadline: selectedSchool.day_admission_deadline || null, financialAidDeadline: selectedSchool.financial_aid_deadline || null, isEstimated: !selectedSchool.day_admission_deadline }, documentChecklist: docChecklist, followUpQuestions: deepDiveAnalysis.visitQuestions || [], fitSummary: deepDiveAnalysis.fitLabel };
 
     // Fire-and-forget artifact persistence
     (async () => {
       const generatedAt = new Date().toISOString();
       const upsert = async (artifactType: string, fields: any) => {
-        const existing = await GeneratedArtifact.filter({ userId, schoolId: selectedSchoolId, artifactType });
+        const existing = await GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: artifactType });
         if (existing?.length > 0) {
-          await GeneratedArtifact.update(existing[0].id, { ...fields, generatedAt, conversationId: conversationId || '' });
+          await GeneratedArtifact.update(existing[0].id, { ...fields, generated_at: generatedAt, conversation_id: conversationId || '' });
         } else {
-          await GeneratedArtifact.create({ userId, schoolId: selectedSchoolId, conversationId: conversationId || '', artifactType, schoolName: selectedSchool.name, generatedAt, status: 'active', ...fields });
+          await GeneratedArtifact.create({ user_id: userId, school_id: selectedSchoolId, conversation_id: conversationId || '', artifact_type: artifactType, school_name: selectedSchool.name, generated_at: generatedAt, status: 'active', ...fields });
         }
       };
       await Promise.allSettled([
-        upsert('action_plan', { content: JSON.stringify(generatedActionPlan), isLocked: !isPremiumUser, metadata: { version: 'E30_V1' } }),
+        upsert('action_plan', { content: JSON.stringify(generatedActionPlan), is_locked: !isPremiumUser, metadata: { version: 'E30_V1' } }),
         upsert('deep_dive_recommendation', { content: sanitizedMessage, metadata: { version: 'E30_V1' } }),
-        ...(fullVisitPrepKit ? [upsert('visit_prep_kit', { content: JSON.stringify(fullVisitPrepKit), isLocked: false, metadata: { version: 'E30_V1' } })] : [])
+        ...(fullVisitPrepKit ? [upsert('visit_prep_kit', { content: JSON.stringify(fullVisitPrepKit), is_locked: false, metadata: { version: 'E30_V1' } })] : [])
       ]);
     })();
   }
@@ -406,7 +406,7 @@ Generate the DEEPDIVE card for this family-school match.`;
   const conciseMessage = extractConciseSummary(sanitizedMessage);
   const finalMessage = conciseMessage + followUpPrompt;
 
-  const isPremium = selectedSchool.schoolTier === 'growth' || selectedSchool.schoolTier === 'pro';
+  const isPremium = selectedSchool.school_tier === 'growth' || selectedSchool.school_tier === 'pro';
   const tourRequestOffered = isPremium && upcomingEvents.length > 0;
 
   return {

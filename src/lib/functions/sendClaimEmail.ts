@@ -45,10 +45,10 @@ export async function sendClaimEmail(params: {
     generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
     await SchoolClaim.update(schoolData.claimId, {
-      verificationCode: generatedCode,
-      codeExpiresAt: expiresAt,
-      attemptCount: 0,
-      lockedAt: null,
+      verification_code: generatedCode,
+      code_expires_at: expiresAt,
+      attempt_count: 0,
+      locked_at: null,
     });
     // Inject generated values so the email template below can use them
     claimData = { ...claimData, verificationCode: generatedCode, codeExpiresAt: expiresAt };
@@ -218,10 +218,10 @@ export async function sendClaimEmail(params: {
       await EmailLog.create({
         type: emailType === 'CLAIM_EXPIRED' ? 'claim_expiry' : 'claim_verification',
         to: claimData.claimantEmail,
-        fromName: 'NextSchool',
+        from_name: 'NextSchool',
         subject,
-        schoolId: schoolData.id,
-        claimStatus: schoolData.claimStatus,
+        school_id: schoolData.id,
+        claim_status: schoolData.claimStatus,
         status: 'blocked_test',
         is_test: true,
         test_scenario,
@@ -246,10 +246,10 @@ export async function sendClaimEmail(params: {
       await EmailLog.create({
         type: emailType === 'CLAIM_EXPIRED' ? 'claim_expiry' : 'claim_verification',
         to: claimData.claimantEmail,
-        fromName: 'NextSchool',
+        from_name: 'NextSchool',
         subject,
-        schoolId: schoolData.id,
-        claimStatus: schoolData.claimStatus,
+        school_id: schoolData.id,
+        claim_status: schoolData.claimStatus,
         status: 'sent',
         is_test: false,
         test_scenario: null,
@@ -265,12 +265,12 @@ export async function sendClaimEmail(params: {
       await EmailLog.create({
         type: emailType === 'CLAIM_EXPIRED' ? 'claim_expiry' : 'claim_verification',
         to: claimData.claimantEmail,
-        fromName: 'NextSchool',
+        from_name: 'NextSchool',
         subject,
-        schoolId: schoolData.id,
-        claimStatus: schoolData.claimStatus,
+        school_id: schoolData.id,
+        claim_status: schoolData.claimStatus,
         status: 'failed',
-        errorMessage: emailErr.message,
+        error_message: emailErr.message,
         is_test: false,
         test_scenario: null,
       });
