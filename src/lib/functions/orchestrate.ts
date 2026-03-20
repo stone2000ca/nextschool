@@ -1885,7 +1885,8 @@ Object.assign(context, safeUpdatedContext);
         if (skipExtraction) {
           console.log('[E41-S3] Skipping deferred extractEntities — brief confirmation, profile already built');
         } else {
-        extractEntitiesLogic( {
+        // E41-S3: Capture promise for waitUntil() instead of fire-and-forget
+        const deferredExtraction = extractEntitiesLogic( {
           message: processMessage,
           aiReply,
           conversationFamilyProfile: workingProfile,
@@ -1930,6 +1931,7 @@ Object.assign(context, safeUpdatedContext);
             }
           }
         }).catch(e => console.error('[E41-S3] Deferred extractEntities failed (non-critical):', e.message));
+        responseData._deferredWork = [deferredExtraction];
         }
 
         return (responseData);
