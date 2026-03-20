@@ -3,7 +3,6 @@
 // Last Modified: 2026-03-01
 
 import { STATES } from '@/lib/stateMachineConfig';
-import { STATES as STATES_FOR_GUEST } from '@/lib/stateMachineConfig';
 import { ChatSession, ChatHistory, SchoolAnalysis, FamilyProfile, School } from '@/lib/entities';
 import { invokeFunction } from '@/lib/functions';
 import { createClient } from '@/lib/supabase/client';
@@ -653,7 +652,7 @@ export const restoreGuestSession = (isAuthenticated, user, currentConversation, 
         ...prev,
         conversationContext: {
           ...conversationContext,
-          state: conversationContext.state || STATES_FOR_GUEST.WELCOME
+          state: conversationContext.state || STATES.WELCOME
         }
       }));
     }
