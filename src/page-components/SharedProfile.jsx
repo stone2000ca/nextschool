@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { School as SchoolEntity, User } from '@/lib/entities';
+import { User } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 import { fetchSharedProfile } from '@/lib/api/sessions';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -41,8 +42,8 @@ export default function SharedProfile() {
           const matchedSchoolIds = Array.isArray(matchedIds) ? matchedIds : [];
           
           if (matchedSchoolIds.length > 0) {
-            const schoolData = await SchoolEntity.filter({
-              id: { $in: matchedSchoolIds.slice(0, 5) }
+            const schoolData = await fetchSchools({
+              ids: matchedSchoolIds.slice(0, 5)
             });
             setSchools(schoolData);
           }
@@ -58,8 +59,8 @@ export default function SharedProfile() {
             id: chatSession.user_id
           });
           if (user.length > 0 && user[0].shortlist) {
-            const shortlistedData = await SchoolEntity.filter({
-              id: { $in: user[0].shortlist }
+            const shortlistedData = await fetchSchools({
+              ids: user[0].shortlist
             });
             setShortlistedSchools(shortlistedData);
           }

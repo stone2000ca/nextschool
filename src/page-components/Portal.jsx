@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from 'next/link';
 import { Search, Building2, ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { School } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 import Navbar from "@/components/navigation/Navbar";
 
 // --- T-SP-006: Fuzzy normalization helpers ---
@@ -53,7 +53,7 @@ export default function Portal() {
     setLoading(true);
     try {
       // Fetch a broad set and score client-side for fuzzy matching
-      const allSchools = await School.list('-updated_date', undefined, 500);
+      const allSchools = await fetchSchools({ sort: '-updated_date', limit: 500 });
       const norm = normalize(q);
       const scored = allSchools
         .filter(s => {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { Lock } from 'lucide-react';
-import { School } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
 import { Button } from "@/components/ui/button";
 import MessageBubble from '@/components/chat/MessageBubble';
@@ -91,9 +91,9 @@ const ChatPanel = forwardRef(function ChatPanel({
       onViewSchoolDetail(school);
     } else {
       try {
-        let results = await School.filter({ slug });
+        let results = await fetchSchools({ slug });
         if (!results || results.length === 0) {
-          results = await School.filter({ name: { $regex: slug.replace(/-/g, ' '), $options: 'i' } });
+          results = await fetchSchools({ search: slug.replace(/-/g, ' ') });
         }
         if (results && results.length > 0) {
           onViewSchoolDetail(results[0]);

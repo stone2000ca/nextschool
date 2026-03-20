@@ -13,7 +13,8 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ConversationState, School } from '@/lib/entities';
+import { ConversationState } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 import {
   fetchConversations as apiFetchConversations,
   createConversation as apiCreateConversation,
@@ -180,7 +181,7 @@ export function useConversationState({
       if (Array.isArray(restored) && restored.length > 0) {
         // If array of IDs, fetch full School records
         if (typeof restored[0] === 'string') {
-          const fullSchools = await School.filter({ id: { $in: restored } });
+          const fullSchools = await fetchSchools({ ids: restored });
           setSchools(fullSchools);
         } else {
           // Already full objects

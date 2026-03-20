@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PhotoCandidate, School } from '@/lib/entities';
+import { PhotoCandidate } from '@/lib/entities';
+import { updateSchool } from '@/lib/api/schools';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, ImagePlus, ExternalLink, Camera, Loader2, X } from 'lucide-react';
@@ -60,13 +61,13 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
       });
 
       if (approvedAs === 'headerPhoto') {
-        await School.update(school.id, { header_photo_url: candidate.image_url });
+        await updateSchool(school.id, { header_photo_url: candidate.image_url });
         onUpdate && onUpdate('header_photo_url', candidate.image_url);
       } else {
         const gallery = Array.isArray(school.photo_gallery) ? school.photo_gallery : [];
         if (!gallery.includes(candidate.image_url)) {
           const updated = [...gallery, candidate.image_url];
-          await School.update(school.id, { photo_gallery: updated });
+          await updateSchool(school.id, { photo_gallery: updated });
           onUpdate && onUpdate('photo_gallery', updated);
         }
       }

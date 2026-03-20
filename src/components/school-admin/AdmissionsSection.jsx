@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { School } from '@/lib/entities';
+import { updateSchool } from '@/lib/api/schools';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar, Plus, X, Loader2 } from 'lucide-react';
@@ -41,7 +41,7 @@ export default function AdmissionsSection({ school, onUpdate }) {
     setSavingField(field);
     try {
       const updateData = { [field]: value };
-      await School.update(school.id, updateData);
+      await updateSchool(school.id, updateData);
       onUpdate && onUpdate(field, value);
       setTimeout(() => setSavingField(null), 1500);
     } catch (error) {

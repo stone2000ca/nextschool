@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { School } from '@/lib/entities';
+import { updateSchool } from '@/lib/api/schools';
 import { invokeFunction } from '@/lib/functions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,9 +26,9 @@ export default function PhotosMediaSection({ school, onUpdate }) {
       const { file_url } = await invokeFunction('uploadFile', { file });
       
       if (field === 'logoUrl') {
-        await School.update(school.id, { logo_url: file_url });
+        await updateSchool(school.id, { logo_url: file_url });
       } else if (field === 'headerPhotoUrl') {
-        await School.update(school.id, { header_photo_url: file_url });
+        await updateSchool(school.id, { header_photo_url: file_url });
       }
       
       onUpdate && onUpdate(field, file_url);
@@ -49,7 +49,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
     try {
       const { file_url } = await invokeFunction('uploadFile', { file });
       const newGallery = [...(school?.photo_gallery || []), file_url];
-      await School.update(school.id, { photo_gallery: newGallery });
+      await updateSchool(school.id, { photo_gallery: newGallery });
       onUpdate && onUpdate('photo_gallery', newGallery);
       toast.success('Photo added to gallery');
       recalculateScore();
@@ -64,14 +64,14 @@ export default function PhotosMediaSection({ school, onUpdate }) {
   const handleRemovePhoto = async (field, url) => {
     try {
       if (field === 'logoUrl') {
-        await School.update(school.id, { logo_url: null });
+        await updateSchool(school.id, { logo_url: null });
         onUpdate && onUpdate('logo_url', null);
       } else if (field === 'headerPhotoUrl') {
-        await School.update(school.id, { header_photo_url: null });
+        await updateSchool(school.id, { header_photo_url: null });
         onUpdate && onUpdate('header_photo_url', null);
       } else if (field === 'gallery') {
         const newGallery = school.photo_gallery.filter(u => u !== url);
-        await School.update(school.id, { photo_gallery: newGallery });
+        await updateSchool(school.id, { photo_gallery: newGallery });
         onUpdate && onUpdate('photo_gallery', newGallery);
       }
       toast.success('Photo removed');
@@ -93,7 +93,7 @@ export default function PhotosMediaSection({ school, onUpdate }) {
     }
 
     try {
-      await School.update(school.id, updateData);
+      await updateSchool(school.id, updateData);
       recalculateScore();
     } catch (error) {
       console.error('Failed to save:', error);

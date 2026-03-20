@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { School } from '@/lib/entities';
+import { updateSchool } from '@/lib/api/schools';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -82,7 +82,7 @@ export default function EditProfileForm({ school, onUpdate }) {
 
     saveTimeouts.current[field] = setTimeout(async () => {
       try {
-        await School.update(school.id, { [field]: value });
+        await updateSchool(school.id, { [field]: value });
         setSavingField(null);
         setSavedField(field);
         setTimeout(() => setSavedField(null), 2000);
