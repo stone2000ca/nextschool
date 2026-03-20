@@ -1342,6 +1342,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         if (familyBrief.schoolTypePreferences?.length > 0 && (!conversationFamilyProfile.school_type_label)) {
           briefToProfile.school_type_label = familyBrief.schoolTypePreferences.join(', ');
         }
+        if (familyBrief.pronoun && !conversationFamilyProfile.child_pronoun) briefToProfile.child_pronoun = familyBrief.pronoun;
         if (Object.keys(briefToProfile).length > 0) {
           Object.assign(conversationFamilyProfile, briefToProfile);
           // Persist to DB if profile has an id
