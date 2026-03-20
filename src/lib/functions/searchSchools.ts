@@ -5,6 +5,7 @@
 // S112-WC1: F7 P0 Fix - Religious & gender filters now enforced in relaxed fallback pass
 
 import { School, SearchLog } from '@/lib/entities-server'
+import { getAdminClient } from '@/lib/supabase/admin'
 
 const TIMEOUT_MS = 25000;
 
@@ -209,28 +210,8 @@ async function performSearch(payload: any) {
     console.log(`[T045] Using orchestrator-resolved coords: ${finalLat}, ${finalLng}`);
   }
 
-  let allSchools: any[] = [];
-  try {
-    allSchools = await School.filter({}, undefined, 1000);
-    if (allSchools.length === 1000) {
-      console.warn('[searchSchools] WARNING: School count hit limit (1000). Results may be incomplete.');
-    }
-  } catch (filterError: any) {
-    console.error('[searchSchools] School.filter failed:', filterError.message);
-    return {
-      schools: [],
-      total: 0,
-      returned: 0,
-      edgeCaseMessage: 'School data could not be loaded. Please try again.',
-      error: 'db_fetch_failed'
-    };
-  }
-  let schools = allSchools.filter((s: any) => s.status === 'active');
-
-  console.log(`[FILTER STAGE] Initial active schools: ${schools.length}`);
-
-  let locationFiltered = schools;
-
+  // ─── DB-level location filtering ─────────────────────────────────────
+  // Push city/province filters to the database to avoid full table scan.
   let aliasedCities: string[] = [];
   let aliasedProvinces: string[] = [];
   const aliasKey = (region || city || '').toLowerCase().trim();
@@ -241,79 +222,132 @@ async function performSearch(payload: any) {
     console.log(`[S151] Region alias matched: "${aliasKey}" -> ${aliasedCities.length} cities`);
   }
 
-  if (aliasedCities.length > 0) {
-    locationFiltered = locationFiltered.filter((s: any) =>
-      aliasedCities.some(c => s.city?.toLowerCase() === c.toLowerCase())
-    );
-  } else if (aliasedProvinces.length > 0) {
-    locationFiltered = locationFiltered.filter((s: any) => {
-      if (!s.province_state) return false;
-      const schoolPS = s.province_state.toLowerCase();
-      return aliasedProvinces.some(p => schoolPS === p.toLowerCase());
-    });
-  }
+  let locationFiltered: any[] = [];
+  const searchStartTime = Date.now();
 
-  if (city && aliasedCities.length === 0) {
-    const cityLower = city.trim().toLowerCase();
-    let cityMatches = locationFiltered.filter((s: any) =>
-      s.city && s.city.toLowerCase() === cityLower
-    );
-    if (cityMatches.length === 0) {
-      cityMatches = locationFiltered.filter((s: any) =>
-        s.city && s.city.toLowerCase().includes(cityLower)
-      );
-    }
-    if (cityMatches.length === 0 && (resolvedLat || finalLat)) {
-      console.log(`[CITY FILTER] Falling back to coordinate-based with 75km cap`);
-      locationFiltered = locationFiltered.filter((s: any) => {
-        if (!s.lat || !s.lng) return false;
-        const dist = calculateDistance(finalLat, finalLng, s.lat, s.lng);
-        return dist <= 75;
-      });
-    } else {
-      locationFiltered = cityMatches;
-    }
-    console.log(`[CITY FILTER] city="${city}" → ${locationFiltered.length} schools`);
-  }
+  try {
+    const db = getAdminClient().from('schools') as any;
+    let query = db.select('*').eq('status', 'active');
 
-  if (provinceState && provinceState.trim() && aliasedProvinces.length === 0) {
-    const psUpper = provinceState.toUpperCase().trim();
-    const fullProvinceName = provinceAbbreviations[psUpper] || stateAbbreviations[psUpper];
-    const normalizedProvince = fullProvinceName || toTitleCase(provinceState.trim());
-    const provinceRegex = new RegExp(`^${normalizedProvince}$`, 'i');
-    locationFiltered = locationFiltered.filter((s: any) => {
-      const schoolPS = s.province_state?.toUpperCase().trim();
-      const expandedSchoolPS = provinceAbbreviations[schoolPS] || stateAbbreviations[schoolPS] || s.province_state;
-      return provinceRegex.test(expandedSchoolPS) || provinceRegex.test(s.province_state);
-    });
-  }
+    // Determine if we can push a WHERE clause to the DB
+    const canFilterByCity = aliasedCities.length > 0 || (city && aliasedCities.length === 0);
+    const canFilterByProvince = aliasedProvinces.length > 0 || (provinceState && provinceState.trim());
 
-  if (region && !aliasedCities.length && !aliasedProvinces.length && !city) {
-    const regionMatched = locationFiltered.filter((s: any) => s.region === region);
-    if (regionMatched.length > 0) {
-      locationFiltered = regionMatched;
+    if (aliasedCities.length > 0) {
+      // Region alias with known cities — use .in() for exact DB-level filtering
+      query = query.in('city', aliasedCities);
+      const { data, error } = await query.limit(500);
+      if (error) throw error;
+      locationFiltered = data || [];
+      console.log(`[DB FILTER] aliasedCities .in() → ${locationFiltered.length} schools`);
+    } else if (city) {
+      // Direct city match — try exact match at DB level via ilike
+      const { data, error } = await query.ilike('city', city.trim()).limit(500);
+      if (error) throw error;
+      locationFiltered = data || [];
+      console.log(`[DB FILTER] city ilike "${city}" → ${locationFiltered.length} schools`);
+
+      // Fallback: partial match
+      if (locationFiltered.length === 0) {
+        const { data: partialData, error: partialError } = await db.select('*').eq('status', 'active').ilike('city', `%${city.trim()}%`).limit(500);
+        if (!partialError && partialData) locationFiltered = partialData;
+        console.log(`[DB FILTER] city partial ilike "%${city}%" → ${locationFiltered.length} schools`);
+      }
+
+      // Fallback: coordinate-based (requires loading broader set)
+      if (locationFiltered.length === 0 && (resolvedLat || finalLat)) {
+        console.log(`[CITY FILTER] Falling back to coordinate-based with 75km cap`);
+        // Load schools from the broader province/country if available, else all active
+        let geoQuery = db.select('*').eq('status', 'active');
+        if (provinceState) {
+          const psUpper = provinceState.toUpperCase().trim();
+          const fullPN = provinceAbbreviations[psUpper] || stateAbbreviations[psUpper] || toTitleCase(provinceState.trim());
+          geoQuery = geoQuery.or(`province_state.ilike.${fullPN},province_state.ilike.${psUpper}`);
+        } else if (country) {
+          geoQuery = geoQuery.eq('country', country);
+        }
+        const { data: geoData, error: geoError } = await geoQuery.limit(1000);
+        if (!geoError && geoData) {
+          locationFiltered = geoData.filter((s: any) => {
+            if (!s.lat || !s.lng) return false;
+            return calculateDistance(finalLat, finalLng, s.lat, s.lng) <= 75;
+          });
+        }
+        console.log(`[DB FILTER] geo fallback → ${locationFiltered.length} schools`);
+      }
+    } else if (aliasedProvinces.length > 0) {
+      // Province alias
+      query = query.in('province_state', aliasedProvinces);
+      const { data, error } = await query.limit(500);
+      if (error) throw error;
+      locationFiltered = data || [];
+      console.log(`[DB FILTER] aliasedProvinces .in() → ${locationFiltered.length} schools`);
+    } else if (provinceState && provinceState.trim()) {
+      const psUpper = provinceState.toUpperCase().trim();
+      const fullProvinceName = provinceAbbreviations[psUpper] || stateAbbreviations[psUpper];
+      const normalizedProvince = fullProvinceName || toTitleCase(provinceState.trim());
+      const { data, error } = await query.or(`province_state.ilike.${normalizedProvince},province_state.ilike.${psUpper}`).limit(500);
+      if (error) throw error;
+      locationFiltered = data || [];
+      console.log(`[DB FILTER] province "${normalizedProvince}" → ${locationFiltered.length} schools`);
+    } else if (region) {
+      // Try region field match
+      const { data, error } = await query.eq('region', region).limit(500);
+      if (error) throw error;
+      locationFiltered = data || [];
+      if (locationFiltered.length === 0 && finalLat && finalLng) {
+        console.log(`[S151-WC3] region="${region}" matched 0 schools - falling back to geo radius`);
+        const { data: allData, error: allError } = await db.select('*').eq('status', 'active').limit(1000);
+        if (!allError && allData) {
+          locationFiltered = allData.filter((s: any) => {
+            if (!s.lat || !s.lng) return false;
+            return calculateDistance(finalLat, finalLng, s.lat, s.lng) <= 75;
+          });
+        }
+      }
+      console.log(`[DB FILTER] region "${region}" → ${locationFiltered.length} schools`);
+    } else if (country) {
+      const { data, error } = await query.eq('country', country).limit(500);
+      if (error) throw error;
+      locationFiltered = data || [];
+      console.log(`[DB FILTER] country "${country}" → ${locationFiltered.length} schools`);
     } else if (finalLat && finalLng) {
-      console.log(`[S151-WC3] region="${region}" matched 0 schools - falling back to geo radius`);
-      locationFiltered = locationFiltered.filter((s: any) => {
+      // No location text — use geo radius
+      const { data, error } = await db.select('*').eq('status', 'active').limit(1000);
+      if (error) throw error;
+      locationFiltered = (data || []).filter((s: any) => {
         if (!s.lat || !s.lng) return false;
-        return calculateDistance(finalLat, finalLng, s.lat, s.lng) <= 75;
+        return calculateDistance(finalLat, finalLng, s.lat, s.lng) <= 100;
       });
+      console.log(`[DB FILTER] geo-only 100km radius → ${locationFiltered.length} schools`);
+    } else {
+      // Last resort: load all active (same as before but shouldn't normally reach here)
+      const { data, error } = await db.select('*').eq('status', 'active').limit(1000);
+      if (error) throw error;
+      locationFiltered = data || [];
+      console.log(`[DB FILTER] no location filter, loaded ${locationFiltered.length} active schools`);
     }
-  }
-  if (country) {
-    locationFiltered = locationFiltered.filter((s: any) => s.country === country);
+  } catch (filterError: any) {
+    console.error('[searchSchools] DB query failed:', filterError.message);
+    return {
+      schools: [],
+      total: 0,
+      returned: 0,
+      edgeCaseMessage: 'School data could not be loaded. Please try again.',
+      error: 'db_fetch_failed'
+    };
   }
 
-  if (locationFiltered.length === schools.length && finalLat && finalLng) {
-    console.log('[S161-WC1-FIX-B] No location filter applied - enforcing 100km safety radius');
+  // Apply safety radius if no location narrowing occurred and we have coordinates
+  if (locationFiltered.length > 200 && finalLat && finalLng) {
+    console.log('[S161-WC1-FIX-B] Large result set — enforcing 100km safety radius');
     locationFiltered = locationFiltered.filter((s: any) => {
       if (!s.lat || !s.lng) return false;
-      const dist = calculateDistance(finalLat, finalLng, s.lat, s.lng);
-      return dist <= 100;
+      return calculateDistance(finalLat, finalLng, s.lat, s.lng) <= 100;
     });
   }
 
-  console.log(`[FILTER STAGE] After location filter: ${locationFiltered.length}`);
+  console.log(`[FILTER STAGE] After location filter: ${locationFiltered.length} (DB query took ${Date.now() - searchStartTime}ms)`);
 
   let hardFiltered = locationFiltered.filter((school: any) => {
     const parsedMinGrade = minGrade !== undefined && minGrade !== null ? parseInt(minGrade) : null;
@@ -456,7 +490,7 @@ async function performSearch(payload: any) {
     return { school, score };
   });
 
-  schools = scored.sort((a: any, b: any) => b.score - a.score).map((s: any) => { s.school._matchScore = s.score; return s.school; });
+  let schools = scored.sort((a: any, b: any) => b.score - a.score).map((s: any) => { s.school._matchScore = s.score; return s.school; });
 
   if (finalLat && finalLng) {
     schools = schools.map((school: any) => {
@@ -548,41 +582,27 @@ async function performSearch(payload: any) {
     relaxedMatch: isRelaxedPass
   }));
 
-  try {
-    const topResultsForLog = condensedSchools.slice(0, 10).map((s: any, idx: number) => ({
+  // Fire-and-forget: SearchLog write should not block the response
+  SearchLog.create({
+    query: searchQuery || `Search for grade ${minGrade} in ${city || region || 'unspecified'}`,
+    input_filters: {
+      city, provinceState, region, minGrade, maxGrade, maxTuition,
+      curriculum, specializations, schoolTypeLabel, maxDistanceKm,
+      dealbreakers: payload.dealbreakers || familyProfile?.dealbreakers || []
+    },
+    total_schools_passing_filters: originalFilteredCount,
+    top_results: condensedSchools.slice(0, 10).map((s: any) => ({
       schoolName: s.name,
       score: scored.find((sc: any) => sc.school.id === s.id)?.score || 0,
       reasons: [
         s.distance_km ? `${s.distance_km.toFixed(1)}km away` : null,
         s.tuition && maxTuition && s.tuition <= maxTuition ? 'Within budget' : null,
         s.curriculum?.includes(curriculum) ? `${curriculum} curriculum` : null,
-        s.specializations?.some((spec: string) => specializations?.includes(spec)) ? 'Matches specializations' : null
       ].filter(Boolean)
-    }));
-
-    await SearchLog.create({
-      query: searchQuery || `Search for grade ${minGrade} in ${city || region || 'unspecified'}`,
-      input_filters: {
-        city,
-        provinceState,
-        region,
-        minGrade,
-        maxGrade,
-        maxTuition,
-        curriculum,
-        specializations,
-        schoolTypeLabel,
-        maxDistanceKm,
-        dealbreakers: payload.dealbreakers || familyProfile?.dealbreakers || []
-      },
-      total_schools_passing_filters: originalFilteredCount,
-      top_results: topResultsForLog,
-      conversation_id: conversationId,
-      user_id: userId
-    });
-  } catch (logError) {
-    console.error('Failed to create SearchLog:', logError);
-  }
+    })),
+    conversation_id: conversationId,
+    user_id: userId
+  }).catch((logError: any) => console.error('Failed to create SearchLog:', logError));
 
   return {
     schools: condensedSchools,

@@ -1509,7 +1509,20 @@ export default function Consultant() {
       <LoadingOverlay
         isVisible={showLoadingOverlay}
         familyBrief={familyBrief}
-        onTransitionComplete={() => { setShowLoadingOverlay(false); setBriefStatus(null); setIsTransitioning(true); }}
+        onTransitionComplete={() => {
+          setShowLoadingOverlay(false);
+          setIsTransitioning(true);
+          // FIX-RESULTS-TIMEOUT: If brief was confirmed and we have familyBrief data,
+          // preserve briefStatus and auto-retry the guided intro message so context is not lost.
+          if (briefStatus === 'confirmed' && familyBrief) {
+            // Re-send the synthetic message to retry the RESULTS phase with full context
+            setTimeout(() => {
+              handleSendMessage('__GUIDED_INTRO_COMPLETE__', null, null);
+            }, 100);
+          } else {
+            setBriefStatus(null);
+          }
+        }}
       />
 
       {(isIntakePhase && !showSchoolGrid) ? (
