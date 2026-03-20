@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Heart, Navigation, Check, AlertTriangle, X, Circle, Lock, Scale, EyeOff, DollarSign, CalendarDays } from "lucide-react";
+import { MapPin, Heart, Navigation, Check, AlertTriangle, X, Circle, Lock, Scale, EyeOff, DollarSign } from "lucide-react";
+import { formatEventDate } from '@/components/utils/eventConstants';
 import { HeaderPhotoDisplay, LogoDisplay } from '@/components/schools/HeaderPhotoHelper';
 
 // =============================================================================
@@ -312,7 +313,7 @@ function FlexButton({ rowId, state, onToggle, totalActive }) {
 // =============================================================================
 // T-RES-004: SchoolCard with collapsed / expanded states
 // =============================================================================
-export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0, accentColor = "#0D9488", familyProfile = null, priorityOverrides = {}, onPriorityToggle = null, isVisited = false, hasUpcomingEvent = false }) {
+export default function SchoolCard({ school, onViewDetails, onToggleShortlist, isShortlisted, index = 0, accentColor = "#0D9488", familyProfile = null, priorityOverrides = {}, onPriorityToggle = null, isVisited = false, hasUpcomingEvent = false, nextEvent = null, onEventClick = null }) {
   function formatGrade(grade) {
     if (grade === null || grade === undefined) return '';
     const num = Number(grade);
@@ -369,18 +370,29 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
             </div>
           );
         })()}
-        {/* Visited badge — offset below checkmark badge to avoid overlap */}
-        {isVisited && (
-          <div className="absolute top-8 right-2 flex items-center gap-1 bg-teal-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
+        {/* E51-S1B: Event pill — teal dot + "Event" label, click opens slideout */}
+        {hasUpcomingEvent && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onEventClick?.(nextEvent); }}
+            className="absolute bottom-2 left-2 group/event flex items-center gap-1.5 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm hover:shadow-md transition-shadow max-w-[160px] cursor-pointer"
+            title={nextEvent ? `${nextEvent.title || 'Event'} — ${formatEventDate(nextEvent.date)}` : 'Upcoming event'}
+          >
+            <span className="h-2 w-2 rounded-full bg-teal-500 flex-shrink-0" />
+            <span className="truncate whitespace-nowrap">Event</span>
+          </button>
+        )}
+        {/* E51-S1B: Visited indicator — bottom-left muted slate tag (only if no event pill) */}
+        {isVisited && !hasUpcomingEvent && (
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-slate-500/80 backdrop-blur-sm rounded-full px-2 py-0.5 text-[11px] font-medium text-slate-100 shadow-sm">
             <Check className="h-3 w-3" />
             Visited
           </div>
         )}
-        {/* E16b-005: Has Upcoming Events badge */}
-        {hasUpcomingEvent && (
-          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-amber-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
-            <CalendarDays className="h-3 w-3" />
-            Events
+        {/* Visited indicator — top area when event pill occupies bottom-left */}
+        {isVisited && hasUpcomingEvent && (
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-500/80 backdrop-blur-sm rounded-full px-2 py-0.5 text-[11px] font-medium text-slate-100 shadow-sm">
+            <Check className="h-3 w-3" />
+            Visited
           </div>
         )}
       </div>

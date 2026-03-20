@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import ComparisonView from '@/components/schools/ComparisonView';
 import SchoolDetailPanel from '@/components/schools/SchoolDetailPanel';
 import SchoolGrid from '@/components/schools/SchoolGrid';
 import SchoolWebsitePane from '@/components/schools/SchoolWebsitePane';
 import ResearchNotepad from '@/components/ui/ResearchNotepad';
+import EventSlideout from '@/components/schools/EventSlideout';
 import { buildTiers } from '@/components/utils/tierEngine';
 import { STATES } from '@/lib/stateMachineConfig';
 
@@ -34,6 +35,14 @@ export default function ResultsPhaseContent({
   useEffect(() => {
     setDetailTab(deepDiveAnalysis ? 'notepad' : 'overview');
   }, [selectedSchool?.id]);
+
+  // E51-S1B: Event slideout state
+  const [activeEvent, setActiveEvent] = useState(null);
+  const [activeEventSchoolName, setActiveEventSchoolName] = useState('');
+  const handleEventClick = (evt, school) => {
+    setActiveEvent(evt);
+    setActiveEventSchoolName(school?.name || '');
+  };
   // E41-S8: Comparison renders inline
   if (leftPanelMode === 'comparison' && comparisonData) {
     return (
@@ -250,8 +259,17 @@ export default function ResultsPhaseContent({
             extraSchoolsHasMore={extraSchoolsHasMore}
             extraSchoolsError={extraSchoolsError}
             userLocationAvailable={!!(conversationContext?.resolvedLat || userLocation?.lat)}
+            onEventClick={handleEventClick}
           />
         </div>
+        {/* E51-S1B: Event Slideout */}
+        {activeEvent && (
+          <EventSlideout
+            event={activeEvent}
+            schoolName={activeEventSchoolName}
+            onClose={() => { setActiveEvent(null); setActiveEventSchoolName(''); }}
+          />
+        )}
       </div>
     );
   }

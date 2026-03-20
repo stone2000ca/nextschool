@@ -2,9 +2,14 @@ import { useState, useEffect } from 'react';
 import { X, Heart } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import SchoolDossierCard from '@/components/chat/SchoolDossierCard';
+import EventSlideout from '@/components/schools/EventSlideout';
+import { fetchSchoolEvents } from '@/lib/api/entities-api';
 
 export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSchool, familyProfile, schoolAnalyses, artifactCache, consultantName, onSendMessage, isPremiumUser, onDossierExpandChange, onConfirmDeepDive, pendingDeepDiveSchoolIds, autoExpandSchoolId, onClearAutoExpand, schoolsWithDeepDive }) {
   const [expandedSchoolId, setExpandedSchoolId] = useState(null);
+  const [schoolEventsMap, setSchoolEventsMap] = useState(new Map());
+  const [activeEvent, setActiveEvent] = useState(null);
+  const [activeEventSchool, setActiveEventSchool] = useState(null);
 
   // E30-012 + E30-013: Auto-expand school after deep dive
   useEffect(() => {
@@ -13,6 +18,30 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
       onClearAutoExpand?.();
     }
   }, [autoExpandSchoolId]);
+
+  // E51-S1B: Fetch upcoming events for shortlisted schools
+  const shortlistKey = shortlist.map(s => s.id).sort().join(',');
+  useEffect(() => {
+    if (!shortlistKey) return;
+    const today = new Date().toISOString();
+    fetchSchoolEvents({ is_active: true })
+      .then(events => {
+        const evMap = new Map();
+        for (const ev of events) {
+          if (!ev.date || ev.date < today) continue;
+          if (!evMap.has(ev.school_id)) evMap.set(ev.school_id, []);
+          evMap.get(ev.school_id).push(ev);
+        }
+        for (const [, arr] of evMap) arr.sort((a, b) => a.date.localeCompare(b.date));
+        setSchoolEventsMap(evMap);
+      })
+      .catch(() => {});
+  }, [shortlistKey]);
+
+  const handleEventClick = (evt, school) => {
+    setActiveEvent(evt);
+    setActiveEventSchool(school);
+  };
 
   return (
     <div className="h-full flex flex-col overflow-hidden" style={{ background: '#1E1E30', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
@@ -59,13 +88,22 @@ export default function ShortlistPanel({ shortlist, onClose, onRemove, onViewSch
                 isExpanded={expandedSchoolId === school.id}
                 onToggleExpand={() => setExpandedSchoolId(prev => prev === school.id ? null : school.id)}
                 schoolsWithDeepDive={schoolsWithDeepDive}
+                schoolEvents={schoolEventsMap.get(school.id) || []}
+                onEventClick={handleEventClick}
               />
             ))}
           </div>
         )}
-
-
       </ScrollArea>
+
+      {/* E51-S1B: Event Slideout */}
+      {activeEvent && (
+        <EventSlideout
+          event={activeEvent}
+          schoolName={activeEventSchool?.name || ''}
+          onClose={() => { setActiveEvent(null); setActiveEventSchool(null); }}
+        />
+      )}
     </div>
   );
 }
