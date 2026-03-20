@@ -4,6 +4,7 @@
 // Last Modified: 2026-03-03
 
 import { School } from '@/lib/entities-server'
+import { embedSchool } from '@/lib/ai/embedHooks'
 import Papa from 'papaparse'
 
 export async function bulkImportSchoolsLogic(params: { fileUrl: string }) {
@@ -28,8 +29,8 @@ export async function bulkImportSchoolsLogic(params: { fileUrl: string }) {
     try {
       if (!row.name || !row.slug) { errors.push({ slug: row.slug, error: 'Missing name or slug' }); continue; }
       const existing = await School.filter({ slug: row.slug });
-      if (existing.length > 0) { await School.update(existing[0].id, row); updated++; }
-      else { await School.create(row); created++; }
+      if (existing.length > 0) { await School.update(existing[0].id, row); updated++; embedSchool(existing[0].id, row); }
+      else { const newSchool = await School.create(row); created++; embedSchool(newSchool.id, row); }
       await new Promise(r => setTimeout(r, 50));
     } catch (err: any) { errors.push({ slug: row.slug, error: err.message }); }
   }

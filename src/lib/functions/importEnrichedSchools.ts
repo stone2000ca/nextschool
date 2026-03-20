@@ -4,6 +4,7 @@
 // Last Modified: 2026-03-16
 
 import { School, ImportRun } from '@/lib/entities-server'
+import { embedSchool } from '@/lib/ai/embedHooks'
 import Papa from 'papaparse'
 
 const BOOLEAN_FIELDS = ['boarding_available', 'is_bilingual', 'is_faith_based', 'uniform_required', 'financial_aid_available', 'interview_required', 'ssat_required'];
@@ -59,8 +60,8 @@ async function processChunk(fileUrl: string, filename: string, chunkIndex: numbe
       if (seenKeysInFile.has(key)) { skippedDupes++; continue; }
       seenKeysInFile.add(key);
       const existing = await findExisting(school);
-      if (existing) { await School.update(existing.id, school); updated++; }
-      else { await School.create(school); created++; }
+      if (existing) { await School.update(existing.id, school); updated++; embedSchool(existing.id, school); }
+      else { const newSchool = await School.create(school); created++; embedSchool(newSchool.id, school); }
       if ((i + 1) % 10 === 0) await new Promise(r => setTimeout(r, 100));
     } catch (err: any) { rowErrors.push(`Row ${i + 1}: ${err.message}`); }
   }
