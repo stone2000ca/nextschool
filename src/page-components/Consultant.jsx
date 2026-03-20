@@ -405,6 +405,7 @@ export default function Consultant() {
               researchNotes={researchNotes} setResearchNotes={setResearchNotes}
               handleSaveNotes={handleSaveNotes} messages={messages}
               showSchoolGrid={ui.showSchoolGrid}
+              detailTab={ui.detailTab} setDetailTab={ui.setDetailTab}
             />
           </main>
 
