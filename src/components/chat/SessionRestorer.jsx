@@ -577,45 +577,7 @@ export async function restoreMostRecentConversation(
 }
 
 export const restoreGuestSession = (isAuthenticated, user, currentConversation, setMessages, setSelectedConsultant, setCurrentConversation, _unused) => {
-  const guestData = localStorage.getItem('guestConversationData');
-  // FIX-RESULTS-VIEW: Removed `isAuthenticated` guard — this function restores data
-  // saved WHILE the user was a guest. It must work when called after the user signs in
-  // through the login gate modal and returns to the page.
-  if (!guestData) return;
-
-  try {
-    const {
-      messages,
-      consultant,
-      conversationContext,
-      familyProfile,
-      briefStatus,
-      extractedEntitiesData,
-      sessionId
-    } = JSON.parse(guestData);
-
-    // Restore messages
-    setMessages(messages || []);
-
-    // Restore consultant if not already selected
-    if (consultant) {
-      setSelectedConsultant(consultant);
-    }
-
-    // Restore conversation context
-    if (conversationContext) {
-      setCurrentConversation(prev => ({
-        ...prev,
-        conversationContext: {
-          ...conversationContext,
-          state: conversationContext.state || STATES.WELCOME
-        }
-      }));
-    }
-
-    // Clear localStorage after restore
-    localStorage.removeItem('guestConversationData');
-  } catch (error) {
-    console.error('Failed to restore guest session:', error);
-  }
+  // Phase 5 cleanup: Guest conversation data is no longer stored in localStorage.
+  // The login gate is a non-blocking overlay — React state (messages, consultant,
+  // conversation context) remains intact while the user signs in, so no bridging needed.
 };
