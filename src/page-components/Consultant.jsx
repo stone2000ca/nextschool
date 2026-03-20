@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 import { useAuth } from '@/lib/AuthContext';
-import { School, SchoolJourney, FamilyJourney, ResearchNote, SchoolInquiry } from '@/lib/entities';
+import { School, SchoolJourney, FamilyJourney, SchoolInquiry } from '@/lib/entities';
+import { fetchResearchNotes, createResearchNote, updateResearchNote } from '@/lib/api/entities-api';
 import { updateConversation } from '@/lib/api/conversations';
 import { invokeFunction } from '@/lib/functions';
 import { STATES } from '@/lib/stateMachineConfig';
@@ -229,18 +230,18 @@ export default function Consultant() {
       setResearchNotes('');
       return;
     }
-    ResearchNote.filter({ user_id: user.id, school_id: selectedSchool.id }).then(results => {
+    fetchResearchNotes({ school_id: selectedSchool.id }).then(results => {
       setResearchNotes(results[0]?.notes || '');
     }).catch(() => setResearchNotes(''));
   }, [selectedSchool?.id, isAuthenticated, user?.id]);
 
   const handleSaveNotes = async () => {
     if (!selectedSchool?.id || !user?.id) return;
-    const existing = await ResearchNote.filter({ user_id: user.id, school_id: selectedSchool.id });
+    const existing = await fetchResearchNotes({ school_id: selectedSchool.id });
     if (existing.length > 0) {
-      await ResearchNote.update(existing[0].id, { notes: researchNotes, updated_at: new Date().toISOString() });
+      await updateResearchNote(existing[0].id, { notes: researchNotes, updated_at: new Date().toISOString() });
     } else {
-      await ResearchNote.create({ user_id: user.id, school_id: selectedSchool.id, notes: researchNotes, updated_at: new Date().toISOString() });
+      await createResearchNote({ school_id: selectedSchool.id, notes: researchNotes, updated_at: new Date().toISOString() });
     }
   };
 
