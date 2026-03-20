@@ -1256,13 +1256,17 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
       let context = conversationContext || {};
       let processMessage = message;
       const isConfirmBrief = message === '__CONFIRM_BRIEF__';
-      if (isConfirmBrief) {
+      // E47: __GUIDED_INTRO_COMPLETE__ sentinel — skip DISCOVERY+BRIEF, jump to RESULTS
+      const isGuidedIntroComplete = message === '__GUIDED_INTRO_COMPLETE__';
+      if (isConfirmBrief || isGuidedIntroComplete) {
         processMessage = 'show me schools';
-        context.previousState = context.state || 'BRIEF';
+        context.previousState = context.state || (isGuidedIntroComplete ? 'WELCOME' : 'BRIEF');
         context.state = 'RESULTS';
         context.briefStatus = 'confirmed';
         briefStatus = 'confirmed'; // [E42-PERSIST] sync local var so persist gate fires
-        console.log('[FIX-C] __CONFIRM_BRIEF__ sentinel: skipping BRIEF, going directly to RESULTS');
+        console.log(isGuidedIntroComplete
+          ? '[E47] __GUIDED_INTRO_COMPLETE__ sentinel: skipping DISCOVERY+BRIEF, going directly to RESULTS'
+          : '[FIX-C] __CONFIRM_BRIEF__ sentinel: skipping BRIEF, going directly to RESULTS');
       }
 
       console.log('ORCH START', { 
@@ -1788,6 +1792,26 @@ Object.assign(context, safeUpdatedContext);
           resolvedLng: responseData.resolvedLng || workingProfile?.resolvedLng || null,
         };
         responseData.extractedEntities = extractionResult?.extractedEntities || {};
+
+        // E47: Override message with warm greeting when coming from guided intro
+        if (isGuidedIntroComplete && familyBrief) {
+          const pName = familyBrief.parentName || '';
+          const cName = familyBrief.childName || 'your child';
+          const gradeLabel = familyBrief.grade != null ? `Grade ${familyBrief.grade}` : '';
+          const loc = familyBrief.location || '';
+          const budgetLabel = familyBrief.budget ? `$${Number(familyBrief.budget).toLocaleString()}` : '';
+          const detailParts = [gradeLabel, loc ? `in ${loc}` : '', budgetLabel ? `a budget around ${budgetLabel}` : ''].filter(Boolean);
+          const detailLine = detailParts.join(', ');
+          const schoolCount = (responseData.schools || []).length;
+          const matchLine = schoolCount > 0
+            ? `I found ${schoolCount} school${schoolCount === 1 ? '' : 's'} that match${schoolCount === 1 ? 'es' : ''} — take a look!`
+            : "Let me search for the best matches...";
+          responseData.message = consultantName === 'Jackie'
+            ? `Got it, ${pName}! I have ${cName}'s details — ${detailLine}. ${matchLine}`
+            : `Noted, ${pName}. ${cName} — ${detailLine}. ${matchLine}`;
+          console.log('[E47] Warm greeting injected for guided intro completion');
+        }
+
         // E32-001: Validate and attach actions
         // Fast path returns pre-validated actions directly; normal path uses rawToolCalls
         if (!responseData.actions) {
