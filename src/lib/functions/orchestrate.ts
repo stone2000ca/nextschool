@@ -316,8 +316,8 @@ function resolveTransition(params) {
     }
     
     if (currentState === STATES.RESULTS && intentSignal === 'edit-criteria') {
-      console.log('[EDIT-CRITERIA] Allowing transition from RESULTS to BRIEF for edit-criteria');
-      return { nextState: STATES.BRIEF, sufficiency, flags: { ...flags, USER_INTENT_OVERRIDE: true }, briefStatus: 'editing', transitionReason: 'edit_criteria_from_results' };
+      console.log('[E41-S6] edit-criteria in RESULTS — staying in RESULTS for inline re-search');
+      return { nextState: STATES.RESULTS, sufficiency, flags: { ...flags, USER_INTENT_OVERRIDE: true }, transitionReason: 'edit_criteria_inline' };
     }
     if (selectedSchoolId && selectedSchoolId !== previousSchoolId) {
       return { nextState: STATES.DEEP_DIVE, sufficiency, flags, transitionReason: 'school_selected' };
@@ -1861,17 +1861,36 @@ Object.assign(context, safeUpdatedContext);
               })();
             }
 
-            // Re-invoke searchSchools with updated profile
-            const searchResult = await searchSchoolsLogic( {
-              familyProfile: workingProfile,
-              conversationId,
-              userId,
-              userLocation
-            });
-            if (searchResult.data?.schools?.length > 0) {
-              responseData.schools = searchResult.data.schools;
-              editCriteriaAction.payload.schools = searchResult.data.schools;
-              console.log('[E41-S6] Re-search returned', searchResult.data.schools.length, 'schools');
+            // Re-invoke searchSchools with updated profile — build proper search params
+            const reSearchParams: any = { limit: 50, familyProfile: workingProfile, conversationId, userId };
+            if (workingProfile?.locationArea) {
+              const locLower = workingProfile.locationArea.toLowerCase().trim();
+              const metroRegions = ['toronto', 'vancouver', 'montreal', 'calgary', 'ottawa', 'edmonton', 'winnipeg', 'hamilton'];
+              const regionAliases = ['gta', 'greater toronto area', 'lower mainland', 'metro vancouver', 'greater vancouver', 'toronto'];
+              if (metroRegions.includes(locLower) || regionAliases.includes(locLower)) {
+                reSearchParams.region = workingProfile.locationArea;
+              } else {
+                reSearchParams.city = workingProfile.locationArea;
+              }
+            }
+            if (workingProfile?.childGrade != null) {
+              const g = typeof workingProfile.childGrade === 'number' ? workingProfile.childGrade : parseInt(workingProfile.childGrade);
+              if (!isNaN(g)) { reSearchParams.minGrade = g; reSearchParams.maxGrade = g; }
+            }
+            if (workingProfile?.maxTuition) {
+              const t = typeof workingProfile.maxTuition === 'number' ? workingProfile.maxTuition : parseInt(workingProfile.maxTuition);
+              if (!isNaN(t)) reSearchParams.maxTuition = t;
+            }
+            if (userLocation?.lat && userLocation?.lng) {
+              reSearchParams.resolvedLat = userLocation.lat;
+              reSearchParams.resolvedLng = userLocation.lng;
+              reSearchParams.maxDistanceKm = workingProfile?.commuteToleranceMinutes ? Math.ceil(workingProfile.commuteToleranceMinutes / 2) : 75;
+            }
+            const searchResult = await searchSchoolsLogic(reSearchParams);
+            if (searchResult.schools?.length > 0) {
+              responseData.schools = searchResult.schools;
+              editCriteriaAction.payload.schools = searchResult.schools;
+              console.log('[E41-S6] Re-search returned', searchResult.schools.length, 'schools');
             }
           } catch (e) {
             console.error('[E41-S6] EDIT_CRITERIA re-search failed:', e.message);

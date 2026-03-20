@@ -219,12 +219,6 @@ export const useMessageHandler = ({
         throw new Error('Orchestration response contained no data');
       }
 
-      // Clear schools when criteria are being edited so re-matching happens on next BRIEF->RESULTS transition
-      if (response.data?.briefStatus === 'editing' || response.data?.conversationContext?.transitionReason === 'edit_criteria_from_results') {
-        console.log('[P0-BUG-FIX] Clearing schools for edit-criteria intent');
-        setSchools([]);
-      }
-
       console.log('[CARD DEBUG]', Object.keys(response.data || {}), response.data?.deepDiveAnalysis, response.data?.visitPrepKit);
 
       // T043: Update familyProfile live from orchestration response — merge to accumulate multi-turn data
@@ -615,7 +609,11 @@ export const useMessageHandler = ({
       for (const action of (response.data?.actions || [])) {
         switch (action.type) {
           case 'EDIT_CRITERIA':
-            // setSchools already fired above from response.data.schools — just trigger animation
+            // E41-S6: Update grid with refreshed schools from inline re-search
+            if (action.payload?.schools?.length > 0) {
+              setSchools(action.payload.schools);
+              resetSort();
+            }
             setSchoolsAnimKey(k => k + 1);
             break;
           case 'FILTER_SCHOOLS': {
