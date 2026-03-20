@@ -465,6 +465,65 @@ export const useMessageHandler = ({
           // to avoid stale/invalid values (e.g. 'Grade') stored on the profile before isInvalidLocation correction
           const safeLocationArea = response.data?.extractedEntities?.locationArea || extractedEntitiesData?.locationArea || profileForSession?.locationArea;
 
+          // E48-S3: Null guard — skip ChatSession create if user is not authenticated
+          let chatSessionResult = null;
+          if (!user?.id) {
+            console.warn('[E48-S3] Skipping ChatSession.create — user.id is falsy:', user);
+          } else {
+            // E48-S5: Check for existing ChatSession to prevent duplicates on criteria re-match
+            const existingChatSessionId = currentConversation?.conversation_context?.chatSessionId;
+            if (existingChatSessionId) {
+              // Second RESULTS for same conversation — update existing row
+              console.log('[E48-S5] Updating existing ChatSession:', existingChatSessionId);
+              await ChatSession.update(existingChatSessionId, {
+                matched_schools: JSON.stringify(matchedSchoolIds),
+                child_name: profileForSession?.childName,
+                child_grade: profileForSession?.childGrade,
+                location_area: safeLocationArea,
+                max_tuition: profileForSession?.maxTuition,
+                priorities: profileForSession?.priorities,
+                profile_name: profileName,
+                status: 'active',
+              });
+              chatSessionResult = { id: existingChatSessionId };
+            } else {
+              // First RESULTS — create new ChatSession
+              chatSessionResult = await ChatSession.create({
+                session_token: sessionId,
+                user_id: user.id,
+                family_profile_id: profileForSession?.id || null,
+                chat_history_id: chatHistoryRecord?.id || currentConversation?.id,
+                status: 'active',
+                consultant_selected: selectedConsultant,
+                child_name: profileForSession?.childName,
+                child_grade: profileForSession?.childGrade,
+                location_area: safeLocationArea,
+                max_tuition: profileForSession?.maxTuition,
+                priorities: profileForSession?.priorities,
+                matched_schools: JSON.stringify(matchedSchoolIds),
+                profile_name: profileName,
+                journey_id: null,
+              });
+              // E48-S5: Store chatSessionId in conversation_context to prevent duplicates
+              if (chatSessionResult?.id) {
+                updatedContext.chatSessionId = chatSessionResult.id;
+                setCurrentConversation(prev => ({
+                  ...prev,
+                  conversation_context: { ...(prev?.conversation_context || {}), chatSessionId: chatSessionResult.id },
+                }));
+              }
+            }
+
+            // Update URL with entity id (not sessionToken)
+            if (chatSessionResult?.id && typeof chatSessionResult.id === 'string') {
+              const newUrl = `/consultant?sessionId=${chatSessionResult.id}`;
+              window.history.replaceState({}, document.title, newUrl);
+              console.log('[SESSION] ChatSession id:', chatSessionResult.id);
+            } else {
+              console.warn('[WARN] Invalid chatSession id — skipping URL update:', chatSessionResult?.id);
+            }
+          }
+
           // E29-003: Auto-create FamilyJourney at Brief confirmation
           ;(async () => {
             if (!user?.id) return;
@@ -493,8 +552,8 @@ export const useMessageHandler = ({
                 if (typeof setActiveJourney === 'function') {
                   setActiveJourney(newJourney);
                 }
-                if (chatSession?.id && newJourney?.id) {
-                  ChatSession.update(chatSession.id, { journey_id: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
+                if (chatSessionResult?.id && newJourney?.id) {
+                  ChatSession.update(chatSessionResult.id, { journey_id: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
                 }
               } else {
                 console.log('[E29-003] Active FamilyJourney already exists, skipping creation. Journey ID:', activeJourneyList[0].id);
@@ -506,32 +565,6 @@ export const useMessageHandler = ({
               console.error('[E29-003] FamilyJourney creation failed:', e.message);
             }
           })();
-
-          const chatSession = await ChatSession.create({
-            session_token: sessionId,
-            user_id: user?.id,
-            family_profile_id: profileForSession?.id || null,
-            chat_history_id: chatHistoryRecord?.id || currentConversation?.id,
-            status: 'active',
-            consultant_selected: selectedConsultant,
-            child_name: profileForSession?.childName,
-            child_grade: profileForSession?.childGrade,
-            location_area: safeLocationArea,
-            max_tuition: profileForSession?.maxTuition,
-            priorities: profileForSession?.priorities,
-            matched_schools: JSON.stringify(matchedSchoolIds),
-            profile_name: profileName,
-            journey_id: null,
-          });
-
-          // Update URL with entity id (not sessionToken)
-          if (chatSession?.id && typeof chatSession.id === 'string') {
-            const newUrl = `/consultant?sessionId=${chatSession.id}`;
-            window.history.replaceState({}, document.title, newUrl);
-            console.log('[SESSION] Created ChatSession with id:', chatSession.id);
-          } else {
-            console.warn('[WARN] Invalid chatSession id — skipping URL update:', chatSession?.id);
-          }
         } catch (sessionError) {
           console.error('Failed to create ChatSession:', sessionError);
         }

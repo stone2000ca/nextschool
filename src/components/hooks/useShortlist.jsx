@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getShortlistNudge } from '@/components/utils/shortlistNudges';
 import { STATES } from '@/lib/stateMachineConfig';
-import { ChatShortlist, School, SchoolJourney, FamilyJourney } from '@/lib/entities';
+import { ChatShortlist, ChatSession, School, SchoolJourney, FamilyJourney } from '@/lib/entities';
 
 export function useShortlist({
   user, setUser, isAuthenticated, schools, currentState,
@@ -16,6 +16,8 @@ export function useShortlist({
   const [autoExpandSchoolId, setAutoExpandSchoolId] = useState(null);
   const [pendingDeepDiveSchoolIds, setPendingDeepDiveSchoolIds] = useState(new Set());
   const hasAutoPopulatedShortlist = useRef(false);
+  // E48-S4: Cache ChatSession ID per conversation for shortlisted_count updates
+  const chatSessionIdCache = useRef({ conversationId: null, chatSessionId: null });
 
   const loadShortlist = async (journeyId) => {
     const jid = journeyId || activeJourney?.journeyId;
@@ -126,6 +128,27 @@ export function useShortlist({
           }
         } catch (e) {
           console.error('[E29-004] SchoolJourney sync failed:', e.message, e);
+        }
+      })();
+
+      // E48-S4: Update ChatSession.shortlisted_count (non-blocking side effect)
+      ;(async () => {
+        try {
+          const convId = currentConversation?.id;
+          if (!convId) return;
+          let cachedId = chatSessionIdCache.current.conversationId === convId
+            ? chatSessionIdCache.current.chatSessionId
+            : null;
+          if (!cachedId) {
+            const sessions = await ChatSession.filter({ chat_history_id: convId });
+            if (sessions.length === 0) return;
+            cachedId = sessions[0].id;
+            chatSessionIdCache.current = { conversationId: convId, chatSessionId: cachedId };
+          }
+          const newCount = isRemoving ? shortlistData.length - 1 : shortlistData.length + 1;
+          await ChatSession.update(cachedId, { shortlisted_count: Math.max(0, newCount) });
+        } catch (e) {
+          console.error('[E48-S4] Failed to update ChatSession.shortlisted_count:', e.message);
         }
       })();
 
