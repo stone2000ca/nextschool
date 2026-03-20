@@ -1380,6 +1380,8 @@ export default function Consultant() {
             setActivePanel(action.payload.panel);
             break;
           case 'EXPAND_SCHOOL':
+            // E41-S5: Only this action triggers DEEPDIVE transition.
+            // ask-about-school-info returns no action, so it stays in RESULTS.
             setAutoExpandSchoolId(action.payload.schoolId);
             setActivePanel('shortlist');
             break;
