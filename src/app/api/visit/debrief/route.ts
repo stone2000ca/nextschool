@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
     const supabase = getAdminClient()
 
     // Look up the token
-    const { data: tokenRow, error: lookupError } = await supabase
-      .from('debrief_tokens')
+    const { data: tokenRow, error: lookupError } = await (supabase
+      .from('debrief_tokens') as any)
       .select('*')
       .eq('token', token)
       .single() as { data: Record<string, any> | null; error: any }
@@ -60,8 +60,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Write reaction and mark token as used
-    const { error: updateError } = await supabase
-      .from('debrief_tokens')
+    const { error: updateError } = await (supabase
+      .from('debrief_tokens') as any)
       .update({
         reaction,
         used_at: new Date().toISOString(),
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         .select('slug')
         .eq('id', tokenRow.school_id)
         .single()
-      schoolSlug = school?.slug
+      schoolSlug = (school as any)?.slug
     }
 
     // Build redirect URL to the visit card
