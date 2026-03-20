@@ -53,6 +53,8 @@ const ROUTE_MAP: Record<string, string> = {
   getEmailPreferences: 'email/preferences',
   updateEmailPreferences: 'email/preferences',
   processUnsubscribe: 'email/unsubscribe',
+  queueVisitEmails: 'email/queue',
+  processEmailQueue: 'email/process',
 }
 
 export async function invokeFunction<T = any>(name: string, payload: any): Promise<T> {

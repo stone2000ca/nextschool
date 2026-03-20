@@ -52,6 +52,7 @@ const TABLE_MAP: Record<string, string> = {
   MatchExplanationCache: 'match_explanation_cache',
   VisitRecord: 'visit_records',
   UnsubscribeToken: 'unsubscribe_tokens',
+  EmailQueue: 'email_queue',
 }
 
 function getTableName(entityName: string): string {
@@ -213,3 +214,4 @@ export const ConversationArtifacts = createEntity('ConversationArtifacts')
 export const MatchExplanationCache = createEntity('MatchExplanationCache')
 export const VisitRecord = createEntity('VisitRecord')
 export const UnsubscribeToken = createEntity('UnsubscribeToken')
+export const EmailQueue = createEntity('EmailQueue')
