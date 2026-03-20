@@ -47,6 +47,8 @@ const ROUTE_MAP: Record<string, string> = {
   rejectClaim: 'reject-claim',
   adminClaims: 'admin-claims',
   adminStats: 'admin-stats',
+  listEventReminders: 'event-reminders',
+  toggleEventReminder: 'event-reminders',
 }
 
 export async function invokeFunction<T = any>(name: string, payload: any): Promise<T> {
