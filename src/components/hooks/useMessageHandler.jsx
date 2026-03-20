@@ -1,7 +1,9 @@
 import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
 import { validateBriefContent, generateProgrammaticBrief } from '@/components/utils/briefUtils';
 import { extractAndSaveMemories } from '@/components/utils/memoryManager';
-import { ChatHistory, ChatSession, FamilyJourney, User } from '@/lib/entities';
+import { FamilyJourney, User } from '@/lib/entities';
+import { createConversation, updateConversation } from '@/lib/api/conversations';
+import { createSession, updateSession } from '@/lib/api/sessions';
 import { invokeFunction } from '@/lib/functions';
 import { retryWithBackoff } from '@/components/utils/retryWithBackoff';
 import { useRef, useEffect } from 'react';
@@ -352,7 +354,7 @@ export const useMessageHandler = ({
 
       // E42-PERSIST: Primary conversation_context persist (non-blocking)
       if (typeof conversationIdRef.current === 'string' && conversationIdRef.current) {
-        retryWithBackoff(() => ChatHistory.update(conversationIdRef.current, { conversation_context: updatedContext })).catch(err => console.error('[E42-PERSIST] Primary context save failed:', err));
+        retryWithBackoff(() => updateConversation(conversationIdRef.current, { conversation_context: updatedContext })).catch(err => console.error('[E42-PERSIST] Primary context save failed:', err));
       }
 
       // BUG-DD-001 FIX: selectedSchool is SINGLE SOURCE OF TRUTH - NEVER clear it based on AI state
@@ -440,7 +442,7 @@ export const useMessageHandler = ({
           let chatHistoryRecord = null;
           if ((!currentConversation?.id) && isAuthenticated && user) {
             try {
-              chatHistoryRecord = await ChatHistory.create({
+              chatHistoryRecord = await createConversation({
                 user_id: user.id,
                 title: profileName,
                 messages: updatedMessages,
@@ -476,7 +478,7 @@ export const useMessageHandler = ({
             if (existingChatSessionId) {
               // Second RESULTS for same conversation — update existing row
               console.log('[E48-S5] Updating existing ChatSession:', existingChatSessionId);
-              await ChatSession.update(existingChatSessionId, {
+              await updateSession(existingChatSessionId, {
                 matched_schools: JSON.stringify(matchedSchoolIds),
                 child_name: profileForSession?.child_name,
                 child_grade: profileForSession?.child_grade,
@@ -489,7 +491,7 @@ export const useMessageHandler = ({
               chatSessionResult = { id: existingChatSessionId };
             } else {
               // First RESULTS — create new ChatSession
-              chatSessionResult = await ChatSession.create({
+              chatSessionResult = await createSession({
                 session_token: sessionId,
                 user_id: user.id,
                 family_profile_id: profileForSession?.id || null,
@@ -562,7 +564,7 @@ export const useMessageHandler = ({
                   setActiveJourney(newJourney);
                 }
                 if (chatSessionResult?.id && newJourney?.id) {
-                  ChatSession.update(chatSessionResult.id, { journey_id: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
+                  updateSession(chatSessionResult.id, { journey_id: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
                 }
               } else {
                 console.log('[E29-003] Active FamilyJourney already exists, skipping creation. Journey ID:', activeJourneyList[0].id);
@@ -672,7 +674,7 @@ export const useMessageHandler = ({
         // data survival path. Must run before any other bookkeeping that might throw.
         if (isAuthenticated && typeof currentConversation?.id === 'string' && currentConversation.id.length > 0) {
           try {
-            await retryWithBackoff(() => ChatHistory.update(currentConversation.id, {
+            await retryWithBackoff(() => updateConversation(currentConversation.id, {
               messages: finalMessages,
               conversation_context: updatedContext
             }));

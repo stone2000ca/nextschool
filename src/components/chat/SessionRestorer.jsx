@@ -3,7 +3,9 @@
 // Last Modified: 2026-03-01
 
 import { STATES } from '@/lib/stateMachineConfig';
-import { ChatSession, ChatHistory, SchoolAnalysis, FamilyProfile, School } from '@/lib/entities';
+import { SchoolAnalysis, FamilyProfile, School } from '@/lib/entities';
+import { fetchConversations, fetchConversation } from '@/lib/api/conversations';
+import { fetchSession } from '@/lib/api/sessions';
 import { invokeFunction } from '@/lib/functions';
 import { createClient } from '@/lib/supabase/client';
 
@@ -100,7 +102,7 @@ export async function restoreSessionFromParam(
   try {
     // Fetch ChatSession
     console.log('[RESTORE] Attempting to fetch ChatSession with ID:', sessionIdParam);
-    const chatSession = await ChatSession.get(sessionIdParam);
+    const chatSession = await fetchSession(sessionIdParam);
     console.log('[RESTORE] ChatSession fetched:', chatSession ? 'Success' : 'Not found');
     
     if (!chatSession) {
@@ -172,7 +174,7 @@ export async function restoreSessionFromParam(
     // Fetch and restore ChatHistory messages and context
     let chatHistory = null;
     if (chatSession.chat_history_id) {
-      chatHistory = await ChatHistory.get(chatSession.chat_history_id);
+      chatHistory = await fetchConversation(chatSession.chat_history_id);
       if (chatHistory?.messages) {
         setMessages(chatHistory.messages);
       }
@@ -412,7 +414,7 @@ export async function restoreMostRecentConversation(
 
   try {
     // 1. Fetch all active conversations for this user, pick the most recent
-    const convos = await ChatHistory.filter({ user_id: user.id, is_active: true });
+    const convos = await fetchConversations();
     if (!convos || convos.length === 0) {
       console.log('[RESTORE-LATEST] No active conversations found');
       return;

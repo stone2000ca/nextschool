@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 import { useAuth } from '@/lib/AuthContext';
-import { School, SchoolJourney, ChatHistory, FamilyJourney, ResearchNote, SchoolInquiry } from '@/lib/entities';
+import { School, SchoolJourney, FamilyJourney, ResearchNote, SchoolInquiry } from '@/lib/entities';
+import { fetchConversations, createConversation, updateConversation } from '@/lib/api/conversations';
 import { invokeFunction } from '@/lib/functions';
 import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
 import { restoreGuestSession } from '@/components/chat/SessionRestorer';
@@ -693,7 +694,7 @@ export default function Consultant() {
 
   const loadConversations = async (userId) => {
     try {
-      const convos = await ChatHistory.filter({ user_id: userId, is_active: true });
+      const convos = await fetchConversations();
       // Sort: starred first (by date), then unstarred (by date)
       const sorted = convos.sort((a, b) => {
         if (a.starred && !b.starred) return -1;
@@ -741,7 +742,7 @@ export default function Consultant() {
         is_active: true
       };
       
-      const created = await ChatHistory.create(newConvo);
+      const created = await createConversation(newConvo);
       
       // Load conversations to update sidebar
       await loadConversations(user.id);
@@ -762,7 +763,7 @@ export default function Consultant() {
       
       if (oldestConvo) {
         // Archive it
-        await ChatHistory.update(oldestConvo.id, {
+        await updateConversation(oldestConvo.id, {
           is_active: false
         });
         
@@ -912,7 +913,7 @@ export default function Consultant() {
         conversation_context: updatedContext,
       }));
       if (currentConversation.id) {
-        await ChatHistory.update(currentConversation.id, {
+        await updateConversation(currentConversation.id, {
           conversation_context: updatedContext,
         });
       }
@@ -1106,7 +1107,7 @@ export default function Consultant() {
     };
     setCurrentConversation(prev => prev ? { ...prev, conversation_context: updatedContext } : prev);
     if (currentConversation?.id) {
-      await ChatHistory.update(currentConversation.id, {
+      await updateConversation(currentConversation.id, {
         conversation_context: updatedContext,
       });
     }
@@ -1133,7 +1134,7 @@ export default function Consultant() {
     
     try {
       // Mark as inactive instead of deleting
-      await ChatHistory.update(conversationToDelete.id, {
+      await updateConversation(conversationToDelete.id, {
         is_active: false
       });
       
@@ -1164,7 +1165,7 @@ export default function Consultant() {
   const toggleStarConversation = async (convo, e) => {
     e.stopPropagation();
     try {
-      await ChatHistory.update(convo.id, {
+      await updateConversation(convo.id, {
         starred: !convo.starred
       });
       await loadConversations(user.id);

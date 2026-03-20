@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ChatSession, School as SchoolEntity, User } from '@/lib/entities';
+import { School as SchoolEntity, User } from '@/lib/entities';
+import { fetchSharedProfile } from '@/lib/api/sessions';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowRight, MapPin, DollarSign, Bookmark } from 'lucide-react';
@@ -22,18 +23,15 @@ export default function SharedProfile() {
 
   const loadSharedProfile = async () => {
     try {
-      // Fetch ChatSession by shareToken
-      const sessions = await ChatSession.filter({
-        share_token: shareToken
-      });
-
-      if (sessions.length === 0) {
+      // Fetch ChatSession by shareToken via API
+      let chatSession;
+      try {
+        chatSession = await fetchSharedProfile(shareToken);
+      } catch (e) {
         setNotFound(true);
         setLoading(false);
         return;
       }
-
-      const chatSession = sessions[0];
       setSession(chatSession);
 
       // Load matched schools

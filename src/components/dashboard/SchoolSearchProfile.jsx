@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChatSession } from '@/lib/entities';
+import { updateSession } from '@/lib/api/sessions';
 import { Button } from '@/components/ui/button';
 import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
 import { CheckCircle, Copy } from 'lucide-react';
@@ -117,7 +117,7 @@ export default function SchoolSearchProfile({
   const handleArchive = async () => {
     setIsArchiving(true);
     try {
-      await ChatSession.update(session.id, { status: 'archived' });
+      await updateSession(session.id, { status: 'archived' });
       if (onArchive) onArchive();
     } catch (err) {
       console.error('Failed to archive session:', err);
@@ -137,7 +137,7 @@ export default function SchoolSearchProfile({
         priorities: editData.priorities,
         learning_differences: editData.learningDifferences,
       };
-      await ChatSession.update(session.id, sessionUpdate);
+      await updateSession(session.id, sessionUpdate);
 
       setIsEditMode(false);
       if (onArchive) onArchive(); // Trigger refresh
@@ -152,7 +152,7 @@ export default function SchoolSearchProfile({
     try {
       // Generate UUID for shareToken
       const shareToken = crypto.randomUUID();
-      await ChatSession.update(session.id, { share_token: shareToken });
+      await updateSession(session.id, { share_token: shareToken });
       const url = `https://nextschool.ca/SharedProfile?token=${shareToken}`;
       setShareUrl(url);
       setShowShareModal(true);
@@ -171,7 +171,7 @@ export default function SchoolSearchProfile({
 
   const handleRemoveSharing = async () => {
     try {
-      await ChatSession.update(session.id, { share_token: null });
+      await updateSession(session.id, { share_token: null });
       setShowShareModal(false);
       setShareUrl(null);
     } catch (err) {

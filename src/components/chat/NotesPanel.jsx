@@ -3,7 +3,8 @@ import { X, Plus, Trash2, Edit2, Save, Brain, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Notes, UserMemory, FamilyProfile, ChatHistory } from '@/lib/entities';
+import { Notes, UserMemory, FamilyProfile } from '@/lib/entities';
+import { fetchConversations, deleteConversation } from '@/lib/api/conversations';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function NotesPanel({ userId, onClose }) {
@@ -87,9 +88,9 @@ export default function NotesPanel({ userId, onClose }) {
       }
 
       // Delete all ChatHistory records
-      const chatHistories = await ChatHistory.filter({ user_id: userId });
+      const chatHistories = await fetchConversations();
       for (const chat of chatHistories) {
-        await ChatHistory.delete(chat.id);
+        await deleteConversation(chat.id);
       }
 
       setMemories([]);
