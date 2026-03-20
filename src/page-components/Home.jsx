@@ -122,13 +122,13 @@ export default function Home() {
           muted
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
-          src="https://fofygizrrcxdsijzfxab.supabase.co/storage/v1/object/public/img/hero_video_nextschool.mp4"
+          src="https://fofygizrrcxdsijzfxab.supabase.co/storage/v1/object/public/video/hero_video_nextschool.mp4"
         />
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/60" />
 
         <div id="main-content" className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="ns-display text-white text-3xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6 leading-tight">
+          <h1 className="ns-display !text-white text-3xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6 leading-tight">
             Find a school your child will{' '}
             <em className="text-teal-400 not-italic">love</em>
           </h1>
@@ -154,7 +154,7 @@ export default function Home() {
               />
               <button
                 type="submit"
-                className="h-16 w-16 flex-shrink-0 rounded-full bg-teal-500 hover:bg-teal-600 text-white flex items-center justify-center transition-colors"
+                className="h-16 w-16 flex-shrink-0 rounded-full bg-teal-500 hover:bg-teal-600 text-white flex items-center justify-center transition-colors animate-pulse"
                 aria-label="Start conversation with AI consultant"
               >
                 <ArrowRight className="h-7 w-7" />
@@ -162,14 +162,11 @@ export default function Home() {
             </div>
           </form>
 
-          <p className="text-sm text-white/60 italic mb-10 max-w-2xl mx-auto">
-            Try: &ldquo;We&rsquo;re in Toronto looking for a Grade 5 spot for a shy but creative kid...&rdquo;
-          </p>
 
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/80">
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-teal-400 flex-shrink-0" />
-              Free to use
+              Free to start
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-teal-400 flex-shrink-0" />
@@ -198,9 +195,9 @@ export default function Home() {
           {/* 3 steps */}
           <div className="grid md:grid-cols-3 gap-8 md:gap-4 relative">
             {[
-              { step: 1, title: 'Tell us about your child', output: 'Your FamilyBrief' },
-              { step: 2, title: 'Get personalized matches', output: 'Ranked shortlist with fit scores' },
-              { step: 3, title: 'Decide with confidence', output: 'A clear enrollment decision' },
+              { step: 1, title: 'Tell us about your child', output: 'Your Family Brief updates with every interaction' },
+              { step: 2, title: 'Get personalized matches', output: 'Based on over 80 criterias' },
+              { step: 3, title: 'Decide with confidence', output: 'We\u2019ll support you every step of the way' },
             ].map((item, i) => (
               <div key={item.step} className="flex flex-col items-center text-center relative">
                 {/* Arrow connector (desktop only, between steps) */}
@@ -228,7 +225,7 @@ export default function Home() {
           {/* CTA */}
           <div className="text-center mt-12">
             <Link href="/consultant" className="ns-btn-primary inline-flex items-center">
-              Start your FamilyBrief
+              Find the right school
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </div>
