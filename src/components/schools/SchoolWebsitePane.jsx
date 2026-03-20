@@ -1,11 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ExternalLink, Globe2, AlertTriangle, Loader2 } from 'lucide-react';
+import { ExternalLink, Globe2, AlertTriangle, Loader2, Lightbulb, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+const HELPER_PROMPTS = [
+  'Find tuition info on their site, then ask me to compare it to your budget',
+  'Browse their programs & clubs, then note favorites in My Notes',
+  'Check admission deadlines, then ask me what steps to take next',
+];
 
 const LOAD_TIMEOUT_MS = 8000;
 
 export default function SchoolWebsitePane({ school }) {
   const [status, setStatus] = useState('loading'); // 'loading' | 'loaded' | 'blocked'
+  const [helperDismissed, setHelperDismissed] = useState(false);
   const iframeRef = useRef(null);
   const timeoutRef = useRef(null);
 
@@ -26,6 +33,7 @@ export default function SchoolWebsitePane({ school }) {
   useEffect(() => {
     if (!websiteUrl) return;
     setStatus('loading');
+    setHelperDismissed(false);
     timeoutRef.current = setTimeout(() => {
       setStatus((prev) => (prev === 'loading' ? 'blocked' : prev));
     }, LOAD_TIMEOUT_MS);
@@ -59,6 +67,28 @@ export default function SchoolWebsitePane({ school }) {
           <ExternalLink className="h-3 w-3" />
         </a>
       </div>
+
+      {/* Helper prompts */}
+      {!helperDismissed && (
+        <div className="flex items-start gap-2.5 px-4 py-2.5 bg-teal-950/20 border-b border-white/[0.06] shrink-0">
+          <Lightbulb className="h-3.5 w-3.5 text-teal-400/70 mt-0.5 shrink-0" />
+          <div className="flex-1 flex flex-wrap gap-x-3 gap-y-1">
+            {HELPER_PROMPTS.map((prompt, i) => (
+              <span key={i} className="text-[11px] text-teal-400/60 leading-snug">
+                {i > 0 && <span className="mr-3 text-white/10">·</span>}
+                {prompt}
+              </span>
+            ))}
+          </div>
+          <button
+            onClick={() => setHelperDismissed(true)}
+            className="text-teal-400/40 hover:text-teal-400/70 transition-colors shrink-0"
+            aria-label="Dismiss tips"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
       {/* Content area */}
       <div className="flex-1 relative overflow-hidden">

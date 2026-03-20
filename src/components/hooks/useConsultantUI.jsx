@@ -141,9 +141,14 @@ export function useConsultantUI({
     setShowNewMessageIndicator(false);
   };
 
+  // E50-S4: Chat context hint when parent is browsing a school's website
+  const websiteBrowsingHint = detailTab === 'website' && selectedSchool
+    ? `Parent is currently browsing ${selectedSchool.name || selectedSchool.school_name || 'a school'}'s website`
+    : null;
+
   return {
     // Detail tab
-    detailTab, setDetailTab,
+    detailTab, setDetailTab, websiteBrowsingHint,
     // Panel states
     activePanel, setActivePanel,
     showShortlistPanel, setShowShortlistPanel,
