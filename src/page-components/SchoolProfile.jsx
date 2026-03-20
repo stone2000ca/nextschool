@@ -378,7 +378,7 @@ function useSchoolSEO(school, slug, faqs) {
     setMeta('description', descParts.substring(0, 160));
     setMeta('robots', 'index, follow');
 
-    const canonical = `https://nextschool.ca/schools/${slug || school.slug || school.id}`;
+    const canonical = `https://nextschool.ca/school/${slug || school.slug || school.id}`;
     setLink('canonical', canonical);
 
     setMetaProperty('og:title', `${school.name} — ${schoolType} School in ${city} | NextSchool`);
@@ -517,15 +517,21 @@ export default function SchoolProfile() {
       try {
         let schools;
         if (slug) {
+          // First try by slug
           schools = await fetchSchools({ slug });
+          // If slug lookup returns nothing, try treating the param as an ID
+          if ((!schools || schools.length === 0)) {
+            schools = await fetchSchools({ ids: [slug] });
+          }
         } else if (schoolId) {
           schools = await fetchSchools({ ids: [schoolId] });
         }
         if (schools && schools.length > 0) {
           const s = schools[0];
           setSchool(s);
-          if (!slug && s.slug) {
-            router.replace(`/schools/${s.slug}`);
+          // Redirect to canonical slug URL if we arrived by ID or legacy URL
+          if (s.slug && s.slug !== slug) {
+            router.replace(`/school/${s.slug}`);
           }
         }
       } catch (error) {
@@ -1167,7 +1173,7 @@ export default function SchoolProfile() {
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">Similar Schools Near {school.city}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {relatedSchools.map(rs => (
-                    <Link key={rs.id} href={rs.slug ? `/schools/${rs.slug}` : `/school?id=${rs.id}`}
+                    <Link key={rs.id} href={rs.slug ? `/school/${rs.slug}` : `/school?id=${rs.id}`}
                       className="block bg-slate-50 rounded-lg p-4 border border-slate-100 hover:border-teal-300 hover:shadow-sm transition-all">
                       <div className="flex items-center gap-3">
                         <LogoDisplay logoUrl={rs.logo_url} schoolName={rs.name} schoolWebsite={rs.website} size="h-10 w-10" />
