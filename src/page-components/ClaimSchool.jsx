@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-import { SchoolClaim, SchoolAdmin, User } from '@/lib/entities';
+import { SchoolAdmin, User } from '@/lib/entities';
 import { fetchSchools } from '@/lib/api/schools';
+import { fetchClaims, createClaim, updateClaim } from '@/lib/api/school-claims';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -87,7 +88,7 @@ export default function ClaimSchool() {
 
       try {
         // Check if user already has an active claim
-        const claims = await SchoolClaim.filter({ claimed_by: userData.id });
+        const claims = await fetchClaims({ claimed_by: userData.id });
         const activeClaim = claims.find(c => ['pending_review', 'verified'].includes(c.status));
         if (activeClaim) {
           const schools = await fetchSchools({ ids: [activeClaim.school_id] });
@@ -150,7 +151,7 @@ export default function ClaimSchool() {
       }
 
       // Create SchoolClaim record — goes straight to pending_review for admin approval
-      await SchoolClaim.create({
+      await createClaim({
         school_id: schoolId,
         claimed_by: authUser.id,
         claimant_name: formData.name,
@@ -177,7 +178,7 @@ export default function ClaimSchool() {
     if (!showCancelConfirm) return;
     setCancellingClaim(true);
     try {
-      await SchoolClaim.update(existingClaim.id, { status: 'cancelled' });
+      await updateClaim(existingClaim.id, { status: 'cancelled' });
       // Note: claim_status on the schools table is managed server-side
       // (requires service-role to bypass RLS).
       setExistingClaim(null);

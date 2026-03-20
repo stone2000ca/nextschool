@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
-import { SchoolAdmin as SchoolAdminEntity, SchoolClaim, User, SchoolInquiry, EnrichmentDiff, PhotoCandidate } from '@/lib/entities';
+import { SchoolAdmin as SchoolAdminEntity, User, EnrichmentDiff, PhotoCandidate } from '@/lib/entities';
 import { fetchSchools, updateSchool } from '@/lib/api/schools';
+import { fetchClaims } from '@/lib/api/school-claims';
+import { fetchInquiries } from '@/lib/api/school-inquiries';
 import { invokeFunction } from '@/lib/functions';
 import { Building2, BarChart3, Mail, CreditCard, Upload, Crown, Sparkles, Image, ImagePlus, MessageSquareQuote, User as UserIcon, CalendarDays, FileText, FlaskConical, Loader2, ArrowLeft, Clock, XCircle } from 'lucide-react';
 
@@ -115,7 +117,7 @@ export default function SchoolAdmin() {
       if (!resolvedSchool) {
         const urlSchoolId = urlParams.get('schoolId');
         if (urlSchoolId) {
-          const claims = await SchoolClaim.filter({
+          const claims = await fetchClaims({
             user_id: userData.id,
             school_id: urlSchoolId,
             status: 'verified'
@@ -133,7 +135,7 @@ export default function SchoolAdmin() {
       // --- PATH D: Pending/rejected claim state ---
       if (!resolvedSchool) {
         try {
-          const claims = await SchoolClaim.filter({ user_id: userData.id });
+          const claims = await fetchClaims({ user_id: userData.id });
           if (claims && claims.length > 0) {
             const latest = claims.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
             setPendingClaim(latest);
@@ -148,7 +150,7 @@ export default function SchoolAdmin() {
       // Load badges for resolved school
       if (resolvedSchool) {
         try {
-          const inquiries = await SchoolInquiry.filter({ school_id: resolvedSchool.id, inquiry_type: 'tour_request' });
+          const inquiries = await fetchInquiries({ school_id: resolvedSchool.id, inquiry_type: 'tour_request' });
           const newCount = inquiries.filter(i => !i.tour_status || i.tour_status === 'new').length;
           setNewInquiryCount(newCount);
         } catch (e) { /* non-blocking */ }

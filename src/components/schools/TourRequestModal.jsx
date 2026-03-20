@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { TourRequest, SchoolInquiry, FamilyProfile, FamilyJourney, SchoolJourney } from '@/lib/entities';
+import { TourRequest, FamilyProfile, FamilyJourney, SchoolJourney } from '@/lib/entities';
+import { createInquiry } from '@/lib/api/school-inquiries';
 import { useAuth } from '@/lib/AuthContext';
 import { invokeFunction } from '@/lib/functions';
 import { Button } from '@/components/ui/button';
@@ -98,7 +99,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
     });
 
     // Also create SchoolInquiry for backward compatibility and school notifications
-    const inquiry = await SchoolInquiry.create({
+    const inquiry = await createInquiry({
       parent_user_id: user.id,
       school_id: school.id,
       inquiry_type: 'tour_request',
