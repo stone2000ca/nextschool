@@ -56,8 +56,8 @@ export function syncConversationState(
   };
 
   const admin = getAdminClient();
-  admin
-    .from('conversation_state')
+  (admin
+    .from('conversation_state') as any)
     .upsert(row, { onConflict: 'conversation_id' })
     .then(({ error }: any) => {
       if (error) console.error('[DUAL-WRITE] conversation_state upsert failed:', error.message);
@@ -79,8 +79,8 @@ export function syncConversationSchools(
   const admin = getAdminClient();
 
   // Mark previous results as non-current (fire-and-forget)
-  admin
-    .from('conversation_schools')
+  (admin
+    .from('conversation_schools') as any)
     .update({ is_current_results: false })
     .eq('conversation_id', conversationId)
     .eq('source', source)
@@ -98,8 +98,8 @@ export function syncConversationSchools(
     is_current_results: true,
   }));
 
-  admin
-    .from('conversation_schools')
+  (admin
+    .from('conversation_schools') as any)
     .upsert(rows, { onConflict: 'conversation_id,school_id,source' })
     .then(({ error }: any) => {
       if (error) console.error('[DUAL-WRITE] conversation_schools upsert failed:', error.message);
@@ -131,8 +131,8 @@ export function syncConversationArtifact(
   };
 
   const admin = getAdminClient();
-  admin
-    .from('conversation_artifacts')
+  (admin
+    .from('conversation_artifacts') as any)
     .upsert(row, { onConflict: 'conversation_id,school_id,artifact_type' })
     .then(({ error }: any) => {
       if (error) console.error(`[DUAL-WRITE] conversation_artifacts upsert failed (${artifactType}):`, error.message);
