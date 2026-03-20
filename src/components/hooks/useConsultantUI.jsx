@@ -9,6 +9,9 @@ export function useConsultantUI({
   briefStatus, isTyping, messages,
   leftPanelMode,
 }) {
+  // Detail tab state (S3A: Overview | Research Notepad | Website)
+  const [detailTab, setDetailTab] = useState('overview');
+
   // Panel states
   const [activePanel, setActivePanel] = useState(null);
   const [showShortlistPanel, setShowShortlistPanel] = useState(false);
@@ -139,6 +142,8 @@ export function useConsultantUI({
   };
 
   return {
+    // Detail tab
+    detailTab, setDetailTab,
     // Panel states
     activePanel, setActivePanel,
     showShortlistPanel, setShowShortlistPanel,

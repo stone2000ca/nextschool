@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import ComparisonView from '@/components/schools/ComparisonView';
 import SchoolDetailPanel from '@/components/schools/SchoolDetailPanel';
 import SchoolGrid from '@/components/schools/SchoolGrid';
+import SchoolWebsitePane from '@/components/schools/SchoolWebsitePane';
 import ResearchNotepad from '@/components/ui/ResearchNotepad';
 import { buildTiers } from '@/components/utils/tierEngine';
 import { STATES } from '@/lib/stateMachineConfig';
@@ -26,7 +28,12 @@ export default function ResultsPhaseContent({
   conversationContext, userLocation,
   journeySteps, contactLog, researchNotes, setResearchNotes, handleSaveNotes,
   messages, showSchoolGrid,
+  detailTab, setDetailTab,
 }) {
+  // S3A: Reset detail tab when school changes; default to notepad if deep-dive exists
+  useEffect(() => {
+    setDetailTab(deepDiveAnalysis ? 'notepad' : 'overview');
+  }, [selectedSchool?.id]);
   // E41-S8: Comparison renders inline
   if (leftPanelMode === 'comparison' && comparisonData) {
     return (
@@ -81,57 +88,91 @@ export default function ResultsPhaseContent({
     })();
 
     return (
-      <div style={{ display: 'contents' }}>
-        {selectedSchool && deepDiveAnalysis && (
-          <ResearchNotepad
-            schoolData={{
-              name: selectedSchool.name || selectedSchool.school_name || 'Unknown School',
-              location: `${selectedSchool.city || ''}, ${selectedSchool.province_state || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
-              grades: selectedSchool.grades_served || `${selectedSchool.lowest_grade || 'K'}-${selectedSchool.highest_grade || '12'}`,
-              type: selectedSchool.gender_policy || selectedSchool.school_type_label || '',
-              students: selectedSchool.enrollment || 0,
-              teacherRatio: selectedSchool.student_teacher_ratio || '',
-              tuition: selectedSchool.tuition_domestic_day ? `$${Number(selectedSchool.tuition_domestic_day).toLocaleString()}` : 'Contact school',
-            }}
-            fitScore={deepDiveAnalysis.fit_score}
-            fitLabel={deepDiveAnalysis.fit_label}
-            tradeOffs={deepDiveAnalysis.trade_offs}
-            aiInsight={deepDiveAnalysis.ai_insight}
-            chatSummary={deepDiveAnalysis.chat_summary || null}
-            priorityMatches={deepDiveAnalysis.priority_matches || []}
-            journeySteps={journeySteps}
-            keyDates={keyDates}
-            visitPrepKit={visitPrepKit}
-            actionPlan={actionPlan}
-            communityPulse={deepDiveAnalysis.community_pulse || null}
-            contactLog={contactLog}
-            researchNotes={researchNotes}
-            onNotesChange={setResearchNotes}
-            onSaveNotes={handleSaveNotes}
-            lastDeepDiveAt={lastDeepDiveAt}
-            onRefreshDeepDive={() => {
-              if (deepDiveAnalysis?.schoolId) {
-                const schoolName = deepDiveAnalysis?.schoolName || selectedSchool?.name || 'this school';
-                handleSendMessage(`Tell me about ${schoolName}`, deepDiveAnalysis.schoolId);
-              }
-            }}
-          />
-        )}
-        <SchoolDetailPanel
-          school={selectedSchool}
-          familyProfile={familyProfile}
-          onBack={() => {
-            setSelectedSchool(null);
-            setCurrentView('schools');
-          }}
-          onToggleShortlist={handleToggleShortlist}
-          isShortlisted={shortlistData.some(s => s.id === selectedSchool?.id)}
-          onCompare={(school) => handleOpenComparison([school])}
-          actionPlan={actionPlan}
-          visitPrepKit={visitPrepKit}
-          isPremium={isPremium}
-          onUpgrade={() => setShowUpgradeModal(true)}
-        />
+      <div className="h-full flex flex-col" style={{ background: '#141a1f' }}>
+        {/* S3A: Tab navigation */}
+        <div className="flex items-center gap-1 px-4 py-2 border-b border-white/[0.08] shrink-0">
+          {[
+            { key: 'overview', label: 'Overview' },
+            { key: 'notepad', label: 'Research Notepad', disabled: !deepDiveAnalysis },
+            { key: 'website', label: 'Website' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => !tab.disabled && setDetailTab(tab.key)}
+              disabled={tab.disabled}
+              className={`px-4 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
+                detailTab === tab.key
+                  ? 'bg-teal-600 text-white'
+                  : tab.disabled
+                    ? 'text-[#6b6560] cursor-not-allowed'
+                    : 'text-[#b8b5af] hover:text-[#e8e6e1] hover:bg-white/[0.06]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="flex-1 overflow-hidden">
+          {detailTab === 'overview' && (
+            <SchoolDetailPanel
+              school={selectedSchool}
+              familyProfile={familyProfile}
+              onBack={() => {
+                setSelectedSchool(null);
+                setCurrentView('schools');
+              }}
+              onToggleShortlist={handleToggleShortlist}
+              isShortlisted={shortlistData.some(s => s.id === selectedSchool?.id)}
+              onCompare={(school) => handleOpenComparison([school])}
+              actionPlan={actionPlan}
+              visitPrepKit={visitPrepKit}
+              isPremium={isPremium}
+              onUpgrade={() => setShowUpgradeModal(true)}
+            />
+          )}
+
+          {detailTab === 'notepad' && selectedSchool && deepDiveAnalysis && (
+            <ResearchNotepad
+              schoolData={{
+                name: selectedSchool.name || selectedSchool.school_name || 'Unknown School',
+                location: `${selectedSchool.city || ''}, ${selectedSchool.province_state || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
+                grades: selectedSchool.grades_served || `${selectedSchool.lowest_grade || 'K'}-${selectedSchool.highest_grade || '12'}`,
+                type: selectedSchool.gender_policy || selectedSchool.school_type_label || '',
+                students: selectedSchool.enrollment || 0,
+                teacherRatio: selectedSchool.student_teacher_ratio || '',
+                tuition: selectedSchool.tuition_domestic_day ? `$${Number(selectedSchool.tuition_domestic_day).toLocaleString()}` : 'Contact school',
+              }}
+              fitScore={deepDiveAnalysis.fit_score}
+              fitLabel={deepDiveAnalysis.fit_label}
+              tradeOffs={deepDiveAnalysis.trade_offs}
+              aiInsight={deepDiveAnalysis.ai_insight}
+              chatSummary={deepDiveAnalysis.chat_summary || null}
+              priorityMatches={deepDiveAnalysis.priority_matches || []}
+              journeySteps={journeySteps}
+              keyDates={keyDates}
+              visitPrepKit={visitPrepKit}
+              actionPlan={actionPlan}
+              communityPulse={deepDiveAnalysis.community_pulse || null}
+              contactLog={contactLog}
+              researchNotes={researchNotes}
+              onNotesChange={setResearchNotes}
+              onSaveNotes={handleSaveNotes}
+              lastDeepDiveAt={lastDeepDiveAt}
+              onRefreshDeepDive={() => {
+                if (deepDiveAnalysis?.schoolId) {
+                  const schoolName = deepDiveAnalysis?.schoolName || selectedSchool?.name || 'this school';
+                  handleSendMessage(`Tell me about ${schoolName}`, deepDiveAnalysis.schoolId);
+                }
+              }}
+            />
+          )}
+
+          {detailTab === 'website' && (
+            <SchoolWebsitePane school={selectedSchool} />
+          )}
+        </div>
       </div>
     );
   }
