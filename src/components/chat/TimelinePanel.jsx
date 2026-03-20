@@ -11,15 +11,12 @@ export default function TimelinePanel({ shortlist, onClose }) {
   const [remindedEvents, setRemindedEvents] = useState(new Set());
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('ns_event_reminders');
-      if (stored) {
-        const reminders = JSON.parse(stored);
-        setRemindedEvents(new Set(reminders.map(r => r.eventId)));
-      }
-    } catch (err) {
-      console.error('[TimelinePanel] Failed to load reminders:', err);
-    }
+    fetch('/api/event-reminders')
+      .then(r => r.ok ? r.json() : [])
+      .then(reminders => {
+        setRemindedEvents(new Set(reminders.map(r => r.event_id)));
+      })
+      .catch(err => console.error('[TimelinePanel] Failed to load reminders:', err));
   }, []);
 
   useEffect(() => {
@@ -54,27 +51,34 @@ export default function TimelinePanel({ shortlist, onClose }) {
     fetchEvents();
   }, [shortlist.map(s => s.id).join(',')]);
 
-  const handleToggleReminder = (event) => {
+  const handleToggleReminder = async (event) => {
     try {
-      let stored = [];
-      const existing = localStorage.getItem('ns_event_reminders');
-      if (existing) stored = JSON.parse(existing);
-
       const isReminded = remindedEvents.has(event.id);
+      // Optimistic update
+      const next = new Set(remindedEvents);
       if (isReminded) {
-        stored = stored.filter(r => r.eventId !== event.id);
+        next.delete(event.id);
       } else {
-        stored.push({
-          eventId: event.id,
-          schoolName: event.schoolName,
-          eventTitle: event.title,
-          eventDate: event.date,
-          savedAt: new Date().toISOString()
-        });
+        next.add(event.id);
       }
-      localStorage.setItem('ns_event_reminders', JSON.stringify(stored));
-      setRemindedEvents(new Set(stored.map(r => r.eventId)));
+      setRemindedEvents(next);
+
+      const res = await fetch('/api/event-reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_id: event.id,
+          school_name: event.schoolName,
+          event_title: event.title,
+          event_date: event.date,
+        }),
+      });
+      if (!res.ok) {
+        setRemindedEvents(remindedEvents);
+        console.error('[TimelinePanel] Toggle reminder failed:', await res.text());
+      }
     } catch (err) {
+      setRemindedEvents(remindedEvents);
       console.error('[TimelinePanel] Failed to toggle reminder:', err);
     }
   };

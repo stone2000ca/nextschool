@@ -12,17 +12,14 @@ export default function ApplicationTimeline({ shortlist }) {
    const [loading, setLoading] = useState(true);
    const [remindedEvents, setRemindedEvents] = useState(new Set());
 
-   // E16a-019: Load reminded events from localStorage on mount
+   // E16a-019: Load reminded events from DB on mount
    useEffect(() => {
-     try {
-       const stored = localStorage.getItem('ns_event_reminders');
-       if (stored) {
-         const reminders = JSON.parse(stored);
-         setRemindedEvents(new Set(reminders.map(r => r.eventId)));
-       }
-     } catch (err) {
-       console.error('[E16a-019] Failed to load reminders:', err);
-     }
+     fetch('/api/event-reminders')
+       .then(r => r.ok ? r.json() : [])
+       .then(reminders => {
+         setRemindedEvents(new Set(reminders.map(r => r.event_id)));
+       })
+       .catch(err => console.error('[E16a-019] Failed to load reminders:', err));
    }, []);
 
   useEffect(() => {
@@ -65,36 +62,39 @@ export default function ApplicationTimeline({ shortlist }) {
     fetchEvents();
   }, [shortlist.map(s => s.id).join(',')]);
 
-  // E16a-019: Handle reminder toggle for event
-  const handleToggleReminder = (event) => {
+  // E16a-019: Handle reminder toggle for event (via API)
+  const handleToggleReminder = async (event) => {
     try {
-      let stored = [];
-      const existing = localStorage.getItem('ns_event_reminders');
-      if (existing) {
-        stored = JSON.parse(existing);
-      }
-
       const isReminded = remindedEvents.has(event.id);
+      // Optimistic update
+      const next = new Set(remindedEvents);
       if (isReminded) {
-        // Remove reminder
-        stored = stored.filter(r => r.eventId !== event.id);
+        next.delete(event.id);
       } else {
-        // Add reminder
-        stored.push({
-          eventId: event.id,
-          schoolName: event.schoolName,
-          eventTitle: event.title,
-          eventDate: event.date,
-          savedAt: new Date().toISOString()
-        });
+        next.add(event.id);
       }
+      setRemindedEvents(next);
 
-      localStorage.setItem('ns_event_reminders', JSON.stringify(stored));
-      setRemindedEvents(new Set(stored.map(r => r.eventId)));
+      const res = await fetch('/api/event-reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_id: event.id,
+          school_name: event.schoolName,
+          event_title: event.title,
+          event_date: event.date,
+        }),
+      });
+      if (!res.ok) {
+        // Revert on failure
+        setRemindedEvents(remindedEvents);
+        console.error('[E16a-019] Toggle reminder failed:', await res.text());
+      }
     } catch (err) {
+      setRemindedEvents(remindedEvents);
       console.error('[E16a-019] Failed to toggle reminder:', err);
     }
-  };;
+  };
 
   // Group events by month
   const groupedByMonth = {};
