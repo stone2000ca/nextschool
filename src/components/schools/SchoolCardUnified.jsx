@@ -22,6 +22,7 @@ export default function SchoolCardUnified({
   const formatGrade = (grade) => {
     if (grade === null || grade === undefined) return '';
     const num = Number(grade);
+    if (isNaN(num)) return String(grade);
     if (num <= -2) return 'PK';
     if (num === -1) return 'JK';
     if (num === 0) return 'K';
