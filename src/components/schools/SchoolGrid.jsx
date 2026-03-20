@@ -247,7 +247,7 @@ export default function SchoolGrid({
 
   // If tieredSchools prop is provided, use tiered mode
   if (tieredSchools) {
-    const { topMatches = [], alsoWorthExploring = [], seeAll = [] } = tieredSchools;
+    const { topMatches = [], alsoWorthExploring = [], seeAll = [], mode = 'normal' } = tieredSchools;
 
     // T-SL-002: Filter out shortlisted schools from tiers, backfill from deeper pools
     const shortlistedSet = new Set(shortlistedIds);
@@ -296,7 +296,7 @@ export default function SchoolGrid({
           <div className="mb-6">
             <div className="mb-3">
               <h3 className="text-sm font-semibold text-slate-800">⭐ Top Matches</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Best fit for your family based on your priorities</p>
+              <p className="text-xs text-slate-500 mt-0.5">{mode === 'thinProfile' ? 'A curated selection to explore — tell us more to sharpen results' : 'Best fit for your family based on your priorities'}</p>
             </div>
             <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', alignItems: 'stretch' }}>
               {displayedT1.map((school, index) => (
