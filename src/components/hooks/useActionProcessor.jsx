@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { School } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 import { toast } from 'sonner';
 
 export function useActionProcessor({
@@ -46,7 +46,7 @@ export function useActionProcessor({
         || extraSchools.find(s => s.id === schoolId);
       if (!fullSchool || (!fullSchool.description && !fullSchool.website)) {
         try {
-          const fullRecords = await School.filter({ id: schoolId });
+          const fullRecords = await fetchSchools({ ids: [schoolId] });
           if (fullRecords[0]) fullSchool = fullRecords[0];
         } catch (e) {
           console.warn('[DEEPDIVE] Failed to fetch full school record:', e.message);

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { FamilyJourney, SchoolJourney, SchoolInquiry } from '@/lib/entities';
-import { fetchResearchNotes, createResearchNote, updateResearchNote } from '@/lib/api/entities-api';
+import { fetchResearchNotes, createResearchNote, updateResearchNote, fetchFamilyJourneys, fetchSchoolJourneys } from '@/lib/api/entities-api';
+import { fetchInquiries } from '@/lib/api/school-inquiries';
 
 export function useSchoolJourneyData({ selectedSchool, isAuthenticated, user, deepDiveAnalysis }) {
   const [schoolJourney, setSchoolJourney] = useState(null);
@@ -15,10 +15,11 @@ export function useSchoolJourneyData({ selectedSchool, isAuthenticated, user, de
     }
     (async () => {
       try {
-        const journeys = await FamilyJourney.filter({ user_id: user.id, is_archived: false });
-        if (!journeys.length) { setSchoolJourney(null); return; }
-        const journey = journeys.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-        const schoolJourneys = await SchoolJourney.filter({ family_journey_id: journey.id, school_id: selectedSchool.id });
+        const journeys = await fetchFamilyJourneys({ user_id: user.id });
+        const activeJourneys = journeys.filter(j => !j.is_archived);
+        if (!activeJourneys.length) { setSchoolJourney(null); return; }
+        const journey = activeJourneys.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+        const schoolJourneys = await fetchSchoolJourneys({ family_journey_id: journey.id, school_id: selectedSchool.id });
         const sj = schoolJourneys[0] || null;
         setSchoolJourney(sj);
       } catch { setSchoolJourney(null); }
@@ -69,7 +70,7 @@ export function useSchoolJourneyData({ selectedSchool, isAuthenticated, user, de
       setContactLog([]);
       return;
     }
-    SchoolInquiry.filter({ school_id: selectedSchool.id }).then(inquiries => {
+    fetchInquiries({ school_id: selectedSchool.id }).then(inquiries => {
       setContactLog(inquiries.map(inq => ({
         type: inq.inquiry_type === 'tour_request' ? 'Tour Request' : 'General Inquiry',
         date: new Date(inq.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }),
