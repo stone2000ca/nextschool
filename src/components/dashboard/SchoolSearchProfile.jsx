@@ -107,8 +107,8 @@ export default function SchoolSearchProfile({
   });
 
   const handleViewMatches = () => {
-    const target = session.chat_history_id
-      ? `/consultant?sessionId=${session.chat_history_id}`
+    const target = session.id
+      ? `/consultant?sessionId=${session.id}`
       : '/consultant';
     router.push(target);
     if (onViewMatches) onViewMatches(session);

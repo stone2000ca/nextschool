@@ -174,15 +174,21 @@ export async function restoreSessionFromParam(
     // Fetch and restore ChatHistory messages and context
     let chatHistory = null;
     if (chatSession.chat_history_id) {
-      chatHistory = await fetchConversation(chatSession.chat_history_id);
+      try {
+        chatHistory = await fetchConversation(chatSession.chat_history_id);
+      } catch (err) {
+        console.warn('[RESTORE] Failed to fetch conversation for chat_history_id:', chatSession.chat_history_id, err.message);
+      }
       if (chatHistory?.messages) {
         setMessages(chatHistory.messages);
       }
+    } else {
+      console.log('[RESTORE] No chat_history_id on session — skipping conversation restore');
     }
 
     // Phase 1e: Load normalized conversation state (fallback to JSONB below)
-    const convId = chatHistory?.id || chatSession.chat_history_id;
-    const normalizedState = await loadConversationState(convId);
+    const convId = chatHistory?.id || chatSession.chat_history_id || null;
+    const normalizedState = convId ? await loadConversationState(convId) : null;
 
     // BUG-RN-05 FIX + Bug 2: Collect ALL deep dive analyses from messages (not just the last)
     const restoredMessages = chatHistory?.messages || [];
