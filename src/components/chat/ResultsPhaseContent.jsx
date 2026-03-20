@@ -166,6 +166,7 @@ export default function ResultsPhaseContent({
               communityPulse={deepDiveAnalysis.community_pulse || null}
               financialSummary={deepDiveAnalysis.financial_summary || null}
               contactLog={contactLog}
+              schoolId={deepDiveAnalysis?.schoolId}
               researchNotes={researchNotes}
               onNotesChange={setResearchNotes}
               onSaveNotes={handleSaveNotes}
