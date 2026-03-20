@@ -67,12 +67,17 @@ export default function Dashboard() {
       const chatSessions = await ChatSession.filter({
         user_id: userData.id
       });
-      
-      // Sort by createdAt descending (most recent first)
-      const sorted = chatSessions.sort((a, b) => 
-        new Date(b.created_at) - new Date(a.created_at)
-      );
-      
+
+      // E48-S3: Diagnostic log when no sessions found
+      if (chatSessions.length === 0) {
+        console.log('[E48-S3] loadSessions returned 0 rows for user:', userData.id);
+      }
+
+      // E48-S3: Filter out deleted sessions, sort by created_at desc
+      const sorted = chatSessions
+        .filter(s => s.status !== 'deleted')
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
       setSessions(sorted);
     } catch (err) {
       console.error('Failed to load dashboard:', err);
