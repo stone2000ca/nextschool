@@ -105,7 +105,7 @@ async function callOpenRouter(options: any) {
   const fullPromptStr = messages.map((m: any) => `[${m.role}] ${m.content}`).join('\n');
 
   const controller = new AbortController();
-  const TIMEOUT_MS = 15000;
+  const TIMEOUT_MS = 25000;
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
@@ -609,7 +609,7 @@ ${schoolIdContext}`;
           return nameWords.some((w: string) => msgNorm.includes(w)) || msgNorm.includes(nameNorm);
         });
         if (matched) {
-          rawToolCalls.push({ id: `synthetic-shortlist-${matched.id}`, type: 'function', function: { name: 'execute_ui_action', arguments: JSON.stringify({ action: 'ADD_TO_SHORTLIST', schoolId: matched.id }) } });
+          rawToolCalls.push({ id: `synthetic-shortlist-${matched.id}`, type: 'function', function: { name: 'execute_ui_action', arguments: JSON.stringify({ actions: [{ type: 'ADD_TO_SHORTLIST', schoolId: matched.id }] }) } });
           if (!aiMessage || aiMessage === "Here are your matches.") aiMessage = `Done — ${matched.name} has been added to your shortlist.`;
         }
       }
