@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       .from('debrief_tokens')
       .select('*')
       .eq('token', token)
-      .single()
+      .single() as { data: Record<string, any> | null; error: any }
 
     if (lookupError || !tokenRow) {
       return NextResponse.json(
