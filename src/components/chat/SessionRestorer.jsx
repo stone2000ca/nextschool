@@ -6,6 +6,65 @@ import { STATES } from '@/lib/stateMachineConfig';
 import { STATES as STATES_FOR_GUEST } from '@/lib/stateMachineConfig';
 import { ChatSession, ChatHistory, SchoolAnalysis, FamilyProfile, School } from '@/lib/entities';
 import { invokeFunction } from '@/lib/functions';
+import { createClient } from '@/lib/supabase/client';
+
+// ─── Phase 1e: Normalized table read helpers ────────────────────────
+
+/**
+ * Load conversation state from the normalized conversation_state table.
+ * Returns null if not found (caller should fall back to JSONB).
+ */
+async function loadConversationState(conversationId) {
+  if (!conversationId) return null;
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('conversation_state')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .single();
+    if (error) {
+      console.log('[PHASE-1E] conversation_state query returned no row for:', conversationId, error.message);
+      return null;
+    }
+    console.log('[PHASE-1E] conversation_state loaded for:', conversationId);
+    return data;
+  } catch (e) {
+    console.warn('[PHASE-1E] loadConversationState exception:', e.message);
+    return null;
+  }
+}
+
+/**
+ * Load current schools from the normalized conversation_schools table,
+ * joined with the schools table to get full school objects.
+ * Returns empty array if not found (caller should fall back to JSONB).
+ */
+async function loadConversationSchools(conversationId) {
+  if (!conversationId) return [];
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('conversation_schools')
+      .select('school_id, rank, schools(*)')
+      .eq('conversation_id', conversationId)
+      .eq('is_current_results', true)
+      .order('rank', { ascending: true });
+    if (error) {
+      console.log('[PHASE-1E] conversation_schools query failed for:', conversationId, error.message);
+      return [];
+    }
+    // Flatten: extract the joined school object from each row
+    const schools = (data || [])
+      .map(row => row.schools)
+      .filter(Boolean);
+    console.log('[PHASE-1E] conversation_schools loaded', schools.length, 'schools for:', conversationId);
+    return schools;
+  } catch (e) {
+    console.warn('[PHASE-1E] loadConversationSchools exception:', e.message);
+    return [];
+  }
+}
 
 export async function restoreSessionFromParam(
   sessionIdParam,
@@ -120,6 +179,10 @@ export async function restoreSessionFromParam(
       }
     }
 
+    // Phase 1e: Load normalized conversation state (fallback to JSONB below)
+    const convId = chatHistory?.id || chatSession.chat_history_id;
+    const normalizedState = await loadConversationState(convId);
+
     // BUG-RN-05 FIX + Bug 2: Collect ALL deep dive analyses from messages (not just the last)
     const restoredMessages = chatHistory?.messages || [];
     const allDeepDiveAnalyses = {};
@@ -203,18 +266,32 @@ export async function restoreSessionFromParam(
         setFamilyProfile(restoredProfile);
       }
     } else {
-      // BUG-LOCATION-EXTRACT-S97 FIX: Prefer extractedEntities.locationArea from ChatHistory context
-      // over ChatSession.locationArea which may contain stale/invalid values (e.g. 'Grade')
-      const restoredLocationArea = chatHistory?.conversation_context?.extractedEntities?.location_area || chatHistory?.conversation_context?.extractedEntities?.locationArea || chatSession.location_area;
+      // Phase 1e: Prefer normalized conversation_state for family profile fields
+      if (normalizedState) {
+        console.log('[PHASE-1E] Using conversation_state for family profile fields');
+        restoredProfile = {
+          child_name: normalizedState.child_name || chatSession.child_name,
+          child_grade: normalizedState.child_grade || chatSession.child_grade,
+          location_area: normalizedState.location_area || chatSession.location_area,
+          max_tuition: normalizedState.max_tuition || chatSession.max_tuition,
+          priorities: normalizedState.priorities || chatSession.priorities || [],
+          learning_differences: normalizedState.learning_differences || chatSession.learning_differences || []
+        };
+      } else {
+        // FALLBACK: BUG-LOCATION-EXTRACT-S97 FIX: Prefer extractedEntities.locationArea from ChatHistory context
+        // over ChatSession.locationArea which may contain stale/invalid values (e.g. 'Grade')
+        console.log('[PHASE-1E] Fallback: using conversation_context JSONB for family profile fields');
+        const restoredLocationArea = chatHistory?.conversation_context?.extractedEntities?.location_area || chatHistory?.conversation_context?.extractedEntities?.locationArea || chatSession.location_area;
 
-      restoredProfile = {
-        child_name: chatSession.child_name,
-        child_grade: chatSession.child_grade,
-        location_area: restoredLocationArea,
-        max_tuition: chatSession.max_tuition,
-        priorities: chatSession.priorities || [],
-        learning_differences: chatSession.learning_differences || []
-      };
+        restoredProfile = {
+          child_name: chatSession.child_name,
+          child_grade: chatSession.child_grade,
+          location_area: restoredLocationArea,
+          max_tuition: chatSession.max_tuition,
+          priorities: chatSession.priorities || [],
+          learning_differences: chatSession.learning_differences || []
+        };
+      }
       setFamilyProfile(restoredProfile);
     }
 
@@ -225,7 +302,16 @@ export async function restoreSessionFromParam(
     setOnboardingPhase(STATES.RESULTS);
 
     // Restore deep dive state from message scan (BUG-RN-05)
+    // Phase 1e: Use normalized state for state/resumeView, fall back to JSONB
     const conversationContext = chatHistory?.conversation_context || {};
+    const normalizedResumeView = normalizedState?.resume_view || normalizedState?.state || null;
+    const fallbackResumeView = conversationContext.resumeView || conversationContext.state || null;
+    const effectiveResumeView = normalizedResumeView || fallbackResumeView;
+    if (normalizedResumeView) {
+      console.log('[PHASE-1E] Using conversation_state for resumeView/state:', normalizedResumeView);
+    } else if (fallbackResumeView) {
+      console.log('[PHASE-1E] Fallback: using conversation_context JSONB for resumeView/state:', fallbackResumeView);
+    }
     const hasDeepDiveRestore = !!lastDeepDiveSchoolId;
     if (lastDeepDiveSchoolId && setSelectedSchool) {
       console.log('[RESTORE] Found deep dive in messages for school:', lastDeepDiveSchoolId, lastDeepDiveSchoolName);
@@ -252,7 +338,7 @@ export async function restoreSessionFromParam(
     if (chatHistory) {
       const restoredContext = {
         ...(chatHistory.conversation_context || {}),
-        state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (conversationContext.resumeView || conversationContext.state || STATES.RESULTS),
+        state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (effectiveResumeView || STATES.RESULTS),
         schools: restoredSchools
       };
       // S97-WC3: Hydrate schools from matchedSchools on reload (parse JSON string and fetch full records)
@@ -272,7 +358,7 @@ export async function restoreSessionFromParam(
       setCurrentConversation(restoredConversation);
     } else {
       const restoredContext = {
-        state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (conversationContext.resumeView || conversationContext.state || STATES.RESULTS),
+        state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (effectiveResumeView || STATES.RESULTS),
         schools: restoredSchools
       };
       // S97-WC3: Hydrate schools from matchedSchools on reload (parse JSON string and fetch full records)
@@ -352,10 +438,20 @@ export async function restoreMostRecentConversation(
       setMessages(latest.messages);
     }
 
-    // 3. Restore consultant from conversationContext
+    // Phase 1e: Load normalized conversation state + schools
+    const normalizedState2 = await loadConversationState(latest.id);
+    const normalizedSchools = await loadConversationSchools(latest.id);
+
+    // 3. Restore consultant — prefer normalized, fall back to JSONB
     const ctx = latest.conversation_context || {};
-    if (ctx.consultant) {
-      setSelectedConsultant(ctx.consultant);
+    const restoredConsultant = normalizedState2?.consultant || ctx.consultant || null;
+    if (restoredConsultant) {
+      if (normalizedState2?.consultant) {
+        console.log('[PHASE-1E] Using conversation_state for consultant:', restoredConsultant);
+      } else {
+        console.log('[PHASE-1E] Fallback: using conversation_context JSONB for consultant:', restoredConsultant);
+      }
+      setSelectedConsultant(restoredConsultant);
     }
 
     // 4. Bug 2: Collect ALL deep dive analyses from messages, set most recent as active
@@ -428,21 +524,42 @@ export async function restoreMostRecentConversation(
       }
     }
 
-    // 5. Restore schools from conversationContext
-    let restoredSchools = ctx.schools || [];
-    if (typeof restoredSchools === 'string') {
-      try { restoredSchools = JSON.parse(restoredSchools); } catch (_) { restoredSchools = []; }
-    }
-    // If stored as IDs, fetch full records
-    if (Array.isArray(restoredSchools) && restoredSchools.length > 0 && typeof restoredSchools[0] === 'string') {
-      try {
-        restoredSchools = await School.filter({ id: { $in: restoredSchools } });
-      } catch (_) { /* keep as-is */ }
+    // 5. Restore schools — prefer normalized conversation_schools, fall back to JSONB
+    let restoredSchools = [];
+    if (normalizedSchools.length > 0) {
+      console.log('[PHASE-1E] Using conversation_schools for school restore:', normalizedSchools.length, 'schools');
+      restoredSchools = normalizedSchools;
+    } else {
+      console.log('[PHASE-1E] Fallback: using conversation_context JSONB for schools');
+      restoredSchools = ctx.schools || [];
+      if (typeof restoredSchools === 'string') {
+        try { restoredSchools = JSON.parse(restoredSchools); } catch (_) { restoredSchools = []; }
+      }
+      // If stored as IDs, fetch full records
+      if (Array.isArray(restoredSchools) && restoredSchools.length > 0 && typeof restoredSchools[0] === 'string') {
+        try {
+          restoredSchools = await School.filter({ id: { $in: restoredSchools } });
+        } catch (_) { /* keep as-is */ }
+      }
     }
     if (restoredSchools.length > 0) setSchools(restoredSchools);
 
-    // 6. Restore family profile from context if available
-    if (ctx.extractedEntities) {
+    // 6. Restore family profile — prefer normalized conversation_state, fall back to JSONB extractedEntities
+    if (normalizedState2 && (normalizedState2.child_name || normalizedState2.child_grade || normalizedState2.location_area)) {
+      console.log('[PHASE-1E] Using conversation_state for family profile fields');
+      const fp = {
+        child_name: normalizedState2.child_name,
+        child_grade: normalizedState2.child_grade,
+        location_area: normalizedState2.location_area,
+        max_tuition: normalizedState2.max_tuition,
+        priorities: normalizedState2.priorities || [],
+        learning_differences: normalizedState2.learning_differences || [],
+      };
+      if (Object.values(fp).some(v => v != null && v !== '' && !(Array.isArray(v) && v.length === 0))) {
+        setFamilyProfile(fp);
+      }
+    } else if (ctx.extractedEntities) {
+      console.log('[PHASE-1E] Fallback: using conversation_context JSONB extractedEntities for family profile');
       const fp = {
         child_name: ctx.extractedEntities.child_name || ctx.extractedEntities.childName,
         child_grade: ctx.extractedEntities.child_grade || ctx.extractedEntities.childGrade,
@@ -457,9 +574,17 @@ export async function restoreMostRecentConversation(
       }
     }
 
-    // 7. Determine correct state and set currentConversation (triggers useDataLoader)
+    // 7. Determine correct state — prefer normalized, fall back to JSONB
     const hasDeepDive = !!lastDeepDiveSchoolId;
-    const restoredState = hasDeepDive ? STATES.DEEP_DIVE : (ctx.state || ctx.resumeView || STATES.RESULTS);
+    const normalizedStateValue = normalizedState2?.resume_view || normalizedState2?.state || null;
+    const fallbackStateValue = ctx.state || ctx.resumeView || null;
+    const effectiveState = normalizedStateValue || fallbackStateValue || STATES.RESULTS;
+    if (normalizedStateValue) {
+      console.log('[PHASE-1E] Using conversation_state for state:', normalizedStateValue);
+    } else if (fallbackStateValue) {
+      console.log('[PHASE-1E] Fallback: using conversation_context JSONB for state:', fallbackStateValue);
+    }
+    const restoredState = hasDeepDive ? STATES.DEEP_DIVE : effectiveState;
 
     if (hasDeepDive && setSelectedSchool) {
       const target = restoredSchools.find(s => s.id === lastDeepDiveSchoolId);
