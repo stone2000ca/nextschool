@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 const MIN_LOADER_MS = 3000;
-const TIMEOUT_MS = 60000;
 
 const STEPS = [
   { label: 'Analyzing preferences', icon: (color) => (
@@ -70,7 +69,6 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete, family
   const [step, setStep] = useState(0);
   const [factIdx, setFactIdx] = useState(() => Math.floor(Math.random() * FACTS.length));
   const [factVisible, setFactVisible] = useState(true);
-  const [timedOut, setTimedOut] = useState(false);
   const timers = useRef([]);
   const minReady = useRef(false);
   const pending = useRef(false);
@@ -145,7 +143,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete, family
     pending.current = false;
     minReady.current = false;
     setFlashActive(false);
-    setStep(0); setTimedOut(false); setFactVisible(true);
+    setStep(0); setFactVisible(true);
     setFactIdx(Math.floor(Math.random() * FACTS.length));
 
     t(() => setStep(1), 2000);
@@ -158,8 +156,6 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete, family
           setTimeout(() => { onCompleteRef.current?.(); setFlashActive(false); wasVisible.current = false; }, 700);
         }
     }, MIN_LOADER_MS);
-    t(() => setTimedOut(true), TIMEOUT_MS);
-
     const factInterval = setInterval(() => {
       setFactVisible(false);
       setTimeout(() => { setFactIdx(i => (i + 1) % FACTS.length); setFactVisible(true); }, 400);
@@ -178,19 +174,6 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete, family
     return (
       <div style={{position:'fixed',inset:0,zIndex:9999,background:TEAL,animation:'tealFlash 700ms ease-in-out forwards'}}>
         <style>{KEYFRAMES}</style>
-      </div>
-    );
-  }
-
-  if (timedOut) {
-    return (
-      <div style={{position:'fixed',inset:0,zIndex:10000,background:BG,display:'flex',alignItems:'center',justifyContent:'center'}}>
-        <div style={{textAlign:'center',padding:40}}>
-          <div style={{fontSize:48,marginBottom:16}}>⏳</div>
-          <h3 style={{color:'#334155',marginBottom:8}}>Taking longer than expected</h3>
-          <p style={{color:'#64748b',marginBottom:24}}>The search is still running. You can wait or try again.</p>
-          <button onClick={() => onCompleteRef.current?.()} style={{background:TEAL,color:'#fff',border:'none',borderRadius:8,padding:'10px 28px',fontSize:15,cursor:'pointer'}}>Try Again</button>
-        </div>
       </div>
     );
   }

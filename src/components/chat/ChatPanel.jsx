@@ -199,6 +199,15 @@ const ChatPanel = forwardRef(function ChatPanel({
                 consultantName={selectedConsultant}
                 onViewSchoolProfile={handleViewSchoolProfile}
               />
+              {msg.retryAction === 'GUIDED_INTRO_RETRY' && msg.role === 'assistant' && !isTyping && (
+                <button
+                  onClick={() => onSendMessage?.('__GUIDED_INTRO_COMPLETE__', null, null)}
+                  className="mt-2 ml-11 text-sm font-medium px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                  style={{ background: '#18968a', color: '#fff', border: 'none' }}
+                >
+                  Try Again
+                </button>
+              )}
               {msg.deepDiveAnalysis && msg.role === 'assistant' && !isTyping && onTogglePanel && onSetExpandedSchool && (
                 <button
                   onClick={() => {

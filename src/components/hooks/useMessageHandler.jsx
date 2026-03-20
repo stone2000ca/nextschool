@@ -721,19 +721,20 @@ export const useMessageHandler = ({
     } catch (error) {
       console.error('Error sending message:', error);
       setIsTyping(false);
-      // FIX-RESULTS-TIMEOUT: Only clear briefStatus if NOT in confirmed state.
-      // Clearing 'confirmed' causes retry to lose context and re-ask intake questions.
-      if (briefStatus !== 'confirmed') {
-        setBriefStatus(null);
-      }
+      // Always clear briefStatus on error to dismiss the LoadingOverlay.
+      // The overlay is a display-only component — it never times out on its own.
+      // Context (familyBrief) is preserved in Consultant state for retry.
+      const wasBriefConfirmed = briefStatus === 'confirmed';
+      setBriefStatus(null);
 
       // Add error message to chat with context-aware retry guidance
       const errorMessage = {
         role: 'assistant',
-        content: briefStatus === 'confirmed'
-          ? "The search took a bit longer than expected. Please send your message again — I still have all your details."
+        content: wasBriefConfirmed
+          ? "The search took a bit longer than expected. Click **Try Again** below to retry — I still have all your details."
           : 'Sorry, something went wrong. Please try again.',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ...(wasBriefConfirmed ? { retryAction: 'GUIDED_INTRO_RETRY' } : {}),
       };
       setMessages([...updatedMessages, errorMessage]);
     }
