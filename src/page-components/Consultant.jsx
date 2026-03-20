@@ -941,12 +941,12 @@ export default function Consultant() {
 
       const result = await invokeFunction('getNearbySchools', {
         lat, lng, excludeIds,
-        gradeMin: familyProfile?.childGrade || null,
-        maxTuition: familyProfile?.maxTuition || null,
+        gradeMin: familyProfile?.child_grade || null,
+        maxTuition: familyProfile?.max_tuition || null,
         dealbreakers: familyProfile?.dealbreakers || [],
-        familyGender: familyProfile?.childGender || null,
-        schoolGenderExclusions: familyProfile?.schoolGenderExclusions || [],
-        schoolGenderPreference: familyProfile?.schoolGenderPreference || null,
+        familyGender: familyProfile?.child_gender || null,
+        schoolGenderExclusions: familyProfile?.school_gender_exclusions || [],
+        schoolGenderPreference: familyProfile?.school_gender_preference || null,
         page: extraSchoolsPage,
         pageSize: 20,
       });
@@ -1644,24 +1644,24 @@ export default function Consultant() {
               return (
                 <ResearchNotepad
                   schoolData={{
-                    name: selectedSchool.name || selectedSchool.schoolName || 'Unknown School',
-                    location: `${selectedSchool.city || ''}, ${selectedSchool.provinceState || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
-                    grades: selectedSchool.gradesServed || `${selectedSchool.lowestGrade || 'K'}-${selectedSchool.highestGrade || '12'}`,
-                    type: selectedSchool.genderPolicy || selectedSchool.schoolTypeLabel || '',
+                    name: selectedSchool.name || selectedSchool.school_name || 'Unknown School',
+                    location: `${selectedSchool.city || ''}, ${selectedSchool.province_state || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
+                    grades: selectedSchool.grades_served || `${selectedSchool.lowest_grade || 'K'}-${selectedSchool.highest_grade || '12'}`,
+                    type: selectedSchool.gender_policy || selectedSchool.school_type_label || '',
                     students: selectedSchool.enrollment || 0,
-                    teacherRatio: selectedSchool.studentTeacherRatio || '',
-                    tuition: selectedSchool.tuitionDomesticDay ? `$${Number(selectedSchool.tuitionDomesticDay).toLocaleString()}` : 'Contact school',
+                    teacherRatio: selectedSchool.student_teacher_ratio || '',
+                    tuition: selectedSchool.tuition_domestic_day ? `$${Number(selectedSchool.tuition_domestic_day).toLocaleString()}` : 'Contact school',
                   }}
-                  fitScore={deepDiveAnalysis.fitScore}
-                  fitLabel={deepDiveAnalysis.fitLabel}
-                  tradeOffs={deepDiveAnalysis.tradeOffs}
-                  aiInsight={deepDiveAnalysis.aiInsight}
-                  priorityMatches={deepDiveAnalysis.priorityMatches || []}
+                  fitScore={deepDiveAnalysis.fit_score}
+                  fitLabel={deepDiveAnalysis.fit_label}
+                  tradeOffs={deepDiveAnalysis.trade_offs}
+                  aiInsight={deepDiveAnalysis.ai_insight}
+                  priorityMatches={deepDiveAnalysis.priority_matches || []}
                   journeySteps={journeySteps}
                   keyDates={keyDates}
                   visitPrepKit={visitPrepKit}
                   actionPlan={actionPlan}
-                  communityPulse={deepDiveAnalysis.communityPulse || null}
+                  communityPulse={deepDiveAnalysis.community_pulse || null}
                   contactLog={contactLog}
                   researchNotes={researchNotes}
                   onNotesChange={setResearchNotes}

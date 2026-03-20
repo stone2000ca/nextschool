@@ -357,7 +357,7 @@ export async function handleResultsLogic(params: any) {
           tour_type: 'in_person',
           message: `Tour request initiated from RESULTS state for ${jMatched.name}`,
           conversation_id: conversationId,
-          child_grade: conversationFamilyProfile?.childGrade || undefined,
+          child_grade: conversationFamilyProfile?.child_grade || undefined,
         }).catch((err: any) => console.error('[E29-005-AC7] TourRequest creation failed:', err?.message));
       }
       return { message: `Great choice! Let me pull up the tour request form for ${jMatched.name}.`, state: STATES.RESULTS, briefStatus: briefStatus, schools: jSchoolPool, familyProfile: conversationFamilyProfile, conversationContext: context, actions: [{ type: 'INITIATE_TOUR', payload: { schoolId: jMatched.id }, timing: 'immediate' }] };
@@ -371,43 +371,43 @@ export async function handleResultsLogic(params: any) {
     return { message: "I need a bit more information to find the right schools. Could you remind me — where are you looking and what grade?", state: STATES.RESULTS, briefStatus, schools: [], familyProfile: conversationFamilyProfile || {}, conversationContext: context, rawToolCalls: [] };
   }
 
-  if (!conversationFamilyProfile?.locationArea && context.extractedEntities?.locationArea) {
-    conversationFamilyProfile.locationArea = context.extractedEntities.locationArea;
+  if (!conversationFamilyProfile?.location_area && context.extractedEntities?.location_area) {
+    conversationFamilyProfile.location_area = context.extractedEntities.location_area;
   }
 
-  if (!conversationFamilyProfile?.locationArea && !conversationFamilyProfile?.childGrade) {
+  if (!conversationFamilyProfile?.location_area && !conversationFamilyProfile?.child_grade) {
     return { message: "I need to know your location and your child's grade to search for schools. Could you tell me both?", state: STATES.RESULTS, briefStatus, schools: [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
   }
 
   let parsedGrade: number | null = null;
-  const rawGrade = conversationFamilyProfile?.childGrade;
+  const rawGrade = conversationFamilyProfile?.child_grade;
   if (rawGrade !== null && rawGrade !== undefined) {
     parsedGrade = typeof rawGrade === 'number' ? rawGrade : parseInt(rawGrade);
   }
 
   let parsedTuition: number | null = null;
-  if (conversationFamilyProfile?.maxTuition) {
-    parsedTuition = typeof conversationFamilyProfile.maxTuition === 'number' ? conversationFamilyProfile.maxTuition : parseInt(conversationFamilyProfile.maxTuition);
+  if (conversationFamilyProfile?.max_tuition) {
+    parsedTuition = typeof conversationFamilyProfile.max_tuition === 'number' ? conversationFamilyProfile.max_tuition : parseInt(conversationFamilyProfile.max_tuition);
   }
 
-  const locationCoords = resolveLocationCoords(conversationFamilyProfile?.locationArea);
+  const locationCoords = resolveLocationCoords(conversationFamilyProfile?.location_area);
   const resolvedLat = locationCoords?.lat ?? userLocation?.lat ?? null;
   const resolvedLng = locationCoords?.lng ?? userLocation?.lng ?? null;
 
   const searchParams: any = { limit: 50, familyProfile: conversationFamilyProfile };
 
-  if (conversationFamilyProfile?.locationArea) {
-    const locationAreaLower = conversationFamilyProfile.locationArea.toLowerCase().trim();
+  if (conversationFamilyProfile?.location_area) {
+    const locationAreaLower = conversationFamilyProfile.location_area.toLowerCase().trim();
     const regionAliases = ['gta', 'greater toronto area', 'lower mainland', 'metro vancouver', 'greater vancouver', 'toronto'];
     const metroRegions = ['toronto', 'vancouver', 'montreal', 'calgary', 'ottawa', 'edmonton', 'winnipeg', 'hamilton'];
 
     if (metroRegions.includes(locationAreaLower)) {
-      searchParams.region = conversationFamilyProfile.locationArea;
+      searchParams.region = conversationFamilyProfile.location_area;
     } else if (regionAliases.includes(locationAreaLower)) {
-      searchParams.region = conversationFamilyProfile.locationArea;
+      searchParams.region = conversationFamilyProfile.location_area;
     } else {
       const cityToProvinceMap: Record<string, string> = { 'toronto': 'Ontario', 'vancouver': 'British Columbia', 'calgary': 'Alberta', 'edmonton': 'Alberta', 'montreal': 'Quebec', 'ottawa': 'Ontario', 'winnipeg': 'Manitoba', 'halifax': 'Nova Scotia', 'victoria': 'British Columbia', 'quebec city': 'Quebec', 'saskatoon': 'Saskatchewan', 'regina': 'Saskatchewan' };
-      const locationParts = conversationFamilyProfile.locationArea.split(',').map((s: string) => s.trim());
+      const locationParts = conversationFamilyProfile.location_area.split(',').map((s: string) => s.trim());
       if (locationParts.length >= 2) {
         searchParams.city = locationParts[0];
         searchParams.provinceState = locationParts[1];
@@ -419,14 +419,14 @@ export async function handleResultsLogic(params: any) {
     }
 
     if (!searchParams.city && !searchParams.region && locationAreaLower) {
-      searchParams.city = conversationFamilyProfile.locationArea;
+      searchParams.city = conversationFamilyProfile.location_area;
     }
   }
 
   if (resolvedLat && resolvedLng) {
     searchParams.resolvedLat = resolvedLat;
     searchParams.resolvedLng = resolvedLng;
-    searchParams.maxDistanceKm = conversationFamilyProfile?.commuteToleranceMinutes ? Math.ceil(conversationFamilyProfile.commuteToleranceMinutes / 2) : 75;
+    searchParams.maxDistanceKm = conversationFamilyProfile?.commute_tolerance_minutes ? Math.ceil(conversationFamilyProfile.commute_tolerance_minutes / 2) : 75;
   }
 
   if (parsedGrade !== null) { searchParams.minGrade = parsedGrade; searchParams.maxGrade = parsedGrade; }
