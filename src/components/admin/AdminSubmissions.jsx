@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { SchoolClaim, School, SchoolAdmin } from '@/lib/entities';
+import { SchoolClaim, SchoolAdmin } from '@/lib/entities';
+import { fetchSchools, updateSchool } from '@/lib/api/schools';
 import { invokeFunction } from '@/lib/functions';
 import { CheckCircle2, XCircle, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ export default function AdminSubmissions() {
     }
 
     // Fetch the actual school records for those IDs
-    const schoolResults = await Promise.all(schoolIds.map(id => School.filter({ id })));
+    const schoolResults = await Promise.all(schoolIds.map(id => fetchSchools({ ids: [id] })));
     const schools = schoolResults.flat().filter(s => s.status === "draft" || s.status === "active" || s.status === "pending_review");
     setSubmissions(schools.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
     setLoading(false);
@@ -37,7 +38,7 @@ export default function AdminSubmissions() {
   async function approve(school) {
     setActionMap(m => ({ ...m, [school.id]: "approving" }));
     // Fix 1+2: Set status, claimStatus, membershipTier together
-    await School.update(school.id, { status: "active", claim_status: "claimed", membership_tier: "basic" });
+    await updateSchool(school.id, { status: "active", claim_status: "claimed", membership_tier: "basic" });
     // Update associated SchoolClaim to verified (checks both statuses)
     let approvedClaim = null;
     try {
@@ -86,7 +87,7 @@ export default function AdminSubmissions() {
 
   async function reject(school) {
     setActionMap(m => ({ ...m, [school.id]: "rejecting" }));
-    await School.update(school.id, { status: "archived" });
+    await updateSchool(school.id, { status: "archived" });
     // Also reject associated SchoolClaim (non-blocking)
     try {
       const [claimsPending, claimsPendingReview] = await Promise.all([

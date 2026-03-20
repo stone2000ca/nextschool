@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Navbar from "@/components/navigation/Navbar";
 import { invokeFunction } from '@/lib/functions';
 import { LOGO_BLACK_TEXT } from '@/lib/brand-assets';
-import { School } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 import SchoolCardUnified from '@/components/schools/SchoolCardUnified';
 import Footer from '@/components/navigation/Footer';
 
@@ -87,9 +87,7 @@ export default function Home() {
   const loadFeaturedSchools = async () => {
     try {
       const featuredNames = ["Havergal College", "Upper Canada College", "Branksome Hall", "Crescent School"];
-      const data = await School.filter({
-        name: { "$in": featuredNames }
-      });
+      const data = await fetchSchools({ names: featuredNames });
       setSchools(data.slice(0, 4));
     } catch (error) {
       console.error('Failed to load featured schools:', error);

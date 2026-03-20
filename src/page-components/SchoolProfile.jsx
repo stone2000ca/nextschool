@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { School as SchoolEntity, Testimonial, SchoolEvent } from '@/lib/entities';
+import { Testimonial, SchoolEvent } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 import { invokeFunction } from '@/lib/functions';
 import { Button } from "@/components/ui/button";
 import { MapPin, Users, DollarSign, Calendar, Award, Globe2, Mail, Phone, ExternalLink, CheckCircle2, AlertCircle, Eye, ChevronRight, MessageCircle } from "lucide-react";
@@ -516,9 +517,9 @@ export default function SchoolProfile() {
       try {
         let schools;
         if (slug) {
-          schools = await SchoolEntity.filter({ slug });
+          schools = await fetchSchools({ slug });
         } else if (schoolId) {
-          schools = await SchoolEntity.filter({ id: schoolId });
+          schools = await fetchSchools({ ids: [schoolId] });
         }
         if (schools && schools.length > 0) {
           const s = schools[0];
@@ -571,7 +572,7 @@ export default function SchoolProfile() {
   // Load related schools
   useEffect(() => {
     if (!school?.city) return;
-    SchoolEntity.filter({ city: school.city })
+    fetchSchools({ city: school.city })
       .then(schools => setRelatedSchools((schools || []).filter(s => s.id !== school.id).slice(0, 4)))
       .catch(() => {});
   }, [school?.city, school?.id]);

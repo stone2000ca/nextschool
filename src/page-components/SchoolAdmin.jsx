@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
-import { School, SchoolAdmin as SchoolAdminEntity, SchoolClaim, User, SchoolInquiry, EnrichmentDiff, PhotoCandidate } from '@/lib/entities';
+import { SchoolAdmin as SchoolAdminEntity, SchoolClaim, User, SchoolInquiry, EnrichmentDiff, PhotoCandidate } from '@/lib/entities';
+import { fetchSchools, updateSchool } from '@/lib/api/schools';
 import { invokeFunction } from '@/lib/functions';
 import { Building2, BarChart3, Mail, CreditCard, Upload, Crown, Sparkles, Image, ImagePlus, MessageSquareQuote, User as UserIcon, CalendarDays, FileText, FlaskConical, Loader2, ArrowLeft, Clock, XCircle } from 'lucide-react';
 
@@ -80,7 +81,7 @@ export default function SchoolAdmin() {
         const adminUsers = await User.filter({ email: userData.email });
         const isAdmin = adminUsers && adminUsers.length > 0 && adminUsers[0].role === 'admin';
         if (isAdmin) {
-          const schoolData = await School.filter({ id: impersonateSchoolId });
+          const schoolData = await fetchSchools({ ids: [impersonateSchoolId] });
           if (schoolData && schoolData.length > 0) {
             resolvedSchool = schoolData[0];
             setSchool(resolvedSchool);
@@ -93,7 +94,7 @@ export default function SchoolAdmin() {
         const adminRecords = await SchoolAdminEntity.filter({ user_id: userData.id, is_active: true });
 
         if (adminRecords && adminRecords.length > 0) {
-          const schoolData = await School.filter({ id: adminRecords[0].school_id });
+          const schoolData = await fetchSchools({ ids: [adminRecords[0].school_id] });
           if (schoolData && schoolData.length > 0) {
             resolvedSchool = schoolData[0];
             setSchool(resolvedSchool);
@@ -101,7 +102,7 @@ export default function SchoolAdmin() {
           }
         } else {
           // --- PATH B: Legacy adminUserId fallback ---
-          const schools = await School.filter({ admin_user_id: userData.id });
+          const schools = await fetchSchools({ admin_user_id: userData.id });
           if (schools && schools.length > 0) {
             resolvedSchool = schools[0];
             setSchool(resolvedSchool);
@@ -120,7 +121,7 @@ export default function SchoolAdmin() {
             status: 'verified'
           });
           if (claims && claims.length > 0) {
-            const schoolData = await School.filter({ id: urlSchoolId });
+            const schoolData = await fetchSchools({ ids: [urlSchoolId] });
             if (schoolData && schoolData.length > 0) {
               resolvedSchool = schoolData[0];
               setSchool(resolvedSchool);
@@ -137,7 +138,7 @@ export default function SchoolAdmin() {
             const latest = claims.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
             setPendingClaim(latest);
             if (latest.school_id) {
-              const schoolData = await School.filter({ id: latest.school_id });
+              const schoolData = await fetchSchools({ ids: [latest.school_id] });
               if (schoolData && schoolData.length > 0) setPendingSchool(schoolData[0]);
             }
           }
@@ -175,7 +176,7 @@ export default function SchoolAdmin() {
 
     setIsSaving(true);
     try {
-      await School.update(school.id, updatedData);
+      await updateSchool(school.id, updatedData);
       const updated = { ...school, ...updatedData };
       setSchool(updated);
       setIsDirty(false);

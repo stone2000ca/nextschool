@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-import { School, SchoolClaim, SchoolAdmin, User } from '@/lib/entities';
+import { SchoolClaim, SchoolAdmin, User } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -59,9 +60,7 @@ export default function ClaimSchool() {
       }
       setSearchingSchools(true);
       try {
-        const schools = await School.filter({
-          name: { "$regex": term, "$options": "i" }
-        }, null, 50);
+        const schools = await fetchSchools({ search: term, limit: 50 });
         setSearchResults(schools);
       } catch (error) {
         console.error('Failed to search schools:', error);
@@ -91,7 +90,7 @@ export default function ClaimSchool() {
         const claims = await SchoolClaim.filter({ claimed_by: userData.id });
         const activeClaim = claims.find(c => ['pending_review', 'verified'].includes(c.status));
         if (activeClaim) {
-          const schools = await School.filter({ id: activeClaim.school_id });
+          const schools = await fetchSchools({ ids: [activeClaim.school_id] });
           setClaimSchoolName(schools[0]?.name || '');
           setExistingClaim(activeClaim);
           setLoading(false);
@@ -112,7 +111,7 @@ export default function ClaimSchool() {
 
   const loadSchool = async () => {
     try {
-      const schools = await School.filter({ id: schoolId });
+      const schools = await fetchSchools({ ids: [schoolId] });
       if (schools && schools.length > 0) {
         const s = schools[0];
         setSchool(s);

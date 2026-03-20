@@ -3,7 +3,8 @@
 // Entities: EnrichmentDiff (read/update), School (update on approve)
 
 import { useState, useEffect } from 'react';
-import { EnrichmentDiff, School } from '@/lib/entities';
+import { EnrichmentDiff } from '@/lib/entities';
+import { updateSchool } from '@/lib/api/schools';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Zap, ExternalLink } from 'lucide-react';
@@ -61,7 +62,7 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
     try { parsedValue = JSON.parse(diff.proposed_value); } catch (_) {}
 
     await Promise.all([
-      School.update(school.id, { [diff.field]: parsedValue }),
+      updateSchool(school.id, { [diff.field]: parsedValue }),
       EnrichmentDiff.update(diff.id, {
         status: 'approved',
         reviewed_by: user?.email || '',

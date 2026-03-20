@@ -3,7 +3,8 @@
 // Last Modified: 2026-03-01
 
 import { STATES } from '@/lib/stateMachineConfig';
-import { SchoolAnalysis, FamilyProfile, School } from '@/lib/entities';
+import { SchoolAnalysis, FamilyProfile } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 import { fetchConversations, fetchConversation } from '@/lib/api/conversations';
 import { fetchSession } from '@/lib/api/sessions';
 import { invokeFunction } from '@/lib/functions';
@@ -311,7 +312,7 @@ export async function restoreSessionFromParam(
       } else {
         // School not in search results - fetch full record from entity
         try {
-          const fullSchools = await School.filter({ id: lastDeepDiveSchoolId });
+          const fullSchools = await fetchSchools({ ids: [lastDeepDiveSchoolId] });
           if (fullSchools && fullSchools.length > 0) {
             setSelectedSchool(fullSchools[0]);
           } else {
@@ -337,7 +338,7 @@ export async function restoreSessionFromParam(
         try { schoolIds = JSON.parse(schoolIds); } catch (_) { schoolIds = []; }
       }
       if (Array.isArray(schoolIds) && schoolIds.length > 0) {
-        const fullSchools = await School.filter({ id: { $in: schoolIds } });
+        const fullSchools = await fetchSchools({ ids: schoolIds });
         restoredContext.schools = fullSchools;
         setSchools(fullSchools);
       }
@@ -357,7 +358,7 @@ export async function restoreSessionFromParam(
         try { schoolIds = JSON.parse(schoolIds); } catch (_) { schoolIds = []; }
       }
       if (Array.isArray(schoolIds) && schoolIds.length > 0) {
-        const fullSchools = await School.filter({ id: { $in: schoolIds } });
+        const fullSchools = await fetchSchools({ ids: schoolIds });
         restoredContext.schools = fullSchools;
         setSchools(fullSchools);
       }
@@ -543,7 +544,7 @@ export async function restoreMostRecentConversation(
         setSelectedSchool(target);
       } else {
         try {
-          const fullSchools = await School.filter({ id: lastDeepDiveSchoolId });
+          const fullSchools = await fetchSchools({ ids: [lastDeepDiveSchoolId] });
           if (fullSchools?.length > 0) setSelectedSchool(fullSchools[0]);
         } catch (_) { /* best effort */ }
       }

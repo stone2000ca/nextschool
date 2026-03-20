@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { School } from '@/lib/entities';
+import { updateSchool } from '@/lib/api/schools';
 import { invokeFunction } from '@/lib/functions';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -86,7 +86,7 @@ export default function CSVUpload({ school, onUpdate }) {
     if (!preview) return;
 
     try {
-      await School.update(school.id, preview);
+      await updateSchool(school.id, preview);
       setUploadResult({ type: 'success', message: 'Profile updated successfully!' });
       setPreview(null);
       onUpdate();

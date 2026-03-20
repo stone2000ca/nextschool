@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { School } from '@/lib/entities';
+import { fetchSchools, updateSchool } from '@/lib/api/schools';
 import { invokeFunction } from '@/lib/functions';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ export default function AdminSchools() {
 
   const loadSchools = async () => {
     try {
-      const data = await School.list('-updated_date');
+      const data = await fetchSchools({ sort: '-updated_date' });
       setSchools(data);
     } catch (error) {
       console.error('Failed to load schools:', error);
@@ -34,7 +34,7 @@ export default function AdminSchools() {
 
   const handleVerify = async (schoolId, verified) => {
     try {
-      await School.update(schoolId, { verified });
+      await updateSchool(schoolId, { verified });
       setSchools(schools.map(s => s.id === schoolId ? { ...s, verified } : s));
     } catch (error) {
       console.error('Failed to update verification:', error);
@@ -43,7 +43,7 @@ export default function AdminSchools() {
 
   const handleArchive = async (schoolId) => {
     try {
-      await School.update(schoolId, { status: 'archived' });
+      await updateSchool(schoolId, { status: 'archived' });
       setSchools(schools.map(s => s.id === schoolId ? { ...s, status: 'archived' } : s));
     } catch (error) {
       console.error('Failed to archive:', error);

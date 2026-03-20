@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { CheckCircle2, AlertTriangle, ArrowRight, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/lib/AuthContext';
-import { School, SchoolClaim } from '@/lib/entities';
+import { SchoolClaim } from '@/lib/entities';
+import { fetchSchools, createSchool } from '@/lib/api/schools';
 import Navbar from "@/components/navigation/Navbar";
 
 // --- T-SP-009: Duplicate detection helpers (shared with Portal) ---
@@ -125,7 +126,7 @@ export default function SubmitSchool() {
 
     // T-SP-009: Duplicate check
     setChecking(true);
-    const allSchools = await School.list('-updated_date', undefined, 500);
+    const allSchools = await fetchSchools({ sort: '-updated_date', limit: 500 });
     const dupes = findDuplicates(form.name, form.city, allSchools);
     setChecking(false);
 
@@ -137,7 +138,7 @@ export default function SubmitSchool() {
     // Submit
     setSubmitting(true);
     const slug = form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now();
-    const newSchool = await School.create({
+    const newSchool = await createSchool({
       name: form.name.trim(),
       city: form.city.trim(),
       province_state: form.provinceState.trim(),

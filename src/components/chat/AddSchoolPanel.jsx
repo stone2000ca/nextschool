@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Check, Heart, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { School } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 
 export default function AddSchoolPanel({ onClose, onToggleShortlist, shortlistedIds }) {
   const [query, setQuery] = useState('');
@@ -18,11 +18,7 @@ export default function AddSchoolPanel({ onClose, onToggleShortlist, shortlisted
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const found = await School.filter(
-          { name: { $regex: query, $options: 'i' } },
-          'name',
-          10
-        );
+        const found = await fetchSchools({ search: query, sort: 'name', limit: 10 });
         setResults(found);
       } catch (e) {
         console.error('[AddSchoolPanel] search failed:', e);
