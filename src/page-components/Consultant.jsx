@@ -345,8 +345,13 @@ export default function Consultant() {
   const showBriefToggle = isBriefState && hasFamilyProfileData;
   
   // FIX 17: Sync briefStatus from conversation_context whenever it changes
+  // FIX-RACE (Defensive): Never re-lock the overlay when RESULTS have already arrived.
+  // Without this guard, a stale 'confirmed' from a batched setCurrentConversation
+  // update can re-set briefStatus and re-show the LoadingOverlay after dismissal.
   useEffect(() => {
     const contextBriefStatus = currentConversation?.conversation_context?.briefStatus;
+    const contextState = currentConversation?.conversation_context?.state;
+    if (contextState === STATES.RESULTS) return;
     if (contextBriefStatus !== briefStatus) {
       console.log('[FIX 17] Syncing briefStatus:', contextBriefStatus);
       setBriefStatus(contextBriefStatus);

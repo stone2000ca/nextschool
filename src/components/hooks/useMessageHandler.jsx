@@ -509,7 +509,15 @@ export const useMessageHandler = ({
                 updatedContext.chatSessionId = chatSessionResult.id;
                 setCurrentConversation(prev => ({
                   ...prev,
-                  conversation_context: { ...(prev?.conversation_context || {}), chatSessionId: chatSessionResult.id },
+                  conversation_context: {
+                    ...(prev?.conversation_context || {}),
+                    chatSessionId: chatSessionResult.id,
+                    // FIX-RACE: Explicitly re-assert briefStatus: null on RESULTS.
+                    // Without this, React batching spreads prev.conversation_context
+                    // which still has briefStatus: 'confirmed' from the prior render,
+                    // overwriting the null that was set earlier in this handler.
+                    briefStatus: null,
+                  },
                 }));
               }
             }
