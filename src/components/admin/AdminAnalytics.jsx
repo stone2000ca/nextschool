@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { User, ChatHistory, TokenTransaction } from '@/lib/entities';
+import { User, TokenTransaction } from '@/lib/entities';
+import { fetchAdminConversations } from '@/lib/api/conversations';
 import { Card } from '@/components/ui/card';
 import { TrendingUp, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -18,7 +19,7 @@ export default function AdminAnalytics() {
 
       let conversations = [];
       try {
-        conversations = await ChatHistory.list('-created_date');
+        conversations = await fetchAdminConversations();
       } catch (e) {
         console.error('Failed to load ChatHistory:', e);
       }

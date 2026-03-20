@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-import { ChatSession, ChatHistory } from '@/lib/entities';
+import { fetchSessions, updateSession } from '@/lib/api/sessions';
+import { deleteConversation } from '@/lib/api/conversations';
 import Navbar from '@/components/navigation/Navbar';
 import SchoolSearchProfile from '@/components/dashboard/SchoolSearchProfile.jsx';
 import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
@@ -64,9 +65,7 @@ export default function Dashboard() {
       setUser(userData);
 
       // Fetch ChatSession records for this user
-      const chatSessions = await ChatSession.filter({
-        user_id: userData.id
-      });
+      const chatSessions = await fetchSessions();
 
       // E48-S3: Diagnostic log when no sessions found
       if (chatSessions.length === 0) {
@@ -125,7 +124,7 @@ export default function Dashboard() {
   const handleArchiveSessionForNewSearch = async (sessionToArchive) => {
     setModalLoading(true);
     try {
-      await ChatSession.update(sessionToArchive.id, { status: 'archived' });
+      await updateSession(sessionToArchive.id, { status: 'archived' });
       setShowArchiveChoiceModal(false);
       // Refresh sessions
       await loadSessions();
@@ -147,7 +146,7 @@ export default function Dashboard() {
     }
 
     try {
-      await ChatSession.update(archivedSession.id, { status: 'active' });
+      await updateSession(archivedSession.id, { status: 'active' });
       setReactivateError(null);
       await loadSessions();
     } catch (err) {
@@ -166,10 +165,10 @@ export default function Dashboard() {
     try {
       // Cascade delete: Remove associated ChatHistory
       if (sessionToDelete.chat_history_id) {
-        await ChatHistory.delete(sessionToDelete.chat_history_id);
+        await deleteConversation(sessionToDelete.chat_history_id);
       }
       // Delete the session
-      await ChatSession.update(sessionToDelete.id, { 
+      await updateSession(sessionToDelete.id, {
         status: 'deleted',
         is_active: false
       });
@@ -194,7 +193,7 @@ export default function Dashboard() {
 
     setModalLoading(true);
     try {
-      await ChatSession.update(activeSession.id, { status: 'archived' });
+      await updateSession(activeSession.id, { status: 'archived' });
       setShowNewSearchModal(false);
       // Refresh sessions
       await loadSessions();
@@ -222,13 +221,13 @@ export default function Dashboard() {
     await Promise.all(toProcess.map(async (s) => {
       if (isArchivingActive) {
         // Archive active sessions — soft archive only
-        return ChatSession.update(s.id, { status: 'archived' });
+        return updateSession(s.id, { status: 'archived' });
       } else {
         // Permanently delete archived sessions + their chat history
         if (s.chat_history_id) {
-          await ChatHistory.delete(s.chat_history_id);
+          await deleteConversation(s.chat_history_id);
         }
-        return ChatSession.update(s.id, { status: 'deleted', is_active: false});
+        return updateSession(s.id, { status: 'deleted', is_active: false});
       }
     }));
   };
