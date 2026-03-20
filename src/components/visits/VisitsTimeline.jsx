@@ -114,13 +114,22 @@ export default function VisitsTimeline({ variant = 'panel', onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pastExpanded, setPastExpanded] = useState(false);
+  // Tracks whether the server rejected us as unauthorized — this is the
+  // source of truth for "not logged in" because client-side isAuthenticated
+  // can be stale (expired cookies that Supabase hasn't invalidated yet).
+  const [serverUnauthorized, setServerUnauthorized] = useState(false);
 
   useEffect(() => {
     if (isLoadingAuth) return;
     if (!isAuthenticated) {
       setLoading(false);
+      setError(null);
       return;
     }
+    // Auth state changed to authenticated — clear any prior unauthorized flag
+    // (e.g. user just logged in) and fetch fresh data.
+    setServerUnauthorized(false);
+    setError(null);
     fetchVisits();
   }, [isAuthenticated, isLoadingAuth]);
 
@@ -128,6 +137,13 @@ export default function VisitsTimeline({ variant = 'panel', onClose }) {
     try {
       setLoading(true);
       const res = await fetch('/api/visits');
+      if (res.status === 401) {
+        // Server says we're not authenticated — override client-side auth state.
+        // This handles stale cookies where Supabase client thinks we're logged in
+        // but the server correctly rejects the expired/invalid session.
+        setServerUnauthorized(true);
+        return;
+      }
       if (!res.ok) throw new Error('Failed to load visits');
       const data = await res.json();
       setVisits(data);
@@ -191,7 +207,7 @@ export default function VisitsTimeline({ variant = 'panel', onClose }) {
           <div className="flex justify-center py-8">
             <div className="animate-spin h-5 w-5 border-2 border-teal-400 border-t-transparent rounded-full" />
           </div>
-        ) : !isAuthenticated ? (
+        ) : (!isAuthenticated || serverUnauthorized) ? (
           <div className="text-center py-10 px-4">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-700/50 flex items-center justify-center">
               <LogIn className="w-8 h-8 text-slate-500" />
