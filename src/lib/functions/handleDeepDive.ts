@@ -106,7 +106,7 @@ const MERGED_RESPONSE_SCHEMA = {
 };
 
 export async function handleDeepDiveLogic(params: any) {
-  const { selectedSchoolId, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, userId, returningUserContextBlock, flags, conversationId } = params;
+  const { selectedSchoolId, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, userId, returningUserContextBlock, flags, conversationId, userSchoolNotes } = params;
 
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
@@ -239,7 +239,7 @@ If the parent updates any preference mid-conversation, acknowledge in ONE short 
 
 ${consultantName === 'Jackie' ? "JACKIE PERSONA: Warm, empathetic, supportive." : "LIAM PERSONA: Direct, strategic, no-BS."}
 
-Write naturally in conversational prose about why this school fits the family. Cover the student-school alignment (including how programs match child interests, how the learning environment suits their personality and learning style, and whether the school can support any academic struggles or learning differences), any trade-offs or concerns, and the cost reality. Speak like a consultant would — no headers, labels, or formatting markers. End with a brief, clear sentence summarizing whether this school is a strong fit and the primary reason why or why not.
+${userSchoolNotes ? `The parent has written personal research notes about this school (shown in PARENT'S RESEARCH NOTES below). Reference these notes when relevant to their questions — they reflect the parent's real observations and concerns. Do not quote them verbatim.\n\n` : ''}Write naturally in conversational prose about why this school fits the family. Cover the student-school alignment (including how programs match child interests, how the learning environment suits their personality and learning style, and whether the school can support any academic struggles or learning differences), any trade-offs or concerns, and the cost reality. Speak like a consultant would — no headers, labels, or formatting markers. End with a brief, clear sentence summarizing whether this school is a strong fit and the primary reason why or why not.
 ${area4Instructions}
 
 STRUCTURED ANALYSIS INSTRUCTIONS:
@@ -275,6 +275,8 @@ ${eventContext}
 
 ${(testimonials as any)?.length > 0 ? `PARENT TESTIMONIALS (${(testimonials as any).length} reviews):
 ${(testimonials as any).map((t: any) => `"${t.quote_text}" — ${t.author_role}${t.year ? ` (${t.year})` : ''}`).join('\n')}` : 'PARENT TESTIMONIALS: None available for this school.'}
+
+${userSchoolNotes ? `PARENT'S RESEARCH NOTES ON THIS SCHOOL:\n${userSchoolNotes}` : ''}
 
 Generate the DEEPDIVE card for this family-school match.`;
 

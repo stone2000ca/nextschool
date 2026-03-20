@@ -9,6 +9,7 @@ import { generateProfileNarrativeLogic } from './generateProfileNarrative'
 import { searchSchoolsLogic } from './searchSchools'
 import { STATES, BRIEF_STATUS, resolveGrade, resolveBudget, resolveArrayField } from './constants'
 import { syncConversationState, readConversationState } from './dualWrite'
+import { fetchSchoolNotes } from './fetchSchoolNotes'
 
 
 // Function: orchestrateConversation
@@ -1805,6 +1806,11 @@ Object.assign(context, safeUpdatedContext);
         const intentClassification = classifyIntentFn(processMessage);
         console.log('[E41-S3] classifyIntent:', intentClassification);
 
+        // E50-S1B: Fetch user's research notes for the selected school (if any)
+        const userSchoolNotes = selectedSchoolId && userId
+          ? await fetchSchoolNotes(userId, selectedSchoolId)
+          : null;
+
         const resultsResult = await handleResultsLogic( {
           message: processMessage,
           conversationFamilyProfile: workingProfile,
@@ -1821,7 +1827,8 @@ Object.assign(context, safeUpdatedContext);
           gate: intentClassification.gate,
           actionHint: intentClassification.actionHint,
           returningUserContextBlock,
-          previousSchools: (currentSchools && currentSchools.length > 0) ? currentSchools : (context.lastMatchedSchools || [])
+          previousSchools: (currentSchools && currentSchools.length > 0) ? currentSchools : (context.lastMatchedSchools || []),
+          userSchoolNotes
         });
         responseData = resultsResult;
         responseData.conversationContext = {
@@ -2032,6 +2039,11 @@ Object.assign(context, safeUpdatedContext);
           console.log('[E13a] handleVisitDebrief returned null, falling through');
         }
 
+        // E50-S1B: Fetch user's research notes for the selected school (if any)
+        const deepDiveSchoolNotes = selectedSchoolId && userId
+          ? await fetchSchoolNotes(userId, selectedSchoolId)
+          : null;
+
         const deepDiveResult = await handleDeepDiveLogic( {
           selectedSchoolId,
           message: processMessage,
@@ -2045,7 +2057,8 @@ Object.assign(context, safeUpdatedContext);
           userId,
           returningUserContextBlock,
           flags: resolveResult.flags,
-          conversationId
+          conversationId,
+          userSchoolNotes: deepDiveSchoolNotes
         });
         responseData = deepDiveResult;
         responseData.extractedEntities = extractionResult?.extractedEntities || {};
