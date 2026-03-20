@@ -16,6 +16,7 @@ import { createSession, updateSession } from '@/lib/api/sessions';
 import { invokeFunction } from '@/lib/functions';
 import { retryWithBackoff } from '@/components/utils/retryWithBackoff';
 import { useRef, useEffect } from 'react';
+import { useConversationState as useStateEnvelope } from '@/hooks/useConversationState';
 
 export const useMessageHandler = ({
   messages,
@@ -82,6 +83,20 @@ export const useMessageHandler = ({
     useEffect(() => {
       conversationIdRef.current = currentConversation?.id || null;
     }, [currentConversation?.id]);
+
+    // P4-S4.5: Wire stateEnvelope hook — single source of truth for state/briefStatus
+    const {
+      state: envelopeState,
+      briefStatus: envelopeBriefStatus,
+      updateFromResponse,
+    } = useStateEnvelope();
+
+    // Sync hook's briefStatus → Phase 3b setBriefStatus for ongoing renders
+    useEffect(() => {
+      if (envelopeBriefStatus !== undefined && envelopeBriefStatus !== briefStatus) {
+        setBriefStatus(envelopeBriefStatus);
+      }
+    }, [envelopeBriefStatus]);
 
     // CRT-S109-F15: Message queue to prevent message loss during rapid input
     let isProcessing = false;
@@ -234,6 +249,14 @@ export const useMessageHandler = ({
         throw new Error('Orchestration response contained no data');
       }
 
+      // P4-S4.5: Feed stateEnvelope hook — extracts state/briefStatus from
+      // stateEnvelope (preferred) with automatic fallback to flat fields.
+      updateFromResponse(response.data);
+
+      // P4-S4.5: Extract state early so all downstream logic is stateEnvelope-aware.
+      // Prefer stateEnvelope.state, fall back to flat response.data.state.
+      const responseState = response.data?.stateEnvelope?.state || response.data?.state;
+
       console.log('[CARD DEBUG]', Object.keys(response.data || {}), response.data?.deepDiveAnalysis, response.data?.visitPrepKit);
 
       // T043: Update familyProfile live from orchestration response — merge to accumulate multi-turn data
@@ -246,14 +269,14 @@ export const useMessageHandler = ({
       if (response.data?.deepDiveAnalysis) {
         const diveSchoolId = response.data?.deepDiveAnalysis?.schoolId || resolvedSchoolId || explicitSchoolId || selectedSchool?.id || null;
         setDeepDiveAnalysis({ ...response.data.deepDiveAnalysis, schoolId: diveSchoolId });
-      } else if (response.data?.state === 'DEEP_DIVE' && response.data?.deepDiveAnalysis === null && artifactCache && selectedSchool?.id) {
+      } else if (responseState === 'DEEP_DIVE' && response.data?.deepDiveAnalysis === null && artifactCache && selectedSchool?.id) {
         // WC6: Hydrate from cache if no new analysis in DEEP_DIVE state
         const cacheKey = `${selectedSchool.id}_deep_dive_analysis`;
         if (artifactCache[cacheKey]) {
           console.log('[WC6] Hydrating deepDiveAnalysis from cache');
           setDeepDiveAnalysis(artifactCache[cacheKey]);
         }
-      } else if (response.data?.state !== 'DEEP_DIVE') {
+      } else if (responseState !== 'DEEP_DIVE') {
         setDeepDiveAnalysis(null);
       }
       // do NOT clear deepDiveAnalysis when state stays DEEP_DIVE but no new analysis returned
@@ -266,7 +289,7 @@ export const useMessageHandler = ({
         } else {
           setVisitPrepKit({ ...response.data.visitPrepKit, schoolId: prepSchoolId });
         }
-      } else if (response.data?.state === 'DEEP_DIVE' && response.data?.visitPrepKit === null && artifactCache && selectedSchool?.id) {
+      } else if (responseState === 'DEEP_DIVE' && response.data?.visitPrepKit === null && artifactCache && selectedSchool?.id) {
         // WC6: Hydrate from cache if no new visit prep kit in DEEP_DIVE state
         const cacheKey = `${selectedSchool.id}_visit_prep`;
         if (artifactCache[cacheKey]) {
@@ -277,14 +300,14 @@ export const useMessageHandler = ({
             setVisitPrepKit({ ...artifactCache[cacheKey], schoolId: selectedSchool.id });
           }
         }
-      } else if (response.data?.state !== 'DEEP_DIVE') {
+      } else if (responseState !== 'DEEP_DIVE') {
         setVisitPrepKit(null);
       }
 
       // E28-S3 WC2: Action Plan capture
       if (response.data?.actionPlan) {
         setActionPlan(response.data.actionPlan);
-      } else if (response.data?.state !== 'DEEP_DIVE') {
+      } else if (responseState !== 'DEEP_DIVE') {
         setActionPlan(null);
       }
 
@@ -295,7 +318,7 @@ export const useMessageHandler = ({
         } else {
           setFitReEvaluation(response.data.fitReEvaluation);
         }
-      } else if (response.data?.state === 'DEEP_DIVE' && response.data?.fitReEvaluation === null && artifactCache && selectedSchool?.id) {
+      } else if (responseState === 'DEEP_DIVE' && response.data?.fitReEvaluation === null && artifactCache && selectedSchool?.id) {
         // WC6: Hydrate from cache if no new fit re-evaluation in DEEP_DIVE state
         const cacheKey = `${selectedSchool.id}_fit_reevaluation`;
         if (artifactCache[cacheKey]) {
@@ -306,7 +329,7 @@ export const useMessageHandler = ({
             setFitReEvaluation(artifactCache[cacheKey]);
           }
         }
-      } else if (response.data?.state !== 'DEEP_DIVE') {
+      } else if (responseState !== 'DEEP_DIVE') {
         setFitReEvaluation(null);
       }
 
@@ -326,9 +349,10 @@ export const useMessageHandler = ({
       // state AND the context that gets stored in conversationContext. If we only clear
       // the local state, the sync effect (Consultant.jsx FIX 17) reads 'confirmed' from
       // context and reverses the clearing — causing the overlay to stay stuck forever.
-      let newBriefStatus = response.data?.briefStatus || null;
+      // P4-S4.5: Prefer stateEnvelope fields, fall back to flat response fields
+      let newBriefStatus = response.data?.stateEnvelope?.briefStatus ?? response.data?.briefStatus ?? null;
       // E48-FIX: Also clear briefStatus for guided intro completion, not just __CONFIRM_BRIEF__
-      if (response.data?.state === STATES.RESULTS && ((response.data?.schools || []).length > 0 || isBriefConfirmation || isGuidedIntroComplete)) {
+      if (responseState === STATES.RESULTS && ((response.data?.schools || []).length > 0 || isBriefConfirmation || isGuidedIntroComplete)) {
         newBriefStatus = null;
         setBriefStatus(null);
         console.log('[BRIEF STATUS] Cleared on RESULTS arrival');
@@ -338,7 +362,6 @@ export const useMessageHandler = ({
       }
 
       // CRITICAL FIX: Merge backend's full context (including extractedEntities) with frontend state
-      const responseState = response.data?.state;
       const deepDiveSchoolId = response.data?.deepDiveAnalysis?.schoolId || selectedSchool?.id || resolvedSchoolId || null;
       const prevContext = currentConversation?.conversation_context || {};
       // PHASE-1FG: Removed 'schools' from context writes — schools are now written
@@ -382,16 +405,16 @@ export const useMessageHandler = ({
         }
       }
 
-      if (response.data?.state === STATES.RESULTS) {
+      if (responseState === STATES.RESULTS) {
         // RESULTS always transitions view — clear any stale selectedSchool from prior session restore
         if (setSelectedSchool) setSelectedSchool(null);
         setCurrentView(mapStateToView(STATES.RESULTS));
-      } else if (!isViewingSchoolDetail && response.data?.state) {
+      } else if (!isViewingSchoolDetail && responseState) {
         // Only update view if NOT viewing a school detail
         // CRITICAL: Do NOT call setSelectedSchool(null) here - it defeats the single source of truth
-        setCurrentView(mapStateToView(response.data?.state));
-      } else if (!isViewingSchoolDetail && !response.data?.state) {
-        console.warn('[WARN] Missing state from response:', response.data?.state);
+        setCurrentView(mapStateToView(responseState));
+      } else if (!isViewingSchoolDetail && !responseState) {
+        console.warn('[WARN] Missing state from response:', responseState);
       } else if (isViewingSchoolDetail) {
         console.log('[BUG-DD-001] Maintaining detail view - school selected:', selectedSchool?.name);
         // Keep view locked to detail as long as selectedSchool is set
@@ -401,7 +424,7 @@ export const useMessageHandler = ({
       const isDeepDivingSchool = isViewingSchoolDetail;
 
       // FIX #3: First priority - if schools are returned, display them (ONLY if not in DEEP_DIVE)
-      if ((response.data?.schools || []).length > 0 && (!isDeepDivingSchool || response.data?.state === STATES.RESULTS)) {
+      if ((response.data?.schools || []).length > 0 && (!isDeepDivingSchool || responseState === STATES.RESULTS)) {
         // Track schools shown
         trackEvent('schools_shown', { metadata: { schoolCount: (response.data?.schools || []).length } });
 
@@ -439,7 +462,7 @@ export const useMessageHandler = ({
       }
 
       // Create ChatSession when brief is confirmed and transitioning to RESULTS
-      if (response.data?.state === STATES.RESULTS) {
+      if (responseState === STATES.RESULTS) {
         try {
           const matchedSchoolIds = (response.data?.schools || []).map(s => s.id).filter(id => id != null);
           const profileForSession = response.data?.familyProfile || familyProfile;
@@ -602,7 +625,7 @@ export const useMessageHandler = ({
       // KI-52: Brief content validator — swap thin LLM brief for programmatic fallback
       // DOUBLE-BRIEF FIX: Only apply when the RESPONSE state is also BRIEF (not when transitioning to RESULTS)
       let aiMessageContent = response.data?.message || 'Here are your school matches based on your preferences.';
-      if (response.data?.state === STATES.BRIEF) {
+      if (responseState === STATES.BRIEF) {
         const latestProfile = response.data?.familyProfile || familyProfile;
         const isEditingBrief = response.data?.briefStatus === 'editing' || response.data?.conversationContext?.briefStatus === 'editing';
         if (!isEditingBrief && !validateBriefContent(aiMessageContent)) {
