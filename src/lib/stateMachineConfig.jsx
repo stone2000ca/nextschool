@@ -59,10 +59,10 @@ export const PROGRESS_WEIGHTS = {
 export const checkTier1 = (entities) => {
   if (!entities) return false;
   
-  const hasLocation = !!entities.locationArea;
-  const hasGradeOrCurriculum = !!entities.childGrade || 
-                               entities.curriculumPreference?.length > 0 || 
-                               !!entities.schoolTypeLabel;
+  const hasLocation = !!entities.location_area;
+  const hasGradeOrCurriculum = !!entities.child_grade ||
+                               entities.curriculum_preference?.length > 0 ||
+                               !!entities.school_type_label;
   
   return hasLocation && hasGradeOrCurriculum;
 };
@@ -78,27 +78,27 @@ export const getProgress = (entities) => {
   let progress = 0;
   
   // Child name
-  if (entities.childName) {
+  if (entities.child_name) {
     progress += PROGRESS_WEIGHTS.childName;
   }
-  
+
   // Grade
-  if (entities.childGrade !== null && entities.childGrade !== undefined) {
+  if (entities.child_grade !== null && entities.child_grade !== undefined) {
     progress += PROGRESS_WEIGHTS.grade;
   }
   
   // Location
-  if (entities.locationArea) {
+  if (entities.location_area) {
     progress += PROGRESS_WEIGHTS.location;
   }
-  
+
   // Budget
-  if (entities.maxTuition || entities.budgetRange) {
+  if (entities.max_tuition || entities.budgetRange) {
     progress += PROGRESS_WEIGHTS.budget;
   }
-  
+
   // Curriculum or school type
-  if (entities.curriculumPreference?.length > 0 || entities.schoolTypeLabel) {
+  if (entities.curriculum_preference?.length > 0 || entities.school_type_label) {
     progress += PROGRESS_WEIGHTS.curriculumOrType;
   }
   
@@ -166,8 +166,8 @@ export const getSystemPrompt = (state, briefStatus, entities = {}, consultantNam
 
     case STATES.BRIEF:
        if (briefStatus === BRIEF_STATUS.GENERATING) {
-         const childRef = entities.childName
-           ? entities.childName
+         const childRef = entities.child_name
+           ? entities.child_name
            : (entities.gender === 'male' ? 'Your son' : entities.gender === 'female' ? 'Your daughter' : 'Your child');
          return `Generate a Family Brief summarizing everything learned.
 

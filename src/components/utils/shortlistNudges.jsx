@@ -24,7 +24,7 @@ export function getShortlistNudge({
     
     if (newCount >= 3) {
       // Check: does this pick contradict the brief? (above budget)
-      const budget = familyProfile?.maxTuition;
+      const budget = familyProfile?.max_tuition;
       const schoolTuition = school?.day_tuition ?? school?.tuition;
       
       if (budget && schoolTuition && schoolTuition > budget) {

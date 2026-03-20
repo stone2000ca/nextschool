@@ -26,10 +26,10 @@ export async function handleNarrateComparison({
 
   const briefSummary = familyProfile ? [
     familyProfile.priorities?.length ? `Priorities: ${familyProfile.priorities.join(', ')}` : '',
-    familyProfile.maxTuition ? `Budget: up to $${familyProfile.maxTuition.toLocaleString()}` : '',
-    familyProfile.locationArea ? `Location: ${familyProfile.locationArea}` : '',
-    familyProfile.learningDifferences?.length ? `Learning needs: ${familyProfile.learningDifferences.join(', ')}` : '',
-    familyProfile.boardingPreference ? `Boarding preference: ${familyProfile.boardingPreference}` : '',
+    familyProfile.max_tuition ? `Budget: up to $${familyProfile.max_tuition.toLocaleString()}` : '',
+    familyProfile.location_area ? `Location: ${familyProfile.location_area}` : '',
+    familyProfile.learning_differences?.length ? `Learning needs: ${familyProfile.learning_differences.join(', ')}` : '',
+    familyProfile.boarding_preference ? `Boarding preference: ${familyProfile.boarding_preference}` : '',
   ].filter(Boolean).join('. ') : '';
 
   // E11b: Build detailed school data for LLM evaluation

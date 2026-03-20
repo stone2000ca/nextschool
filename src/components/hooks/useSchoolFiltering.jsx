@@ -46,8 +46,8 @@ export function useSchoolFiltering(schools, conversationContext) {
         const profile = conversationContext?.familyProfile;
 
         // E31-005: Override resolution — override !== null takes priority over familyProfile
-        const effectiveChildGrade = filterOverrides.childGrade !== null ? filterOverrides.childGrade : profile?.childGrade;
-        const effectiveMaxTuition = filterOverrides.maxTuition !== null ? filterOverrides.maxTuition : profile?.maxTuition;
+        const effectiveChildGrade = filterOverrides.childGrade !== null ? filterOverrides.childGrade : profile?.child_grade;
+        const effectiveMaxTuition = filterOverrides.maxTuition !== null ? filterOverrides.maxTuition : profile?.max_tuition;
         const effectiveDealbreakers = filterOverrides.dealbreakers !== null ? filterOverrides.dealbreakers : profile?.dealbreakers;
 
         // Grade Filter
@@ -56,8 +56,8 @@ export function useSchoolFiltering(schools, conversationContext) {
           const gradeNum = typeof childGrade === 'number' ? childGrade : parseInt(String(childGrade));
           if (!isNaN(gradeNum)) {
             filtered = filtered.filter(school => {
-              if (!school?.highestGrade && school?.highestGrade !== 0) return true;
-              return school.highestGrade >= gradeNum;
+              if (!school?.highest_grade && school?.highest_grade !== 0) return true;
+              return school.highest_grade >= gradeNum;
             });
             console.log('[FILTER] Grade:', gradeNum, 'Schools:', filtered.length);
           }
@@ -69,7 +69,7 @@ export function useSchoolFiltering(schools, conversationContext) {
           const budgetNum = typeof maxBudget === 'number' ? maxBudget : parseInt(String(maxBudget));
           if (!isNaN(budgetNum)) {
             filtered = filtered.filter(school => {
-              const tuition = school?.tuition || school?.dayTuition;
+              const tuition = school?.tuition || school?.day_tuition;
               if (!tuition) return true;
               return tuition <= budgetNum;
             });
@@ -92,7 +92,7 @@ export function useSchoolFiltering(schools, conversationContext) {
         // E41-S7: boardingOnly filter
         if (filterOverrides.boardingOnly === true) {
           const before = filtered.length;
-          filtered = filtered.filter(s => s.boardingAvailable === true);
+          filtered = filtered.filter(s => s.boarding_available === true);
           console.log('[FILTER] boardingOnly: filtered from', before, 'to', filtered.length);
         }
 
@@ -103,7 +103,7 @@ export function useSchoolFiltering(schools, conversationContext) {
           const BOYS_KEYWORDS  = ['all-boys',  'boys only',  'boys',  'male only',  'all boys'];
           const before = filtered.length;
           filtered = filtered.filter(s => {
-            const gp = (s.genderPolicy || '').toLowerCase();
+            const gp = (s.gender_policy || '').toLowerCase();
             if (gf === 'girls' || gf === 'all-girls') return GIRLS_KEYWORDS.some(k => gp.includes(k));
             if (gf === 'boys'  || gf === 'all-boys')  return BOYS_KEYWORDS.some(k => gp.includes(k));
             if (gf === 'co-ed' || gf === 'coed')      return !GIRLS_KEYWORDS.some(k => gp.includes(k)) && !BOYS_KEYWORDS.some(k => gp.includes(k));
@@ -127,7 +127,7 @@ export function useSchoolFiltering(schools, conversationContext) {
           const ra = filterOverrides.religiousAffiliation.toLowerCase();
           const before = filtered.length;
           filtered = filtered.filter(s =>
-            s.religiousAffiliation && s.religiousAffiliation.toLowerCase().includes(ra)
+            s.faith_based && s.faith_based.toLowerCase().includes(ra)
           );
           console.log('[FILTER] religiousAffiliation:', filterOverrides.religiousAffiliation, 'filtered from', before, 'to', filtered.length);
         }

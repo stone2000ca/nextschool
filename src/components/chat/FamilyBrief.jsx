@@ -78,9 +78,9 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName, ex
   const fp = familyProfile || {};
 
   const learningParts = [
-    ...(fp.academicStrengths || []),
-    ...(fp.academicStruggles || []),
-    ...(fp.learningDifferences || []),
+    ...(fp.academic_strengths || []),
+    ...(fp.academic_struggles || []),
+    ...(fp.learning_differences || []),
   ];
 
   const accentColor = consultantName === 'Jackie' ? '#C27B8A' : '#6B9DAD';
@@ -116,9 +116,9 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName, ex
           </div>
           <Field
             label="Child"
-            value={fp.childName || (fp.gender === 'male' ? 'Your son' : fp.gender === 'female' ? 'Your daughter' : 'Your child')}
+            value={fp.child_name || (fp.gender === 'male' ? 'Your son' : fp.gender === 'female' ? 'Your daughter' : 'Your child')}
           />
-          <Field label="Grade" value={formatGrade(fp.childGrade)} />
+          <Field label="Grade" value={formatGrade(fp.child_grade)} />
           <Field label="Gender" value={fp.gender} />
           <Field label="Learning Needs" value={learningParts.length > 0 ? learningParts.join(', ') : null} />
         </section>
@@ -131,10 +131,10 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName, ex
             <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Logistics</span>
           </div>
           {/* F9 FIX: Location always rendered (Field handles null with placeholder) */}
-          <Field label="Location" value={fp.locationArea || extractedEntities?.locationArea} />
-          <Field label="Budget" value={formatBudget(fp.maxTuition || extractedEntities?.maxTuition)} />
-          {fp.learningStyle && <Field label="Learning Style" value={fp.learningStyle} />}
-          {fp.schoolTypeLabel && <Field label="School Type" value={formatSchoolType(fp.schoolTypeLabel)} />}
+          <Field label="Location" value={fp.location_area || extractedEntities?.location_area} />
+          <Field label="Budget" value={formatBudget(fp.max_tuition || extractedEntities?.max_tuition)} />
+          {fp.learning_style && <Field label="Learning Style" value={fp.learning_style} />}
+          {fp.school_type_label && <Field label="School Type" value={formatSchoolType(fp.school_type_label)} />}
         </section>
 
         <div className="border-t border-white/8" />
@@ -144,9 +144,9 @@ export default function FamilyBrief({ familyProfile, onClose, consultantName, ex
             <BookOpen className="h-3.5 w-3.5" style={{ color: accentColor }} />
             <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Curriculum</span>
           </div>
-          {fp.curriculumPreference && fp.curriculumPreference.length > 0 ? (
+          {fp.curriculum_preference && fp.curriculum_preference.length > 0 ? (
             <div className="flex flex-wrap gap-1">
-              {fp.curriculumPreference.map((item, i) => (
+              {fp.curriculum_preference.map((item, i) => (
                 <span key={i} className="text-xs bg-white/10 text-white/75 rounded px-2 py-0.5">
                   {toTitleCase(item)}
                 </span>

@@ -14,8 +14,8 @@ function gradeLabel(grade) {
   return String(grade);
 }
 
-function f(school, camel, snake) {
-  return school[camel] ?? school[snake] ?? null;
+function f(school, key) {
+  return school[key] ?? null;
 }
 
 function getCurrencySymbol(currency) {
@@ -52,17 +52,17 @@ function parseScholarships(json) {
 function calculateMatchScore(school, familyProfile) {
   if (!familyProfile) return 'Explore';
   let score = 0;
-  const childGrade = familyProfile.childGrade;
+  const childGrade = familyProfile.child_grade;
   if (childGrade !== null && childGrade !== undefined) {
     if (childGrade >= school.lowest_grade && childGrade <= school.highest_grade) score += 2;
   }
-  if (familyProfile.maxTuition && school.day_tuition) {
-    if (school.day_tuition <= familyProfile.maxTuition) score += 2;
-    else if (school.day_tuition <= familyProfile.maxTuition * 1.2) score += 1;
+  if (familyProfile.max_tuition && school.day_tuition) {
+    if (school.day_tuition <= familyProfile.max_tuition) score += 2;
+    else if (school.day_tuition <= familyProfile.max_tuition * 1.2) score += 1;
   }
   if (familyProfile.gender && school.gender_policy) {
     const isSingleGender = school.gender_policy.includes(familyProfile.gender === 'male' ? 'Boy' : 'Girl');
-    if (isSingleGender && familyProfile.boardingPreference === 'no') score += 1;
+    if (isSingleGender && familyProfile.boarding_preference === 'no') score += 1;
     if (school.gender_policy === 'Co-ed' && !isSingleGender) score += 1;
   }
   if (familyProfile.priorities?.length > 0) {
@@ -83,11 +83,11 @@ function calculateMatchScore(school, familyProfile) {
 function getMatchReasons(school, familyProfile) {
   const reasons = [];
   if (!familyProfile) return reasons;
-  const childGrade = familyProfile.childGrade;
+  const childGrade = familyProfile.child_grade;
   if (childGrade !== null && childGrade !== undefined && childGrade >= school.lowest_grade && childGrade <= school.highest_grade) {
     reasons.push(`Serves Grade ${gradeLabel(childGrade)}`);
   }
-  if (familyProfile.maxTuition && school.day_tuition && school.day_tuition <= familyProfile.maxTuition) {
+  if (familyProfile.max_tuition && school.day_tuition && school.day_tuition <= familyProfile.max_tuition) {
     reasons.push(`Within budget ($${school.day_tuition.toLocaleString()})`);
   }
   if (familyProfile.priorities?.length > 0) {
@@ -99,7 +99,7 @@ function getMatchReasons(school, familyProfile) {
       reasons.push(`${matchedPriorities.slice(0, 2).join(' & ')} focus`);
     }
   }
-  if (familyProfile.boardingPreference?.includes('boarding') && school.boarding_available) {
+  if (familyProfile.boarding_preference?.includes('boarding') && school.boarding_available) {
     reasons.push('Boarding available');
   }
   return reasons.slice(0, 4);
@@ -108,9 +108,9 @@ function getMatchReasons(school, familyProfile) {
 // --- Section Components ---
 
 function HeroSection({ school, onBack }) {
-  const boardingType = f(school, 'boardingType', 'boarding_type') || (school.boarding_available ? 'Day & Boarding' : 'Day');
-  const faithBased = f(school, 'faithBased', 'faith_based');
-  const logoUrl = f(school, 'logoUrl', 'logo_url');
+  const boardingType = f(school, 'boarding_type') || (school.boarding_available ? 'Day & Boarding' : 'Day');
+  const faithBased = f(school, 'faith_based');
+  const logoUrl = f(school, 'logo_url');
   const gradeRange = school.lowest_grade != null && school.highest_grade != null
     ? `${gradeLabel(school.lowest_grade)} – ${gradeLabel(school.highest_grade)}`
     : school.grades_served || null;
@@ -183,7 +183,7 @@ function ScanBar({ school }) {
 
   if (school.enrollment) add('\u{1F465}', `${school.enrollment.toLocaleString()} students`);
   if (school.avg_class_size) add('\u{1F465}', `Avg class ${school.avg_class_size}`);
-  const ratio = f(school, 'studentTeacherRatio', 'student_teacher_ratio');
+  const ratio = f(school, 'student_teacher_ratio');
   if (ratio) add('\u{1F393}', `${ratio} ratio`);
   const curriculum = school.curriculum;
   if (curriculum) add('\u{1F4DA}', Array.isArray(curriculum) ? curriculum.join(' · ') : curriculum);
@@ -192,15 +192,15 @@ function ScanBar({ school }) {
   const accreditations = school.accreditations;
   if (accreditations?.length > 0) add('\u2705', `${accreditations[0]} accredited`);
   if (school.acceptance_rate) add('\u{1F393}', `${school.acceptance_rate}% acceptance`);
-  if (school.campusSize) add('\u{1F3E1}', `${school.campusSize}-acre campus`);
-  if (school.uniformRequired) add('\u{1F454}', 'Uniform');
-  const langs = f(school, 'languagesOfInstruction', 'languages_of_instruction');
+  if (school.campus_size) add('\u{1F3E1}', `${school.campus_size}-acre campus`);
+  if (school.uniform_required) add('\u{1F454}', 'Uniform');
+  const langs = f(school, 'languages_of_instruction');
   if (langs) add('\u{1F310}', Array.isArray(langs) ? langs.join(' · ') : langs);
-  const intlPct = f(school, 'internationalStudentPct', 'international_student_pct');
+  const intlPct = f(school, 'international_student_pct');
   if (intlPct) add('\u{1F30D}', `${intlPct}% international`);
-  const boardingPct = f(school, 'boardingPct', 'boarding_pct');
+  const boardingPct = f(school, 'boarding_pct');
   if (boardingPct) add('\u{1F3E0}', `${boardingPct}% boarders`);
-  const transport = f(school, 'transportationOptions', 'transportation_options');
+  const transport = f(school, 'transportation_options');
   if (transport) add('\u{1F68C}', Array.isArray(transport) ? transport.join(', ') : transport);
   const awards = school.awards;
   if (awards?.length > 0) add('\u{1F3C6}', 'Award-winning');
@@ -288,15 +288,15 @@ function WhatToExpectSection({ school }) {
   const items = [];
   const add = (label, value) => { if (value) items.push({ label, value }); };
 
-  add('Academic Culture', f(school, 'academicCulture', 'academic_culture'));
-  add('Pace', f(school, 'pace', 'curriculum_pace'));
-  add('Focus', f(school, 'focus', 'school_focus'));
-  add('Math Approach', f(school, 'mathApproach', 'math_approach'));
-  add('Science', f(school, 'scienceApproach', 'science_approach'));
-  add('Homework', f(school, 'homeworkByGrade', 'homework_by_grade'));
-  add('Philosophy', f(school, 'teachingPhilosophy', 'teaching_philosophy'));
+  add('Academic Culture', f(school, 'academic_culture'));
+  add('Pace', f(school, 'curriculum_pace'));
+  add('Focus', f(school, 'school_focus'));
+  add('Math Approach', f(school, 'math_approach'));
+  add('Science', f(school, 'science_approach'));
+  add('Homework', f(school, 'homework_by_grade'));
+  add('Philosophy', f(school, 'teaching_philosophy'));
 
-  const communityVibe = f(school, 'communityVibe', 'community_vibe');
+  const communityVibe = f(school, 'community_vibe');
   if (items.length === 0 && !communityVibe) return null;
 
   return (
@@ -328,7 +328,7 @@ function ProgramsSection({ school }) {
   if (school.sports_programs?.length > 0) groups.push({ label: 'Sports', items: school.sports_programs });
   if (school.clubs?.length > 0) groups.push({ label: 'Clubs', items: school.clubs });
 
-  const specialEd = f(school, 'specialEdPrograms', 'special_ed_programs');
+  const specialEd = f(school, 'special_ed_programs');
   if (specialEd?.length > 0) groups.push({ label: 'Learning Support', items: specialEd });
   const facilities = school.facilities;
   if (facilities?.length > 0) groups.push({ label: 'Facilities', items: facilities });
@@ -357,14 +357,14 @@ function ProgramsSection({ school }) {
 function FinancialSection({ school }) {
   const currency = school.currency || 'CAD';
   const dayTuition = school.day_tuition;
-  const dayMax = f(school, 'dayTuitionMax', 'day_tuition_max');
+  const dayMax = f(school, 'day_tuition_max');
   const boardingTuition = school.boarding_tuition;
-  const boardingMax = f(school, 'boardingTuitionMax', 'boarding_tuition_max');
+  const boardingMax = f(school, 'boarding_tuition_max');
   const aidAvailable = school.financial_aid_available;
-  const aidPct = f(school, 'financialAidPct', 'financial_aid_pct');
-  const medianAid = f(school, 'medianAidAmount', 'median_aid_amount');
-  const tuitionNotes = f(school, 'tuitionNotes', 'tuition_notes');
-  const scholarships = parseScholarships(f(school, 'scholarshipsJson', 'scholarships_json'));
+  const aidPct = f(school, 'financial_aid_pct');
+  const medianAid = f(school, 'median_aid_amount');
+  const tuitionNotes = f(school, 'tuition_notes');
+  const scholarships = parseScholarships(f(school, 'scholarships_json'));
 
   const hasData = dayTuition || boardingTuition || aidAvailable || aidPct || medianAid;
   if (!hasData) return null;
@@ -436,12 +436,12 @@ function FinancialSection({ school }) {
 
 function AdmissionsSection({ school }) {
   const dayDeadline = school.day_admission_deadline;
-  const boardingDeadline = f(school, 'boardingAdmissionDeadline', 'boarding_admission_deadline');
-  const openHouse = school.openHouseDates?.[0];
+  const boardingDeadline = f(school, 'boarding_admission_deadline');
+  const openHouse = school.open_house_dates?.[0];
   const openHouseCountdown = daysUntil(openHouse);
-  const requirements = school.admissionRequirements || f(school, 'entranceRequirements', 'entrance_requirements') || [];
-  const applicationProcess = f(school, 'applicationProcess', 'application_process');
-  const livingArrangements = f(school, 'livingArrangements', 'living_arrangements');
+  const requirements = school.admission_requirements || f(school, 'entrance_requirements') || [];
+  const applicationProcess = f(school, 'application_process');
+  const livingArrangements = f(school, 'living_arrangements');
 
   const hasData = dayDeadline || boardingDeadline || openHouse || requirements.length > 0;
   if (!hasData) return null;
@@ -520,7 +520,7 @@ function AdmissionsSection({ school }) {
 }
 
 function OutcomesSection({ school }) {
-  const placements = f(school, 'universityPlacements', 'university_placements');
+  const placements = f(school, 'university_placements');
   if (!placements || (Array.isArray(placements) && placements.length === 0)) return null;
 
   const items = Array.isArray(placements) ? placements : [placements];
@@ -540,8 +540,8 @@ function OutcomesSection({ school }) {
 }
 
 function CampusMediaSection({ school }) {
-  const gallery = f(school, 'photoGallery', 'photo_gallery');
-  const virtualTour = f(school, 'virtualTourUrl', 'virtual_tour_url');
+  const gallery = f(school, 'photo_gallery');
+  const virtualTour = f(school, 'virtual_tour_url');
   if (!gallery?.length && !virtualTour) return null;
 
   return (
@@ -607,7 +607,7 @@ function ContactSection({ school }) {
 }
 
 function CtaBar({ school, isShortlisted, onToggleShortlist, onCompare, hasTourFeatures, onRequestTour }) {
-  const nextOpenHouse = school.openHouseDates?.[0];
+  const nextOpenHouse = school.open_house_dates?.[0];
   const countdown = daysUntil(nextOpenHouse);
 
   return (

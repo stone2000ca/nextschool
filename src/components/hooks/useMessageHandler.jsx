@@ -166,10 +166,10 @@ export const useMessageHandler = ({
 
         returningUserContext = {
           isReturningUser: true,
-          childName: familyProfile.childName,
-          childGrade: familyProfile.childGrade,
-          location: familyProfile.locationArea,
-          budget: familyProfile.maxTuition ? `$${familyProfile.maxTuition.toLocaleString()}` : null,
+          childName: familyProfile.child_name,
+          childGrade: familyProfile.child_grade,
+          location: familyProfile.location_area,
+          budget: familyProfile.max_tuition ? `$${familyProfile.max_tuition.toLocaleString()}` : null,
           priorities: familyProfile.priorities?.join(', ') || null,
           matchedSchoolsCount: restoredSessionData.matchedSchoolsCount || 0,
           shortlistedSchools: shortlistedSchoolNames,
@@ -425,8 +425,8 @@ export const useMessageHandler = ({
         try {
           const matchedSchoolIds = (response.data?.schools || []).map(s => s.id).filter(id => id != null);
           const profileForSession = response.data?.familyProfile || familyProfile;
-          const profileName = profileForSession?.childName
-            ? `${profileForSession.childName}'s School Search Profile`
+          const profileName = profileForSession?.child_name
+            ? `${profileForSession.child_name}'s School Search Profile`
             : 'School Search Profile';
 
           // Ensure a ChatHistory record exists for URL-based flow
@@ -457,7 +457,7 @@ export const useMessageHandler = ({
 
           // BUG-LOCATION-EXTRACT-S97 FIX: Prefer extractedEntities.locationArea over profileForSession
           // to avoid stale/invalid values (e.g. 'Grade') stored on the profile before isInvalidLocation correction
-          const safeLocationArea = response.data?.extractedEntities?.locationArea || extractedEntitiesData?.locationArea || profileForSession?.locationArea;
+          const safeLocationArea = response.data?.extractedEntities?.location_area || extractedEntitiesData?.location_area || profileForSession?.location_area;
 
           // E48-S3: Null guard — skip ChatSession create if user is not authenticated
           let chatSessionResult = null;
@@ -471,10 +471,10 @@ export const useMessageHandler = ({
               console.log('[E48-S5] Updating existing ChatSession:', existingChatSessionId);
               await ChatSession.update(existingChatSessionId, {
                 matched_schools: JSON.stringify(matchedSchoolIds),
-                child_name: profileForSession?.childName,
-                child_grade: profileForSession?.childGrade,
+                child_name: profileForSession?.child_name,
+                child_grade: profileForSession?.child_grade,
                 location_area: safeLocationArea,
-                max_tuition: profileForSession?.maxTuition,
+                max_tuition: profileForSession?.max_tuition,
                 priorities: profileForSession?.priorities,
                 profile_name: profileName,
                 status: 'active',
@@ -489,10 +489,10 @@ export const useMessageHandler = ({
                 chat_history_id: chatHistoryRecord?.id || currentConversation?.id,
                 status: 'active',
                 consultant_selected: selectedConsultant,
-                child_name: profileForSession?.childName,
-                child_grade: profileForSession?.childGrade,
+                child_name: profileForSession?.child_name,
+                child_grade: profileForSession?.child_grade,
                 location_area: safeLocationArea,
-                max_tuition: profileForSession?.maxTuition,
+                max_tuition: profileForSession?.max_tuition,
                 priorities: profileForSession?.priorities,
                 matched_schools: JSON.stringify(matchedSchoolIds),
                 profile_name: profileName,
@@ -533,7 +533,7 @@ export const useMessageHandler = ({
               const existingJourneys = await FamilyJourney.filter({ user_id: user.id });
               const activeJourneyList = existingJourneys.filter(j => !j.is_archived);
               if (activeJourneyList.length === 0) {
-                const childName = profileForSession?.childName || 'My Child';
+                const childName = profileForSession?.child_name || 'My Child';
                 const newJourney = await FamilyJourney.create({
                   user_id: user.id,
                   child_name: childName,

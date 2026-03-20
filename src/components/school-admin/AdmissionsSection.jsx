@@ -8,11 +8,11 @@ import { format } from 'date-fns';
 
 export default function AdmissionsSection({ school, onUpdate }) {
   const [formData, setFormData] = useState({
-    dayAdmissionDeadline: school?.dayAdmissionDeadline || '',
+    day_admission_deadline: school?.day_admission_deadline || '',
     rolling: false,
-    openHouseDates: school?.openHouseDates || [],
-    admissionRequirements: school?.admissionRequirements || [],
-    acceptanceRate: school?.acceptanceRate || '',
+    open_house_dates: school?.open_house_dates || [],
+    admission_requirements: school?.admission_requirements || [],
+    acceptance_rate: school?.acceptance_rate || '',
     admission_contact: {
       name: '',
       role: '',
@@ -52,11 +52,11 @@ export default function AdmissionsSection({ school, onUpdate }) {
   };
 
   const toggleRequirement = async (reqId) => {
-    const updated = formData.admissionRequirements.includes(reqId)
-      ? formData.admissionRequirements.filter(r => r !== reqId)
-      : [...formData.admissionRequirements, reqId];
-    setFormData({ ...formData, admissionRequirements: updated });
-    await saveField('admissionRequirements', updated);
+    const updated = formData.admission_requirements.includes(reqId)
+      ? formData.admission_requirements.filter(r => r !== reqId)
+      : [...formData.admission_requirements, reqId];
+    setFormData({ ...formData, admission_requirements: updated });
+    await saveField('admission_requirements', updated);
   };
 
   const addOpenHouseDate = async () => {
@@ -64,17 +64,17 @@ export default function AdmissionsSection({ school, onUpdate }) {
       toast.error('Please enter both date and title');
       return;
     }
-    const updated = [...formData.openHouseDates, `${newHouseDate.date} - ${newHouseDate.title}`];
-    setFormData({ ...formData, openHouseDates: updated });
-    await saveField('openHouseDates', updated);
+    const updated = [...formData.open_house_dates, `${newHouseDate.date} - ${newHouseDate.title}`];
+    setFormData({ ...formData, open_house_dates: updated });
+    await saveField('open_house_dates', updated);
     setNewHouseDate({ date: '', title: '' });
     setShowNewHouseDate(false);
   };
 
   const removeOpenHouseDate = async (idx) => {
-    const updated = formData.openHouseDates.filter((_, i) => i !== idx);
-    setFormData({ ...formData, openHouseDates: updated });
-    await saveField('openHouseDates', updated);
+    const updated = formData.open_house_dates.filter((_, i) => i !== idx);
+    setFormData({ ...formData, open_house_dates: updated });
+    await saveField('open_house_dates', updated);
   };
 
   return (
@@ -88,11 +88,11 @@ export default function AdmissionsSection({ school, onUpdate }) {
             <div className="flex gap-2">
               <Input
                 type="date"
-                value={formData.dayAdmissionDeadline}
-                onChange={(e) => setFormData({ ...formData, dayAdmissionDeadline: e.target.value })}
-                onBlur={(e) => saveField('dayAdmissionDeadline', e.target.value)}
+                value={formData.day_admission_deadline}
+                onChange={(e) => setFormData({ ...formData, day_admission_deadline: e.target.value })}
+                onBlur={(e) => saveField('day_admission_deadline', e.target.value)}
               />
-              {savingField === 'dayAdmissionDeadline' && (
+              {savingField === 'day_admission_deadline' && (
                 <Loader2 className="h-4 w-4 animate-spin text-slate-400 my-auto" />
               )}
             </div>
@@ -104,7 +104,7 @@ export default function AdmissionsSection({ school, onUpdate }) {
               onChange={(e) => {
                 setFormData({ ...formData, rolling: e.target.checked });
                 if (e.target.checked) {
-                  saveField('dayAdmissionDeadline', '');
+                  saveField('day_admission_deadline', '');
                 }
               }}
               className="rounded"
@@ -118,7 +118,7 @@ export default function AdmissionsSection({ school, onUpdate }) {
       <div>
         <h3 className="font-semibold text-slate-900 mb-4">Open House Dates</h3>
         <div className="space-y-3 mb-4">
-          {formData.openHouseDates.map((dateStr, idx) => (
+          {formData.open_house_dates.map((dateStr, idx) => (
             <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
               <span className="text-sm">{dateStr}</span>
               <button
@@ -173,7 +173,7 @@ export default function AdmissionsSection({ school, onUpdate }) {
             <label key={req.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50">
               <input
                 type="checkbox"
-                checked={formData.admissionRequirements.includes(req.id)}
+                checked={formData.admission_requirements.includes(req.id)}
                 onChange={() => toggleRequirement(req.id)}
                 className="rounded"
               />
@@ -191,13 +191,13 @@ export default function AdmissionsSection({ school, onUpdate }) {
             type="number"
             min="0"
             max="100"
-            value={formData.acceptanceRate}
-            onChange={(e) => setFormData({ ...formData, acceptanceRate: e.target.value })}
-            onBlur={(e) => saveField('acceptanceRate', e.target.value ? parseFloat(e.target.value) : null)}
+            value={formData.acceptance_rate}
+            onChange={(e) => setFormData({ ...formData, acceptance_rate: e.target.value })}
+            onBlur={(e) => saveField('acceptance_rate', e.target.value ? parseFloat(e.target.value) : null)}
             placeholder="e.g., 25"
           />
           <span className="flex items-center text-slate-600">%</span>
-          {savingField === 'acceptanceRate' && (
+          {savingField === 'acceptance_rate' && (
             <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
           )}
         </div>

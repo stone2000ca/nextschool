@@ -156,12 +156,12 @@ export async function restoreSessionFromParam(
             if (analysis.school_id) {
               const mapped = {
                 schoolId: analysis.school_id,
-                schoolName: analysis.schoolName || 'School',
-                fitScore: analysis.fitScore,
-                fitLabel: analysis.fitLabel,
-                priorityMatches: analysis.priorityMatches || [],
-                aiInsight: analysis.aiInsight || analysis.insight || null,
-                tradeOffs: analysis.tradeOffs || analysis.tradeoffs || [],
+                schoolName: analysis.school_name || 'School',
+                fitScore: analysis.fit_score,
+                fitLabel: analysis.fit_label,
+                priorityMatches: analysis.priority_matches || [],
+                aiInsight: analysis.ai_insight || analysis.insight || null,
+                tradeOffs: analysis.trade_offs || analysis.tradeoffs || [],
                 ...analysis
               };
               analysesMap[analysis.school_id] = mapped;
@@ -174,7 +174,7 @@ export async function restoreSessionFromParam(
           const sorted = recentAnalyses.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
           const latest = sorted[0];
           lastDeepDiveSchoolId = latest.school_id;
-          lastDeepDiveSchoolName = latest.schoolName || 'School';
+          lastDeepDiveSchoolName = latest.school_name || 'School';
           console.log('[RESTORE] Fallback: found', recentAnalyses.length, 'SchoolAnalysis rows, active school:', lastDeepDiveSchoolId);
           if (setDeepDiveAnalysis) {
             const mappedAnalysis = analysesMap[latest.school_id] || latest;
@@ -205,15 +205,15 @@ export async function restoreSessionFromParam(
     } else {
       // BUG-LOCATION-EXTRACT-S97 FIX: Prefer extractedEntities.locationArea from ChatHistory context
       // over ChatSession.locationArea which may contain stale/invalid values (e.g. 'Grade')
-      const restoredLocationArea = chatHistory?.conversation_context?.extractedEntities?.locationArea || chatSession.location_area;
+      const restoredLocationArea = chatHistory?.conversation_context?.extractedEntities?.location_area || chatHistory?.conversation_context?.extractedEntities?.locationArea || chatSession.location_area;
 
       restoredProfile = {
-        childName: chatSession.child_name,
-        childGrade: chatSession.child_grade,
-        locationArea: restoredLocationArea,
-        maxTuition: chatSession.max_tuition,
+        child_name: chatSession.child_name,
+        child_grade: chatSession.child_grade,
+        location_area: restoredLocationArea,
+        max_tuition: chatSession.max_tuition,
         priorities: chatSession.priorities || [],
-        learningDifferences: chatSession.learning_differences || []
+        learning_differences: chatSession.learning_differences || []
       };
       setFamilyProfile(restoredProfile);
     }
@@ -390,12 +390,12 @@ export async function restoreMostRecentConversation(
             if (analysis.school_id) {
               const mapped = {
                 schoolId: analysis.school_id,
-                schoolName: analysis.schoolName || 'School',
-                fitScore: analysis.fitScore,
-                fitLabel: analysis.fitLabel,
-                priorityMatches: analysis.priorityMatches || [],
-                aiInsight: analysis.aiInsight || analysis.insight || null,
-                tradeOffs: analysis.tradeOffs || analysis.tradeoffs || [],
+                schoolName: analysis.school_name || 'School',
+                fitScore: analysis.fit_score,
+                fitLabel: analysis.fit_label,
+                priorityMatches: analysis.priority_matches || [],
+                aiInsight: analysis.ai_insight || analysis.insight || null,
+                tradeOffs: analysis.trade_offs || analysis.tradeoffs || [],
                 ...analysis
               };
               analysesMap[analysis.school_id] = mapped;
@@ -444,12 +444,12 @@ export async function restoreMostRecentConversation(
     // 6. Restore family profile from context if available
     if (ctx.extractedEntities) {
       const fp = {
-        childName: ctx.extractedEntities.childName,
-        childGrade: ctx.extractedEntities.childGrade,
-        locationArea: ctx.extractedEntities.locationArea,
-        maxTuition: ctx.extractedEntities.maxTuition,
+        child_name: ctx.extractedEntities.child_name || ctx.extractedEntities.childName,
+        child_grade: ctx.extractedEntities.child_grade || ctx.extractedEntities.childGrade,
+        location_area: ctx.extractedEntities.location_area || ctx.extractedEntities.locationArea,
+        max_tuition: ctx.extractedEntities.max_tuition || ctx.extractedEntities.maxTuition,
         priorities: ctx.extractedEntities.priorities || [],
-        learningDifferences: ctx.extractedEntities.learningDifferences || [],
+        learning_differences: ctx.extractedEntities.learning_differences || ctx.extractedEntities.learningDifferences || [],
       };
       // Only set if there's at least one meaningful value
       if (Object.values(fp).some(v => v != null && v !== '' && !(Array.isArray(v) && v.length === 0))) {

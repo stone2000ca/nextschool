@@ -54,8 +54,8 @@ export default function ConsultantDialogs({
             <AlertDialogDescription>
               {conversations.length > 0 && (
                 <>
-                  You've reached your profile limit for your <strong>{user?.subscriptionPlan || 'free'}</strong> plan. Would you like to archive{' '}
-                  <strong>"{conversations.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0]?.title || 'oldest profile'}"</strong> to create a new one?
+                  You've reached your profile limit for your <strong>{user?.subscription_plan || 'free'}</strong> plan. Would you like to archive{' '}
+                  <strong>"{conversations.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]?.title || 'oldest profile'}"</strong> to create a new one?
                 </>
               )}
             </AlertDialogDescription>
@@ -86,7 +86,7 @@ export default function ConsultantDialogs({
             <AlertDialogDescription>
               {isAuthenticated ? (
                 <>
-                  You've reached the conversation limit for your <strong>{user?.subscriptionPlan || 'free'}</strong> plan ({getConversationLimits(user?.subscriptionPlan || 'free')} active conversations).{' '}
+                  You've reached the conversation limit for your <strong>{user?.subscription_plan || 'free'}</strong> plan ({getConversationLimits(user?.subscription_plan || 'free')} active conversations).{' '}
                   Upgrade your plan or delete old conversations to start a new one.
                 </>
               ) : (
@@ -126,7 +126,7 @@ export default function ConsultantDialogs({
                   <>
                     Your tokens will replenish tomorrow with{' '}
                     <span className="font-semibold text-teal-600">
-                      +{getPlanLimits(user?.subscriptionPlan || 'free').dailyReplenishment} tokens
+                      +{getPlanLimits(user?.subscription_plan || 'free').dailyReplenishment} tokens
                     </span>
                   </>
                 ) : (
@@ -191,7 +191,7 @@ export default function ConsultantDialogs({
       {showLoginGate && (
         <LoginGateModal
           consultantName={selectedConsultant}
-          childName={familyProfile?.childName || 'your child'}
+          childName={familyProfile?.child_name || 'your child'}
           onClose={onLoginGateClose || (() => setShowLoginGate(false))}
         />
       )}
