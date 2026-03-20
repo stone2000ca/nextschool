@@ -54,17 +54,22 @@ export async function DELETE(
         .eq('id', sjRecords[0].id)
     }
 
-    // 3. Update ChatSession.shortlisted_count (E48-S4)
+    // 3. Atomically update ChatSession.shortlisted_count from chat_shortlists (E48-S4)
+    // Count actual remaining rows instead of relying on client-provided current_count
     if (conversation_id) {
-      const { data: sessions } = await db('chat_sessions')
-        .select('id')
-        .eq('chat_history_id', conversation_id)
-        .limit(1)
-      if (sessions && sessions.length > 0) {
-        const newCount = Math.max(0, (current_count || 1) - 1)
-        await db('chat_sessions')
-          .update({ shortlisted_count: newCount, updated_at: now })
-          .eq('id', sessions[0].id)
+      const { count, error: countError } = await db('chat_shortlists')
+        .select('id', { count: 'exact', head: true })
+        .eq('family_journey_id', journeyId)
+      if (!countError && count != null) {
+        const { data: sessions } = await db('chat_sessions')
+          .select('id')
+          .eq('chat_history_id', conversation_id)
+          .limit(1)
+        if (sessions && sessions.length > 0) {
+          await db('chat_sessions')
+            .update({ shortlisted_count: count, updated_at: now })
+            .eq('id', sessions[0].id)
+        }
       }
     }
 

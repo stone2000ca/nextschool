@@ -85,6 +85,7 @@ function ChipInput({ chips, onChange, placeholder }) {
 
 export default function SchoolSearchProfile({
   session,
+  shortlistCount = 0,
   onViewMatches,
   onEditProfile,
   onArchive,
@@ -265,10 +266,10 @@ export default function SchoolSearchProfile({
             <p className="text-sm">
               <span className="text-teal-400 font-semibold">{matchedCount}</span>
               <span className="text-white/50"> matches</span>
-              {session.shortlisted_count > 0 && (
+              {shortlistCount > 0 && (
                 <>
                   <span className="text-white/30"> · </span>
-                  <span className="text-teal-400 font-semibold">{session.shortlisted_count}</span>
+                  <span className="text-teal-400 font-semibold">{shortlistCount}</span>
                   <span className="text-white/50"> shortlisted</span>
                 </>
               )}

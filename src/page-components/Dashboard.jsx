@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [reactivateError, setReactivateError] = useState(null);
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
   const [deleteAllTarget, setDeleteAllTarget] = useState(null); // 'active' | 'archived'
+  const [shortlistCounts, setShortlistCounts] = useState({}); // { [journey_id]: count }
 
   useEffect(() => {
     // WC15: Check for upgrade success param
@@ -79,6 +80,20 @@ export default function Dashboard() {
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
       setSessions(sorted);
+
+      // Fetch shortlist counts from chat_shortlists table (not session.shortlisted_count)
+      const journeyIds = sorted.map(s => s.journey_id).filter(Boolean);
+      if (journeyIds.length > 0) {
+        try {
+          const countsRes = await fetch(`/api/shortlist-counts?journey_ids=${encodeURIComponent(journeyIds.join(','))}`);
+          if (countsRes.ok) {
+            const { counts } = await countsRes.json();
+            setShortlistCounts(counts || {});
+          }
+        } catch (err) {
+          console.error('Failed to fetch shortlist counts:', err);
+        }
+      }
     } catch (err) {
       console.error('Failed to load dashboard:', err);
       setError('Failed to load your sessions. Please try again.');
@@ -402,6 +417,7 @@ export default function Dashboard() {
                     <SchoolSearchProfile
                       key={session.id}
                       session={session}
+                      shortlistCount={session.journey_id ? (shortlistCounts[session.journey_id] ?? 0) : 0}
                       onViewMatches={() => {}}
                       onEditProfile={() => {}}
                       onArchive={handleSessionArchived}
@@ -610,7 +626,10 @@ export default function Dashboard() {
               return 0;
             }
           })(),
-          shortlisted_count: sessions.find(s => s.status === 'active')?.shortlisted_count || 0
+          shortlisted_count: (() => {
+            const activeSession = sessions.find(s => s.status === 'active');
+            return activeSession?.journey_id ? (shortlistCounts[activeSession.journey_id] ?? 0) : 0;
+          })()
         }}
       />
     </div>
