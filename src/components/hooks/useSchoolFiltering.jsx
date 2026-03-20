@@ -19,6 +19,7 @@ export function useSchoolFiltering(schools, conversationContext) {
     genderFilter: null,
     maxDistanceKm: null,
     curriculum: null,  // E41-S7
+    religiousAffiliation: null,  // E41-S7
   });
 
   const resetFilterOverrides = useCallback(() => {
@@ -30,6 +31,7 @@ export function useSchoolFiltering(schools, conversationContext) {
       genderFilter: null,
       maxDistanceKm: null,
       curriculum: null,  // E41-S7
+      religiousAffiliation: null,  // E41-S7
     });
   }, []);
 
@@ -118,6 +120,16 @@ export function useSchoolFiltering(schools, conversationContext) {
             Array.isArray(s.curriculum) && s.curriculum.some(c => c.toLowerCase().includes(cf))
           );
           console.log('[FILTER] curriculum:', filterOverrides.curriculum, 'filtered from', before, 'to', filtered.length);
+        }
+
+        // E41-S7: religiousAffiliation filter
+        if (filterOverrides.religiousAffiliation) {
+          const ra = filterOverrides.religiousAffiliation.toLowerCase();
+          const before = filtered.length;
+          filtered = filtered.filter(s =>
+            s.religiousAffiliation && s.religiousAffiliation.toLowerCase().includes(ra)
+          );
+          console.log('[FILTER] religiousAffiliation:', filterOverrides.religiousAffiliation, 'filtered from', before, 'to', filtered.length);
         }
 
       } catch (filterError) {

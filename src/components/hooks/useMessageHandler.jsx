@@ -626,6 +626,7 @@ export const useMessageHandler = ({
               else if (f.boardingType === 'day') mapped.boardingOnly = false;
               if (f.gender) mapped.genderFilter = f.gender === 'coed' ? 'co-ed' : f.gender;
               if (f.curriculum) mapped.curriculum = f.curriculum;
+              if (f.religiousAffiliation) mapped.religiousAffiliation = f.religiousAffiliation;
               setFilterOverrides?.(prev => ({ ...prev, ...mapped }));
             }
             break;
