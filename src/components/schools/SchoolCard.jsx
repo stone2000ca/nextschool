@@ -163,6 +163,39 @@ export function buildPriorityChecks(school, familyProfile) {
 }
 
 // =============================================================================
+// T-RES-049: Fit Score Calculator
+// =============================================================================
+export function calcFitScore(checks, priorityOverrides = {}) {
+  let totalWeight = 0;
+  let earnedWeight = 0;
+
+  for (const row of checks) {
+    const flex = priorityOverrides[row.id] || 'nicetohave';
+    if (flex === 'dontcare') continue;
+
+    const weight = flex === 'musthave' ? 2 : 1;
+    totalWeight += weight;
+
+    if (row.status === 'match') earnedWeight += weight;
+    else if (row.status === 'unknown') earnedWeight += weight * 0.5;
+    // mismatch = 0
+  }
+
+  if (totalWeight === 0) return 0;
+  return earnedWeight / totalWeight;
+}
+
+const FIT_LABELS = [
+  { min: 0.75, label: 'Strong Fit', bg: 'bg-teal-600',  text: 'text-white' },
+  { min: 0.45, label: 'Good Fit',   bg: 'bg-amber-500', text: 'text-white' },
+  { min: 0,    label: 'Worth Exploring', bg: 'bg-slate-500', text: 'text-white' },
+];
+
+function getFitLabel(score) {
+  return FIT_LABELS.find(l => score >= l.min) || FIT_LABELS[FIT_LABELS.length - 1];
+}
+
+// =============================================================================
 // T-RES-008: Adjacent Attributes ("Also Worth Knowing")
 // =============================================================================
 function buildAlsoWorthKnowing(school, familyProfile) {
@@ -299,9 +332,7 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
 
   const tuitionBand = getTuitionBand(school);
   const priorityChecks = buildPriorityChecks(school, familyProfile);
-  const greenCount = priorityChecks.filter(r => r.status === 'match').length;
-  const totalChecks = priorityChecks.length;
-  const hasChecks = totalChecks > 0;
+  const hasChecks = priorityChecks.length > 0;
 
   const rationale = school.match_explanations?.[0]?.text?.split('.')[0];
 
@@ -328,13 +359,16 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
             height="h-36"
           />
         </div>
-        {/* Checkmark summary badge — always visible */}
-        {hasChecks && (
-          <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-semibold text-slate-700 shadow-sm">
-            <Check className="h-3 w-3 text-green-600" />
-            {greenCount}/{totalChecks}
-          </div>
-        )}
+        {/* Fit label badge — always visible */}
+        {hasChecks && (() => {
+          const fitScore = calcFitScore(priorityChecks, priorityOverrides);
+          const fit = getFitLabel(fitScore);
+          return (
+            <div className={`absolute top-2 right-2 flex items-center gap-1 ${fit.bg} backdrop-blur-sm rounded-full px-2.5 py-0.5 text-xs font-semibold ${fit.text} shadow-sm`}>
+              {fit.label}
+            </div>
+          );
+        })()}
         {/* Visited badge — offset below checkmark badge to avoid overlap */}
         {isVisited && (
           <div className="absolute top-8 right-2 flex items-center gap-1 bg-teal-500/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
