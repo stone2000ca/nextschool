@@ -6,6 +6,7 @@
 
 import { ChatSession, LLMLog, TourRequest } from '@/lib/entities-server'
 import { searchSchoolsLogic } from './searchSchools'
+import { syncConversationSchools } from './dualWrite'
 
 // =============================================================================
 // T045: Canadian Metro Coordinates Lookup
@@ -628,6 +629,11 @@ ${schoolIdContext}`;
   const newIds = new Set(matchingSchools.map((s: any) => s.id));
   const preserved = existingPool.filter((s: any) => !newIds.has(s.id));
   context.lastMatchedSchools = [...matchingSchools, ...preserved].slice(0, 50);
+
+  // Phase 1c: Dual-write schools to normalized table (fire-and-forget)
+  if (conversationId && matchingSchools.length > 0) {
+    syncConversationSchools(conversationId, matchingSchools, 'search');
+  }
 
   return {
     message: aiMessage,
