@@ -23,6 +23,7 @@ import { useConversationActions } from '@/components/hooks/useConversationAction
 import { useSchoolInteractions } from '@/components/hooks/useSchoolInteractions';
 import { useSchoolJourneyData } from '@/components/hooks/useSchoolJourneyData';
 import { useActionProcessor } from '@/components/hooks/useActionProcessor';
+import { useDeepLinkHandler } from '@/components/hooks/useDeepLinkHandler';
 
 // Components
 import Navbar from '@/components/navigation/Navbar';
@@ -297,6 +298,13 @@ export default function Consultant() {
     setTourRequestSchool: ui.setTourRequestSchool,
     applyDistances, userLocation,
     schoolAnalyses,
+  });
+
+  // ─── Deep link handling (E51-S1A) ───
+  useDeepLinkHandler({
+    setSelectedSchool,
+    setDetailTab: ui.setDetailTab,
+    setCurrentView,
   });
 
   // ─── Populate late-bound refs for session hook ───
