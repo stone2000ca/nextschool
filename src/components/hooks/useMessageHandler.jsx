@@ -351,8 +351,10 @@ export const useMessageHandler = ({
       // context and reverses the clearing — causing the overlay to stay stuck forever.
       // P4-S4.5: Prefer stateEnvelope fields, fall back to flat response fields
       let newBriefStatus = response.data?.stateEnvelope?.briefStatus ?? response.data?.briefStatus ?? null;
-      // E48-FIX: Also clear briefStatus for guided intro completion, not just __CONFIRM_BRIEF__
-      if (responseState === STATES.RESULTS && ((response.data?.schools || []).length > 0 || isBriefConfirmation || isGuidedIntroComplete)) {
+      // FIX-RESULTS-HANG: Always clear briefStatus when transitioning to RESULTS,
+      // regardless of school count or confirmation flags.  The overlay must dismiss
+      // even when zero schools match the search criteria.
+      if (responseState === STATES.RESULTS) {
         newBriefStatus = null;
         setBriefStatus(null);
         console.log('[BRIEF STATUS] Cleared on RESULTS arrival');

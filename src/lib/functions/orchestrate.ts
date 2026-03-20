@@ -1643,7 +1643,8 @@ Object.assign(context, safeUpdatedContext);
           }
           responseData.conversationContext = { ...context, ...responseData.conversationContext };
           responseData.extractedEntities = extractionResult?.extractedEntities || {};
-          stateEnvelope.briefStatus = responseData.briefStatus ?? stateEnvelope.briefStatus;
+          // FIX-RESULTS-HANG: Use `!== undefined` so explicit null clears briefStatus
+          stateEnvelope.briefStatus = responseData.briefStatus !== undefined ? responseData.briefStatus : stateEnvelope.briefStatus;
           responseData.stateEnvelope = stateEnvelope;
           return (responseData);
         } catch (briefError) {
@@ -1994,8 +1995,11 @@ Object.assign(context, safeUpdatedContext);
         responseData._deferredWork = [deferredExtraction];
         }
 
-        stateEnvelope.briefStatus = responseData.briefStatus ?? stateEnvelope.briefStatus;
-        stateEnvelope.state = responseData.state ?? stateEnvelope.state;
+        // FIX-RESULTS-HANG: Use `!== undefined` instead of `??` so that explicit
+        // `null` from handleResults.ts clears briefStatus.  The `??` operator
+        // treats null as nullish, so `null ?? 'confirmed'` kept the overlay stuck.
+        stateEnvelope.briefStatus = responseData.briefStatus !== undefined ? responseData.briefStatus : stateEnvelope.briefStatus;
+        stateEnvelope.state = responseData.state !== undefined ? responseData.state : stateEnvelope.state;
         responseData.stateEnvelope = stateEnvelope;
         return (responseData);
       }
@@ -2056,8 +2060,9 @@ Object.assign(context, safeUpdatedContext);
         // Phase 1c: Dual-write conversation state to normalized table
         syncConversationState(conversationId, userId, responseData.conversationContext || context);
 
-        stateEnvelope.briefStatus = responseData.briefStatus ?? stateEnvelope.briefStatus;
-        stateEnvelope.state = responseData.state ?? stateEnvelope.state;
+        // FIX-RESULTS-HANG: Use `!== undefined` so explicit null clears briefStatus
+        stateEnvelope.briefStatus = responseData.briefStatus !== undefined ? responseData.briefStatus : stateEnvelope.briefStatus;
+        stateEnvelope.state = responseData.state !== undefined ? responseData.state : stateEnvelope.state;
         responseData.stateEnvelope = stateEnvelope;
         return (responseData);
       }
