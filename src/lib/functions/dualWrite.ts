@@ -66,6 +66,34 @@ export function syncConversationState(
     .catch((e: any) => console.error('[DUAL-WRITE] conversation_state exception:', e.message));
 }
 
+// ─── conversation_state read ────────────────────────────────────────
+// Reads the normalized conversation_state row for a given conversation.
+// Returns the row object or null if not found / on error.
+
+export async function readConversationState(
+  conversationId: string
+): Promise<Record<string, any> | null> {
+  if (!conversationId) return null;
+
+  try {
+    const admin = getAdminClient();
+    const { data, error } = await (admin
+      .from('conversation_state') as any)
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[DUAL-READ] conversation_state read failed:', error.message);
+      return null;
+    }
+    return data ?? null;
+  } catch (e: any) {
+    console.error('[DUAL-READ] conversation_state exception:', e.message);
+    return null;
+  }
+}
+
 // ─── conversation_schools insert ────────────────────────────────────
 // Inserts school references; marks previous results as non-current.
 
