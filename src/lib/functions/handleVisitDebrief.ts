@@ -41,8 +41,8 @@ export async function handleVisitDebriefLogic(params: {
     if (!school) return null;
 
     const schoolName = school.name;
-    const childName = conversationFamilyProfile?.childName || 'your child';
-    const priorVisitQuestions = priorAnalysis?.content?.visitQuestions || [];
+    const childName = conversationFamilyProfile?.child_name || 'your child';
+    const priorVisitQuestions = priorAnalysis?.content?.visit_questions || priorAnalysis?.content?.visitQuestions || [];
 
     // WC9: Initialize or refresh debrief question queue
     const isNewDebrief = context.debriefSchoolId !== selectedSchoolId;
@@ -174,24 +174,24 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
 
           const reevalResult = await callOpenRouterFn({
             systemPrompt: 'You are a school fit analyst. Return ONLY valid JSON.',
-            userPrompt: `ORIGINAL ANALYSIS:\n- Fit Label: ${originalAnalysis.fitLabel || 'unknown'}\n\nPOST-VISIT DEBRIEF:\n${qaContext}\n\nProvide fit re-evaluation as JSON: { updatedFitLabel, fitDirection, revisedStrengths, revisedConcerns, visitVerdict }`,
+            userPrompt: `ORIGINAL ANALYSIS:\n- Fit Label: ${originalAnalysis.fit_label || originalAnalysis.fitLabel || 'unknown'}\n\nPOST-VISIT DEBRIEF:\n${qaContext}\n\nProvide fit re-evaluation as JSON: { updated_fit_label, fit_direction, revised_strengths, revised_concerns, visit_verdict }`,
             maxTokens: 600,
             temperature: 0.5,
-            responseSchema: { name: 'fit_reevaluation', schema: { type: 'object', properties: { updatedFitLabel: { type: 'string' }, fitDirection: { type: 'string' }, revisedStrengths: { type: 'array', items: { type: 'string' } }, revisedConcerns: { type: 'array', items: { type: 'string' } }, visitVerdict: { type: 'string' } }, required: ['updatedFitLabel', 'fitDirection', 'revisedStrengths', 'revisedConcerns', 'visitVerdict'], additionalProperties: false } }
+            responseSchema: { name: 'fit_reevaluation', schema: { type: 'object', properties: { updated_fit_label: { type: 'string' }, fit_direction: { type: 'string' }, revised_strengths: { type: 'array', items: { type: 'string' } }, revised_concerns: { type: 'array', items: { type: 'string' } }, visit_verdict: { type: 'string' } }, required: ['updated_fit_label', 'fit_direction', 'revised_strengths', 'revised_concerns', 'visit_verdict'], additionalProperties: false } }
           });
 
           if (reevalResult) {
-            await GeneratedArtifact.create({ user_id: context.userId, conversation_id: context.conversationId, school_id: selectedSchoolId, artifact_type: 'fit_reevaluation', title: 'Fit Re-evaluation - ' + schoolName, content: { ...reevalResult, originalFitLabel: originalAnalysis.fitLabel || 'unknown', debriefTimestamp: new Date().toISOString() }, status: 'ready', is_shared: false, pdf_url: null, share_token: null });
+            await GeneratedArtifact.create({ user_id: context.userId, conversation_id: context.conversationId, school_id: selectedSchoolId, artifact_type: 'fit_reevaluation', title: 'Fit Re-evaluation - ' + schoolName, content: { ...reevalResult, original_fit_label: originalAnalysis.fit_label || originalAnalysis.fitLabel || 'unknown', debriefTimestamp: new Date().toISOString() }, status: 'ready', is_shared: false, pdf_url: null, share_token: null });
 
             if (journey) {
               const sjs = Array.isArray(journey.school_journeys) ? [...journey.school_journeys] : [];
               const sjItem = sjs.find((sj: any) => sj.schoolId === selectedSchoolId);
               if (sjItem) {
-                sjItem.postVisitFitLabel = reevalResult.updatedFitLabel;
-                sjItem.fitDirection = reevalResult.fitDirection;
-                sjItem.visitVerdict = reevalResult.visitVerdict;
-                sjItem.revisedStrengths = reevalResult.revisedStrengths;
-                sjItem.revisedConcerns = reevalResult.revisedConcerns;
+                sjItem.postVisitFitLabel = reevalResult.updated_fit_label;
+                sjItem.fitDirection = reevalResult.fit_direction;
+                sjItem.visitVerdict = reevalResult.visit_verdict;
+                sjItem.revisedStrengths = reevalResult.revised_strengths;
+                sjItem.revisedConcerns = reevalResult.revised_concerns;
               }
               await FamilyJourney.update(journey.id, { school_journeys: sjs });
             }

@@ -21,8 +21,7 @@ async function listSchools(params: { status?: string; sort?: string; limit?: num
   if (params.sort) {
     const descending = params.sort.startsWith('-')
     const rawField = descending ? params.sort.slice(1) : params.sort
-    // Sort field should already be snake_case; normalize just in case
-    const field = rawField.replace(/([A-Z])/g, '_$1').toLowerCase()
+    const field = rawField
     if (SAFE_SORT_COLUMNS.has(field)) {
       query = query.order(field, { ascending: !descending })
     } else {
