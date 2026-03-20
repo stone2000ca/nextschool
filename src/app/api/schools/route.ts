@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const city = sp.get('city')
     const search = sp.get('search')
     const adminUserId = sp.get('admin_user_id')
-    const sort = sp.get('sort') || '-updated_date'
+    const sort = sp.get('sort') || '-updated_at'
     const limit = Math.min(Number(sp.get('limit') || 500), 1000)
 
     const filter: Record<string, any> = {}
