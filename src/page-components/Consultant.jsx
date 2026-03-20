@@ -4,18 +4,13 @@ import { useAuth } from '@/lib/AuthContext';
 import { School, SchoolJourney, FamilyJourney, ResearchNote, SchoolInquiry } from '@/lib/entities';
 import { updateConversation } from '@/lib/api/conversations';
 import { invokeFunction } from '@/lib/functions';
-import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
+import { STATES } from '@/lib/stateMachineConfig';
 import { restoreGuestSession } from '@/components/chat/SessionRestorer';
 import { handleNarrateComparison as narrateComparison } from '@/components/chat/handleNarrateComparison';
 
-// Import searchSchools function
-const searchSchools = (params) => invokeFunction('searchSchools', params);
-import { Button } from "@/components/ui/button";
-import { Plus, Heart, FileText, Trash2, Star, ClipboardList } from "lucide-react";
-import { toast } from "sonner"; // E16a-019
+import { toast } from "sonner";
 import IconRail from '@/components/navigation/IconRail';
 import FamilyBrief from '@/components/chat/FamilyBrief';
-import WelcomeState from '@/components/schools/WelcomeState';
 import ConsultantSelection from '@/components/chat/ConsultantSelection';
 import GuidedIntro from '@/components/chat/GuidedIntro';
 import { LayoutGroup } from 'framer-motion';
@@ -26,13 +21,10 @@ import AddSchoolPanel from '@/components/chat/AddSchoolPanel';
 import TimelinePanel from '@/components/chat/TimelinePanel';
 import NotesPanel from '@/components/chat/NotesPanel';
 import ComparisonView from '@/components/schools/ComparisonView';
-import { getTuitionBand, buildPriorityChecks } from '@/components/schools/SchoolCard';
-import { validateBriefContent, generateProgrammaticBrief } from '../components/utils/briefUtils';
 import { buildTiers } from '../components/utils/tierEngine';
 import { useUserLocation } from '../components/hooks/useUserLocation';
 import { useShortlist } from '../components/hooks/useShortlist';
 import { useDataLoader } from '../components/hooks/useDataLoader';
-import { extractAndSaveMemories } from '../components/utils/memoryManager';
 import { restoreSessionFromParam, restoreMostRecentConversation } from '@/components/chat/SessionRestorer';
 import ConsultantDialogs from '@/components/chat/ConsultantDialogs';
 import ChatPanel from '@/components/chat/ChatPanel';
@@ -54,9 +46,9 @@ const PLAN_NAMES = { FREE: 'free', BASIC: 'basic', PREMIUM: 'premium', PRO: 'pro
 const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
 
 export default function Consultant() {
-   // Safe trackEvent definition - defaults to no-op if not defined globally
-   const trackEvent = (typeof window !== 'undefined' && window.trackEvent) ? window.trackEvent : (name, data) => {};
-   const { user: authUser, isAuthenticated: authIsAuthenticated, updateMe: authUpdateMe } = useAuth();
+  // ─── Hooks setup ───────────────────────────────────────────────
+  const trackEvent = (typeof window !== 'undefined' && window.trackEvent) ? window.trackEvent : (name, data) => {};
+  const { user: authUser, isAuthenticated: authIsAuthenticated, updateMe: authUpdateMe } = useAuth();
 
    const searchParams = useSearchParams();
    const router = useRouter();
@@ -71,10 +63,9 @@ export default function Consultant() {
   const [selectedConsultant, setSelectedConsultant] = useState(null);
   const [showGuidedIntro, setShowGuidedIntro] = useState(false);
   const [familyBrief, setFamilyBrief] = useState(null);
-  // E48-FIX: Ref ensures handleGuidedIntroComplete's setTimeout closure
+  // Ref ensures handleGuidedIntroComplete's setTimeout closure
   // always reads the latest familyBrief, even before React re-renders.
   const familyBriefRef = useRef(null);
-  // E47: showResponseChips removed — DISCOVERY chips no longer needed after guided intro skip
   const [feedbackPromptShown, setFeedbackPromptShown] = useState(false);
 
   // ─── School results state (Phase 3c hook) ──────────────────────
@@ -164,10 +155,8 @@ export default function Consultant() {
   // Login gate
   const [showLoginGate, setShowLoginGate] = useState(false);
   
-  // Family Brief panel
-  const [briefExpanded, setBriefExpanded] = useState(false);
+  // Panel states (continued)
   const [lastTypingTime, setLastTypingTime] = useState(Date.now());
-  const [showFamilyBrief, setShowFamilyBrief] = useState(false);
   // T046: Right-side rail panel state
   const [activePanel, setActivePanel] = useState(null); // 'brief' | 'shortlist' | null
 
@@ -275,9 +264,7 @@ export default function Consultant() {
   const deepDiveAutoAddedRef = useRef(new Set());
   // E32-003: Prevent double-processing the same UI action
   const processedActionsRef = useRef(new Set());
-  
 
-  
   // Progressive loading states
   const [loadingStage, setLoadingStage] = useState(0);
   const loadingStages = [
@@ -289,7 +276,7 @@ export default function Consultant() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Determine UI phase based on state and schools
+  // ─── Derived state ──────────────────────────────────────────────
   const currentState = currentConversation?.conversation_context?.state || STATES.WELCOME;
 
   // Data loader hook — must come before useShortlist so familyProfile is available
@@ -329,15 +316,7 @@ export default function Consultant() {
     extraSchools,
   });
 
-  // Whether the Family Brief toggle should be visible
-  const isBriefState = true; // T045: FamilyBrief visible in all states
-  const hasFamilyProfileData = familyProfile && Object.entries(familyProfile).some(
-    ([k, v]) => !['id', 'user_id', 'conversation_id', 'created_at', 'updated_at', 'created_by', 'onboarding_phase', 'onboarding_complete'].includes(k)
-      && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0) && v !== ''
-  );
-  const showBriefToggle = isBriefState && hasFamilyProfileData;
-  
-  // FIX 17: briefStatus sync moved to useConversationState hook (Phase 3b)
+  // ─── Side effects ───────────────────────────────────────────────
 
   // BUG-DD-001 FIX: selectedSchool is the SINGLE SOURCE OF TRUTH for detail view
   useEffect(() => {
@@ -392,9 +371,6 @@ export default function Consultant() {
   }, [showLoadingOverlay]);
 
 
-
-
-
   // School filtering/sorting via extracted hook
   const {
     filteredSchools,
@@ -428,12 +404,6 @@ export default function Consultant() {
       }, 450); // After transition completes
     }
   }, [isIntakePhase]);
-
-  const saveScrollPosition = () => {
-    if (chatScrollRef.current) {
-      setSavedScrollPosition(chatScrollRef.current.scrollTop);
-    }
-  };
 
   // Dev mode bypass for login gate
   const isDevMode = new URLSearchParams(window.location.search).get('dev') === 'true';
@@ -543,17 +513,12 @@ export default function Consultant() {
     }
   }, [sessionIdParam, isAuthenticated, user?.id, currentConversation?.id]);
 
-  // Schools hydration moved to useConversationState hook (Phase 3b)
-
   // Restore guest session when user becomes authenticated
   useEffect(() => {
     if (isAuthenticated && user && !sessionIdParam) {
       handleRestoreGuestSession();
     }
   }, [isAuthenticated, user?.id, sessionIdParam]);
-
-
-
 
 
   const handleRestoreGuestSession = () => {
@@ -653,7 +618,7 @@ export default function Consultant() {
     }
   };
 
-  // loadConversations moved to useConversationState hook (Phase 3b)
+  // ─── Callbacks ──────────────────────────────────────────────────
 
   const createNewConversation = async () => {
     // If not authenticated, return to consultant selection
@@ -952,8 +917,6 @@ export default function Consultant() {
     handleBackToResults();
   };
 
-  // T047: No manual refresh handler needed — matches auto-refresh on entity extraction
-
   // Open full-screen comparison view and update conversationContext with compared school names
   const handleOpenComparison = async (comparedSchools) => {
     if (!isPremium) {
@@ -1003,8 +966,6 @@ export default function Consultant() {
     });
   };
 
-
-
   const deleteConversation = async () => {
     if (!conversationToDelete) return;
 
@@ -1040,11 +1001,6 @@ export default function Consultant() {
     } catch (error) {
       console.error('Failed to toggle star:', error);
     }
-  };
-
-  const applyDistancesToSchools = (location) => {
-    const sorted = applyDistances(location, schools);
-    setSchools(sorted);
   };
 
   // Shared ChatPanel props for intake + results phases
@@ -1138,8 +1094,6 @@ export default function Consultant() {
     }, DOSSIER_AUTO_OPEN_DELAY_MS);
   }, [messages, isTyping]);
 
-  // Phase 3a: S4a-S4d rehydration moved to useArtifacts hook (reads from conversation_artifacts table)
-
   // E32-003: Action processor - executes UI actions from backend
   useEffect(() => {
     if (isTyping) return;
@@ -1213,6 +1167,8 @@ export default function Consultant() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     setShowNewMessageIndicator(false);
   };
+
+  // ─── Render ─────────────────────────────────────────────────────
 
   if (loading) {
     return (
