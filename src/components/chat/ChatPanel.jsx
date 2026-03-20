@@ -29,7 +29,6 @@ const ChatPanel = forwardRef(function ChatPanel({
   loadingStage,
   loadingStages,
   feedbackPromptShown,
-  showResponseChips,
   // Callbacks
   onSendMessage,
   onViewSchoolDetail,
@@ -109,8 +108,8 @@ const ChatPanel = forwardRef(function ChatPanel({
   const shouldShowChips = (() => {
     // Never show chips if brief is already confirmed (DOUBLE-BRIEF FIX)
     if (briefStatus === BRIEF_STATUS.CONFIRMED) return false;
-    return showResponseChips ||
-      (currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus));
+    // E47: DISCOVERY response chips removed — only BRIEF confirmation chips remain
+    return (currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus));
   })();
 
   const isBriefChipState = currentState === STATES.BRIEF &&
@@ -252,34 +251,6 @@ const ChatPanel = forwardRef(function ChatPanel({
       {/* Response Chips */}
       {shouldShowChips && (
         <div className="p-3 sm:p-4 border-t border-white/10 bg-[#2A2A3D] flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
-          {showResponseChips && !isBriefChipState && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => onSendMessage("My child needs a new school")}
-                disabled={isTyping}
-                className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-teal-600 hover:border-teal-600 hover:text-white"
-              >
-                My child needs a new school
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => onSendMessage("I'm comparing a few schools already")}
-                disabled={isTyping}
-                className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-teal-600 hover:border-teal-600 hover:text-white"
-              >
-                I'm comparing a few schools already
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => onSendMessage("I'm not sure where to start")}
-                disabled={isTyping}
-                className="text-xs bg-[#2A2A3D] border-white/20 text-[#E8E8ED] hover:bg-teal-600 hover:border-teal-600 hover:text-white"
-              >
-                I'm not sure where to start
-              </Button>
-            </>
-          )}
           {isBriefChipState && (
             <>
               <Button

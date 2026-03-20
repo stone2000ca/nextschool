@@ -80,7 +80,7 @@ export default function Consultant() {
   const [selectedConsultant, setSelectedConsultant] = useState(null);
   const [showGuidedIntro, setShowGuidedIntro] = useState(false);
   const [familyBrief, setFamilyBrief] = useState(null);
-  const [showResponseChips, setShowResponseChips] = useState(false);
+  // E47: showResponseChips removed — DISCOVERY chips no longer needed after guided intro skip
   const [sessionId] = useState(() => crypto.randomUUID());
   const [feedbackPromptShown, setFeedbackPromptShown] = useState(false);
   
@@ -796,7 +796,6 @@ export default function Consultant() {
     setShortlistData([]);
     setRemovedSchoolIds([]);
     setPendingDeepDiveSchoolIds(new Set());
-    setShowResponseChips(false);
     setComparisonData(null);
     setComparisonMatrix(null);
     setExtraSchools([]);
@@ -832,28 +831,17 @@ export default function Consultant() {
     setShowGuidedIntro(true);
   };
 
-  // E47: Called when GuidedIntro completes — transitions to chat with FamilyBrief
+  // E47: Called when GuidedIntro completes — skip DISCOVERY+BRIEF, go straight to RESULTS
   const handleGuidedIntroComplete = (brief) => {
     setFamilyBrief(brief);
     setShowGuidedIntro(false);
 
-    // E47-P2: Build persona-aware opening line from FamilyBrief fields
-    const budgetLabel = brief.budget || '';
-    const gradeLabel = brief.grade ? `Grade ${brief.grade}` : '';
-    const locationLabel = brief.location || '';
-    // schoolTypePreferences silently informs matching — not read back
-    const detailParts = [gradeLabel, locationLabel, budgetLabel ? `a budget around ${budgetLabel}` : ''].filter(Boolean);
-    const detailLine = detailParts.length > 0 ? detailParts.join(' in ').replace(' in a budget', ' with a budget') : '';
-
-    const greeting = {
-      role: 'assistant',
-      content: selectedConsultant === 'Jackie'
-        ? `Alright ${brief.parentName} — I can see ${brief.childName} is heading into ${detailLine}. Let's talk about what matters most to your family.`
-        : `Got it, ${brief.parentName}. ${brief.childName}, ${detailLine} — I have the essentials. Let's dig into what matters most.`,
-      timestamp: new Date().toISOString()
-    };
-    setMessages([greeting]);
-    setShowResponseChips(true);
+    // E47: Send synthetic message to trigger orchestrator → RESULTS immediately
+    // The orchestrator handles the warm greeting + school matching in one shot.
+    // Use setTimeout to let React state (familyBrief) settle before sending.
+    setTimeout(() => {
+      handleSendMessage('__GUIDED_INTRO_COMPLETE__', null, null);
+    }, 50);
   };
 
   const selectConversation = (convo) => {
@@ -997,7 +985,6 @@ export default function Consultant() {
     restoredSessionData,
     setCurrentConversation,
     setIsTyping,
-    setShowResponseChips,
     setLastTypingTime,
     setFamilyProfile,
     setSchoolsAnimKey,
@@ -1191,7 +1178,6 @@ export default function Consultant() {
     loadingStage,
     loadingStages,
     feedbackPromptShown,
-    showResponseChips,
     familyProfile,
     onSendMessage: handleSendMessage,
     onTogglePanel: setActivePanel,
@@ -1536,45 +1522,7 @@ export default function Consultant() {
                 variant="intake"
                 isPremium={isPremium}
                 onUpgrade={() => setShowUpgradeModal(true)}
-                heroContent={
-                  currentState === STATES.WELCOME ? (
-                    <div className="text-center space-y-6 py-8">
-                      <div className="space-y-2">
-                        <h1 className="text-3xl font-bold text-[#E8E8ED]">Welcome to NextSchool</h1>
-                        <p className="text-[#E8E8ED]/70">Your personalized school search, simplified</p>
-                      </div>
-                      <div className="grid gap-4 max-w-md mx-auto text-left">
-                        <div className="flex items-start gap-3">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
-                            selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
-                          }`}>1</div>
-                          <div>
-                            <h3 className="font-semibold text-[#E8E8ED]">Tell us about your child</h3>
-                            <p className="text-sm text-[#E8E8ED]/60">Grade, location, priorities</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
-                            selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
-                          }`}>2</div>
-                          <div>
-                            <h3 className="font-semibold text-[#E8E8ED]">Review your brief</h3>
-                            <p className="text-sm text-[#E8E8ED]/60">Confirm what matters most</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
-                            selectedConsultant === 'Jackie' ? 'bg-[#C27B8A]/20 text-[#C27B8A]' : 'bg-[#6B9DAD]/20 text-[#6B9DAD]'
-                          }`}>3</div>
-                          <div>
-                            <h3 className="font-semibold text-[#E8E8ED]">See your matches</h3>
-                            <p className="text-sm text-[#E8E8ED]/60">Personalized school recommendations</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null
-                }
+                heroContent={null}
               />
             </div>
           </div>

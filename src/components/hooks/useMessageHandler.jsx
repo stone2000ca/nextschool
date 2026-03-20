@@ -34,7 +34,6 @@ export const useMessageHandler = ({
   restoredSessionData,
   setCurrentConversation,
   setIsTyping,
-  setShowResponseChips,
   setLastTypingTime,
   setFamilyProfile,
   setSchoolsAnimKey,
@@ -98,6 +97,9 @@ export const useMessageHandler = ({
       sessionId
     }).catch(err => console.error('Failed to track:', err));
 
+    // E47: __GUIDED_INTRO_COMPLETE__ is a synthetic trigger — skip login gate, don't display as user message
+    const isGuidedIntroComplete = messageText === '__GUIDED_INTRO_COMPLETE__';
+
     // SOFT LOGIN GATE: Check if user is confirming the Brief without being logged in
     const isBriefConfirmation = messageText === '__CONFIRM_BRIEF__' ||
                                  messageText.toLowerCase().includes("that's right") ||
@@ -107,11 +109,11 @@ export const useMessageHandler = ({
                                  messageText.toLowerCase().includes("show me schools");
 
     // BUG-BRIEF-DUPE: Immediately lock briefStatus to confirmed so chips disappear before response arrives
-    if (messageText === '__CONFIRM_BRIEF__') {
+    if (messageText === '__CONFIRM_BRIEF__' || isGuidedIntroComplete) {
       setBriefStatus('confirmed');
     }
 
-    if (isBriefConfirmation && !isAuthenticated && !isDevMode) {
+    if (isBriefConfirmation && !isGuidedIntroComplete && !isAuthenticated && !isDevMode) {
       // Save current conversation data to localStorage before showing gate
       localStorage.setItem('guestConversationData', JSON.stringify({
         messages,
@@ -135,17 +137,16 @@ export const useMessageHandler = ({
       return;
     }
 
-    // Add user message
-    const userMessage = {
+    // Add user message (suppress guided intro sentinel from chat display)
+    const userMessage = isGuidedIntroComplete ? null : {
       role: 'user',
       content: displayText || messageText,
       timestamp: new Date().toISOString()
     };
 
-    const updatedMessages = [...messages, userMessage];
+    const updatedMessages = userMessage ? [...messages, userMessage] : [...messages];
     setMessages(updatedMessages);
     setIsTyping(true);
-    setShowResponseChips(false);
     setLastTypingTime(Date.now());
 
     try {
