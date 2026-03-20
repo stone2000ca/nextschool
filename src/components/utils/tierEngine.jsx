@@ -47,17 +47,15 @@ export function buildTiers(schools, familyProfile, sortMode = 'bestFit', priorit
   const passing = scored.filter(s => !s.mustHaveFail);
   const sorted = applySort(passing);
 
-  const TIER1_SIZE = Math.min(5, Math.max(3, Math.ceil(sorted.length * 0.25)));
-  const TIER2_SIZE = Math.min(5, Math.max(2, Math.ceil(sorted.length * 0.2)));
-  const TOTAL_CAP = 7;
+  const TIER1_SIZE = Math.min(6, Math.max(3, Math.ceil(sorted.length * 0.25)));
+  const TIER2_SIZE = Math.min(8, Math.max(4, Math.ceil(sorted.length * 0.25)));
 
   const tier1 = sorted.slice(0, TIER1_SIZE).map(s => s.school);
   const remaining = sorted.slice(TIER1_SIZE);
 
-  const tier2Count = Math.min(TIER2_SIZE, Math.max(0, TOTAL_CAP - tier1.length));
   // For non-bestFit sorts, preserve sort order in tier2; for bestFit shuffle tier2
   const tier2pool = sortMode === 'bestFit' ? [...remaining].sort(() => Math.random() - 0.5) : remaining;
-  const tier2 = tier2pool.slice(0, tier2Count).map(s => s.school);
+  const tier2 = tier2pool.slice(0, TIER2_SIZE).map(s => s.school);
   const tier2Ids = new Set(tier2.map(s => s.id));
 
   const seeAll = remaining
