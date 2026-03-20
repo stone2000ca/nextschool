@@ -18,6 +18,10 @@ import { retryWithBackoff } from '@/components/utils/retryWithBackoff';
 import { useRef, useEffect } from 'react';
 import { useConversationState as useStateEnvelope } from '@/hooks/useConversationState';
 
+// E49-S4A: Comparison intent detection patterns
+const COMPARE_INTENT_RE = /\b(compare\b.*\bschools?|compare\b.*\bshortlist|compare\b.*\bthese|compare\b.*\bthem|compare\b.*\bmy|rank\b.*\bshortlist|rank\b.*\bschools?|rank\b.*\bthem|which\b.*\bshould\b.*\bvisit\b.*\bfirst|which\b.*\bshould\b.*\bchoose|side[\s-]by[\s-]side|compare\b.*\boptions?|compare\b.*\btop|compare\b.*\blist|narrow\b.*\bdown\b.*\bshortlist|help\b.*\bchoose\b.*\bbetween)\b/i;
+const COMPARE_SIMPLE_RE = /^(compare|rank)\s*(them|these|my\s+(schools?|shortlist|list|options?))\s*$/i;
+
 export const useMessageHandler = ({
   messages,
   setMessages,
@@ -76,6 +80,8 @@ export const useMessageHandler = ({
   familyBrief,
   // E48-FIX: Ref to read latest familyBrief even in stale closures
   familyBriefRef,
+  // E49-S4A: Comparison callback from Consultant
+  onCompareShortlist,
 }, isPremiumParam = isPremium) => {
     // BUG-RN-PERSIST Fix 1: Ref tracks the latest conversationId immediately,
     // bypassing React's batched state updates so deep dive closures always get the real id.
@@ -157,6 +163,44 @@ export const useMessageHandler = ({
       // return early. The API call proceeds so schools load behind the modal.
       // When the user closes the modal, they see the RESULTS view with schools.
       setShowLoginGate(true);
+    }
+
+    // E49-S4A: Intercept comparison intent — route to shortlist comparison flow
+    // Runs before orchestrate so we avoid an unnecessary LLM round-trip.
+    if (!isGuidedIntroComplete && !isBriefConfirmation) {
+      const msgTrimmed = messageText.trim();
+      const isCompareIntent = COMPARE_INTENT_RE.test(msgTrimmed) || COMPARE_SIMPLE_RE.test(msgTrimmed);
+
+      if (isCompareIntent && onCompareShortlist) {
+        // Display the user's message in chat
+        const userMsg = {
+          role: 'user',
+          content: displayText || messageText,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, userMsg]);
+
+        if (!shortlistData || shortlistData.length < 2) {
+          // Fewer than 2 schools — prompt to add more
+          const gentlePrompt = shortlistData?.length === 1
+            ? "You've got one school on your shortlist so far — I'll need at least two to run a proper comparison. Add another school you're interested in and I'll put them side by side for you!"
+            : "Your shortlist is empty right now, so there's nothing to compare yet. Browse the school matches and tap the heart icon to shortlist a few schools — then I can compare them for you!";
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: gentlePrompt,
+            timestamp: new Date().toISOString(),
+          }]);
+          isProcessing = false;
+          return;
+        }
+
+        // 2–5 schools — trigger comparison via Consultant callback
+        const compareSet = shortlistData.slice(0, 5);
+        console.log('[E49-S4A] Comparison intent detected — routing', compareSet.length, 'shortlisted schools to comparison view');
+        onCompareShortlist(compareSet);
+        isProcessing = false;
+        return;
+      }
     }
 
     // Check if user has tokens (skip for premium)

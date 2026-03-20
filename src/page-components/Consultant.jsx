@@ -49,6 +49,10 @@ export default function Consultant() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // E49-S4A: Ref for handleOpenComparison so useMessageHandler can call it
+  // without declaration-order issues (handleOpenComparison comes from useSchoolInteractions, defined later)
+  const compareShortlistRef = useRef(null);
+
   // ─── School results (Phase 3c) ───
   const {
     schools, setSchools,
@@ -223,6 +227,8 @@ export default function Consultant() {
     setFilterOverrides, resetFilterOverrides, loadMoreSchools,
     setActivePanel: ui.setActivePanel, applyDistances,
     familyBrief, familyBriefRef,
+    // E49-S4A: Comparison intent routing — uses ref wrapper for declaration-order safety
+    onCompareShortlist: (...args) => compareShortlistRef.current?.(...args),
   });
 
   // ─── Conversation actions ───
@@ -275,6 +281,9 @@ export default function Consultant() {
     trackEvent, sessionId,
     messagesEndRef: ui.messagesEndRef,
   });
+
+  // E49-S4A: Keep ref in sync so useMessageHandler can call latest version
+  compareShortlistRef.current = handleOpenComparison;
 
   // ─── Action processor (pure side effects) ───
   useActionProcessor({
