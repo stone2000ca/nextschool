@@ -109,20 +109,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Update ChatSession.shortlisted_count (E48-S4)
+    // 4. Atomically update ChatSession.shortlisted_count from chat_shortlists (E48-S4)
+    // Count actual rows in chat_shortlists for this journey instead of read-then-write
     let shortlisted_count: number | null = null
     if (conversation_id) {
-      const { data: sessions, error: sessError } = await db('chat_sessions')
-        .select('id, shortlisted_count')
-        .eq('chat_history_id', conversation_id)
-        .limit(1)
-      if (!sessError && sessions && sessions.length > 0) {
-        const session = sessions[0]
-        const newCount = (session.shortlisted_count || 0) + 1
-        await db('chat_sessions')
-          .update({ shortlisted_count: newCount, updated_at: now })
-          .eq('id', session.id)
-        shortlisted_count = newCount
+      const { count, error: countError } = await db('chat_shortlists')
+        .select('id', { count: 'exact', head: true })
+        .eq('family_journey_id', journey_id)
+      if (!countError && count != null) {
+        shortlisted_count = count
+        const { data: sessions } = await db('chat_sessions')
+          .select('id')
+          .eq('chat_history_id', conversation_id)
+          .limit(1)
+        if (sessions && sessions.length > 0) {
+          await db('chat_sessions')
+            .update({ shortlisted_count: count, updated_at: now })
+            .eq('id', sessions[0].id)
+        }
       }
     }
 

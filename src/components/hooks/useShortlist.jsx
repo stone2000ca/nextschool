@@ -17,7 +17,7 @@ export function useShortlist({
   const hasAutoPopulatedShortlist = useRef(false);
 
   const loadShortlist = async (journeyId) => {
-    const jid = journeyId || activeJourney?.journeyId;
+    const jid = journeyId || activeJourney?.journeyId || currentConversation?.conversation_context?.journeyId;
     if (!jid) return;
     try {
       const res = await fetch(`/api/shortlist?journey_id=${encodeURIComponent(jid)}`);
@@ -124,10 +124,12 @@ export function useShortlist({
   };
 
   // E29-012: Hydrate shortlistData from ChatShortlist on activeJourney load
+  // Falls back to conversation_context.journeyId when activeJourney is null
+  const effectiveJourneyId = activeJourney?.journeyId || currentConversation?.conversation_context?.journeyId;
   useEffect(() => {
-    if (!activeJourney?.journeyId) { setShortlistData([]); return; }
-    loadShortlist(activeJourney.journeyId);
-  }, [activeJourney?.journeyId]);
+    if (!effectiveJourneyId) { setShortlistData([]); return; }
+    loadShortlist(effectiveJourneyId);
+  }, [effectiveJourneyId]);
 
   // E30-006
   const handleDossierExpandChange = (isExpanding) =>
