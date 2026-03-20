@@ -41,6 +41,7 @@ import Navbar from '@/components/navigation/Navbar';
 import TourRequestModal from '../components/schools/TourRequestModal';
 import { useSchoolFiltering } from '@/components/hooks/useSchoolFiltering';
 import { useMessageHandler } from '@/components/hooks/useMessageHandler';
+import { useArtifacts } from '@/components/hooks/useArtifacts';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import ResearchNotepad from '@/components/ui/ResearchNotepad';
 import { getSchoolsWithDeepDive } from '../components/utils/deepDiveUtils';
@@ -91,7 +92,6 @@ export default function Consultant() {
   const [schools, setSchools] = useState([]);
   const [previousSearchResults, setPreviousSearchResults] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState(null);
-  const [comparisonData, setComparisonData] = useState(null);
   const [onboardingPhase, setOnboardingPhase] = useState(null);
   const [briefStatus, setBriefStatus] = useState(null);
   
@@ -151,9 +151,6 @@ export default function Consultant() {
   const [extraSchoolsLoading, setExtraSchoolsLoading] = useState(false);
   const [extraSchoolsError, setExtraSchoolsError] = useState(null);
 
-  // E39-S11: Hydration source tracking
-  const [hydrationSource, setHydrationSource] = useState(null);
-
   // BRIEF→RESULTS transition animation
   const [isTransitioning, setIsTransitioning] = useState(false);
   const prevIsIntakePhaseRef = useRef(true);
@@ -177,26 +174,11 @@ export default function Consultant() {
   // DEEPDIVE confirmation state
   const [confirmingSchool, setConfirmingSchool] = useState(null);
 
-  // DEEPDIVE analysis card data
-  const [deepDiveAnalysis, setDeepDiveAnalysis] = useState(null);
-
-  // E11b: Comparison artifact matrix
-  const [comparisonMatrix, setComparisonMatrix] = useState(null);
-
-  // Visit Prep Kit data
-  const [visitPrepKit, setVisitPrepKit] = useState(null);
-
   // Contact Log data
   const [contactLog, setContactLog] = useState([]);
 
   // Research Notes
   const [researchNotes, setResearchNotes] = useState('');
-
-  // Action Plan data
-  const [actionPlan, setActionPlan] = useState(null);
-
-  // Fit Re-Evaluation data
-  const [fitReEvaluation, setFitReEvaluation] = useState(null);
 
   // T047: Auto-refresh animation trigger
   const [schoolsAnimKey, setSchoolsAnimKey] = useState(0);
@@ -206,6 +188,20 @@ export default function Consultant() {
 
   // E39-S8: Memoized set of schools with deep dive analysis
   const schoolsWithDeepDive = useMemo(() => getSchoolsWithDeepDive(messages), [messages]);
+
+  // Phase 3a: Artifact state from conversation_artifacts table (replaces S4a-S4d rehydration)
+  const {
+    deepDiveAnalysis, setDeepDiveAnalysis,
+    visitPrepKit, setVisitPrepKit,
+    actionPlan, setActionPlan,
+    fitReEvaluation, setFitReEvaluation,
+    comparisonData, setComparisonData,
+    comparisonMatrix, setComparisonMatrix,
+    hydrationSource, setHydrationSource,
+    isLoading: artifactsLoading,
+    refreshArtifacts,
+    clearAll: clearAllArtifacts,
+  } = useArtifacts(currentConversation?.id, selectedSchool?.id);
 
   // Journey Steps: fetch when selected school changes
   const [schoolJourney, setSchoolJourney] = useState(null);
@@ -792,10 +788,7 @@ export default function Consultant() {
     setActiveJourney(null);
     setSchools([]);
     setSelectedSchool(null);
-    setDeepDiveAnalysis(null);
-    setVisitPrepKit(null);
-    setActionPlan(null);
-    setFitReEvaluation(null);
+    clearAllArtifacts();
     setFamilyProfile(null);
     setExtractedEntitiesData(null);
     setSchoolAnalyses({});
@@ -803,8 +796,6 @@ export default function Consultant() {
     setShortlistData([]);
     setRemovedSchoolIds([]);
     setPendingDeepDiveSchoolIds(new Set());
-    setComparisonData(null);
-    setComparisonMatrix(null);
     setExtraSchools([]);
     setExtraSchoolsPage(1);
     setExtraSchoolsHasMore(true);
@@ -815,7 +806,6 @@ export default function Consultant() {
     setResearchNotes('');
     setSchoolJourney(null);
     setContactLog([]);
-    setHydrationSource(null);
     setSchoolsAnimKey(0);
     setLeftPanelMode('grid');
     setShowLoadingOverlay(false);
@@ -1279,98 +1269,7 @@ export default function Consultant() {
     }, DOSSIER_AUTO_OPEN_DELAY_MS);
   }, [messages, isTyping]);
 
-  // E39-S4a: Rehydrate deepDiveAnalysis from persisted messages on school switch
-  useEffect(() => {
-    // Don't run while AI is still typing
-    if (isTyping) return;
-    // BUG-RN-05 WC-2: Don't wipe deepDiveAnalysis during session restore
-    if (isRestoringSessionRef.current) return;
-    if (!selectedSchool?.id || !messages.length) {
-      setDeepDiveAnalysis(null);
-      setHydrationSource(null);
-      return;
-    }
-
-    // Scan messages in reverse for the most recent deep dive for this school
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
-      if (
-        msg.role === 'assistant' &&
-        msg.deepDiveAnalysis &&
-        msg.deepDiveAnalysis.schoolId === selectedSchool.id
-      ) {
-        console.log('[E39-S4a] Rehydrating deepDiveAnalysis from message', i);
-        setHydrationSource('HYDRATED_MSG');
-        setDeepDiveAnalysis(msg.deepDiveAnalysis);
-        return;
-      }
-    }
-    setDeepDiveAnalysis(null);
-    setHydrationSource(null);
-  }, [messages, isTyping, selectedSchool?.id]);
-
-  // E39-S4b: Rehydrate visitPrepKit from persisted messages on school switch
-  useEffect(() => {
-    if (isTyping) return;
-    if (!selectedSchool?.id || !messages.length) {
-      setVisitPrepKit(null);
-      setHydrationSource(null);
-      return;
-    }
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
-      if (msg.role === 'assistant' && msg.visitPrepKit && msg.visitPrepKit.schoolId === selectedSchool.id) {
-        console.log('[E39-S4b] Rehydrating visitPrepKit from message', i);
-        setHydrationSource('HYDRATED_MSG');
-        setVisitPrepKit(msg.visitPrepKit);
-        return;
-      }
-    }
-    setVisitPrepKit(null);
-    setHydrationSource(null);
-  }, [messages, isTyping, selectedSchool?.id]);
-
-  // E39-S4c: Rehydrate actionPlan from persisted messages on school switch
-  useEffect(() => {
-    if (isTyping) return;
-    if (!selectedSchool?.id || !messages.length) {
-      setActionPlan(null);
-      setHydrationSource(null);
-      return;
-    }
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
-      if (msg.role === 'assistant' && msg.actionPlan && msg.actionPlan.schoolId === selectedSchool.id) {
-        console.log('[E39-S4c] Rehydrating actionPlan from message', i);
-        setHydrationSource('HYDRATED_MSG');
-        setActionPlan(msg.actionPlan);
-        return;
-      }
-    }
-    setActionPlan(null);
-    setHydrationSource(null);
-  }, [messages, isTyping, selectedSchool?.id]);
-
-  // E39-S4d: Rehydrate fitReEvaluation from persisted messages on school switch
-  useEffect(() => {
-    if (isTyping) return;
-    if (!selectedSchool?.id || !messages.length) {
-      setFitReEvaluation(null);
-      setHydrationSource(null);
-      return;
-    }
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
-      if (msg.role === 'assistant' && msg.fitReEvaluation && msg.fitReEvaluation.schoolId === selectedSchool.id) {
-        console.log('[E39-S4d] Rehydrating fitReEvaluation from message', i);
-        setHydrationSource('HYDRATED_MSG');
-        setFitReEvaluation(msg.fitReEvaluation);
-        return;
-      }
-    }
-    setFitReEvaluation(null);
-    setHydrationSource(null);
-  }, [messages, isTyping, selectedSchool?.id]);
+  // Phase 3a: S4a-S4d rehydration moved to useArtifacts hook (reads from conversation_artifacts table)
 
   // E32-003: Action processor - executes UI actions from backend
   useEffect(() => {
