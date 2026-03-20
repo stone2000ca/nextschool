@@ -95,6 +95,7 @@ const MERGED_RESPONSE_SCHEMA = {
         visit_questions: { type: 'array', items: { type: 'string' } },
         financial_summary: { type: 'object', additionalProperties: false, required: ['tuition', 'aid_available', 'estimated_net_cost', 'budget_fit'], properties: { tuition: { type: 'number' }, aid_available: { type: 'boolean' }, estimated_net_cost: { type: 'number' }, budget_fit: { type: 'string' } } },
         ai_insight: { type: 'string' },
+        chat_summary: { type: 'string' },
         priority_matches: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['priority', 'status', 'detail'], properties: { priority: { type: 'string' }, status: { type: 'string', enum: ['match', 'partial', 'flag'] }, detail: { type: 'string' } } } },
         community_pulse: { type: 'object', additionalProperties: false, required: ['review_count', 'themes', 'sentiment_breakdown', 'parent_perspective'], properties: { review_count: { type: 'number' }, themes: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['label', 'sentiment'], properties: { label: { type: 'string' }, sentiment: { type: 'string', enum: ['positive', 'neutral', 'negative'] } } } }, sentiment_breakdown: { type: 'object', additionalProperties: false, required: ['positive', 'neutral', 'negative'], properties: { positive: { type: 'number' }, neutral: { type: 'number' }, negative: { type: 'number' } } }, parent_perspective: { type: 'string' } } }
       },
@@ -250,6 +251,7 @@ In your JSON response, also include a school_analysis object with:
 - visit_questions: array of 3-5 personalized questions for a school visit
 - financial_summary: {tuition (number), aid_available (boolean), estimated_net_cost (number), budget_fit (string)}
 - ai_insight: 2-3 sentence summary insight about this school-family match
+- chat_summary: A 2-4 sentence prose recommendation paragraph that a parent could read as a standalone summary. It should capture the overall fit verdict, the single biggest strength, the single biggest concern, and a clear next-step suggestion. Write it in the consultant's voice.
 - priority_matches: For each priority from the family Brief, assess fit with status 'match', 'partial', or 'flag'
 - community_pulse: {review_count, themes (3-5 items with sentiment), sentiment_breakdown, parent_perspective}`;
 
@@ -294,12 +296,18 @@ Generate the DEEPDIVE card for this family-school match.`;
       if (Array.isArray(parsed.actions) && parsed.actions.length > 0) {
         rawToolCalls.push({ function: { name: 'execute_ui_action', arguments: JSON.stringify({ actions: parsed.actions }) } });
       }
-      deepDiveAnalysis = parsed.school_analysis || { fit_label: 'worth_exploring', fit_score: 50, trade_offs: [], data_gaps: [], visit_questions: [], financial_summary: null, ai_insight: '', priority_matches: [], community_pulse: null };
+      deepDiveAnalysis = parsed.school_analysis || { fit_label: 'worth_exploring', fit_score: 50, trade_offs: [], data_gaps: [], visit_questions: [], financial_summary: null, ai_insight: '', chat_summary: '', priority_matches: [], community_pulse: null };
+
+      // Fallback: if LLM didn't return chat_summary, derive from first 2 sentences of message
+      if (!deepDiveAnalysis.chat_summary && aiMessage) {
+        const sentences = aiMessage.split(/(?<=[.!?])\s+/).filter((s: string) => s.trim().length > 0);
+        deepDiveAnalysis.chat_summary = sentences.slice(0, 2).join(' ');
+      }
     }
   } catch (openrouterError: any) {
     console.error('[DEEPDIVE] OpenRouter failed:', openrouterError.message);
     aiMessage = `**Great Fit for ${childDisplayName}**\n\n${selectedSchool.description?.substring(0, 150) || 'School details available upon request.'}\n\nWhat would you like to know more about?`;
-    deepDiveAnalysis = { fit_label: 'worth_exploring', fit_score: 50, trade_offs: [], data_gaps: [], visit_questions: [], financial_summary: null, ai_insight: '', priority_matches: [], community_pulse: null };
+    deepDiveAnalysis = { fit_label: 'worth_exploring', fit_score: 50, trade_offs: [], data_gaps: [], visit_questions: [], financial_summary: null, ai_insight: '', chat_summary: '', priority_matches: [], community_pulse: null };
   }
 
   // Save to SchoolAnalysis
@@ -374,14 +382,14 @@ Generate the DEEPDIVE card for this family-school match.`;
       };
       await Promise.allSettled([
         upsert('action_plan', { content: JSON.stringify(generatedActionPlan), is_locked: !isPremiumUser, metadata: { version: 'E30_V1' } }),
-        upsert('deep_dive_recommendation', { content: sanitizedMessage, metadata: { version: 'E30_V1' } }),
+        upsert('deep_dive_recommendation', { content: sanitizedMessage, metadata: { version: 'E30_V1', chat_summary: deepDiveAnalysis?.chat_summary || '' } }),
         ...(fullVisitPrepKit ? [upsert('visit_prep_kit', { content: JSON.stringify(fullVisitPrepKit), is_locked: false, metadata: { version: 'E30_V1' } })] : [])
       ]);
 
       // Phase 1c: Dual-write artifacts to normalized conversation_artifacts table
       if (conversationId) {
         syncConversationArtifact(conversationId, userId, selectedSchoolId, 'action_plan', generatedActionPlan, !isPremiumUser);
-        syncConversationArtifact(conversationId, userId, selectedSchoolId, 'deep_dive_recommendation', { text: sanitizedMessage });
+        syncConversationArtifact(conversationId, userId, selectedSchoolId, 'deep_dive_recommendation', { text: sanitizedMessage, chat_summary: deepDiveAnalysis?.chat_summary || '' });
         if (fullVisitPrepKit) {
           syncConversationArtifact(conversationId, userId, selectedSchoolId, 'visit_prep_kit', fullVisitPrepKit);
         }
