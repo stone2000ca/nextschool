@@ -196,7 +196,7 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-8 md:gap-4 relative">
             {[
               { step: 1, title: 'Tell us about your child', output: 'Your Family Brief updates with every interaction' },
-              { step: 2, title: 'Get personalized matches', output: 'Based on over 80 criterias' },
+              { step: 2, title: 'Get personalized matches', output: 'We\u2019ll match your preferences against over 80 school criteria' },
               { step: 3, title: 'Decide with confidence', output: 'We\u2019ll support you every step of the way' },
             ].map((item, i) => (
               <div key={item.step} className="flex flex-col items-center text-center relative">
