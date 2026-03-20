@@ -261,70 +261,78 @@ WITH artifact_rows AS (
 -- Deduplicate: for each (conversation, school, artifact_type), keep the last message
 unpivoted AS (
   -- deepDiveAnalysis
-  SELECT DISTINCT ON (ar.conversation_id, ar.school_id_text)
-    ar.conversation_id,
-    ar.user_id,
-    ar.school_id_text,
-    'deep_dive_analysis'  AS artifact_type,
-    ar.dda                AS content,
-    ar.conv_created_at,
-    ar.conv_updated_at
-  FROM artifact_rows ar
-  WHERE ar.dda IS NOT NULL
-    AND jsonb_typeof(ar.dda) = 'object'
-    AND ar.school_id_text IS NOT NULL
-  ORDER BY ar.conversation_id, ar.school_id_text, ar.msg_ord DESC
+  SELECT * FROM (
+    SELECT DISTINCT ON (ar.conversation_id, ar.school_id_text)
+      ar.conversation_id,
+      ar.user_id,
+      ar.school_id_text,
+      'deep_dive_analysis'  AS artifact_type,
+      ar.dda                AS content,
+      ar.conv_created_at,
+      ar.conv_updated_at
+    FROM artifact_rows ar
+    WHERE ar.dda IS NOT NULL
+      AND jsonb_typeof(ar.dda) = 'object'
+      AND ar.school_id_text IS NOT NULL
+    ORDER BY ar.conversation_id, ar.school_id_text, ar.msg_ord DESC
+  ) AS _dda
 
   UNION ALL
 
   -- visitPrepKit
-  SELECT DISTINCT ON (ar.conversation_id, ar.school_id_text)
-    ar.conversation_id,
-    ar.user_id,
-    ar.school_id_text,
-    'visit_prep_kit'      AS artifact_type,
-    ar.vpk                AS content,
-    ar.conv_created_at,
-    ar.conv_updated_at
-  FROM artifact_rows ar
-  WHERE ar.vpk IS NOT NULL
-    AND jsonb_typeof(ar.vpk) = 'object'
-    AND ar.school_id_text IS NOT NULL
-  ORDER BY ar.conversation_id, ar.school_id_text, ar.msg_ord DESC
+  SELECT * FROM (
+    SELECT DISTINCT ON (ar.conversation_id, ar.school_id_text)
+      ar.conversation_id,
+      ar.user_id,
+      ar.school_id_text,
+      'visit_prep_kit'      AS artifact_type,
+      ar.vpk                AS content,
+      ar.conv_created_at,
+      ar.conv_updated_at
+    FROM artifact_rows ar
+    WHERE ar.vpk IS NOT NULL
+      AND jsonb_typeof(ar.vpk) = 'object'
+      AND ar.school_id_text IS NOT NULL
+    ORDER BY ar.conversation_id, ar.school_id_text, ar.msg_ord DESC
+  ) AS _vpk
 
   UNION ALL
 
   -- actionPlan
-  SELECT DISTINCT ON (ar.conversation_id, ar.school_id_text)
-    ar.conversation_id,
-    ar.user_id,
-    ar.school_id_text,
-    'action_plan'         AS artifact_type,
-    ar.ap                 AS content,
-    ar.conv_created_at,
-    ar.conv_updated_at
-  FROM artifact_rows ar
-  WHERE ar.ap IS NOT NULL
-    AND jsonb_typeof(ar.ap) = 'object'
-    AND ar.school_id_text IS NOT NULL
-  ORDER BY ar.conversation_id, ar.school_id_text, ar.msg_ord DESC
+  SELECT * FROM (
+    SELECT DISTINCT ON (ar.conversation_id, ar.school_id_text)
+      ar.conversation_id,
+      ar.user_id,
+      ar.school_id_text,
+      'action_plan'         AS artifact_type,
+      ar.ap                 AS content,
+      ar.conv_created_at,
+      ar.conv_updated_at
+    FROM artifact_rows ar
+    WHERE ar.ap IS NOT NULL
+      AND jsonb_typeof(ar.ap) = 'object'
+      AND ar.school_id_text IS NOT NULL
+    ORDER BY ar.conversation_id, ar.school_id_text, ar.msg_ord DESC
+  ) AS _ap
 
   UNION ALL
 
   -- fitReEvaluation
-  SELECT DISTINCT ON (ar.conversation_id, ar.school_id_text)
-    ar.conversation_id,
-    ar.user_id,
-    ar.school_id_text,
-    'fit_re_evaluation'   AS artifact_type,
-    ar.fre                AS content,
-    ar.conv_created_at,
-    ar.conv_updated_at
-  FROM artifact_rows ar
-  WHERE ar.fre IS NOT NULL
-    AND jsonb_typeof(ar.fre) = 'object'
-    AND ar.school_id_text IS NOT NULL
-  ORDER BY ar.conversation_id, ar.school_id_text, ar.msg_ord DESC
+  SELECT * FROM (
+    SELECT DISTINCT ON (ar.conversation_id, ar.school_id_text)
+      ar.conversation_id,
+      ar.user_id,
+      ar.school_id_text,
+      'fit_re_evaluation'   AS artifact_type,
+      ar.fre                AS content,
+      ar.conv_created_at,
+      ar.conv_updated_at
+    FROM artifact_rows ar
+    WHERE ar.fre IS NOT NULL
+      AND jsonb_typeof(ar.fre) = 'object'
+      AND ar.school_id_text IS NOT NULL
+    ORDER BY ar.conversation_id, ar.school_id_text, ar.msg_ord DESC
+  ) AS _fre
 )
 INSERT INTO conversation_artifacts (
   conversation_id,
