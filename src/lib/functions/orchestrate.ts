@@ -8,7 +8,7 @@ import { processDebriefCompletion as processDebriefCompletionLogic } from './pro
 import { generateProfileNarrativeLogic } from './generateProfileNarrative'
 import { searchSchoolsLogic } from './searchSchools'
 import { STATES, BRIEF_STATUS, resolveGrade, resolveBudget, resolveArrayField } from './constants'
-import { syncConversationState } from './dualWrite'
+import { syncConversationState, readConversationState } from './dualWrite'
 
 
 // Function: orchestrateConversation
@@ -1284,7 +1284,27 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
       // BUG-RN-PERSIST Fix B2: Prefer top-level conversationId from payload over
       // context.conversationId which may be stale/null from a previous render cycle.
       const conversationId = conversationIdFromPayload || context.conversationId;
-      
+
+      // P4-4.1: Read briefStatus from normalized conversation_state table (authoritative source)
+      // Falls back to context.briefStatus if row doesn't exist (backward compat)
+      if (conversationId && !isConfirmBrief && !isGuidedIntroComplete) {
+        try {
+          const csRow = await readConversationState(conversationId);
+          if (csRow) {
+            const dbBriefStatus = csRow.brief_status ?? null;
+            if (dbBriefStatus && !context.briefStatus) {
+              context.briefStatus = dbBriefStatus;
+              console.log('[P4-4.1] briefStatus hydrated from conversation_state:', dbBriefStatus);
+            } else if (dbBriefStatus && context.briefStatus !== dbBriefStatus) {
+              console.log('[P4-4.1] briefStatus: conversation_state has', dbBriefStatus, '/ context has', context.briefStatus, '— using DB value');
+              context.briefStatus = dbBriefStatus;
+            }
+          }
+        } catch (e: any) {
+          console.warn('[P4-4.1] Failed to read conversation_state, falling back to context:', e.message);
+        }
+      }
+
       // STEP 0: Initialize/retrieve FamilyProfile
       let conversationFamilyProfile = null;
       
