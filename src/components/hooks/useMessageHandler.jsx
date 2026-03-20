@@ -767,12 +767,7 @@ export const useMessageHandler = ({
 
           // Save AI memories with deduplication and filtering
           if (isAuthenticated && user) {
-            // Pass entity adapters so UserMemory calls work
-            const entityShim = {
-              entities: { UserMemory: (await import('@/lib/entities')).UserMemory },
-              integrations: { Core: { InvokeLLM: () => Promise.resolve({ facts: [] }) } },
-            };
-            await extractAndSaveMemories(messageText, response.data?.message || '', user, entityShim);
+            await extractAndSaveMemories(messageText, response.data?.message || '', user);
           }
         } catch (err) {
           console.error('[BOOKKEEPING] Non-fatal error:', err);

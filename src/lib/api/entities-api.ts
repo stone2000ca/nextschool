@@ -297,6 +297,42 @@ export async function createTourRequest(data: Record<string, any>): Promise<any>
   return handleResponse<any>(res)
 }
 
+// ── ResearchNotes ─────────────────────────────────────────────────────
+
+export async function fetchResearchNotes(params: { school_id?: string } = {}): Promise<any[]> {
+  const sp = new URLSearchParams()
+  if (params.school_id) sp.set('school_id', params.school_id)
+  const qs = sp.toString()
+  const res = await fetch(`/api/research-notes${qs ? `?${qs}` : ''}`)
+  return handleResponse<any[]>(res)
+}
+
+export async function createResearchNote(data: Record<string, any>): Promise<any> {
+  const res = await fetch('/api/research-notes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  return handleResponse<any>(res)
+}
+
+export async function updateResearchNote(id: string, data: Record<string, any>): Promise<any> {
+  const res = await fetch(`/api/research-notes/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  return handleResponse<any>(res)
+}
+
+export async function deleteResearchNote(id: string): Promise<void> {
+  const res = await fetch(`/api/research-notes/${id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`API error ${res.status}: ${text}`)
+  }
+}
+
 // ── Notes ──────────────────────────────────────────────────────────────
 
 export async function fetchNotes(params: { user_id?: string } = {}): Promise<any[]> {
