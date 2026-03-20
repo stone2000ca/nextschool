@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { computeSectionConfidence, CONFIDENCE_LABELS } from '@/components/utils/computeSectionConfidence';
 
 // ─── Inline SVG Icons ─────────────────────────────────────────────────────────
 
@@ -139,7 +140,7 @@ const SECTION_TINTS = {
   '#64748b': { border: '#64748b', bg: 'linear-gradient(135deg, #f8fafc, #f1f5f9, #fff)' },  // gray — Contact Log
 };
 
-function CollapsibleSection({ icon, label, color, children, defaultOpen = false, forceOpen }) {
+function CollapsibleSection({ icon, label, color, children, defaultOpen = false, forceOpen, labelExtra }) {
   const [open, setOpen] = useState(defaultOpen);
   const tint = SECTION_TINTS[color] || {};
   const tintBg = tint.bg || 'none';
@@ -163,6 +164,7 @@ function CollapsibleSection({ icon, label, color, children, defaultOpen = false,
         <span style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, fontWeight: 600, color: '#3d3020' }}>
           <span style={{ color }}>{icon}</span>
           {label}
+          {labelExtra}
         </span>
         <span style={{ color: '#a89060' }}><ChevronIcon open={open} /></span>
       </button>
@@ -511,7 +513,32 @@ function timeAgo(isoString) {
   return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 }
 
-export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, priorityMatches, aiInsight, chatSummary, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive, communityPulse, actionPlan }) {
+const CONFIDENCE_PILL_STYLES = {
+  strong:  { background: '#f0fdfa', color: '#0d9488', border: '1px solid #ccfbf1' },
+  limited: { background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' },
+  unknown: { background: '#f8fafc', color: '#94a3b8', border: '1px solid #f1f5f9' },
+};
+
+function ConfidencePill({ level }) {
+  if (!level) return null;
+  const style = CONFIDENCE_PILL_STYLES[level] || CONFIDENCE_PILL_STYLES.unknown;
+  return (
+    <span style={{
+      display: 'inline-block',
+      fontSize: 10,
+      fontWeight: 500,
+      padding: '2px 8px',
+      borderRadius: 10,
+      lineHeight: '16px',
+      letterSpacing: 0.2,
+      ...style,
+    }}>
+      {CONFIDENCE_LABELS[level]}
+    </span>
+  );
+}
+
+export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, priorityMatches, aiInsight, chatSummary, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive, communityPulse, actionPlan, financialSummary }) {
   const school = schoolData || null;
   const lastSchoolNameRef = useRef(null);
   if (school?.name && school.name !== 'School') {
@@ -531,6 +558,13 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
   const saveTimerRef = useRef(null);
   const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
   const hasAnimatedRef = useRef(false);
+
+  // E50-S2: Compute confidence levels for each section
+  const confidenceData = { priorityMatches: priorityList, tradeOffs, financialSummary, visitPrepKit, keyDates };
+  const fitConfidence = computeSectionConfidence('fit', confidenceData);
+  const tradeoffsConfidence = computeSectionConfidence('tradeoffs', confidenceData);
+  const moneyConfidence = computeSectionConfidence('money', confidenceData);
+  const visitPrepConfidence = computeSectionConfidence('visitprep', confidenceData);
 
   // Slide hooks for main body and deep dive inner panel
   const { panelRef: mainPanelRef, slideStyle: mainSlideStyle } = useSlideToggle(open, '0.28s');
@@ -901,8 +935,11 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
 
                   {/* How it fits your preferences — two-column layout */}
                   <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: 0.5, marginBottom: 8 }}>
-                      How it fits your preferences
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: 0.5 }}>
+                        How it fits your preferences
+                      </span>
+                      <ConfidencePill level={fitConfidence} />
                     </div>
                     {priorityList.length > 0 ? (() => {
                       const matches = priorityList.filter(p => p.status === 'match');
@@ -963,14 +1000,41 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                   }}>
                     <div style={{ flexShrink: 0, marginTop: 1 }}><NsDiamond /></div>
                     <div>
-                      <div style={{ fontSize: 10.5, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4 }}>
-                        Fit Trade-Off Analysis
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                          Fit Trade-Off Analysis
+                        </span>
+                        <ConfidencePill level={tradeoffsConfidence} />
                       </div>
                       <div style={{ fontSize: 12.5, color: insight ? '#134e4a' : '#a89060', lineHeight: 1.55, fontStyle: insight ? 'normal' : 'italic' }}>
                         {insight || 'Run a Deep Dive to see AI insight'}
                       </div>
                     </div>
                   </div>
+
+                  {/* Financial Overview — money confidence */}
+                  {financialSummary && (
+                    <div style={{
+                      marginTop: 14,
+                      background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8,
+                      padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start',
+                    }}>
+                      <div style={{ flexShrink: 0, fontSize: 16, marginTop: 1 }}>$</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 10.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                            Financial Overview
+                          </span>
+                          <ConfidencePill level={moneyConfidence} />
+                        </div>
+                        <div style={{ fontSize: 12.5, color: '#334155', lineHeight: 1.55 }}>
+                          {financialSummary.tuition > 0
+                            ? `Tuition: $${Number(financialSummary.tuition).toLocaleString()}${financialSummary.aid_available ? ' · Financial aid available' : ''}${financialSummary.budget_fit ? ` · ${financialSummary.budget_fit}` : ''}`
+                            : 'Tuition information not available'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* AI Recommendation — chat_summary from deep-dive artifact */}
                   {chatSummary && (
@@ -1007,7 +1071,7 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
             </CollapsibleSection>
 
             {/* ── Visit Prep Kit ────────────────────────────────── */}
-            <CollapsibleSection icon={<BookIcon />} label="Visit Prep Kit" color="#8b5cf6">
+            <CollapsibleSection icon={<BookIcon />} label="Visit Prep Kit" color="#8b5cf6" labelExtra={<ConfidencePill level={visitPrepConfidence} />}>
               <VisitPrepKitContent visitPrepKit={visitPrepKit} schoolData={school} actionPlan={actionPlan} />
             </CollapsibleSection>
 
