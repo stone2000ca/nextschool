@@ -54,6 +54,37 @@ middleware.ts                  # Supabase session refresh (route protection WIP)
 supabase/migrations/           # Database schema (4 migration files)
 ```
 
+## Core Architecture Rule
+
+**Backend makes the magic. Frontend just presents.**
+
+- All business logic, data transformation, state computation,
+  and AI orchestration lives in `/lib/functions/*.ts` (server-side)
+- Frontend components and hooks receive data and render it —
+  they do not compute, transform, or re-derive business state
+- If you find yourself writing logic in a `.jsx` file that could
+  live in a Cloud Function, move it to the backend
+
+### What belongs where
+
+| Concern | Location |
+|---|---|
+| AI orchestration | `orchestrate.ts` |
+| School search + ranking | `searchSchools.ts` / `handleResults.ts` |
+| Data transformation | `/lib/functions/*.ts` |
+| Supabase writes | `/lib/functions/*.ts` via admin client |
+| Supabase reads (session restore) | `.jsx` via browser client + JSONB fallback |
+| Rendering, view state, UI transitions | `.jsx` components/hooks |
+
+### Non-negotiables
+
+- Never add business logic to `Consultant.jsx`, `useMessageHandler.jsx`,
+  or `SessionRestorer.jsx` — these are presentation/coordination layers
+- New Supabase writes always go through the admin client server-side
+- Frontend never calls Supabase directly to write data
+- `orchestrate.ts` return shape is a contract — never change it without
+  explicit approval
+
 ## Key Patterns
 
 ### Page routing
