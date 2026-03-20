@@ -172,10 +172,22 @@ export default function GuidedIntro({ consultantName, onComplete }) {
     return val;
   };
 
+  // ─── Resolve subject pronoun from selection ────────────────────
+  const subjectPronoun = (() => {
+    switch (pronoun) {
+      case 'He/him': return 'he';
+      case 'She/her': return 'she';
+      default: return 'they';
+    }
+  })();
+
   // ─── Dynamic subtitle ──────────────────────────────────────────
   const getSubtitle = () => {
     if (stepKey === 2.5) {
       return `What pronouns should we use for ${childName || 'your child'}?`;
+    }
+    if (stepKey === 3) {
+      return `What grade ${subjectPronoun === 'they' ? 'are' : 'is'} ${subjectPronoun} entering?`;
     }
     return SUBTITLES[stepKey];
   };
