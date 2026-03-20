@@ -299,8 +299,15 @@
   }
 }
 
-/* E47: Thick block caret for guided intro typewriter inputs */
-.guided-intro-input {
+/* E47: Guided intro typewriter inputs — borderless with teal block caret */
+.guided-intro-input,
+.guided-intro-input:focus,
+.guided-intro-input:focus-visible,
+.guided-intro-input:active {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
   caret-color: #2dd4bf;
 }
 @supports (caret-shape: block) {
