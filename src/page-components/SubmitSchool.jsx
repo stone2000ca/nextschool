@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { CheckCircle2, AlertTriangle, ArrowRight, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/lib/AuthContext';
-import { SchoolClaim } from '@/lib/entities';
 import { fetchSchools, createSchool } from '@/lib/api/schools';
+import { createClaim } from '@/lib/api/school-claims';
 import Navbar from "@/components/navigation/Navbar";
 
 // --- T-SP-009: Duplicate detection helpers (shared with Portal) ---
@@ -157,7 +157,7 @@ export default function SubmitSchool() {
     });
 
     // Create SchoolClaim record
-    await SchoolClaim.create({
+    await createClaim({
       school_id: newSchool.id,
       claimant_email: form.email,
       claimant_name: form.name,

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { SchoolClaim, SchoolAdmin } from '@/lib/entities';
+import { SchoolAdmin } from '@/lib/entities';
 import { fetchSchools, updateSchool } from '@/lib/api/schools';
+import { fetchClaims, updateClaim } from '@/lib/api/school-claims';
 import { invokeFunction } from '@/lib/functions';
 import { CheckCircle2, XCircle, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,8 @@ export default function AdminSubmissions() {
     setLoading(true);
     // Fetch claims from both submission paths: 'pending' (SubmitSchool) and 'pending_review' (ClaimSchool)
     const [claimsPending, claimsPendingReview] = await Promise.all([
-      SchoolClaim.filter({ status: "pending" }),
-      SchoolClaim.filter({ status: "pending_review" }),
+      fetchClaims({ status: "pending" }),
+      fetchClaims({ status: "pending_review" }),
     ]);
     const allClaims = [...claimsPending, ...claimsPendingReview];
     const schoolIds = [...new Set(allClaims.map(c => c.school_id).filter(Boolean))];
@@ -43,13 +44,13 @@ export default function AdminSubmissions() {
     let approvedClaim = null;
     try {
       const [claimsPending, claimsPendingReview] = await Promise.all([
-        SchoolClaim.filter({ school_id: school.id, status: "pending" }),
-        SchoolClaim.filter({ school_id: school.id, status: "pending_review" }),
+        fetchClaims({ school_id: school.id, status: "pending" }),
+        fetchClaims({ school_id: school.id, status: "pending_review" }),
       ]);
       const claims = [...claimsPending, ...claimsPendingReview];
       if (claims.length > 0) {
         approvedClaim = claims[0];
-        await SchoolClaim.update(approvedClaim.id, { status: "verified", verified_at: new Date().toISOString() });
+        await updateClaim(approvedClaim.id, { status: "verified", verified_at: new Date().toISOString() });
       }
     } catch (e) { /* non-blocking */ }
 
@@ -91,12 +92,12 @@ export default function AdminSubmissions() {
     // Also reject associated SchoolClaim (non-blocking)
     try {
       const [claimsPending, claimsPendingReview] = await Promise.all([
-        SchoolClaim.filter({ school_id: school.id, status: "pending" }),
-        SchoolClaim.filter({ school_id: school.id, status: "pending_review" }),
+        fetchClaims({ school_id: school.id, status: "pending" }),
+        fetchClaims({ school_id: school.id, status: "pending_review" }),
       ]);
       const claims = [...claimsPending, ...claimsPendingReview];
       if (claims.length > 0) {
-        await SchoolClaim.update(claims[0].id, { status: "rejected" });
+        await updateClaim(claims[0].id, { status: "rejected" });
       }
     } catch (e) { /* non-blocking */ }
     setSubmissions(s => s.filter(x => x.id !== school.id));

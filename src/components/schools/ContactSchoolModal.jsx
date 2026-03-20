@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SchoolInquiry } from '@/lib/entities';
+import { createInquiry } from '@/lib/api/school-inquiries';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +44,7 @@ export default function ContactSchoolModal({ school, onClose }) {
     setSending(true);
 
     try {
-      const inquiry = await SchoolInquiry.create({
+      const inquiry = await createInquiry({
         parent_user_id: user.id,
         school_id: school.id,
         message: `Parent: ${formData.parentName}\nEmail: ${formData.email}\nChild's Grade: ${formData.childGrade}\n\nMessage:\n${formData.message}`,

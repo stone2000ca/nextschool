@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Save, Eye, X, CheckCircle2, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
-import { Testimonial } from '@/lib/entities';
+import { fetchTestimonials } from '@/lib/api/testimonials';
 import { invokeFunction } from '@/lib/functions';
 
 // =============================================================================
@@ -277,7 +277,7 @@ export default function ProfileEditor({ school, onSave, isSaving, onDirtyChange 
     setDirtyFields({});
     setVerifiedFields(school?.verified_fields || {});
     if (school?.id) {
-      Testimonial.filter({ school_id: school.id })
+      fetchTestimonials({ school_id: school.id })
         .then(list => setTestimonialCount(list.length))
         .catch(() => {});
     }

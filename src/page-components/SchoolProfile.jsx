@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Testimonial } from '@/lib/entities';
+import { fetchTestimonials } from '@/lib/api/testimonials';
 import { fetchSchools } from '@/lib/api/schools';
 import { invokeFunction } from '@/lib/functions';
 import { Button } from "@/components/ui/button";
@@ -550,7 +550,7 @@ export default function SchoolProfile() {
   // Load testimonials
   useEffect(() => {
     if (!school?.id) return;
-    Testimonial.filter({ school_id: school.id, is_visible: true })
+    fetchTestimonials({ school_id: school.id, is_visible: true })
       .then(setTestimonials)
       .catch(() => {});
   }, [school?.id]);
