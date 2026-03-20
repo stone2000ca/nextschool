@@ -80,6 +80,9 @@ export default function Consultant() {
   const [selectedConsultant, setSelectedConsultant] = useState(null);
   const [showGuidedIntro, setShowGuidedIntro] = useState(false);
   const [familyBrief, setFamilyBrief] = useState(null);
+  // E48-FIX: Ref ensures handleGuidedIntroComplete's setTimeout closure
+  // always reads the latest familyBrief, even before React re-renders.
+  const familyBriefRef = useRef(null);
   // E47: showResponseChips removed — DISCOVERY chips no longer needed after guided intro skip
   const [sessionId] = useState(() => crypto.randomUUID());
   const [feedbackPromptShown, setFeedbackPromptShown] = useState(false);
@@ -838,12 +841,14 @@ export default function Consultant() {
 
   // E47: Called when GuidedIntro completes — skip DISCOVERY+BRIEF, go straight to RESULTS
   const handleGuidedIntroComplete = (brief) => {
+    // E48-FIX: Write to ref synchronously so the handleSendMessage closure
+    // (which may fire before React re-renders) reads the correct value.
+    familyBriefRef.current = brief;
     setFamilyBrief(brief);
     setShowGuidedIntro(false);
 
     // E47: Send synthetic message to trigger orchestrator → RESULTS immediately
     // The orchestrator handles the warm greeting + school matching in one shot.
-    // Use setTimeout to let React state (familyBrief) settle before sending.
     setTimeout(() => {
       handleSendMessage('__GUIDED_INTRO_COMPLETE__', null, null);
     }, 50);
@@ -1019,6 +1024,8 @@ export default function Consultant() {
     applyDistances,
     // E47: Pass familyBrief so it can be sent as pre-extracted entities
     familyBrief,
+    // E48-FIX: Ref for stale-closure safety in guided intro flow
+    familyBriefRef,
   });
 
   // WC-1b: Inject pendingMessage from ?q= param after consultant greeting

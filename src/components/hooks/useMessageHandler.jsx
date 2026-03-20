@@ -62,6 +62,8 @@ export const useMessageHandler = ({
   applyDistances,
   // E47: FamilyBrief from guided intro for pre-extracted entity injection
   familyBrief,
+  // E48-FIX: Ref to read latest familyBrief even in stale closures
+  familyBriefRef,
 }, isPremiumParam = isPremium) => {
     // BUG-RN-PERSIST Fix 1: Ref tracks the latest conversationId immediately,
     // bypassing React's batched state updates so deep dive closures always get the real id.
@@ -211,7 +213,9 @@ export const useMessageHandler = ({
         returningUserContext,
         ...(restoredSessionData && activeJourney ? { journeyContext: activeJourney } : {}),
         // E47: Pass familyBrief as pre-extracted entities so backend skips collection
-        ...(familyBrief ? { familyBrief } : {})
+        // E48-FIX: Prefer ref value over state to avoid stale closure when called
+        // from handleGuidedIntroComplete's setTimeout before React re-renders.
+        ...((familyBriefRef?.current || familyBrief) ? { familyBrief: familyBriefRef?.current || familyBrief } : {})
       });
 
       // DEFENSIVE CHECK: Ensure response.data exists
@@ -312,7 +316,8 @@ export const useMessageHandler = ({
       // the local state, the sync effect (Consultant.jsx FIX 17) reads 'confirmed' from
       // context and reverses the clearing — causing the overlay to stay stuck forever.
       let newBriefStatus = response.data?.briefStatus || null;
-      if (response.data?.state === STATES.RESULTS && ((response.data?.schools || []).length > 0 || isBriefConfirmation)) {
+      // E48-FIX: Also clear briefStatus for guided intro completion, not just __CONFIRM_BRIEF__
+      if (response.data?.state === STATES.RESULTS && ((response.data?.schools || []).length > 0 || isBriefConfirmation || isGuidedIntroComplete)) {
         newBriefStatus = null;
         setBriefStatus(null);
         console.log('[BRIEF STATUS] Cleared on RESULTS arrival');

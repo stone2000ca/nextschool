@@ -632,7 +632,9 @@ ${schoolIdContext}`;
   return {
     message: aiMessage,
     state: STATES.RESULTS,
-    briefStatus: 'confirmed',
+    // E48-FIX: Return null to dismiss LoadingOverlay when results arrive.
+    // Previously returned 'confirmed' which kept the overlay spinning forever.
+    briefStatus: null,
     schools: matchingSchools,
     familyProfile: conversationFamilyProfile,
     conversationContext: context,
