@@ -48,6 +48,7 @@ const TABLE_MAP: Record<string, string> = {
   ConversationState: 'conversation_state',
   ConversationSchools: 'conversation_schools',
   ConversationArtifacts: 'conversation_artifacts',
+  MatchExplanationCache: 'match_explanation_cache',
 }
 
 function getTableName(entityName: string): string {
