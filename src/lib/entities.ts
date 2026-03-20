@@ -49,6 +49,7 @@ const TABLE_MAP: Record<string, string> = {
   ConversationSchools: 'conversation_schools',
   ConversationArtifacts: 'conversation_artifacts',
   MatchExplanationCache: 'match_explanation_cache',
+  VisitRecord: 'visit_records',
 }
 
 function getTableName(entityName: string): string {
@@ -199,3 +200,4 @@ export const UserTokenBalance = createEntity('UserTokenBalance')
 export const ConversationState = createEntity('ConversationState')
 export const ConversationSchools = createEntity('ConversationSchools')
 export const ConversationArtifacts = createEntity('ConversationArtifacts')
+export const VisitRecord = createEntity('VisitRecord')
