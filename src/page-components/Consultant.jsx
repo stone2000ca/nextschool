@@ -44,6 +44,7 @@ import { useSchoolFiltering } from '@/components/hooks/useSchoolFiltering';
 import { useMessageHandler } from '@/components/hooks/useMessageHandler';
 import { useArtifacts } from '@/components/hooks/useArtifacts';
 import { useConversationState, mapStateToView } from '@/components/hooks/useConversationState';
+import { useSchoolResults } from '@/components/hooks/useSchoolResults';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import ResearchNotepad from '@/components/ui/ResearchNotepad';
 import { getSchoolsWithDeepDive } from '../components/utils/deepDiveUtils';
@@ -76,10 +77,24 @@ export default function Consultant() {
   // E47: showResponseChips removed — DISCOVERY chips no longer needed after guided intro skip
   const [feedbackPromptShown, setFeedbackPromptShown] = useState(false);
 
-  // View states
-  const [schools, setSchools] = useState([]);
-  const [previousSearchResults, setPreviousSearchResults] = useState([]);
-  const [selectedSchool, setSelectedSchool] = useState(null);
+  // ─── School results state (Phase 3c hook) ──────────────────────
+  const {
+    schools, setSchools,
+    previousSearchResults, setPreviousSearchResults,
+    selectedSchool, setSelectedSchool,
+    extraSchools, setExtraSchools,
+    extraSchoolsPage, setExtraSchoolsPage,
+    extraSchoolsHasMore, setExtraSchoolsHasMore,
+    extraSchoolsLoading,
+    extraSchoolsError,
+    loadMoreSchools: _loadMoreSchools,
+    priorityOverrides, setPriorityOverrides,
+    handlePriorityToggle,
+    confirmingSchool, setConfirmingSchool,
+    schoolsAnimKey, setSchoolsAnimKey,
+    leftPanelMode, setLeftPanelMode,
+    resetSchoolState,
+  } = useSchoolResults();
 
   // ─── Conversation state (Phase 3b hook) ──────────────────────
   const {
@@ -120,10 +135,10 @@ export default function Consultant() {
   const [showShortlistPanel, setShowShortlistPanel] = useState(false);
   const [showNotesPanel, setShowNotesPanel] = useState(false);
   const [tourRequestSchool, setTourRequestSchool] = useState(null);
-  
+
   // Distance feature
   const userLocation = useUserLocation();
-  
+
   // Delete conversation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState(null);
@@ -156,47 +171,15 @@ export default function Consultant() {
   // T046: Right-side rail panel state
   const [activePanel, setActivePanel] = useState(null); // 'brief' | 'shortlist' | null
 
-  // E31-003: Load More Schools state
-  const [extraSchools, setExtraSchools] = useState([]);
-  const [extraSchoolsPage, setExtraSchoolsPage] = useState(1);
-  const [extraSchoolsHasMore, setExtraSchoolsHasMore] = useState(true);
-  const [extraSchoolsLoading, setExtraSchoolsLoading] = useState(false);
-  const [extraSchoolsError, setExtraSchoolsError] = useState(null);
-
   // BRIEF→RESULTS transition animation
   const [isTransitioning, setIsTransitioning] = useState(false);
   const prevIsIntakePhaseRef = useRef(true);
-
-  // T-RES-006: Priority overrides { [rowId]: 'musthave' | 'nicetohave' | 'dontcare' }
-  const [priorityOverrides, setPriorityOverrides] = useState({});
-
-  const handlePriorityToggle = (rowId) => {
-    setPriorityOverrides(prev => {
-      const CYCLE = ['musthave', 'nicetohave', 'dontcare'];
-      const current = prev[rowId] || 'nicetohave';
-      const next = CYCLE[(CYCLE.indexOf(current) + 1) % CYCLE.length];
-      // Guard: at least 1 priority must remain non-dontcare
-      const updated = { ...prev, [rowId]: next };
-      const allDontCare = Object.values(updated).every(v => v === 'dontcare');
-      if (allDontCare) return prev;
-      return updated;
-    });
-  };
-  
-  // DEEPDIVE confirmation state
-  const [confirmingSchool, setConfirmingSchool] = useState(null);
 
   // Contact Log data
   const [contactLog, setContactLog] = useState([]);
 
   // Research Notes
   const [researchNotes, setResearchNotes] = useState('');
-
-  // T047: Auto-refresh animation trigger
-  const [schoolsAnimKey, setSchoolsAnimKey] = useState(0);
-
-  // E41-S8: Left panel mode — 'grid' (default) or 'comparison' (inline, keeps chat visible)
-  const [leftPanelMode, setLeftPanelMode] = useState('grid');
 
   // E39-S8: Memoized set of schools with deep dive analysis
   const schoolsWithDeepDive = useMemo(() => getSchoolsWithDeepDive(messages), [messages]);
@@ -733,8 +716,7 @@ export default function Consultant() {
     setBriefStatus(null);
     setOnboardingPhase(null);
     setActiveJourney(null);
-    setSchools([]);
-    setSelectedSchool(null);
+    resetSchoolState();
     clearAllArtifacts();
     setFamilyProfile(null);
     setExtractedEntitiesData(null);
@@ -743,18 +725,10 @@ export default function Consultant() {
     setShortlistData([]);
     setRemovedSchoolIds([]);
     setPendingDeepDiveSchoolIds(new Set());
-    setExtraSchools([]);
-    setExtraSchoolsPage(1);
-    setExtraSchoolsHasMore(true);
-    setExtraSchoolsLoading(false);
-    setExtraSchoolsError(null);
-    setPriorityOverrides({});
     setVisitedSchoolIds([]);
     setResearchNotes('');
     setSchoolJourney(null);
     setContactLog([]);
-    setSchoolsAnimKey(0);
-    setLeftPanelMode('grid');
     setShowLoadingOverlay(false);
     setCurrentView('chat');
   };
@@ -865,45 +839,12 @@ export default function Consultant() {
     }
   };
 
-  // E31-003: Load More Schools handler
+  // E31-003: Load More Schools — wrapper passes cross-hook deps to useSchoolResults
   const conversationContext = currentConversation?.conversation_context;
-  const loadMoreSchools = useCallback(async () => {
-    const lat = conversationContext?.resolvedLat || familyProfile?.resolvedLat || userLocation?.lat;
-    const lng = conversationContext?.resolvedLng || familyProfile?.resolvedLng || userLocation?.lng;
-    if (!lat || !lng) {
-      setExtraSchoolsError('no_location');
-      return;
-    }
-    setExtraSchoolsLoading(true);
-    setExtraSchoolsError(null);
-    try {
-      const displayedIds = (schools || []).map(s => s.id);
-      const shortlistIds = shortlistData?.map(s => s.id) || user?.shortlist || [];
-      const extraIds = extraSchools.map(s => s.id);
-      const excludeIds = [...new Set([...displayedIds, ...shortlistIds, ...extraIds])];
-
-      const result = await invokeFunction('getNearbySchools', {
-        lat, lng, excludeIds,
-        gradeMin: familyProfile?.child_grade || null,
-        maxTuition: familyProfile?.max_tuition || null,
-        dealbreakers: familyProfile?.dealbreakers || [],
-        familyGender: familyProfile?.child_gender || null,
-        schoolGenderExclusions: familyProfile?.school_gender_exclusions || [],
-        schoolGenderPreference: familyProfile?.school_gender_preference || null,
-        page: extraSchoolsPage,
-        pageSize: 20,
-      });
-      const data = result.data || result;
-      setExtraSchools(prev => [...prev, ...(data.schools || [])]);
-      setExtraSchoolsHasMore(data.hasMore || false);
-      setExtraSchoolsPage(prev => prev + 1);
-    } catch (err) {
-      console.error('[LOAD MORE] Error:', err);
-      setExtraSchoolsError('fetch_failed');
-    } finally {
-      setExtraSchoolsLoading(false);
-    }
-  }, [extraSchoolsPage, schools, shortlistData, user, extraSchools, familyProfile, conversationContext, userLocation]);
+  const loadMoreSchools = useCallback(
+    () => _loadMoreSchools({ conversationContext, familyProfile, userLocation, shortlistData, user }),
+    [_loadMoreSchools, conversationContext, familyProfile, userLocation, shortlistData, user],
+  );
 
   const { handleSendMessage } = useMessageHandler({
     messages,
