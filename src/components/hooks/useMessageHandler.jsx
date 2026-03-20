@@ -330,16 +330,18 @@ export const useMessageHandler = ({
       const responseState = response.data?.state;
       const deepDiveSchoolId = response.data?.deepDiveAnalysis?.schoolId || selectedSchool?.id || resolvedSchoolId || null;
       const prevContext = currentConversation?.conversation_context || {};
+      // PHASE-1FG: Removed 'schools' from context writes — schools are now written
+      // exclusively to conversation_schools via dualWrite.ts
       const updatedContext = {
         ...prevContext,
         ...(response.data?.conversationContext || {}),
         state: responseState,
         briefStatus: newBriefStatus,
-        schools: response.data?.schools || [],
         conversationId: conversationIdRef.current || currentConversation?.id || null,
         resumeView: responseState || null,
         lastDeepDiveSchoolId: (responseState === 'DEEP_DIVE' || deepDiveSchoolId) ? deepDiveSchoolId : (prevContext?.lastDeepDiveSchoolId || null),
       };
+      console.log('[PHASE-1FG] conversation_context assembled without schools key');
 
       // BUG-RN-PERSIST Fix A: Use functional updater to avoid stale-closure overwrite
       // of currentConversation.id that was set by the RESULTS ChatHistory.create block.

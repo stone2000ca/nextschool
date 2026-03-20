@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 
 /**
  * Load conversation state from the normalized conversation_state table.
- * Returns null if not found (caller should fall back to JSONB).
+ * Returns null if not found (normalized tables are sole source of truth).
  */
 async function loadConversationState(conversationId) {
   if (!conversationId) return null;
@@ -37,7 +37,7 @@ async function loadConversationState(conversationId) {
 /**
  * Load current schools from the normalized conversation_schools table,
  * joined with the schools table to get full school objects.
- * Returns empty array if not found (caller should fall back to JSONB).
+ * Returns empty array if not found (normalized tables are sole source of truth).
  */
 async function loadConversationSchools(conversationId) {
   if (!conversationId) return [];
@@ -265,9 +265,9 @@ export async function restoreSessionFromParam(
         setFamilyProfile(restoredProfile);
       }
     } else {
-      // Phase 1e: Prefer normalized conversation_state for family profile fields
+      // PHASE-1FG: Normalized conversation_state is sole source of truth for family profile fields
       if (normalizedState) {
-        console.log('[PHASE-1E] Using conversation_state for family profile fields');
+        console.log('[PHASE-1FG] Using conversation_state for family profile fields');
         restoredProfile = {
           child_name: normalizedState.child_name || chatSession.child_name,
           child_grade: normalizedState.child_grade || chatSession.child_grade,
@@ -277,15 +277,12 @@ export async function restoreSessionFromParam(
           learning_differences: normalizedState.learning_differences || chatSession.learning_differences || []
         };
       } else {
-        // FALLBACK: BUG-LOCATION-EXTRACT-S97 FIX: Prefer extractedEntities.locationArea from ChatHistory context
-        // over ChatSession.locationArea which may contain stale/invalid values (e.g. 'Grade')
-        console.log('[PHASE-1E] Fallback: using conversation_context JSONB for family profile fields');
-        const restoredLocationArea = chatHistory?.conversation_context?.extractedEntities?.location_area || chatHistory?.conversation_context?.extractedEntities?.locationArea || chatSession.location_area;
-
+        // No normalized state — use ChatSession fields directly (no JSONB fallback)
+        console.log('[PHASE-1FG] No conversation_state found, using ChatSession fields');
         restoredProfile = {
           child_name: chatSession.child_name,
           child_grade: chatSession.child_grade,
-          location_area: restoredLocationArea,
+          location_area: chatSession.location_area,
           max_tuition: chatSession.max_tuition,
           priorities: chatSession.priorities || [],
           learning_differences: chatSession.learning_differences || []
@@ -300,17 +297,9 @@ export async function restoreSessionFromParam(
     setCurrentView('schools');
     setOnboardingPhase(STATES.RESULTS);
 
-    // Restore deep dive state from message scan (BUG-RN-05)
-    // Phase 1e: Use normalized state for state/resumeView, fall back to JSONB
-    const conversationContext = chatHistory?.conversation_context || {};
-    const normalizedResumeView = normalizedState?.resume_view || normalizedState?.state || null;
-    const fallbackResumeView = conversationContext.resumeView || conversationContext.state || null;
-    const effectiveResumeView = normalizedResumeView || fallbackResumeView;
-    if (normalizedResumeView) {
-      console.log('[PHASE-1E] Using conversation_state for resumeView/state:', normalizedResumeView);
-    } else if (fallbackResumeView) {
-      console.log('[PHASE-1E] Fallback: using conversation_context JSONB for resumeView/state:', fallbackResumeView);
-    }
+    // PHASE-1FG: Normalized state is sole source of truth for resumeView/state
+    const effectiveResumeView = normalizedState?.resume_view || normalizedState?.state || null;
+    console.log('[PHASE-1FG] conversation_state resumeView/state:', effectiveResumeView);
     const hasDeepDiveRestore = !!lastDeepDiveSchoolId;
     if (lastDeepDiveSchoolId && setSelectedSchool) {
       console.log('[RESTORE] Found deep dive in messages for school:', lastDeepDiveSchoolId, lastDeepDiveSchoolName);
@@ -441,15 +430,11 @@ export async function restoreMostRecentConversation(
     const normalizedState2 = await loadConversationState(latest.id);
     const normalizedSchools = await loadConversationSchools(latest.id);
 
-    // 3. Restore consultant — prefer normalized, fall back to JSONB
+    // PHASE-1FG: Normalized state is sole source of truth for consultant
     const ctx = latest.conversation_context || {};
-    const restoredConsultant = normalizedState2?.consultant || ctx.consultant || null;
+    const restoredConsultant = normalizedState2?.consultant || null;
     if (restoredConsultant) {
-      if (normalizedState2?.consultant) {
-        console.log('[PHASE-1E] Using conversation_state for consultant:', restoredConsultant);
-      } else {
-        console.log('[PHASE-1E] Fallback: using conversation_context JSONB for consultant:', restoredConsultant);
-      }
+      console.log('[PHASE-1FG] Using conversation_state for consultant:', restoredConsultant);
       setSelectedConsultant(restoredConsultant);
     }
 
@@ -523,29 +508,14 @@ export async function restoreMostRecentConversation(
       }
     }
 
-    // 5. Restore schools — prefer normalized conversation_schools, fall back to JSONB
-    let restoredSchools = [];
-    if (normalizedSchools.length > 0) {
-      console.log('[PHASE-1E] Using conversation_schools for school restore:', normalizedSchools.length, 'schools');
-      restoredSchools = normalizedSchools;
-    } else {
-      console.log('[PHASE-1E] Fallback: using conversation_context JSONB for schools');
-      restoredSchools = ctx.schools || [];
-      if (typeof restoredSchools === 'string') {
-        try { restoredSchools = JSON.parse(restoredSchools); } catch (_) { restoredSchools = []; }
-      }
-      // If stored as IDs, fetch full records
-      if (Array.isArray(restoredSchools) && restoredSchools.length > 0 && typeof restoredSchools[0] === 'string') {
-        try {
-          restoredSchools = await School.filter({ id: { $in: restoredSchools } });
-        } catch (_) { /* keep as-is */ }
-      }
-    }
+    // PHASE-1FG: Normalized conversation_schools is sole source of truth
+    const restoredSchools = normalizedSchools;
+    console.log('[PHASE-1FG] conversation_schools loaded:', restoredSchools.length, 'schools');
     if (restoredSchools.length > 0) setSchools(restoredSchools);
 
-    // 6. Restore family profile — prefer normalized conversation_state, fall back to JSONB extractedEntities
+    // PHASE-1FG: Normalized conversation_state is sole source of truth for family profile
     if (normalizedState2 && (normalizedState2.child_name || normalizedState2.child_grade || normalizedState2.location_area)) {
-      console.log('[PHASE-1E] Using conversation_state for family profile fields');
+      console.log('[PHASE-1FG] Using conversation_state for family profile fields');
       const fp = {
         child_name: normalizedState2.child_name,
         child_grade: normalizedState2.child_grade,
@@ -557,32 +527,12 @@ export async function restoreMostRecentConversation(
       if (Object.values(fp).some(v => v != null && v !== '' && !(Array.isArray(v) && v.length === 0))) {
         setFamilyProfile(fp);
       }
-    } else if (ctx.extractedEntities) {
-      console.log('[PHASE-1E] Fallback: using conversation_context JSONB extractedEntities for family profile');
-      const fp = {
-        child_name: ctx.extractedEntities.child_name || ctx.extractedEntities.childName,
-        child_grade: ctx.extractedEntities.child_grade || ctx.extractedEntities.childGrade,
-        location_area: ctx.extractedEntities.location_area || ctx.extractedEntities.locationArea,
-        max_tuition: ctx.extractedEntities.max_tuition || ctx.extractedEntities.maxTuition,
-        priorities: ctx.extractedEntities.priorities || [],
-        learning_differences: ctx.extractedEntities.learning_differences || ctx.extractedEntities.learningDifferences || [],
-      };
-      // Only set if there's at least one meaningful value
-      if (Object.values(fp).some(v => v != null && v !== '' && !(Array.isArray(v) && v.length === 0))) {
-        setFamilyProfile(fp);
-      }
     }
 
-    // 7. Determine correct state — prefer normalized, fall back to JSONB
+    // PHASE-1FG: Normalized state is sole source of truth
     const hasDeepDive = !!lastDeepDiveSchoolId;
-    const normalizedStateValue = normalizedState2?.resume_view || normalizedState2?.state || null;
-    const fallbackStateValue = ctx.state || ctx.resumeView || null;
-    const effectiveState = normalizedStateValue || fallbackStateValue || STATES.RESULTS;
-    if (normalizedStateValue) {
-      console.log('[PHASE-1E] Using conversation_state for state:', normalizedStateValue);
-    } else if (fallbackStateValue) {
-      console.log('[PHASE-1E] Fallback: using conversation_context JSONB for state:', fallbackStateValue);
-    }
+    const effectiveState = normalizedState2?.resume_view || normalizedState2?.state || STATES.RESULTS;
+    console.log('[PHASE-1FG] conversation_state state:', effectiveState);
     const restoredState = hasDeepDive ? STATES.DEEP_DIVE : effectiveState;
 
     if (hasDeepDive && setSelectedSchool) {
