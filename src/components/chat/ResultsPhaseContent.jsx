@@ -155,6 +155,7 @@ export default function ResultsPhaseContent({
               visitPrepKit={visitPrepKit}
               actionPlan={actionPlan}
               communityPulse={deepDiveAnalysis.community_pulse || null}
+              financialSummary={deepDiveAnalysis.financial_summary || null}
               contactLog={contactLog}
               researchNotes={researchNotes}
               onNotesChange={setResearchNotes}
