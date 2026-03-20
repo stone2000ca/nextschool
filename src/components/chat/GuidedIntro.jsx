@@ -9,6 +9,7 @@ const COPY = {
   Jackie: {
     1: "Hi, I'm Jackie!",
     2: (name) => `Nice to meet you, ${name}!`,
+    2.5: (name, childName) => `Great — thanks!`,
     3: (name) => `Got it, ${name}.`,
     4: "Perfect.",
     5: "Almost there.",
@@ -18,6 +19,7 @@ const COPY = {
   Liam: {
     1: "Hey — I'm Liam.",
     2: () => "Good. And your child?",
+    2.5: () => "Got it.",
     3: () => "Got it.",
     4: "Perfect.",
     5: "One more.",
@@ -29,6 +31,7 @@ const COPY = {
 const SUBTITLES = {
   1: "What's your first name?",
   2: "What's your child's first name?",
+  2.5: null, // dynamic — set in getSubtitle()
   3: "What grade are they entering?",
   4: "Where are you located?",
   5: "What's your tuition budget?",
@@ -46,17 +49,23 @@ const BUDGET_OPTIONS = [
   'Not sure yet',
 ];
 
-const SCHOOL_TYPES = [
-  'Faith-based',
-  'IB Programme',
-  'Montessori',
-  'Girls-only',
-  'Boys-only',
-  'No preference',
+const PRONOUN_OPTIONS = ['He/him', 'She/her', 'They/them', 'Prefer not to say'];
+
+const SCHOOL_TYPE_GROUPS = [
+  {
+    label: 'Curriculum & Pedagogy',
+    options: ['IB Programme', 'Montessori', 'STEM/STEAM Focus', 'Arts Focus', 'French Immersion'],
+    expandedOptions: ['Waldorf', 'AP (Advanced Placement)', 'Reggio Emilia'],
+  },
+  {
+    label: 'School Structure',
+    options: ['Faith-based', 'Girls-only', 'Boys-only', 'Boarding/Residential', 'Small class sizes'],
+    expandedOptions: [],
+  },
 ];
 
-// Steps indexed 0-6 mapping to display steps 1,2,3,4,5,5.5,6
-const STEP_KEYS = [1, 2, 3, 4, 5, 5.5, 6];
+// Steps indexed 0-7 mapping to display steps 1,2,2.5,3,4,5,5.5,6
+const STEP_KEYS = [1, 2, 2.5, 3, 4, 5, 5.5, 6];
 const TOTAL_STEPS = STEP_KEYS.length;
 
 export default function GuidedIntro({ consultantName, onComplete }) {
@@ -70,7 +79,9 @@ export default function GuidedIntro({ consultantName, onComplete }) {
   const [grade, setGrade] = useState('');
   const [location, setLocation] = useState('');
   const [budget, setBudget] = useState('');
+  const [pronoun, setPronoun] = useState('');
   const [schoolTypes, setSchoolTypes] = useState([]);
+  const [showMoreSchoolTypes, setShowMoreSchoolTypes] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
 
   const inputRef = useRef(null);
@@ -90,10 +101,11 @@ export default function GuidedIntro({ consultantName, onComplete }) {
   const collectedAnswers = [
     { stepIndex: 0, label: 'Your name', value: parentName },
     { stepIndex: 1, label: "Child's name", value: childName },
-    { stepIndex: 2, label: 'Grade', value: grade },
-    { stepIndex: 3, label: 'Location', value: location },
-    { stepIndex: 4, label: 'Budget', value: budget },
-    { stepIndex: 5, label: 'School type', value: schoolTypes.length > 0 ? schoolTypes.join(', ') : '' },
+    { stepIndex: 2, label: 'Pronouns', value: pronoun },
+    { stepIndex: 3, label: 'Grade', value: grade },
+    { stepIndex: 4, label: 'Location', value: location },
+    { stepIndex: 5, label: 'Budget', value: budget },
+    { stepIndex: 6, label: 'School type', value: schoolTypes.length > 0 ? schoolTypes.join(', ') : '' },
   ].filter((a) => a.value && a.stepIndex < stepIndex);
 
   const jumpToStep = useCallback((targetIndex) => {
@@ -156,8 +168,16 @@ export default function GuidedIntro({ consultantName, onComplete }) {
   const getHeading = () => {
     const copySet = COPY[consultantName] || COPY.Jackie;
     const val = copySet[stepKey];
-    if (typeof val === 'function') return val(parentName || 'there');
+    if (typeof val === 'function') return val(parentName || 'there', childName || 'your child');
     return val;
+  };
+
+  // ─── Dynamic subtitle ──────────────────────────────────────────
+  const getSubtitle = () => {
+    if (stepKey === 2.5) {
+      return `What pronouns should we use for ${childName || 'your child'}?`;
+    }
+    return SUBTITLES[stepKey];
   };
 
   // ─── Enter-to-advance for text fields ────────────────────────────
@@ -183,12 +203,12 @@ export default function GuidedIntro({ consultantName, onComplete }) {
     setTimeout(goNext, 350);
   };
 
+  const selectPronoun = (p) => {
+    setPronoun(p);
+    setTimeout(goNext, 350);
+  };
+
   const toggleSchoolType = (type) => {
-    if (type === 'No preference') {
-      setSchoolTypes([]);
-      setTimeout(goNext, 350);
-      return;
-    }
     setSchoolTypes((prev) => {
       if (prev.includes(type)) return prev.filter((t) => t !== type);
       return [...prev, type];
@@ -200,6 +220,7 @@ export default function GuidedIntro({ consultantName, onComplete }) {
     const familyBrief = {
       parentName: parentName.trim(),
       childName: childName.trim(),
+      pronoun,
       grade,
       location: location.trim(),
       budget,
@@ -224,7 +245,7 @@ export default function GuidedIntro({ consultantName, onComplete }) {
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="guided-intro-input w-full bg-transparent border-0 text-center text-white text-2xl py-3 px-1 outline-none placeholder:text-white/30 transition-colors"
+        className="guided-intro-input w-full bg-transparent border-0 border-none text-center text-white text-2xl py-3 px-1 outline-none shadow-none ring-0 focus:ring-0 focus:outline-none focus:border-none placeholder:text-white/30 transition-colors"
         autoComplete="off"
       />
       <p className="text-white/40 text-sm mt-3">Press Enter to continue</p>
@@ -278,6 +299,7 @@ export default function GuidedIntro({ consultantName, onComplete }) {
       {[
         ['Parent', parentName],
         ['Child', childName],
+        ['Pronouns', pronoun || '—'],
         ['Grade', grade],
         ['Location', location],
         ['Budget', budget],
@@ -298,6 +320,8 @@ export default function GuidedIntro({ consultantName, onComplete }) {
         return renderTextInput(parentName, setParentName, 'Your first name');
       case 2:
         return renderTextInput(childName, setChildName, "Your child's first name");
+      case 2.5:
+        return renderChipGrid(PRONOUN_OPTIONS, pronoun, selectPronoun);
       case 3:
         return renderChipGrid(GRADES, grade, selectGrade);
       case 4:
@@ -306,18 +330,66 @@ export default function GuidedIntro({ consultantName, onComplete }) {
         return renderBudgetCards();
       case 5.5:
         return (
-          <div className="space-y-4">
-            {renderChipGrid(SCHOOL_TYPES, schoolTypes, toggleSchoolType, true)}
-            {schoolTypes.length > 0 && (
-              <div className="flex justify-center mt-4">
-                <button
-                  onClick={goNext}
-                  className="px-8 py-3 rounded-full bg-teal-500/20 border border-teal-400 text-teal-300 font-medium hover:bg-teal-500/30 transition-all"
-                >
-                  Continue
-                </button>
-              </div>
+          <div className="space-y-6">
+            {SCHOOL_TYPE_GROUPS.map((group) => {
+              const visibleOptions = group.options;
+              const hiddenOptions = group.expandedOptions;
+              return (
+                <div key={group.label} className="space-y-3">
+                  <p className="text-white/30 text-xs font-medium uppercase tracking-widest">{group.label}</p>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    {visibleOptions.map((opt) => {
+                      const isSelected = schoolTypes.includes(opt);
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => toggleSchoolType(opt)}
+                          className={`px-5 py-3 rounded-full text-base font-medium transition-all duration-200 border
+                            ${isSelected
+                              ? 'bg-teal-500/20 border-teal-400 text-teal-300 shadow-lg shadow-teal-500/10'
+                              : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20'
+                            }`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                    {showMoreSchoolTypes && hiddenOptions.map((opt) => {
+                      const isSelected = schoolTypes.includes(opt);
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => toggleSchoolType(opt)}
+                          className={`px-5 py-3 rounded-full text-base font-medium transition-all duration-200 border
+                            ${isSelected
+                              ? 'bg-teal-500/20 border-teal-400 text-teal-300 shadow-lg shadow-teal-500/10'
+                              : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20'
+                            }`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            {!showMoreSchoolTypes && (
+              <button
+                onClick={() => setShowMoreSchoolTypes(true)}
+                className="text-white/40 hover:text-white/60 text-sm transition-colors underline underline-offset-2"
+              >
+                More options
+              </button>
             )}
+            <div className="flex justify-center mt-2">
+              <button
+                onClick={goNext}
+                className="px-8 py-3 rounded-full bg-teal-500/20 border border-teal-400 text-teal-300 font-medium hover:bg-teal-500/30 transition-all"
+              >
+                {schoolTypes.length > 0 ? 'Continue' : 'Skip — no preference'}
+              </button>
+            </div>
           </div>
         );
       case 6:
@@ -446,7 +518,7 @@ export default function GuidedIntro({ consultantName, onComplete }) {
           </h1>
 
           {/* Subtitle */}
-          <p className="text-lg text-white/50 mb-10">{SUBTITLES[stepKey]}</p>
+          <p className="text-lg text-white/50 mb-10">{getSubtitle()}</p>
 
           {/* Step content */}
           {renderStepContent()}
