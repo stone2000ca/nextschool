@@ -50,6 +50,8 @@ const ROUTE_MAP: Record<string, string> = {
   adminStats: 'admin-stats',
   listEventReminders: 'event-reminders',
   toggleEventReminder: 'event-reminders',
+  queueVisitEmails: 'email/queue',
+  processEmailQueue: 'email/process',
 }
 
 export async function invokeFunction<T = any>(name: string, payload: any): Promise<T> {
