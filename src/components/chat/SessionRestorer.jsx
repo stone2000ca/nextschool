@@ -346,7 +346,7 @@ export async function restoreSessionFromParam(
       }
       const restoredConversation = {
         ...chatHistory,
-        conversationContext: restoredContext
+        conversation_context: restoredContext
       };
       setCurrentConversation(restoredConversation);
     } else {
@@ -365,7 +365,7 @@ export async function restoreSessionFromParam(
         setSchools(fullSchools);
       }
       setCurrentConversation({
-        conversationContext: restoredContext
+        conversation_context: restoredContext
       });
     }
 
@@ -422,7 +422,7 @@ export async function restoreMostRecentConversation(
       console.log('[RESTORE-LATEST] No active conversations found');
       return;
     }
-    const sorted = convos.sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
+    const sorted = convos.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
     const latest = sorted[0];
     console.log('[RESTORE-LATEST] Restoring most recent conversation:', latest.id);
 
@@ -514,9 +514,27 @@ export async function restoreMostRecentConversation(
       }
     }
 
-    // PHASE-1FG: Normalized conversation_schools is sole source of truth
-    const restoredSchools = normalizedSchools;
-    console.log('[PHASE-1FG] conversation_schools loaded:', restoredSchools.length, 'schools');
+    // PHASE-1FG: Normalized conversation_schools is sole source of truth,
+    // with fallback to matched_schools from the ChatSession/conversation JSONB
+    let restoredSchools = normalizedSchools;
+    if (restoredSchools.length === 0) {
+      // Fallback: hydrate from matched_schools stored in conversation context
+      let schoolIds = ctx.matched_schools || latest.matched_schools;
+      if (typeof schoolIds === 'string') {
+        try { schoolIds = JSON.parse(schoolIds); } catch (_) { schoolIds = []; }
+      }
+      if (Array.isArray(schoolIds) && schoolIds.length > 0) {
+        try {
+          const fullSchools = await fetchSchools({ ids: schoolIds });
+          if (fullSchools?.length > 0) restoredSchools = fullSchools;
+        } catch (e) {
+          console.warn('[RESTORE-LATEST] matched_schools fallback failed:', e.message);
+        }
+      }
+      console.log('[RESTORE-LATEST] conversation_schools empty, matched_schools fallback:', restoredSchools.length, 'schools');
+    } else {
+      console.log('[PHASE-1FG] conversation_schools loaded:', restoredSchools.length, 'schools');
+    }
     if (restoredSchools.length > 0) setSchools(restoredSchools);
 
     // PHASE-1FG: Normalized conversation_state is sole source of truth for family profile
@@ -560,7 +578,7 @@ export async function restoreMostRecentConversation(
     // 8. Set currentConversation — this is the key: useDataLoader watches currentConversation.id
     setCurrentConversation({
       ...latest,
-      conversationContext: {
+      conversation_context: {
         ...ctx,
         state: restoredState,
         schools: restoredSchools,
