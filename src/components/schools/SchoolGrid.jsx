@@ -192,6 +192,7 @@ export default function SchoolGrid({
   extraSchoolsHasMore = true,
   extraSchoolsError = null,
   userLocationAvailable = false,
+  onEventClick = null,
 }) {
   // Guard: ensure schools is always an array
   if (!schools || !Array.isArray(schools)) {
@@ -203,8 +204,9 @@ export default function SchoolGrid({
   }
   const [tier3Expanded, setTier3Expanded] = useState(false);
 
-  // E16b-005: Bulk fetch upcoming events for all visible schools
+  // E16b-005 + E51-S1B: Bulk fetch upcoming events, store as map for pill tooltips
   const [schoolsWithEvents, setSchoolsWithEvents] = useState(new Set());
+  const [schoolEventsMap, setSchoolEventsMap] = useState(new Map());
   const allSchoolIds = [
     ...(tieredSchools ? [
       ...(tieredSchools.topMatches || []),
@@ -220,13 +222,23 @@ export default function SchoolGrid({
     const today = new Date().toISOString();
     fetchSchoolEvents({ is_active: true })
       .then(events => {
-        const upcoming = new Set(
-          events.filter(e => e.date && e.date >= today).map(e => e.school_id)
-        );
-        setSchoolsWithEvents(upcoming);
+        const upcomingEvents = events.filter(e => e.date && e.date >= today);
+        setSchoolsWithEvents(new Set(upcomingEvents.map(e => e.school_id)));
+        // Build map: school_id → sorted upcoming events
+        const evMap = new Map();
+        for (const ev of upcomingEvents) {
+          if (!evMap.has(ev.school_id)) evMap.set(ev.school_id, []);
+          evMap.get(ev.school_id).push(ev);
+        }
+        // Sort each school's events by date ascending
+        for (const [, arr] of evMap) arr.sort((a, b) => a.date.localeCompare(b.date));
+        setSchoolEventsMap(evMap);
       })
       .catch(() => {});
   }, [allSchoolIdsKey]);
+
+  // Helper: get next upcoming event for a school
+  const getNextEvent = (schoolId) => schoolEventsMap.get(schoolId)?.[0] || null;
   // T-SL-002: track newly backfilled IDs to animate them in
   const prevShortlistedRef = useRef(shortlistedIds);
   const [newlyBackfilledIds, setNewlyBackfilledIds] = useState(new Set());
@@ -285,6 +297,8 @@ export default function SchoolGrid({
       onPriorityToggle,
       isVisited: visitedSchoolIds.has(school.id),
       hasUpcomingEvent: schoolsWithEvents.has(school.id),
+      nextEvent: getNextEvent(school.id),
+      onEventClick: onEventClick ? (evt) => onEventClick(evt, school) : undefined,
     });
 
     return (
@@ -452,6 +466,8 @@ export default function SchoolGrid({
               accentColor={accentColor}
               hasUpcomingEvent={schoolsWithEvents.has(school.id)}
               isVisited={visitedSchoolIds.has(school.id)}
+              nextEvent={getNextEvent(school.id)}
+              onEventClick={onEventClick ? (evt) => onEventClick(evt, school) : undefined}
             />
           </div>
         ))}

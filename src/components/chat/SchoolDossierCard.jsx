@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { X, ExternalLink, ChevronDown, Lock, Loader2, CheckCircle } from 'lucide-react';
+import { X, ExternalLink, ChevronDown, Lock, Loader2, CheckCircle, CalendarDays } from 'lucide-react';
 import { buildPriorityChecks } from '@/components/schools/SchoolCard';
+import { EVENT_TYPE_LABELS, formatEventDate } from '@/components/utils/eventConstants';
+import { EventTypeIcon } from '@/components/schools/EventSlideout';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -238,6 +240,8 @@ export default function SchoolDossierCard({
   isExpanded: controlledExpanded,
   onToggleExpand,
   schoolsWithDeepDive,
+  schoolEvents = [],
+  onEventClick,
 }) {
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
@@ -361,6 +365,36 @@ export default function SchoolDossierCard({
         <ExternalLink className="w-3 h-3" />
         View Details
       </button>
+
+      {/* ── E51-S1B: Upcoming Events section ── */}
+      {schoolEvents.length > 0 && (
+        <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Upcoming Events</p>
+          <div className="space-y-1">
+            {schoolEvents.map((evt) => (
+              <div key={evt.id} className="flex items-center gap-1.5 text-xs">
+                <EventTypeIcon type={evt.event_type} className="h-3 w-3 text-teal-400 flex-shrink-0" />
+                <span className="text-slate-300 truncate flex-1">
+                  {evt.title || EVENT_TYPE_LABELS[evt.event_type] || 'Event'}
+                </span>
+                <span className="text-slate-500 flex-shrink-0 text-[11px]">{formatEventDate(evt.date)}</span>
+                {(evt.registration_url || onEventClick) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onEventClick) onEventClick(evt, school);
+                      else if (evt.registration_url) window.open(evt.registration_url, '_blank');
+                    }}
+                    className="text-teal-400 hover:text-teal-300 text-[11px] font-medium flex-shrink-0 ml-1 whitespace-nowrap"
+                  >
+                    Register →
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Deep Dive Analysis CTA ── */}
       {onConfirmDeepDive && (
