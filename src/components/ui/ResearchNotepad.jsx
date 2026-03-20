@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { computeSectionConfidence, CONFIDENCE_LABELS } from '@/components/utils/computeSectionConfidence';
+import VisitJourneySection from '@/components/chat/VisitJourneySection';
 
 // ─── Inline SVG Icons ─────────────────────────────────────────────────────────
 
@@ -538,7 +539,7 @@ function ConfidencePill({ level }) {
   );
 }
 
-export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, priorityMatches, aiInsight, chatSummary, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive, communityPulse, actionPlan, financialSummary }) {
+export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, priorityMatches, aiInsight, chatSummary, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive, communityPulse, actionPlan, financialSummary, schoolId }) {
   const school = schoolData || null;
   const lastSchoolNameRef = useRef(null);
   if (school?.name && school.name !== 'School') {
@@ -1074,6 +1075,13 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
             <CollapsibleSection icon={<BookIcon />} label="Visit Prep Kit" color="#8b5cf6" labelExtra={<ConfidencePill level={visitPrepConfidence} />}>
               <VisitPrepKitContent visitPrepKit={visitPrepKit} schoolData={school} actionPlan={actionPlan} />
             </CollapsibleSection>
+
+            {/* ── Visit Journey ──────────────────────────────────── */}
+            <div style={{ borderTop: '1px solid #e8dfc0', marginTop: 0, borderLeft: '5px solid #0d9488' }}>
+              <div style={{ padding: '13px 20px 0', background: 'linear-gradient(135deg, #f0fdfa, #e6fffa, #fff)' }}>
+                <VisitJourneySection schoolId={schoolId} />
+              </div>
+            </div>
 
             {/* ── Contact Log ───────────────────────────────────── */}
             <CollapsibleSection icon={<PhoneIcon />} label="Contact Log" color="#64748b">
