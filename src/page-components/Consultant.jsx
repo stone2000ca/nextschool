@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 import { useAuth } from '@/lib/AuthContext';
 import { School, SchoolJourney, FamilyJourney, ResearchNote, SchoolInquiry } from '@/lib/entities';
-import { fetchConversations, createConversation, updateConversation } from '@/lib/api/conversations';
+import { updateConversation } from '@/lib/api/conversations';
 import { invokeFunction } from '@/lib/functions';
 import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
 import { restoreGuestSession } from '@/components/chat/SessionRestorer';
@@ -43,6 +43,7 @@ import TourRequestModal from '../components/schools/TourRequestModal';
 import { useSchoolFiltering } from '@/components/hooks/useSchoolFiltering';
 import { useMessageHandler } from '@/components/hooks/useMessageHandler';
 import { useArtifacts } from '@/components/hooks/useArtifacts';
+import { useConversationState, mapStateToView } from '@/components/hooks/useConversationState';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import ResearchNotepad from '@/components/ui/ResearchNotepad';
 import { getSchoolsWithDeepDive } from '../components/utils/deepDiveUtils';
@@ -50,13 +51,6 @@ import { getSchoolsWithDeepDive } from '../components/utils/deepDiveUtils';
 const PLAN_NAMES = { FREE: 'free', BASIC: 'basic', PREMIUM: 'premium', PRO: 'pro', ENTERPRISE: 'enterprise' };
 
 const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
-
-const mapStateToView = (state) => {
-  if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(state)) return 'chat';
-  if (state === STATES.RESULTS) return 'schools';
-  if (state === STATES.DEEP_DIVE) return 'detail';
-  return 'chat';
-};
 
 export default function Consultant() {
    // Safe trackEvent definition - defaults to no-op if not defined globally
@@ -66,16 +60,11 @@ export default function Consultant() {
    const searchParams = useSearchParams();
    const router = useRouter();
    const sessionIdParam = searchParams.get('sessionId');
-   const [pendingMessage, setPendingMessage] = useState(() => searchParams.get('q') || null);
    const sessionParamProcessedRef = useRef(false);
-  
+
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sessionRestored, setSessionRestored] = useState(false);
-  const [restoringSession, setRestoringSession] = useState(false);
-  const [debugInfo, setDebugInfo] = useState('');
-  const isRestoringSessionRef = useRef(false);
   const skipViewOverrideRef = useRef(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
@@ -85,22 +74,44 @@ export default function Consultant() {
   // always reads the latest familyBrief, even before React re-renders.
   const familyBriefRef = useRef(null);
   // E47: showResponseChips removed — DISCOVERY chips no longer needed after guided intro skip
-  const [sessionId] = useState(() => crypto.randomUUID());
   const [feedbackPromptShown, setFeedbackPromptShown] = useState(false);
-  
+
   // View states
-  const [currentView, setCurrentView] = useState('welcome');
   const [schools, setSchools] = useState([]);
   const [previousSearchResults, setPreviousSearchResults] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState(null);
-  const [onboardingPhase, setOnboardingPhase] = useState(null);
-  const [briefStatus, setBriefStatus] = useState(null);
-  
+
+  // ─── Conversation state (Phase 3b hook) ──────────────────────
+  const {
+    currentConversation, setCurrentConversation,
+    conversations,
+    briefStatus, setBriefStatus,
+    onboardingPhase, setOnboardingPhase,
+    currentView, setCurrentView,
+    sessionId,
+    sessionRestored, setSessionRestored,
+    restoringSession, setRestoringSession,
+    debugInfo, setDebugInfo,
+    pendingMessage, setPendingMessage,
+    isRestoringSessionRef,
+    isLoading: conversationLoading,
+    loadConversations,
+    createConversation: createConversationRecord,
+    switchConversation,
+    deleteConversation: archiveConversation,
+  } = useConversationState({
+    userId: authUser?.id,
+    isAuthenticated: authIsAuthenticated,
+    user: authUser,
+    selectedSchool,
+    setSchools,
+    initialPendingMessage: searchParams.get('q') || null,
+  });
+
+
   // Chat states
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [currentConversation, setCurrentConversation] = useState(null);
-  const [conversations, setConversations] = useState([]);
   const [tokenBalance, setTokenBalance] = useState(100);
   const [isPremium, setIsPremium] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -343,20 +354,8 @@ export default function Consultant() {
   );
   const showBriefToggle = isBriefState && hasFamilyProfileData;
   
-  // FIX 17: Sync briefStatus from conversation_context whenever it changes
-  // FIX-RACE (Defensive): Never re-lock the overlay when RESULTS have already arrived.
-  // Without this guard, a stale 'confirmed' from a batched setCurrentConversation
-  // update can re-set briefStatus and re-show the LoadingOverlay after dismissal.
-  useEffect(() => {
-    const contextBriefStatus = currentConversation?.conversation_context?.briefStatus;
-    const contextState = currentConversation?.conversation_context?.state;
-    if (contextState === STATES.RESULTS) return;
-    if (contextBriefStatus !== briefStatus) {
-      console.log('[FIX 17] Syncing briefStatus:', contextBriefStatus);
-      setBriefStatus(contextBriefStatus);
-    }
-  }, [currentConversation?.conversation_context?.briefStatus]);
-  
+  // FIX 17: briefStatus sync moved to useConversationState hook (Phase 3b)
+
   // BUG-DD-001 FIX: selectedSchool is the SINGLE SOURCE OF TRUTH for detail view
   useEffect(() => {
     if (skipViewOverrideRef.current) return;
@@ -561,28 +560,7 @@ export default function Consultant() {
     }
   }, [sessionIdParam, isAuthenticated, user?.id, currentConversation?.id]);
 
-  // Hydrate schools from restored conversation_context (after session restore or when context first arrives)
-  useEffect(() => {
-    const hydrate = async () => {
-      let restored = currentConversation?.conversation_context?.schools;
-      if (!restored) return;
-      // If stored as JSON string, parse first
-      if (typeof restored === 'string') {
-        try { restored = JSON.parse(restored); } catch (_) { /* noop */ }
-      }
-      if (Array.isArray(restored) && restored.length > 0) {
-        // If array of IDs, fetch full School records
-        if (typeof restored[0] === 'string') {
-          const fullSchools = await School.filter({ id: { $in: restored } });
-          setSchools(fullSchools);
-        } else {
-          // Already full objects
-          setSchools(restored);
-        }
-      }
-    };
-    hydrate();
-  }, [currentConversation?.conversation_context?.schools]);
+  // Schools hydration moved to useConversationState hook (Phase 3b)
 
   // Restore guest session when user becomes authenticated
   useEffect(() => {
@@ -692,22 +670,7 @@ export default function Consultant() {
     }
   };
 
-  const loadConversations = async (userId) => {
-    try {
-      const convos = await fetchConversations();
-      // Sort: starred first (by date), then unstarred (by date)
-      const sorted = convos.sort((a, b) => {
-        if (a.starred && !b.starred) return -1;
-        if (!a.starred && b.starred) return 1;
-        return new Date(b.updated_at) - new Date(a.updated_at);
-      });
-      setConversations(sorted);
-    } catch (error) {
-      console.error('Failed to load conversations:', error);
-    }
-  };
-
-
+  // loadConversations moved to useConversationState hook (Phase 3b)
 
   const createNewConversation = async () => {
     // If not authenticated, return to consultant selection
@@ -734,21 +697,10 @@ export default function Consultant() {
 
   const proceedWithNewConversation = async () => {
     try {
-      const newConvo = {
-        user_id: user?.id,
-        title: 'New Conversation',
-        messages: [],
-        conversation_context: { consultant: selectedConsultant },
-        is_active: true
-      };
-      
-      const created = await createConversation(newConvo);
-      
-      // Load conversations to update sidebar
-      await loadConversations(user.id);
-      
-      // Set as current conversation
-      selectConversation(created);
+      const created = await createConversationRecord({ consultant: selectedConsultant });
+      if (created) {
+        await selectConversation(created);
+      }
     } catch (error) {
       console.error('Failed to create conversation:', error);
     }
@@ -760,17 +712,11 @@ export default function Consultant() {
       const oldestConvo = conversations
         .filter(c => c.is_active)
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
-      
+
       if (oldestConvo) {
-        // Archive it
-        await updateConversation(oldestConvo.id, {
-          is_active: false
-        });
-        
-        // Reload conversations
-        await loadConversations(user.id);
+        await archiveConversation(oldestConvo);
       }
-      
+
       // Now create the new conversation
       await proceedWithNewConversation();
     } catch (error) {
@@ -857,20 +803,16 @@ export default function Consultant() {
     }, 50);
   };
 
-  const selectConversation = (convo) => {
-    setCurrentConversation(convo);
+  const selectConversation = async (convo) => {
+    // Delegate conversation state management to hook
+    // (reads conversation_state table with JSONB fallback — Phase 3b)
+    await switchConversation(convo);
+
+    // Reset non-conversation state
     setShortlistData([]);
     setRemovedSchoolIds([]);
-    
-    // FIX #3: Set briefStatus from conversation context
-    const contextBriefStatus = convo.conversation_context?.briefStatus;
-    if (contextBriefStatus) {
-      setBriefStatus(contextBriefStatus);
-    } else {
-      setBriefStatus(null);
-    }
 
-    // Then set messages from this conversation
+    // Set messages from this conversation
     const msgs = convo.messages || [];
     if (msgs.length === 0) {
       const greeting = {
@@ -885,13 +827,6 @@ export default function Consultant() {
       setMessages(msgs);
     }
 
-    // BUG-DD-001: Map state to view with DEEP_DIVE guard
-    const conversationState = convo.conversation_context?.state || STATES.WELCOME;
-    const isDeepDiveWithSchool = conversationState === STATES.DEEP_DIVE && selectedSchool !== null;
-
-    if (!isDeepDiveWithSchool) {
-      setCurrentView(mapStateToView(conversationState));
-    }
     setSchools(convo.conversation_context?.schools || []);
     // BUG-DD-001 FIX: Only clear selectedSchool if NOT in DEEP_DIVE state
     if (convo.conversation_context?.state !== STATES.DEEP_DIVE) {
@@ -1131,21 +1066,15 @@ export default function Consultant() {
 
   const deleteConversation = async () => {
     if (!conversationToDelete) return;
-    
-    try {
-      // Mark as inactive instead of deleting
-      await updateConversation(conversationToDelete.id, {
-        is_active: false
-      });
-      
-      // Reload conversations
-      await loadConversations(user.id);
-      
+
+    const success = await archiveConversation(conversationToDelete);
+
+    if (success) {
       // Clear current conversation if it was the one deleted
       if (currentConversation?.id === conversationToDelete.id) {
         const firstActive = conversations.find(c => c.id !== conversationToDelete.id && c.is_active);
         if (firstActive) {
-          selectConversation(firstActive);
+          await selectConversation(firstActive);
         } else {
           setCurrentConversation(null);
           setMessages([]);
@@ -1154,10 +1083,8 @@ export default function Consultant() {
           }
         }
       }
-    } catch (error) {
-      console.error('Failed to delete conversation:', error);
     }
-    
+
     setDeleteDialogOpen(false);
     setConversationToDelete(null);
   };
