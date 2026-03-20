@@ -1504,7 +1504,8 @@ Object.assign(context, safeUpdatedContext);
           conversationContext: context,
           familyProfile: conversationFamilyProfile,
           extractedEntities: extractionResult?.extractedEntities || {},
-          schools: []
+          schools: [],
+          stateEnvelope: { state: STATES.WELCOME, briefStatus: null, previousState: null, transitionReason: 'initial' }
         });
       }
       
@@ -1549,6 +1550,14 @@ Object.assign(context, safeUpdatedContext);
       const previousState = context.state || STATES.WELCOME;
       context.previousState = previousState;
 
+      // P4-S4.2: Build canonical state envelope — single source of truth for state transitions
+      const stateEnvelope = {
+        state: currentState,
+        briefStatus,
+        previousState,
+        transitionReason: resolveResult.transitionReason || 'natural'
+      };
+
       console.log('[ORCH] resolveTransition:', { nextState: currentState, intentSignal, sufficiency: resolveResult.sufficiency });
 
       // S136-WC1: E35-REC1 — fire-and-forget for non-RESULTS states
@@ -1581,7 +1590,8 @@ Object.assign(context, safeUpdatedContext);
           familyProfile: conversationFamilyProfile,
           conversationContext: context,
           extractedEntities: extractionResult?.extractedEntities || {},
-          schools: []
+          schools: [],
+          stateEnvelope
         });
       }
 
@@ -1603,6 +1613,7 @@ Object.assign(context, safeUpdatedContext);
         responseData = await handleDiscovery(processMessage, workingProfile, context, conversationHistory, consultantName, currentSchools, flags, returningUserContextBlock);
         responseData.familyProfile = workingProfile;
         responseData.extractedEntities = workingProfile;
+        responseData.stateEnvelope = stateEnvelope;
         return (responseData); // DISCOVERY returns early; workingProfile already set above
       }
 
@@ -1632,6 +1643,8 @@ Object.assign(context, safeUpdatedContext);
           }
           responseData.conversationContext = { ...context, ...responseData.conversationContext };
           responseData.extractedEntities = extractionResult?.extractedEntities || {};
+          stateEnvelope.briefStatus = responseData.briefStatus ?? stateEnvelope.briefStatus;
+          responseData.stateEnvelope = stateEnvelope;
           return (responseData);
         } catch (briefError) {
           console.error('[BRIEF] Invocation failed:', briefError.message);
@@ -1645,7 +1658,8 @@ Object.assign(context, safeUpdatedContext);
             familyProfile: conversationFamilyProfile,
             conversationContext: context,
             extractedEntities: extractionResult?.extractedEntities || {},
-            schools: []
+            schools: [],
+            stateEnvelope: { ...stateEnvelope, briefStatus: 'generating' }
           });
         }
       }
@@ -1673,7 +1687,7 @@ Object.assign(context, safeUpdatedContext);
             context.state = STATES.DEEP_DIVE;
             // Phase 1c: Dual-write conversation state to normalized table
             syncConversationState(conversationId, userId, context);
-            return ({ message: debriefResult.message, state: STATES.DEEP_DIVE, briefStatus, deepDiveMode: debriefResult.deepDiveMode, visitPrepKit: debriefResult.visitPrepKit, fitReEvaluation: debriefResult.fitReEvaluation || null, familyProfile: workingProfile, conversationContext: context, extractedEntities: extractionResult?.extractedEntities || {}, schools: currentSchools || [] });
+            return ({ message: debriefResult.message, state: STATES.DEEP_DIVE, briefStatus, deepDiveMode: debriefResult.deepDiveMode, visitPrepKit: debriefResult.visitPrepKit, fitReEvaluation: debriefResult.fitReEvaluation || null, familyProfile: workingProfile, conversationContext: context, extractedEntities: extractionResult?.extractedEntities || {}, schools: currentSchools || [], stateEnvelope: { ...stateEnvelope, state: STATES.DEEP_DIVE } });
           }
           console.log('[E13a] handleVisitDebrief returned null, falling through to handleResults');
         }
@@ -1980,6 +1994,9 @@ Object.assign(context, safeUpdatedContext);
         responseData._deferredWork = [deferredExtraction];
         }
 
+        stateEnvelope.briefStatus = responseData.briefStatus ?? stateEnvelope.briefStatus;
+        stateEnvelope.state = responseData.state ?? stateEnvelope.state;
+        responseData.stateEnvelope = stateEnvelope;
         return (responseData);
       }
 
@@ -2005,7 +2022,8 @@ Object.assign(context, safeUpdatedContext);
               familyProfile: workingProfile,
               conversationContext: context,
               extractedEntities: extractionResult?.extractedEntities || {},
-              schools: currentSchools || [] });
+              schools: currentSchools || [],
+              stateEnvelope: { ...stateEnvelope, state: STATES.DEEP_DIVE } });
           }
           console.log('[E13a] handleVisitDebrief returned null, falling through');
         }
@@ -2038,6 +2056,9 @@ Object.assign(context, safeUpdatedContext);
         // Phase 1c: Dual-write conversation state to normalized table
         syncConversationState(conversationId, userId, responseData.conversationContext || context);
 
+        stateEnvelope.briefStatus = responseData.briefStatus ?? stateEnvelope.briefStatus;
+        stateEnvelope.state = responseData.state ?? stateEnvelope.state;
+        responseData.stateEnvelope = stateEnvelope;
         return (responseData);
       }
 
@@ -2055,7 +2076,8 @@ Object.assign(context, safeUpdatedContext);
         schools: [],
         familyProfile: workingProfile,
         conversationContext: context,
-        extractedEntities: extractionResult?.extractedEntities || {}
+        extractedEntities: extractionResult?.extractedEntities || {},
+        stateEnvelope
       });
 
     } catch (error) {
