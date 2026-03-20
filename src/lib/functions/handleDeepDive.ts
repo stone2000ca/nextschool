@@ -4,6 +4,7 @@
 // Last Modified: 2026-03-09
 
 import { School, SchoolAnalysis, GeneratedArtifact, SchoolEvent, User, Testimonial, LLMLog } from '@/lib/entities-server'
+import { syncConversationArtifact } from './dualWrite'
 
 // =============================================================================
 // INLINED: callOpenRouter
@@ -376,6 +377,15 @@ Generate the DEEPDIVE card for this family-school match.`;
         upsert('deep_dive_recommendation', { content: sanitizedMessage, metadata: { version: 'E30_V1' } }),
         ...(fullVisitPrepKit ? [upsert('visit_prep_kit', { content: JSON.stringify(fullVisitPrepKit), is_locked: false, metadata: { version: 'E30_V1' } })] : [])
       ]);
+
+      // Phase 1c: Dual-write artifacts to normalized conversation_artifacts table
+      if (conversationId) {
+        syncConversationArtifact(conversationId, userId, selectedSchoolId, 'action_plan', generatedActionPlan, !isPremiumUser);
+        syncConversationArtifact(conversationId, userId, selectedSchoolId, 'deep_dive_recommendation', { text: sanitizedMessage });
+        if (fullVisitPrepKit) {
+          syncConversationArtifact(conversationId, userId, selectedSchoolId, 'visit_prep_kit', fullVisitPrepKit);
+        }
+      }
     })();
   }
 

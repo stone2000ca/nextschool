@@ -8,6 +8,7 @@ import { processDebriefCompletion as processDebriefCompletionLogic } from './pro
 import { generateProfileNarrativeLogic } from './generateProfileNarrative'
 import { searchSchoolsLogic } from './searchSchools'
 import { STATES, BRIEF_STATUS, resolveGrade, resolveBudget, resolveArrayField } from './constants'
+import { syncConversationState } from './dualWrite'
 
 
 // Function: orchestrateConversation
@@ -1650,6 +1651,8 @@ Object.assign(context, safeUpdatedContext);
           if (debriefResult) {
             if (debriefResult.updatedContext) Object.assign(context, debriefResult.updatedContext);
             context.state = STATES.DEEP_DIVE;
+            // Phase 1c: Dual-write conversation state to normalized table
+            syncConversationState(conversationId, userId, context);
             return ({ message: debriefResult.message, state: STATES.DEEP_DIVE, briefStatus, deepDiveMode: debriefResult.deepDiveMode, visitPrepKit: debriefResult.visitPrepKit, fitReEvaluation: debriefResult.fitReEvaluation || null, familyProfile: workingProfile, conversationContext: context, extractedEntities: extractionResult?.extractedEntities || {}, schools: currentSchools || [] });
           }
           console.log('[E13a] handleVisitDebrief returned null, falling through to handleResults');
@@ -1905,6 +1908,9 @@ Object.assign(context, safeUpdatedContext);
         if (skipExtraction) {
           console.log('[E41-S3] Skipping deferred extractEntities — brief confirmation, profile already built');
         } else {
+        // Phase 1c: Dual-write conversation state to normalized table
+        syncConversationState(conversationId, userId, responseData.conversationContext || context);
+
         // E41-S3: Capture promise for waitUntil() instead of fire-and-forget
         const deferredExtraction = extractEntitiesLogic( {
           message: processMessage,
@@ -1967,16 +1973,18 @@ Object.assign(context, safeUpdatedContext);
           const debriefResult = await handleVisitDebriefInternal(selectedSchoolId, processMessage, workingProfile, context, consultantName, returningUserContextBlock, callOpenRouter);
           if (debriefResult) {
             if (debriefResult.updatedContext) Object.assign(context, debriefResult.updatedContext);
-            return ({ 
-              message: debriefResult.message, 
-              state: STATES.DEEP_DIVE, 
-              briefStatus, 
-              deepDiveMode: debriefResult.deepDiveMode, 
-              visitPrepKit: debriefResult.visitPrepKit, 
-              fitReEvaluation: debriefResult.fitReEvaluation || null, 
-              familyProfile: workingProfile, 
-              conversationContext: context, 
-              extractedEntities: extractionResult?.extractedEntities || {}, 
+            // Phase 1c: Dual-write conversation state to normalized table
+            syncConversationState(conversationId, userId, context);
+            return ({
+              message: debriefResult.message,
+              state: STATES.DEEP_DIVE,
+              briefStatus,
+              deepDiveMode: debriefResult.deepDiveMode,
+              visitPrepKit: debriefResult.visitPrepKit,
+              fitReEvaluation: debriefResult.fitReEvaluation || null,
+              familyProfile: workingProfile,
+              conversationContext: context,
+              extractedEntities: extractionResult?.extractedEntities || {},
               schools: currentSchools || [] });
           }
           console.log('[E13a] handleVisitDebrief returned null, falling through');
@@ -2006,6 +2014,9 @@ Object.assign(context, safeUpdatedContext);
 
         // E29-010/E29-012: Fire-and-forget — next action + session summary + totalSessions increment
         fireJourneyUpdate(journeyContext, context, conversationHistory, message, 'DEEP_DIVE');
+
+        // Phase 1c: Dual-write conversation state to normalized table
+        syncConversationState(conversationId, userId, responseData.conversationContext || context);
 
         return (responseData);
       }
