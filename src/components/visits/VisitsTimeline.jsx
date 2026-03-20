@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   CalendarDays, ChevronDown, ChevronRight, ArrowRight,
-  MapPin, Clock, CheckCircle2, AlertCircle,
+  MapPin, Clock, CheckCircle2, AlertCircle, LogIn,
 } from 'lucide-react';
 import { buildDeepLink } from '@/components/utils/buildDeepLink';
+import { useAuth } from '@/lib/AuthContext';
 
 const EVENT_TYPE_LABELS = {
   open_house: 'Open House',
@@ -108,14 +109,20 @@ function VisitRow({ record, onNavigate }) {
 
 export default function VisitsTimeline({ variant = 'panel', onClose }) {
   const router = useRouter();
+  const { user, isAuthenticated, isLoadingAuth, navigateToLogin } = useAuth();
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pastExpanded, setPastExpanded] = useState(false);
 
   useEffect(() => {
+    if (isLoadingAuth) return;
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
     fetchVisits();
-  }, []);
+  }, [isAuthenticated, isLoadingAuth]);
 
   async function fetchVisits() {
     try {
@@ -183,6 +190,22 @@ export default function VisitsTimeline({ variant = 'panel', onClose }) {
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin h-5 w-5 border-2 border-teal-400 border-t-transparent rounded-full" />
+          </div>
+        ) : !isAuthenticated ? (
+          <div className="text-center py-10 px-4">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-700/50 flex items-center justify-center">
+              <LogIn className="w-8 h-8 text-slate-500" />
+            </div>
+            <h3 className="text-base font-semibold text-white mb-2">Sign in to track visits</h3>
+            <p className="text-sm text-slate-400 mb-5 max-w-xs mx-auto">
+              Log in to plan school visits, track upcoming tours, and record your impressions.
+            </p>
+            <button
+              onClick={() => navigateToLogin()}
+              className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Sign In
+            </button>
           </div>
         ) : error ? (
           <div className="text-center py-8 px-4">
