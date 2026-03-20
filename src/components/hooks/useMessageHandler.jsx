@@ -1,3 +1,13 @@
+// ─── Ownership Boundary (Phase 3b) ───────────────────────────────────
+// Conversation state (currentConversation, conversations, briefStatus,
+// onboardingPhase, currentView, sessionId, sessionRestored) is owned by
+// useConversationState hook. This handler receives setters via props and
+// performs message-level persistence (ChatHistory.update for messages +
+// context). Conversation CRUD (load, create, switch, delete) is handled
+// by useConversationState — this handler only calls loadConversations
+// (provided via props) for sidebar refresh after title generation.
+// ─────────────────────────────────────────────────────────────────────
+
 import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
 import { validateBriefContent, generateProgrammaticBrief } from '@/components/utils/briefUtils';
 import { extractAndSaveMemories } from '@/components/utils/memoryManager';
