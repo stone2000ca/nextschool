@@ -132,7 +132,8 @@ export async function extractEntitiesLogic({ message: rawMessage, aiReply, conve
       dealbreakers: conversationFamilyProfile.dealbreakers,
       curriculumPreference: conversationFamilyProfile.curriculum_preference,
       religiousPreference: conversationFamilyProfile.religious_preference,
-      boardingPreference: conversationFamilyProfile.boarding_preference
+      boardingPreference: conversationFamilyProfile.boarding_preference,
+      parentNotes: conversationFamilyProfile.parent_notes || []
     } : {};
 
     const conversationSummary = conversationHistory?.slice(-5)
@@ -418,6 +419,41 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     }
 
     extractedData = cleaned;
+
+    // E41-S4: Transform parentNotes from LLM (string[]) into structured objects and dedup
+    if (Array.isArray(extractedData.parentNotes) && extractedData.parentNotes.length > 0) {
+      const existingNotes: any[] = conversationFamilyProfile?.parent_notes || [];
+      const existingNormalized = existingNotes.map((n: any) => (n.note || '').toLowerCase().trim());
+      const now = new Date().toISOString();
+
+      const newNotes: any[] = [];
+      for (const raw of extractedData.parentNotes) {
+        const noteText = typeof raw === 'string' ? raw : raw?.note;
+        if (!noteText || typeof noteText !== 'string') continue;
+        const normalized = noteText.toLowerCase().trim();
+        // Skip if semantically identical: exact match, or one contains the other
+        const isDup = existingNormalized.some((ex: string) =>
+          ex === normalized || ex.includes(normalized) || normalized.includes(ex)
+        );
+        if (isDup) {
+          console.log('[PARENT_NOTES] Skipping duplicate:', noteText);
+          continue;
+        }
+        newNotes.push({ note: noteText, source: 'conversation', timestamp: now });
+        existingNormalized.push(normalized); // prevent intra-batch dupes
+      }
+
+      if (newNotes.length > 0) {
+        // Replace extractedData.parentNotes with merged array (existing + new)
+        extractedData.parentNotes = [...existingNotes, ...newNotes];
+        console.log('[PARENT_NOTES] Appended', newNotes.length, 'new notes, total:', extractedData.parentNotes.length);
+      } else {
+        // Nothing new — remove from extractedData so we don't overwrite existing
+        delete extractedData.parentNotes;
+        console.log('[PARENT_NOTES] No new notes to add');
+      }
+    }
+
     console.log('[EXTRACT] took', Date.now() - t1, 'ms');
   } catch (e: any) {
     console.error('[ERROR] Extraction failed:', e.message);
@@ -465,7 +501,10 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
       if (key in REMOVAL_MAP) continue;
       if (value !== null && value !== undefined) {
         const existing = updatedFamilyProfile[key];
-        if (Array.isArray(value)) {
+        if (key === 'parentNotes') {
+          // E41-S4: parentNotes is already the fully merged array — assign directly
+          updatedFamilyProfile[key] = value;
+        } else if (Array.isArray(value)) {
           if (Array.isArray(existing) && existing.length > 0) {
             updatedFamilyProfile[key] = [...new Set([...existing, ...value])];
           } else {
