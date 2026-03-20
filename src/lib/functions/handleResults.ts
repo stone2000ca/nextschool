@@ -245,7 +245,8 @@ export async function handleResultsLogic(params: any) {
     gate,
     actionHint,
     returningUserContextBlock,
-    previousSchools
+    previousSchools,
+    userSchoolNotes
   } = params;
 
   let conversationFamilyProfile = rawProfile || {};
@@ -548,6 +549,7 @@ Answer substantively in 3-6 sentences. You are a knowledgeable education consult
   • General parenting and education advice
 
 Connect your answer to THIS family's specific context when possible. Reference schools in the current results when relevant, but do NOT fire any execute_ui_action tools. If the parent shares new information (e.g. a new priority), acknowledge it naturally — the system will pick it up automatically.
+If PARENT'S RESEARCH NOTES are provided in the reference data, use them to personalize your answer — they reflect the parent's real observations and concerns about a specific school. Do not quote them verbatim.
 
 ═══════════════════════════════════════════
 UNIVERSAL TONE RULES
@@ -566,7 +568,8 @@ SCHOOL DATA (use exact IDs in execute_ui_action):
 ${schoolIdContext}`;
 
       const gateHint = gate ? `\n[PRE-CLASSIFIED: gate=${gate}${actionHint ? `, actionHint=${actionHint}` : ''}]` : '';
-      const resultsUserPrompt = `Parent's latest message: "${message}"${gateHint}\n\n--- REFERENCE DATA ---\nRecent chat:\n${conversationSummary}\n${schoolContext}\n\nRespond as ${consultantName}. ONE question max.`;
+      const notesContext = userSchoolNotes ? `\n\nPARENT'S RESEARCH NOTES ON SELECTED SCHOOL:\n${userSchoolNotes}` : '';
+      const resultsUserPrompt = `Parent's latest message: "${message}"${gateHint}\n\n--- REFERENCE DATA ---\nRecent chat:\n${conversationSummary}\n${schoolContext}${notesContext}\n\nRespond as ${consultantName}. ONE question max.`;
 
       // Retry narration LLM call once on timeout/failure
       let llmResult: any = null;
