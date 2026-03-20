@@ -639,6 +639,11 @@ export const useMessageHandler = ({
 
       const analyzedSchoolId = explicitSchoolId || response.data?.deepDiveAnalysis?.schoolId || selectedSchool?.id || null;
 
+      // E49-S3B: Use chat_summary as the assistant message body when deep-dive provides it
+      if (response.data?.deepDiveAnalysis?.chat_summary) {
+        aiMessageContent = response.data.deepDiveAnalysis.chat_summary;
+      }
+
       const aiMessage = {
         role: 'assistant',
         content: aiMessageContent,

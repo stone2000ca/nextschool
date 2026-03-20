@@ -511,7 +511,7 @@ function timeAgo(isoString) {
   return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 }
 
-export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, priorityMatches, aiInsight, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive, communityPulse, actionPlan }) {
+export default function ResearchNotepad({ loading = false, schoolData, fitScore, fitLabel, tradeOffs, priorityMatches, aiInsight, chatSummary, journeySteps, keyDates, visitPrepKit, contactLog, researchNotes, onNotesChange, onSaveNotes, lastDeepDiveAt, onRefreshDeepDive, communityPulse, actionPlan }) {
   const school = schoolData || null;
   const lastSchoolNameRef = useRef(null);
   if (school?.name && school.name !== 'School') {
@@ -885,6 +885,25 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                       </div>
                     </div>
                   </div>
+
+                  {/* AI Recommendation — chat_summary from deep-dive artifact */}
+                  {chatSummary && (
+                    <div style={{
+                      marginTop: 14,
+                      background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8,
+                      padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start',
+                    }}>
+                      <div style={{ flexShrink: 0, fontSize: 16, marginTop: 1 }}>&#9733;</div>
+                      <div>
+                        <div style={{ fontSize: 10.5, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4 }}>
+                          AI Recommendation
+                        </div>
+                        <div style={{ fontSize: 12.5, color: '#78350f', lineHeight: 1.55 }}>
+                          {chatSummary.length > 300 ? chatSummary.slice(0, 297) + '...' : chatSummary}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
