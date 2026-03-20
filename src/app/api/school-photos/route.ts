@@ -18,7 +18,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'school_id is required' }, { status: 400 })
     }
 
-    const { data, error } = await db().select('*').eq('school_id', schoolId)
+    let query = db().select('*').eq('school_id', schoolId)
+    const status = req.nextUrl.searchParams.get('status')
+    if (status) query = query.eq('status', status)
+    const { data, error } = await query
     if (error) throw error
 
     return NextResponse.json(data || [])

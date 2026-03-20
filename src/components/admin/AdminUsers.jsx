@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User as UserEntity } from '@/lib/entities';
+import { fetchAdminUsers, updateAdminUser } from '@/lib/api/entities-api';
 import { useAuth } from '@/lib/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ export default function AdminUsers() {
 
   const loadUsers = async () => {
     try {
-      const data = await UserEntity.list('-created_date');
+      const data = await fetchAdminUsers({ sort: '-created_date' });
       setUsers(data);
     } catch (error) {
       console.error('Failed to load users:', error);
@@ -99,7 +99,7 @@ export default function AdminUsers() {
     }
 
     setSavingId(user.id);
-    await UserEntity.update(user.id, {
+    await updateAdminUser(user.id, {
       role: newRole,
       subscription_plan: edits.subscriptionPlan,
       token_balance: Number(edits.tokenBalance),

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SchoolAdmin } from '@/lib/entities';
+import { fetchSchoolAdmins } from '@/lib/api/entities-api';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -21,7 +21,7 @@ export default function AccountSection({ school }) {
       setUser(authUser);
 
       // Load SchoolAdmin record
-      const admins = await SchoolAdmin.filter({ school_id: school?.id });
+      const admins = await fetchSchoolAdmins({ school_id: school?.id });
       if (admins && admins.length > 0) {
         setAdminRecord(admins[0]);
       }

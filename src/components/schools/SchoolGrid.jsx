@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import SchoolCard from './SchoolCard';
 import { ChevronDown, ChevronUp, Pin, GitCompareArrows, Share2, Check, Copy, X } from 'lucide-react';
-import { SchoolEvent } from '@/lib/entities';
+import { fetchSchoolEvents } from '@/lib/api/entities-api';
 import { invokeFunction } from '@/lib/functions';
 
 // =============================================================================
@@ -218,7 +218,7 @@ export default function SchoolGrid({
   useEffect(() => {
     if (!allSchoolIdsKey) return;
     const today = new Date().toISOString();
-    SchoolEvent.filter({ is_active: true })
+    fetchSchoolEvents({ is_active: true })
       .then(events => {
         const upcoming = new Set(
           events.filter(e => e.date && e.date >= today).map(e => e.school_id)

@@ -3,7 +3,7 @@ import { User, LogOut, Building2 } from "lucide-react";
 import Link from 'next/link';
 import { useState, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
-import { SchoolAdmin as SchoolAdminEntity } from '@/lib/entities';
+import { fetchSchoolAdmins } from '@/lib/api/entities-api';
 import { LOGO_BLACK_TEXT, LOGO_WHITE_TEXT } from '@/lib/brand-assets';
 
 export default function Navbar({ variant = "default" }) {
@@ -23,7 +23,7 @@ export default function Navbar({ variant = "default" }) {
         setUser(authUser);
 
         try {
-          const adminRecords = await SchoolAdminEntity.filter({ user_id: authUser.id, is_active: true });
+          const adminRecords = await fetchSchoolAdmins({ user_id: authUser.id, is_active: true });
           if (adminRecords && adminRecords.length > 0) {
             setIsSchoolAdmin(true);
           }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BetaFeedback } from '@/lib/entities';
+import { createBetaFeedback } from '@/lib/api/entities-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,7 +33,7 @@ export default function Feedback() {
     setIsSubmitting(true);
 
     try {
-      await BetaFeedback.create({
+      await createBetaFeedback({
         tester_name: formData.testerName,
         tester_email: formData.testerEmail,
         consultant_used: formData.consultantUsed,

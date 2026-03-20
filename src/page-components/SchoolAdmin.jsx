@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
-import { SchoolAdmin as SchoolAdminEntity, User, EnrichmentDiff, PhotoCandidate } from '@/lib/entities';
+import { fetchSchoolAdmins, fetchUsers } from '@/lib/api/entities-api';
 import { fetchSchools, updateSchool } from '@/lib/api/schools';
 import { fetchClaims } from '@/lib/api/school-claims';
 import { fetchInquiries } from '@/lib/api/school-inquiries';
@@ -80,7 +80,7 @@ export default function SchoolAdmin() {
       const urlParams = new URLSearchParams(window.location.search);
       const impersonateSchoolId = urlParams.get('schoolId');
       if (impersonateSchoolId) {
-        const adminUsers = await User.filter({ email: userData.email });
+        const adminUsers = await fetchUsers({ email: userData.email });
         const isAdmin = adminUsers && adminUsers.length > 0 && adminUsers[0].role === 'admin';
         if (isAdmin) {
           const schoolData = await fetchSchools({ ids: [impersonateSchoolId] });
@@ -93,7 +93,7 @@ export default function SchoolAdmin() {
 
       // --- PATH A: SchoolAdmin record lookup ---
       if (!resolvedSchool) {
-        const adminRecords = await SchoolAdminEntity.filter({ user_id: userData.id, is_active: true });
+        const adminRecords = await fetchSchoolAdmins({ user_id: userData.id, is_active: true });
 
         if (adminRecords && adminRecords.length > 0) {
           const schoolData = await fetchSchools({ ids: [adminRecords[0].school_id] });
@@ -156,12 +156,12 @@ export default function SchoolAdmin() {
         } catch (e) { /* non-blocking */ }
 
         try {
-          const diffs = await EnrichmentDiff.filter({ school_id: resolvedSchool.id, status: 'pending' });
+          const diffs = await fetch(`/api/school-enrichment?school_id=${resolvedSchool.id}&status=pending`).then(r => r.ok ? r.json() : []);
           setPendingDiffCount(diffs.length);
         } catch (e) { /* non-blocking */ }
 
         try {
-          const photos = await PhotoCandidate.filter({ school_id: resolvedSchool.id, status: 'pending' });
+          const photos = await fetch(`/api/school-photos?school_id=${resolvedSchool.id}&status=pending`).then(r => r.ok ? r.json() : []);
           setPendingPhotoCount(photos.length);
         } catch (e) { /* non-blocking */ }
       }
@@ -212,11 +212,11 @@ export default function SchoolAdmin() {
         return;
       }
       try {
-        const diffs = await EnrichmentDiff.filter({ school_id: school.id, status: 'pending' });
+        const diffs = await fetch(`/api/school-enrichment?school_id=${school.id}&status=pending`).then(r => r.ok ? r.json() : []);
         setPendingDiffCount(diffs.length);
       } catch {}
       try {
-        const photos = await PhotoCandidate.filter({ school_id: school.id, status: 'pending' });
+        const photos = await fetch(`/api/school-photos?school_id=${school.id}&status=pending`).then(r => r.ok ? r.json() : []);
         setPendingPhotoCount(photos.length);
       } catch {}
       setCurrentView('enrichment');

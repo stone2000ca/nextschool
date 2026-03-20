@@ -13,7 +13,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ConversationState } from '@/lib/entities';
+import { fetchConversationState } from '@/lib/api/entities-api';
 import { fetchSchools } from '@/lib/api/schools';
 import {
   fetchConversations as apiFetchConversations,
@@ -71,7 +71,7 @@ export function useConversationState({
   const readConversationState = useCallback(async (conversationId) => {
     if (!conversationId) return null;
     try {
-      const rows = await ConversationState.filter({ conversation_id: conversationId });
+      const rows = await fetchConversationState(conversationId);
       if (rows.length > 0) {
         console.log('[useConversationState] Read state from conversation_state table for:', conversationId);
         return rows[0];

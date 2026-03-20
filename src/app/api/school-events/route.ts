@@ -5,15 +5,16 @@ import { NextRequest, NextResponse } from 'next/server'
 const db = () => getAdminClient().from('school_events') as any
 
 // GET /api/school-events?school_id=X&is_active=true&source=ai_enriched
+// school_id is optional — omit to get all events (for directory-wide queries)
 export async function GET(req: NextRequest) {
   try {
     const params = req.nextUrl.searchParams
     const schoolId = params.get('school_id')
-    if (!schoolId) {
-      return NextResponse.json({ error: 'school_id is required' }, { status: 400 })
-    }
 
-    let query = db().select('*').eq('school_id', schoolId)
+    let query = db().select('*')
+    if (schoolId) {
+      query = query.eq('school_id', schoolId)
+    }
 
     const isActive = params.get('is_active')
     if (isActive !== null) {

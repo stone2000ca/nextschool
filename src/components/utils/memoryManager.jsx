@@ -1,4 +1,4 @@
-import { UserMemory } from '@/lib/entities';
+import { fetchUserMemory, createUserMemory, updateUserMemory } from '@/lib/api/entities-api';
 import { invokeFunction } from '@/lib/functions';
 
 // Memory Manager — Extract & deduplicate LLM facts
@@ -38,17 +38,17 @@ Return empty array if user didn't provide any of these facts.`;
 
     // Only update if we got new facts
     if (memoryResult.facts && memoryResult.facts.length > 0) {
-      const existingMemories = await UserMemory.filter({ user_id: user.id });
+      const existingMemories = await fetchUserMemory({ user_id: user.id });
       if (existingMemories.length > 0) {
         const existingMem = existingMemories[0];
         // Use Set to deduplicate, then convert back to array
         const dedupedMemories = [...new Set([...existingMem.memories, ...memoryResult.facts])];
-        await UserMemory.update(existingMem.id, {
+        await updateUserMemory(existingMem.id, {
           memories: dedupedMemories,
           last_updated: new Date().toISOString()
         });
       } else {
-        await UserMemory.create({
+        await createUserMemory({
           user_id: user.id,
           memories: memoryResult.facts,
           last_updated: new Date().toISOString()
