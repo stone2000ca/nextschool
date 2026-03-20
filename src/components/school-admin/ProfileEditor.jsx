@@ -268,14 +268,14 @@ export default function ProfileEditor({ school, onSave, isSaving, onDirtyChange 
   const [formData, setFormData] = useState(school);
   const [dirtyFields, setDirtyFields] = useState({});
   const [autoSaved, setAutoSaved] = useState(false);
-  const [verifiedFields, setVerifiedFields] = useState(school?.verifiedFields || {});
+  const [verifiedFields, setVerifiedFields] = useState(school?.verified_fields || {});
   const [openTiers, setOpenTiers] = useState({ tier1: true, tier2: false, tier3: false });
   const [testimonialCount, setTestimonialCount] = useState(0);
 
   useEffect(() => {
     setFormData(school);
     setDirtyFields({});
-    setVerifiedFields(school?.verifiedFields || {});
+    setVerifiedFields(school?.verified_fields || {});
     if (school?.id) {
       Testimonial.filter({ school_id: school.id })
         .then(list => setTestimonialCount(list.length))
@@ -309,8 +309,8 @@ export default function ProfileEditor({ school, onSave, isSaving, onDirtyChange 
     }
     const payload = { ...dirtyFields };
     // Derive boarding_available from livingArrangements for backward compatibility
-    if (payload.livingArrangements || formData.livingArrangements) {
-      payload.boarding_available = (payload.livingArrangements || formData.livingArrangements || []).includes('Boarding');
+    if (payload.living_arrangements || formData.living_arrangements) {
+      payload.boarding_available = (payload.living_arrangements || formData.living_arrangements || []).includes('Boarding');
     }
     if (Object.keys(verifiedFields).length > 0) {
       payload.verifiedFields = verifiedFields;
@@ -461,11 +461,11 @@ export default function ProfileEditor({ school, onSave, isSaving, onDirtyChange 
             <label key={opt} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                checked={(formData.livingArrangements || []).includes(opt)}
+                checked={(formData.living_arrangements || []).includes(opt)}
                 onChange={(e) => {
-                  const current = formData.livingArrangements || [];
+                  const current = formData.living_arrangements || [];
                   const updated = e.target.checked ? [...current, opt] : current.filter(v => v !== opt);
-                  handleChange('livingArrangements', updated);
+                  handleChange('living_arrangements', updated);
                 }}
                 className="rounded border-slate-300"
               />
@@ -474,11 +474,11 @@ export default function ProfileEditor({ school, onSave, isSaving, onDirtyChange 
           ))}
         </div>
       </div>
-      {(formData.livingArrangements || []).includes('Boarding') && (
+      {(formData.living_arrangements || []).includes('Boarding') && (
         <div className="pl-4 border-l-2 border-teal-200 space-y-4">
           <div>
             <Label>Boarding Type</Label>
-            <Select value={formData.boardingType || ''} onValueChange={(val) => handleChange('boardingType', val)}>
+            <Select value={formData.boarding_type || ''} onValueChange={(val) => handleChange('boarding_type', val)}>
               <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="full">Full Boarding</SelectItem>

@@ -29,7 +29,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
   useEffect(() => {
     if (authUser) {
       setUser(authUser);
-      setForm(f => ({ ...f, childGrade: authUser?.childGrade ?? '' }));
+      setForm(f => ({ ...f, childGrade: authUser?.child_grade ?? '' }));
     }
   }, [authUser]);
 
@@ -90,9 +90,9 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
       specialRequests: form.specialRequests || undefined,
       // E16c: Family context snapshot fields (only if profile exists)
       ...(familyProfile && {
-        max_tuition: familyProfile.maxTuition || undefined,
+        max_tuition: familyProfile.max_tuition || undefined,
         prioritiesSnapshot: familyProfile.priorities ? JSON.stringify(familyProfile.priorities) : undefined,
-        boardingPreference: familyProfile.boardingPreference || undefined,
+        boardingPreference: familyProfile.boarding_preference || undefined,
         profileSnapshotAt: new Date().toISOString(),
       }),
     });
@@ -114,9 +114,9 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
       child_grade: form.childGrade !== '' ? Number(form.childGrade) : undefined,
       specialRequests: form.specialRequests || undefined,
       ...(familyProfile && {
-        max_tuition: familyProfile.maxTuition || undefined,
+        max_tuition: familyProfile.max_tuition || undefined,
         prioritiesSnapshot: familyProfile.priorities ? JSON.stringify(familyProfile.priorities) : undefined,
-        boardingPreference: familyProfile.boardingPreference || undefined,
+        boardingPreference: familyProfile.boarding_preference || undefined,
         profileSnapshotAt: new Date().toISOString(),
       }),
     });
@@ -237,12 +237,12 @@ Keep each point to one sentence. Be specific to ${school.name} if possible. No i
       })() : null;
 
       // Build Family Snapshot section if FamilyProfile exists
-      const budgetRangeLabel = familyProfile?.maxTuition
-        ? familyProfile.maxTuition > 50000
+      const budgetRangeLabel = familyProfile?.max_tuition
+        ? familyProfile.max_tuition > 50000
           ? '$50k+'
-          : familyProfile.maxTuition > 35000
+          : familyProfile.max_tuition > 35000
           ? '$35k–50k'
-          : familyProfile.maxTuition > 20000
+          : familyProfile.max_tuition > 20000
           ? '$20k–35k'
           : '<$20k'
         : null;
@@ -251,7 +251,7 @@ Keep each point to one sentence. Be specific to ${school.name} if possible. No i
         ? familyProfile.priorities.slice(0, 3).join(', ')
         : null;
 
-      const boardingPref = familyProfile?.boardingPreference || null;
+      const boardingPref = familyProfile?.boarding_preference || null;
 
       const familySnapshotHtml = familyProfile
         ? `

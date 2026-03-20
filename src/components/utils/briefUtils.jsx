@@ -18,16 +18,16 @@ export function generateProgrammaticBrief(profile) {
   const lines = [];
 
   // Child
-  const gradeStr = profile.childGrade != null ? (Number(profile.childGrade) <= 0 ? 'Kindergarten' : `Grade ${profile.childGrade}`) : null;
-  const childParts = [profile.childName, gradeStr].filter(Boolean);
+  const gradeStr = profile.child_grade != null ? (Number(profile.child_grade) <= 0 ? 'Kindergarten' : `Grade ${profile.child_grade}`) : null;
+  const childParts = [profile.child_name, gradeStr].filter(Boolean);
   if (childParts.length) lines.push(`**Child:** ${childParts.join(', ')}`);
 
   // Location
-  if (profile.locationArea) lines.push(`**Location:** ${profile.locationArea}`);
+  if (profile.location_area) lines.push(`**Location:** ${profile.location_area}`);
 
   // Budget
-  if (profile.maxTuition) {
-    const tuition = profile.maxTuition;
+  if (profile.max_tuition) {
+    const tuition = profile.max_tuition;
     const budgetStr = tuition === 'unlimited' ? 'Flexible' : typeof tuition === 'number' ? `Up to $${tuition.toLocaleString()}` : String(tuition);
     lines.push(`**Budget:** ${budgetStr}`);
   }
@@ -39,11 +39,11 @@ export function generateProgrammaticBrief(profile) {
   if (profile.dealbreakers?.length) lines.push(`**Dealbreakers:** ${profile.dealbreakers.join(', ')}`);
 
   // Curriculum
-  if (profile.curriculumPreference?.length) lines.push(`**Curriculum:** ${profile.curriculumPreference.join(', ')}`);
+  if (profile.curriculum_preference?.length) lines.push(`**Curriculum:** ${profile.curriculum_preference.join(', ')}`);
 
   // Boarding
-  if (profile.boardingPreference && profile.boardingPreference !== 'day_only') {
-    lines.push(`**Boarding:** ${profile.boardingPreference.replace(/_/g, ' ')}`);
+  if (profile.boarding_preference && profile.boarding_preference !== 'day_only') {
+    lines.push(`**Boarding:** ${profile.boarding_preference.replace(/_/g, ' ')}`);
   }
 
   if (lines.length < 2) return null; // Not enough data for a meaningful brief

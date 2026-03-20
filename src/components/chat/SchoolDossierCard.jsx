@@ -161,8 +161,8 @@ function VisitPrepContent({ data, isPremiumUser }) {
 }
 
 function ReEvalContent({ data, isPremiumUser }) {
-  const fitConfig     = data.fitLabel  ? FIT_BADGE[data.fitLabel]  : null;
-  const prevFitConfig = data.previousFitLabel ? FIT_BADGE[data.previousFitLabel] : null;
+  const fitConfig     = data.fit_label  ? FIT_BADGE[data.fit_label]  : null;
+  const prevFitConfig = data.previous_fit_label ? FIT_BADGE[data.previous_fit_label] : null;
 
   const delta = data.scoreDelta;
   const deltaDisplay = (delta === 0 || delta == null)
@@ -256,7 +256,7 @@ export default function SchoolDossierCard({
   const checks    = familyProfile ? buildPriorityChecks(school, familyProfile).slice(0, 4) : [];
   const tuition   = school.day_tuition ?? school.tuition;
   const analysis  = schoolAnalyses?.[school.id];
-  const fitConfig = analysis?.fitLabel ? FIT_BADGE[analysis.fitLabel] : null;
+  const fitConfig = analysis?.fit_label ? FIT_BADGE[analysis.fit_label] : null;
 
   const aiRecContent = artifactCache?.[`${school.id}_deep_dive_analysis`] || null;
 

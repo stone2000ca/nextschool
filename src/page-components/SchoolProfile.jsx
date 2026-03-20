@@ -281,10 +281,10 @@ function generateSchoolFAQs(school, events) {
   }
 
   // 18. Uniform
-  if (school.uniformRequired !== undefined && school.uniformRequired !== null) {
+  if (school.uniform_required !== undefined && school.uniform_required !== null) {
     faqs.push({
       question: `Does ${name} require uniforms?`,
-      answer: school.uniformRequired ? `Yes, ${name} requires students to wear uniforms.` : `No, ${name} does not require uniforms.`
+      answer: school.uniform_required ? `Yes, ${name} requires students to wear uniforms.` : `No, ${name} does not require uniforms.`
     });
   }
 
@@ -334,7 +334,7 @@ function generateSchoolFAQs(school, events) {
   if (intlPct) {
     faqs.push({
       question: `Does ${name} accept international students?`,
-      answer: `Yes, ${intlPct}% of students at ${name} are international students.${school.boardingAvailable ? ` Boarding is available for international students.` : ''}`
+      answer: `Yes, ${intlPct}% of students at ${name} are international students.${school.boarding_available ? ` Boarding is available for international students.` : ''}`
     });
   }
 
@@ -579,9 +579,9 @@ export default function SchoolProfile() {
   // --- Derived values ---
   const currency = school?.currency || 'CAD';
   const sym = getCurrencySymbol(currency);
-  const lowestGradeL = school?.lowestGrade != null ? gradeLabel(school.lowestGrade) : null;
-  const highestGradeL = school?.highestGrade != null ? gradeLabel(school.highestGrade) : null;
-  const computedGradeRange = lowestGradeL && highestGradeL ? `${lowestGradeL} – ${highestGradeL}` : (school?.gradesServed || '');
+  const lowestGradeL = school?.lowest_grade != null ? gradeLabel(school.lowest_grade) : null;
+  const highestGradeL = school?.highest_grade != null ? gradeLabel(school.highest_grade) : null;
+  const computedGradeRange = lowestGradeL && highestGradeL ? `${lowestGradeL} – ${highestGradeL}` : (school?.grades_served || '');
 
   const boardingType = f(school || {}, 'boarding_type');
   const boardingPct = f(school || {}, 'boarding_pct');
@@ -604,9 +604,9 @@ export default function SchoolProfile() {
   const tuitionNotes = f(school || {}, 'tuition_notes');
   const scholarshipsRaw = f(school || {}, 'scholarships_json');
   const scholarships = parseScholarships(scholarshipsRaw);
-  const dayTuitionMin = school?.dayTuition || f(school || {}, 'day_tuition_min');
+  const dayTuitionMin = school?.day_tuition || f(school || {}, 'day_tuition_min');
   const dayTuitionMax = f(school || {}, 'day_tuition_max');
-  const boardingTuitionMin = school?.boardingTuition || f(school || {}, 'boarding_tuition_min');
+  const boardingTuitionMin = school?.boarding_tuition || f(school || {}, 'boarding_tuition_min');
   const boardingTuitionMax = f(school || {}, 'boarding_tuition_max');
   const financialAidPct = f(school || {}, 'financial_aid_pct');
   const medianAidAmount = f(school || {}, 'median_aid_amount');
@@ -862,26 +862,26 @@ export default function SchoolProfile() {
             )}
 
             {/* ======== 8. PROGRAMS & EXTRACURRICULARS ======== */}
-            {(school.artsPrograms?.length > 0 || school.sportsPrograms?.length > 0 || school.clubs?.length > 0) && (
+            {(school.arts_programs?.length > 0 || school.sports_programs?.length > 0 || school.clubs?.length > 0) && (
               <section className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">Programs & Extracurriculars at {school.name}</h2>
 
-                {school.artsPrograms?.length > 0 && (
+                {school.arts_programs?.length > 0 && (
                   <>
                     <h3 className="text-lg font-semibold text-slate-800 mb-2">Arts Programs</h3>
-                    <p className="text-slate-700 mb-2">{school.name} offers {school.artsPrograms.length} arts programs including {joinProse(school.artsPrograms)}.</p>
+                    <p className="text-slate-700 mb-2">{school.name} offers {school.arts_programs.length} arts programs including {joinProse(school.arts_programs)}.</p>
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {school.artsPrograms.map((p, i) => <span key={i} className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs">{p}</span>)}
+                      {school.arts_programs.map((p, i) => <span key={i} className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs">{p}</span>)}
                     </div>
                   </>
                 )}
 
-                {school.sportsPrograms?.length > 0 && (
+                {school.sports_programs?.length > 0 && (
                   <>
                     <h3 className="text-lg font-semibold text-slate-800 mb-2">Sports</h3>
-                    <p className="text-slate-700 mb-2">Athletic programs include {joinProse(school.sportsPrograms)}.</p>
+                    <p className="text-slate-700 mb-2">Athletic programs include {joinProse(school.sports_programs)}.</p>
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {school.sportsPrograms.map((p, i) => <span key={i} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{p}</span>)}
+                      {school.sports_programs.map((p, i) => <span key={i} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{p}</span>)}
                     </div>
                   </>
                 )}
@@ -899,7 +899,7 @@ export default function SchoolProfile() {
             )}
 
             {/* ======== 9. CAMPUS & FACILITIES ======== */}
-            {(campusSize || facilities.length > 0 || school.boardingAvailable || transportationOptions.length > 0 || school.photoGallery?.length > 0 || school.virtualTourUrl || livingArrangements.length > 0) && (
+            {(campusSize || facilities.length > 0 || school.boarding_available || transportationOptions.length > 0 || school.photo_gallery?.length > 0 || school.virtual_tour_url || livingArrangements.length > 0) && (
               <section className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">Campus & Facilities</h2>
 
@@ -910,13 +910,13 @@ export default function SchoolProfile() {
                   </p>
                 )}
 
-                {school.uniformRequired !== undefined && school.uniformRequired !== null && (
+                {school.uniform_required !== undefined && school.uniform_required !== null && (
                   <p className="text-slate-700 mb-4">
-                    <strong>Uniform:</strong> {school.uniformRequired ? 'Required' : 'Not required'}
+                    <strong>Uniform:</strong> {school.uniform_required ? 'Required' : 'Not required'}
                   </p>
                 )}
 
-                {school.boardingAvailable && (
+                {school.boarding_available && (
                   <>
                     <h3 className="text-lg font-semibold text-slate-800 mb-2">Boarding Life</h3>
                     <p className="text-slate-700 mb-4">
@@ -934,11 +934,11 @@ export default function SchoolProfile() {
                   </>
                 )}
 
-                {school.photoGallery && school.photoGallery.length > 0 && (
+                {school.photo_gallery && school.photo_gallery.length > 0 && (
                   <>
                     <h3 className="text-lg font-semibold text-slate-800 mb-3">Photo Gallery</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-                      {school.photoGallery.map((photo, index) => (
+                      {school.photo_gallery.map((photo, index) => (
                         <img key={index} src={photo} alt={`${school.name} campus photo ${index + 1}`}
                           className="rounded-lg w-full h-32 sm:h-40 object-cover" loading="lazy" />
                       ))}
@@ -946,8 +946,8 @@ export default function SchoolProfile() {
                   </>
                 )}
 
-                {school.virtualTourUrl && (
-                  <a href={school.virtualTourUrl} target="_blank" rel="noopener noreferrer"
+                {school.virtual_tour_url && (
+                  <a href={school.virtual_tour_url} target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium">
                     <Eye className="h-4 w-4" /> Take a virtual tour of {school.name} <ExternalLink className="h-3 w-3" />
                   </a>
@@ -956,7 +956,7 @@ export default function SchoolProfile() {
             )}
 
             {/* ======== 10. TUITION & FINANCIAL AID ======== */}
-            {(dayTuitionMin || boardingTuitionMin || school.financialAidAvailable !== undefined) && (
+            {(dayTuitionMin || boardingTuitionMin || school.financial_aid_available !== undefined) && (
               <section className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">Tuition & Financial Aid at {school.name}</h2>
 
@@ -965,10 +965,10 @@ export default function SchoolProfile() {
                   {boardingTuitionMin && ` Boarding tuition is ${boardingTuitionMax && boardingTuitionMax !== boardingTuitionMin ? `${sym}${boardingTuitionMin.toLocaleString()}–${sym}${boardingTuitionMax.toLocaleString()}` : `${sym}${boardingTuitionMin.toLocaleString()}`}/yr.`}
                 </p>
 
-                {(school.financialAidAvailable !== undefined || financialAidPct || medianAidAmount) && (
+                {(school.financial_aid_available !== undefined || financialAidPct || medianAidAmount) && (
                   <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                    {school.financialAidAvailable !== undefined && (
-                      <div className="bg-slate-50 rounded-lg p-3"><dt className="text-xs text-slate-500 mb-1">Financial Aid</dt><dd className="text-sm font-medium text-slate-800">{school.financialAidAvailable ? 'Available' : 'Not available'}</dd></div>
+                    {school.financial_aid_available !== undefined && (
+                      <div className="bg-slate-50 rounded-lg p-3"><dt className="text-xs text-slate-500 mb-1">Financial Aid</dt><dd className="text-sm font-medium text-slate-800">{school.financial_aid_available ? 'Available' : 'Not available'}</dd></div>
                     )}
                     {financialAidPct && (
                       <div className="bg-slate-50 rounded-lg p-3"><dt className="text-xs text-slate-500 mb-1">Students Receiving Aid</dt><dd className="text-sm font-medium text-slate-800">{financialAidPct}%</dd></div>
@@ -1002,17 +1002,17 @@ export default function SchoolProfile() {
             )}
 
             {/* ======== 11. INLINE CTA #3 ======== */}
-            {(dayTuitionMin || school.financialAidAvailable) && (
+            {(dayTuitionMin || school.financial_aid_available) && (
               <ConsultantCTA school={school} text="Want help understanding the true cost? Get a personalized breakdown from a consultant." />
             )}
 
             {/* ======== 12. ADMISSIONS ======== */}
-            {(school.dayAdmissionDeadline || boardingDeadline || applicationProcess.length > 0 || entranceRequirements.length > 0 || school.acceptance_rate || upcomingEvents.length > 0) && (
+            {(school.day_admission_deadline || boardingDeadline || applicationProcess.length > 0 || entranceRequirements.length > 0 || school.acceptance_rate || upcomingEvents.length > 0) && (
               <section className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">Admissions at {school.name}</h2>
 
                 <p className="text-slate-700 mb-4">
-                  {school.dayAdmissionDeadline && `The application deadline for day students is ${school.dayAdmissionDeadline}.`}
+                  {school.day_admission_deadline && `The application deadline for day students is ${school.day_admission_deadline}.`}
                   {boardingDeadline && ` Boarding application deadline is ${boardingDeadline}.`}
                   {school.acceptance_rate && ` The acceptance rate is ${school.acceptance_rate}%.`}
                 </p>
@@ -1168,12 +1168,12 @@ export default function SchoolProfile() {
                     <Link key={rs.id} href={rs.slug ? `/schools/${rs.slug}` : `/school?id=${rs.id}`}
                       className="block bg-slate-50 rounded-lg p-4 border border-slate-100 hover:border-teal-300 hover:shadow-sm transition-all">
                       <div className="flex items-center gap-3">
-                        <LogoDisplay logoUrl={rs.logoUrl} schoolName={rs.name} schoolWebsite={rs.website} size="h-10 w-10" />
+                        <LogoDisplay logoUrl={rs.logo_url} schoolName={rs.name} schoolWebsite={rs.website} size="h-10 w-10" />
                         <div className="min-w-0">
                           <p className="font-semibold text-slate-900 truncate">{rs.name}</p>
                           <p className="text-xs text-slate-500 truncate">
-                            {rs.city}{rs.gradesServed ? ` · Grades ${rs.gradesServed}` : ''}
-                            {rs.dayTuition ? ` · ${getCurrencySymbol(rs.currency)}${rs.dayTuition.toLocaleString()}` : ''}
+                            {rs.city}{rs.grades_served ? ` · Grades ${rs.grades_served}` : ''}
+                            {rs.day_tuition ? ` · ${getCurrencySymbol(rs.currency)}${rs.day_tuition.toLocaleString()}` : ''}
                           </p>
                         </div>
                       </div>
@@ -1260,9 +1260,9 @@ export default function SchoolProfile() {
       {/* ============================================================ */}
       <footer className="bg-slate-100 border-t mt-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-slate-500">
-          {(school.updatedAt || school.updated_at) && (
+          {school.updated_at && (
             <p className="mb-2">
-              Information last updated {formatDate(school.updatedAt || school.updated_at)}.
+              Information last updated {formatDate(school.updated_at)}.
               Data sourced from school records and public information.
             </p>
           )}

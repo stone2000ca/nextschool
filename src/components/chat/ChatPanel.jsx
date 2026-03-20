@@ -228,7 +228,7 @@ const ChatPanel = forwardRef(function ChatPanel({
         {confirmingSchool && (
           <DeepDiveConfirmation
             school={confirmingSchool}
-            childName={familyProfile?.childName}
+            childName={familyProfile?.child_name}
             consultantName={selectedConsultant}
             onAnalyze={() => onConfirmDeepDive(confirmingSchool)}
             onCancel={onCancelDeepDive}

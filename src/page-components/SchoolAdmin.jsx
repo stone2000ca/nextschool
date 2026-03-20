@@ -19,26 +19,6 @@ import AdmissionsSection from '@/components/school-admin/AdmissionsSection';
 import EnrichmentReviewSection from '@/components/school-admin/EnrichmentReviewSection';
 import PhotoReviewSection from '@/components/school-admin/PhotoReviewSection';
 
-// Map of camelCase field names used in ProfileEditor to their snake_case DB columns
-const CAMEL_TO_SNAKE = {
-  livingArrangements: 'living_arrangements',
-  languagesOfInstruction: 'languages_of_instruction',
-  artsPrograms: 'arts_programs',
-  sportsPrograms: 'sports_programs',
-  specialEdPrograms: 'special_ed_programs',
-  teachingPhilosophy: 'teaching_philosophy',
-  verifiedFields: 'verified_fields',
-  aiEnrichedFields: 'ai_enriched_fields',
-};
-
-function toSnakeCase(data) {
-  const result = {};
-  for (const [key, value] of Object.entries(data)) {
-    result[CAMEL_TO_SNAKE[key] || key] = value;
-  }
-  return result;
-}
-
 export default function SchoolAdmin() {
   const { user: authUser, isLoadingAuth } = useAuth();
 
@@ -195,8 +175,7 @@ export default function SchoolAdmin() {
 
     setIsSaving(true);
     try {
-      const snakeCaseData = toSnakeCase(updatedData);
-      await School.update(school.id, snakeCaseData);
+      await School.update(school.id, updatedData);
       const updated = { ...school, ...updatedData };
       setSchool(updated);
       setIsDirty(false);
