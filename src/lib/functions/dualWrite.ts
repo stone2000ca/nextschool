@@ -1,0 +1,142 @@
+// Phase 1c: Dual-Write helpers
+// Mirrors conversation_context JSONB data into normalized tables.
+// All writes are fire-and-forget — failures are logged but never block the main flow.
+// No read paths are changed; existing conversation_context writes remain untouched.
+
+import { getAdminClient } from '@/lib/supabase/admin'
+
+// ─── conversation_state upsert ──────────────────────────────────────
+// Maps context fields → conversation_state columns
+
+export function syncConversationState(
+  conversationId: string,
+  userId: string,
+  context: Record<string, any>
+) {
+  if (!conversationId || !userId) return;
+
+  const row: Record<string, any> = {
+    conversation_id: conversationId,
+    user_id: userId,
+    state: context.state || 'WELCOME',
+    resume_view: context.resumeView ?? null,
+    brief_status: context.briefStatus ?? null,
+    // Extracted family preferences (from accumulatedFamilyProfile or context)
+    child_name: context.accumulatedFamilyProfile?.child_name ?? context.child_name ?? null,
+    child_grade: context.accumulatedFamilyProfile?.child_grade ?? context.child_grade ?? null,
+    location_area: context.accumulatedFamilyProfile?.location_area ?? context.location_area ?? null,
+    region: context.accumulatedFamilyProfile?.region ?? context.region ?? null,
+    max_tuition: context.accumulatedFamilyProfile?.max_tuition ?? context.max_tuition ?? null,
+    priorities: context.accumulatedFamilyProfile?.priorities ?? context.priorities ?? [],
+    learning_differences: context.accumulatedFamilyProfile?.learning_differences ?? context.learning_differences ?? [],
+    // Location resolution
+    resolved_lat: context.resolvedLat ?? null,
+    resolved_lng: context.resolvedLng ?? null,
+    // Deep dive tracking
+    last_deep_dive_school_id: context.lastDeepDiveSchoolId ?? null,
+    deep_dive_mode: context.deepDiveMode ?? null,
+    selected_school_id: context.selectedSchoolId ?? null,
+    previous_school_id: context.previousSchoolId ?? null,
+    // Debrief mode
+    debrief_school_id: context.debriefSchoolId ?? null,
+    debrief_question_queue: context.debriefQuestionQueue ?? [],
+    debrief_questions_asked: context.debriefQuestionsAsked ?? [],
+    debrief_mode: context.debriefMode ?? null,
+    // Counters & flags
+    turn_count: context.turnCount ?? 0,
+    brief_edit_count: context.briefEditCount ?? 0,
+    tier1_completed_turn: context.tier1CompletedTurn ?? null,
+    auto_refreshed: context.autoRefreshed ?? false,
+    // Journey linkage
+    journey_id: context.journeyId ?? null,
+    family_journey_id: context.familyJourneyId ?? null,
+    // Session linkage
+    chat_session_id: context.chatSessionId ?? null,
+    consultant: context.consultant ?? null,
+  };
+
+  const admin = getAdminClient();
+  (admin
+    .from('conversation_state') as any)
+    .upsert(row, { onConflict: 'conversation_id' })
+    .then(({ error }: any) => {
+      if (error) console.error('[DUAL-WRITE] conversation_state upsert failed:', error.message);
+      else console.log('[DUAL-WRITE] conversation_state synced for:', conversationId);
+    })
+    .catch((e: any) => console.error('[DUAL-WRITE] conversation_state exception:', e.message));
+}
+
+// ─── conversation_schools insert ────────────────────────────────────
+// Inserts school references; marks previous results as non-current.
+
+export function syncConversationSchools(
+  conversationId: string,
+  schools: Array<{ id: string; [key: string]: any }>,
+  source: string = 'search'
+) {
+  if (!conversationId || !schools?.length) return;
+
+  const admin = getAdminClient();
+
+  // Mark previous results as non-current (fire-and-forget)
+  (admin
+    .from('conversation_schools') as any)
+    .update({ is_current_results: false })
+    .eq('conversation_id', conversationId)
+    .eq('source', source)
+    .then(({ error }: any) => {
+      if (error) console.error('[DUAL-WRITE] conversation_schools clear-current failed:', error.message);
+    })
+    .catch(() => {});
+
+  // Insert new school rows
+  const rows = schools.map((school, idx) => ({
+    conversation_id: conversationId,
+    school_id: school.id,
+    source,
+    rank: idx + 1,
+    is_current_results: true,
+  }));
+
+  (admin
+    .from('conversation_schools') as any)
+    .upsert(rows, { onConflict: 'conversation_id,school_id,source' })
+    .then(({ error }: any) => {
+      if (error) console.error('[DUAL-WRITE] conversation_schools upsert failed:', error.message);
+      else console.log(`[DUAL-WRITE] conversation_schools synced ${rows.length} schools for:`, conversationId);
+    })
+    .catch((e: any) => console.error('[DUAL-WRITE] conversation_schools exception:', e.message));
+}
+
+// ─── conversation_artifacts upsert ──────────────────────────────────
+// Mirrors artifact data into conversation_artifacts table.
+
+export function syncConversationArtifact(
+  conversationId: string,
+  userId: string,
+  schoolId: string | null,
+  artifactType: string,
+  content: any,
+  isLocked: boolean = false
+) {
+  if (!conversationId || !userId || !artifactType) return;
+
+  const row: Record<string, any> = {
+    conversation_id: conversationId,
+    user_id: userId,
+    school_id: schoolId || null,
+    artifact_type: artifactType,
+    content: typeof content === 'string' ? JSON.parse(content) : (content || {}),
+    is_locked: isLocked,
+  };
+
+  const admin = getAdminClient();
+  (admin
+    .from('conversation_artifacts') as any)
+    .upsert(row, { onConflict: 'conversation_id,school_id,artifact_type' })
+    .then(({ error }: any) => {
+      if (error) console.error(`[DUAL-WRITE] conversation_artifacts upsert failed (${artifactType}):`, error.message);
+      else console.log(`[DUAL-WRITE] conversation_artifacts synced (${artifactType}) for:`, conversationId);
+    })
+    .catch((e: any) => console.error(`[DUAL-WRITE] conversation_artifacts exception (${artifactType}):`, e.message));
+}
