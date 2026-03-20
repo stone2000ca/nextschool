@@ -3,13 +3,13 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 const MIN_LOADER_MS = 3000;
 
 const STEPS = [
-  { label: 'Analyzing preferences', icon: (color) => (
+  { label: 'Preparing your family brief...', icon: (color) => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
   ) },
-  { label: 'Matching with schools', icon: (color) => (
+  { label: 'Matching schools to your priorities...', icon: (color) => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
   ) },
-  { label: 'Ranking top picks', icon: (color) => (
+  { label: 'Getting your results ready...', icon: (color) => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
   ) },
 ];
@@ -40,7 +40,7 @@ const FACTS = [
 
 const TEAL = '#18968a';
 const GOLD = '#d4a017';
-const BG = '#f8f9fb';
+const BG = '#0f172a';
 
 const spin = (name, dir) => `@keyframes ${name}{to{transform:translate(-50%,-50%) rotate(${dir}360deg)}}`;
 const KEYFRAMES = `
@@ -184,7 +184,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete, family
       <style>{KEYFRAMES}</style>
       <div style={{textAlign:'center',maxWidth:420,width:'100%',padding:'0 20px'}}>
         {/* Status Badge — E47-P3: Personalised from FamilyBrief */}
-        <div style={{display:'inline-block',background:`rgba(24,150,138,0.1)`,border:`1px solid rgba(24,150,138,0.25)`,padding:'6px 18px',borderRadius:20,fontSize:13,color:TEAL,fontWeight:500,animation:'badgePulse 2s ease-in-out infinite',marginBottom:28}}>
+        <div style={{display:'inline-block',background:'rgba(24,150,138,0.15)',border:'1px solid rgba(24,150,138,0.3)',padding:'6px 18px',borderRadius:20,fontSize:13,color:'#5eead4',fontWeight:500,animation:'badgePulse 2s ease-in-out infinite',marginBottom:28}}>
           {familyBrief?.grade && familyBrief?.location
             ? `Searching 1,000+ schools for Grade ${familyBrief.grade} programs in ${familyBrief.location}${familyBrief.budget ? ` under ${familyBrief.budget}` : ''}…`
             : 'Finding Your Matches...'}
@@ -192,7 +192,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete, family
 
         {/* Orbit */}
         <div style={{position:'relative',width:160,height:160,margin:'0 auto 28px'}}>
-          {[100,130,160].map(d=>(<div key={d} style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:d,height:d,borderRadius:'50%',border:`1px solid rgba(24,150,138,0.3)`}}/>))}
+          {[100,130,160].map(d=>(<div key={d} style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:d,height:d,borderRadius:'50%',border:'1px solid rgba(24,150,138,0.25)'}}/>))}
           <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:130,height:130,borderRadius:'50%',borderTop:`2.5px solid ${TEAL}`,borderRight:`2.5px solid ${TEAL}`,borderBottom:'2.5px solid transparent',borderLeft:'2.5px solid transparent',animation:'arcCW 3s linear infinite'}}/>
           <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:160,height:160,borderRadius:'50%',borderTop:`2.5px solid ${TEAL}`,borderRight:`2.5px solid ${TEAL}`,borderBottom:'2.5px solid transparent',borderLeft:'2.5px solid transparent',animation:'arcCCW 4.5s linear infinite'}}/>
           <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',display:'flex',alignItems:'center',justifyContent:'center',animation:'iconPulse 2.4s ease-in-out infinite'}}>
@@ -217,8 +217,8 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete, family
                   : s.icon(i<=step ? TEAL : '#94a3b8')
                 }
               </span>
-              <span style={{flex:1,fontSize:14,color:'#334155'}}>{s.label}</span>
-              <div style={{width:60,height:3,background:'#e2e8f0',borderRadius:2,overflow:'hidden'}}>
+              <span style={{flex:1,fontSize:14,color:'#cbd5e1'}}>{s.label}</span>
+              <div style={{width:60,height:3,background:'#334155',borderRadius:2,overflow:'hidden'}}>
                 {i<=step && <div style={{height:'100%',background:TEAL,borderRadius:2,animation:i===step?'fillBar 1.8s ease-out forwards':'none',width:i<step?'100%':'0%'}}/>}
               </div>
             </div>
@@ -226,10 +226,10 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete, family
         </div>
 
         {/* Fun Facts */}
-        <div style={{background:'rgba(51,65,85,0.04)',border:'1px solid rgba(24,150,138,0.15)',borderRadius:8,padding:16,minHeight:60,display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:8,padding:16,minHeight:60,display:'flex',alignItems:'center',justifyContent:'center'}}>
           <div style={{textAlign:'center',opacity:factVisible?1:0,transform:factVisible?'translateY(0)':'translateY(8px)',transition:'opacity 0.4s, transform 0.4s'}}>
-            <span style={{color:TEAL,fontWeight:600,marginRight:4,fontSize:13}}>Did you know?</span>
-            <span style={{color:'#64748b',fontSize:13}}>{FACTS[factIdx]}</span>
+            <span style={{color:'#5eead4',fontWeight:600,marginRight:4,fontSize:13}}>Did you know?</span>
+            <span style={{color:'#94a3b8',fontSize:13}}>{FACTS[factIdx]}</span>
           </div>
         </div>
       </div>
