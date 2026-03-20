@@ -3,9 +3,9 @@
 -- to avoid redundant LLM calls when profile hasn't changed.
 
 CREATE TABLE IF NOT EXISTS match_explanation_cache (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
-  family_profile_id TEXT NOT NULL REFERENCES family_profiles(id) ON DELETE CASCADE,
-  school_id TEXT NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  family_profile_id UUID NOT NULL REFERENCES family_profiles(id) ON DELETE CASCADE,
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   explanations JSONB NOT NULL DEFAULT '[]'::jsonb,
   profile_hash TEXT NOT NULL,
   stale BOOLEAN NOT NULL DEFAULT false,
@@ -32,7 +32,7 @@ CREATE POLICY "Users can read own match explanation cache"
   ON match_explanation_cache FOR SELECT
   USING (
     family_profile_id IN (
-      SELECT id FROM family_profiles WHERE user_id = auth.uid()::text
+      SELECT id FROM family_profiles WHERE user_id = auth.uid()
     )
   );
 
