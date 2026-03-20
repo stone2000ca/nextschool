@@ -527,6 +527,8 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
   const [deepDiveOpen, setDeepDiveOpen] = useState(false);
   const [localNotes, setLocalNotes] = useState('');
   const [saved, setSaved] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'editing' | 'saved'
+  const saveTimerRef = useRef(null);
   const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
   const hasAnimatedRef = useRef(false);
 
@@ -548,14 +550,32 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
   // Controlled vs uncontrolled: use props if provided, else local state
   const isControlled = onNotesChange != null;
   const noteValue = isControlled ? (researchNotes || '') : localNotes;
-  const handleNotesChange = isControlled ? onNotesChange : setLocalNotes;
+  const rawNotesChange = isControlled ? onNotesChange : setLocalNotes;
+
+  const handleNotesChange = (val) => {
+    rawNotesChange(val);
+    setSaveStatus('editing');
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      if (onSaveNotes) onSaveNotes();
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2500);
+    }, 1200);
+  };
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, []);
 
   if (loading) return <LoadingSkeleton />;
 
   const handleSave = () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     if (onSaveNotes) onSaveNotes();
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSaveStatus('saved');
+    setTimeout(() => { setSaved(false); setSaveStatus('idle'); }, 2000);
   };
 
   // Fit score circle
@@ -729,6 +749,72 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
                   </React.Fragment>
                 ))}
               </div>
+            </div>
+
+            {/* ── My Notes (Primary Artifact) ─────────────────────── */}
+            <div style={{
+              padding: '20px 22px',
+              background: 'linear-gradient(135deg, #fefce8 0%, #fef9c3 40%, #fffdf5 100%)',
+              borderBottom: '1px solid #e8dfc0',
+              borderLeft: '5px solid #d4a017',
+            }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#2d1e0e', marginBottom: 4 }}>
+                Your notes on {displayName}
+              </div>
+              <div style={{ fontSize: 12, color: '#92824a', marginBottom: 12 }}>
+                Your personal workspace — jot down thoughts, questions, and impressions
+              </div>
+              <textarea
+                value={noteValue}
+                onChange={e => handleNotesChange(e.target.value)}
+                placeholder="What stood out to you about this school? Any questions for the tour?"
+                rows={5}
+                style={{
+                  width: '100%', boxSizing: 'border-box', resize: 'vertical',
+                  border: '1px solid #d4c9a8', borderRadius: 8, padding: '12px 14px',
+                  background: '#fffef8', fontSize: 13.5, color: '#3d3020', fontFamily: 'inherit',
+                  lineHeight: 1.6, outline: 'none', minHeight: 120, maxHeight: 400,
+                }}
+                onFocus={e => { e.target.style.borderColor = '#d4a017'; e.target.style.boxShadow = '0 0 0 2px rgba(212,160,23,0.15)'; }}
+                onBlur={e => { e.target.style.borderColor = '#d4c9a8'; e.target.style.boxShadow = 'none'; }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                <span style={{ fontSize: 11.5, color: '#a89060', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  {saveStatus === 'editing' && (
+                    <><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#d4a017', display: 'inline-block' }} /> Editing...</>
+                  )}
+                  {saveStatus === 'saved' && (
+                    <><CheckIcon /> <span style={{ color: '#16a34a' }}>Saved</span></>
+                  )}
+                  {saveStatus === 'idle' && noteValue && (
+                    <><CheckIcon /> <span style={{ color: '#16a34a' }}>Saved</span></>
+                  )}
+                </span>
+                <button
+                  onClick={handleSave}
+                  style={{
+                    background: '#0d9488', color: '#fff',
+                    border: 'none', borderRadius: 7, padding: '8px 20px',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Save Notes
+                </button>
+              </div>
+            </div>
+
+            {/* ── AI Research & Insights divider ───────────────────── */}
+            <div style={{
+              padding: '10px 22px',
+              background: 'linear-gradient(180deg, #f8f6f0 0%, #fffdf5 100%)',
+              borderBottom: '1px solid #e8dfc0',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <div style={{ flex: 1, height: 1, background: '#d4c9a8' }} />
+              <span style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, color: '#a89060', whiteSpace: 'nowrap' }}>
+                AI Research & Insights
+              </span>
+              <div style={{ flex: 1, height: 1, background: '#d4c9a8' }} />
             </div>
 
             {/* ── Deep Dive Findings ─────────────────────────────── */}
@@ -930,37 +1016,6 @@ export default function ResearchNotepad({ loading = false, schoolData, fitScore,
               <ContactLogContent contactLog={contactLog} />
             </CollapsibleSection>
 
-            {/* ── My Notes ──────────────────────────────────────── */}
-            <div style={{ borderTop: '1px solid #e8dfc0', padding: '16px 20px' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#3d3020', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                My Notes
-              </div>
-              <textarea
-                value={noteValue}
-                onChange={e => handleNotesChange(e.target.value)}
-                placeholder="Jot down your thoughts about this school..."
-                rows={4}
-                style={{
-                  width: '100%', boxSizing: 'border-box', resize: 'vertical',
-                  border: '1px solid #d4c9a8', borderRadius: 8, padding: '10px 12px',
-                  background: '#faf6ec', fontSize: 13, color: '#3d3020', fontFamily: 'inherit',
-                  lineHeight: 1.55, outline: 'none',
-                }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, marginTop: 8 }}>
-                {saved && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Saved!</span>}
-                <button
-                  onClick={handleSave}
-                  style={{
-                    background: '#0d9488', color: '#fff',
-                    border: 'none', borderRadius: 7, padding: '8px 20px',
-                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  }}
-                >
-                  Save Notes
-                </button>
-              </div>
-            </div>
 
           </div>
         </div>
