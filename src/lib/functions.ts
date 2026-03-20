@@ -13,6 +13,7 @@ const ROUTE_MAP: Record<string, string> = {
   searchSchools: 'search-schools',
   classifyIntent: 'classify-intent',
   generateComparison: 'generate-comparison',
+  generateComparisonNarrative: 'generate-comparison-narrative',
   generateConversationTitle: 'generate-conversation-title',
   generateMatchExplanations: 'generate-match-explanations',
   generateDecisionNarration: 'generate-decision-narration',
