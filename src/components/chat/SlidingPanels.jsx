@@ -2,6 +2,7 @@ import FamilyBrief from '@/components/chat/FamilyBrief';
 import AddSchoolPanel from '@/components/chat/AddSchoolPanel';
 import ShortlistPanel from '@/components/chat/ShortlistPanel';
 import TimelinePanel from '@/components/chat/TimelinePanel';
+import VisitsTimeline from '@/components/visits/VisitsTimeline';
 
 export default function SlidingPanels({
   activePanel,
@@ -82,6 +83,17 @@ export default function SlidingPanels({
         >
           <TimelinePanel
             shortlist={shortlistData}
+            onClose={() => setActivePanel(null)}
+          />
+        </div>
+      )}
+      {activePanel === 'visits' && (
+        <div
+          className="flex-shrink-0 h-full overflow-hidden"
+          style={{ width: 320, animation: 'slideInFromRight 200ms ease-out', background: '#1A1A2A', borderLeft: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <VisitsTimeline
+            variant="panel"
             onClose={() => setActivePanel(null)}
           />
         </div>
