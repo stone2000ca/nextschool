@@ -1,5 +1,6 @@
 import { ChatHistory, ConversationSummary } from '@/lib/entities-server'
 import { invokeLLM } from '@/lib/integrations'
+import { embedConversationSummary } from '@/lib/ai/embedHooks'
 
 export async function summarizeConversationMessages(params: {
   conversationId: string
@@ -61,14 +62,16 @@ Return a concise summary.`;
       message_count: oldMessages.length,
       last_summarized_at: new Date().toISOString()
     });
+    embedConversationSummary(existingSummary[0].id, { summary: String(summary).trim() });
   } else {
-    await ConversationSummary.create({
+    const newSummary = await ConversationSummary.create({
       user_id: conv.user_id,
       conversation_id: conversationId,
       summary: String(summary).trim(),
       message_count: oldMessages.length,
       last_summarized_at: new Date().toISOString()
     });
+    embedConversationSummary(newSummary.id, { summary: String(summary).trim() });
   }
 
   // Archive old messages before truncating

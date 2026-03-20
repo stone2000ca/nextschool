@@ -1,4 +1,5 @@
 import { getAdminClient } from '@/lib/supabase/admin'
+import { embedVisitRecord } from '@/lib/ai/embedHooks'
 
 const db = () => getAdminClient().from('visit_records') as any
 
@@ -103,6 +104,16 @@ export async function updateVisitRecord(params: {
     .select()
     .single()
   if (error) throw error
+
+  // Embed when debrief fields are present
+  if (data && (fields.standout_moments || fields.concerns || fields.impression)) {
+    embedVisitRecord(data.id, {
+      standout_moments: data.standout_moments,
+      concerns: data.concerns,
+      impression: data.impression,
+    })
+  }
+
   return data
 }
 
