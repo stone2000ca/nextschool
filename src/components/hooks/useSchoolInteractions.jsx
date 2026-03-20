@@ -105,6 +105,7 @@ export function useSchoolInteractions({
     }
   }, [currentConversation]);
 
+  // E49-S4B: Pass conversationId + userId for backend enriched narrative + caching
   const handleNarrateComparisonFn = useCallback(async (comparedSchools) => {
     await narrateComparison({
       comparedSchools,
@@ -113,8 +114,10 @@ export function useSchoolInteractions({
       selectedConsultant,
       setMessages,
       setComparisonMatrix,
+      conversationId: currentConversation?.id || null,
+      userId: user?.id || null,
     });
-  }, [familyProfile, visitedSchoolIds, selectedConsultant]);
+  }, [familyProfile, visitedSchoolIds, selectedConsultant, currentConversation?.id, user?.id]);
 
   const handleOpenComparison = useCallback(async (comparedSchools) => {
     if (!isPremium) {

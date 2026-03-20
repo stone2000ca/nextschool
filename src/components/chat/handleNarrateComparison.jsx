@@ -2,14 +2,20 @@ import { createArtifact } from '@/lib/api/entities-api';
 import { invokeFunction } from '@/lib/functions';
 
 /**
- * E11b Phase 1: AI-narrated comparison synthesis with structured matrix
- * Separated from Consultant.jsx due to file size constraints
+ * E11b Phase 1 + E49-S4B: AI-narrated comparison synthesis
+ * Now calls backend generateComparisonNarrative which:
+ *   - Uses deep-dive artifacts, match explanations, visit debriefs
+ *   - Caches per (family_profile_id, sorted_school_ids, profile_hash)
+ * Falls back to client-side invokeLLM if backend call fails.
+ *
  * @param {Array} comparedSchools - Schools being compared
  * @param {Object} familyProfile - Family profile with priorities
  * @param {Set} visitedSchoolIds - Set of school IDs that have been visited
  * @param {string} selectedConsultant - Consultant name ('Jackie' or 'Liam')
  * @param {Function} setMessages - setState for chat messages
  * @param {Function} setComparisonMatrix - setState for comparison matrix
+ * @param {string} conversationId - Current conversation ID (E49-S4B)
+ * @param {string} userId - Current user ID (E49-S4B)
  */
 export async function handleNarrateComparison({
   comparedSchools,
@@ -18,7 +24,105 @@ export async function handleNarrateComparison({
   selectedConsultant,
   setMessages,
   setComparisonMatrix,
+  conversationId,
+  userId,
 }) {
+  const schoolIds = comparedSchools.map(s => s.id).filter(Boolean);
+
+  // Inject a loading placeholder first
+  const loadingMsg = {
+    role: 'assistant',
+    content: '...',
+    timestamp: new Date().toISOString(),
+    isNudge: true,
+  };
+  setMessages(prev => [...prev, loadingMsg]);
+
+  try {
+    // E49-S4B: Try backend narrative generation (cached, enriched with deep-dives)
+    let narrativeText = null;
+    let usedBackend = false;
+
+    try {
+      const backendResult = await invokeFunction('generateComparisonNarrative', {
+        schoolIds,
+        familyProfileId: familyProfile?.id || null,
+        userId: userId || null,
+        conversationId: conversationId || null,
+        consultantName: selectedConsultant,
+      });
+
+      if (backendResult?.narrative) {
+        narrativeText = backendResult.narrative;
+        usedBackend = true;
+        console.log('[E49-S4B] Comparison narrative from backend', backendResult.fromCache ? '(CACHED)' : '(FRESH)');
+      }
+    } catch (backendErr) {
+      console.warn('[E49-S4B] Backend narrative failed, falling back to client-side LLM:', backendErr.message);
+    }
+
+    // Fallback: client-side LLM call (original E11b flow)
+    if (!narrativeText) {
+      const result = await generateNarrativeClientSide({
+        comparedSchools,
+        familyProfile,
+        visitedSchoolIds,
+        selectedConsultant,
+      });
+      narrativeText = result.narrativeText;
+
+      // Also set comparison matrix from client-side result
+      if (result.comparisonMatrix) {
+        const correctedMatrix = {
+          ...result.comparisonMatrix,
+          schools: comparedSchools.map(s => ({
+            id: s.id,
+            name: s.name,
+            isVisited: visitedSchoolIds.has(s.id)
+          }))
+        };
+        setComparisonMatrix(correctedMatrix);
+      }
+    }
+
+    // Replace loading placeholder with narrative
+    setMessages(prev => {
+      const updated = [...prev];
+      for (let i = updated.length - 1; i >= 0; i--) {
+        if (updated[i].content === '...') {
+          updated[i] = { ...updated[i], content: narrativeText, isNudge: false };
+          break;
+        }
+      }
+      return updated;
+    });
+
+    // Persist comparison artifact (fire-and-forget)
+    if (familyProfile?.id) {
+      (async () => {
+        try {
+          await createArtifact({
+            artifact_type: 'comparison',
+            family_profile_id: familyProfile.id,
+            content: JSON.stringify({ narrative: narrativeText, usedBackend }),
+            school_ids: schoolIds,
+            created_date: new Date().toISOString()
+          });
+        } catch (artifactError) {
+          console.warn('[E49-S4B] Failed to persist comparison artifact (non-blocking):', artifactError.message);
+        }
+      })();
+    }
+  } catch (e) {
+    console.error('[E49-S4B] Comparison synthesis failed:', e);
+    setMessages(prev => prev.filter(m => m.content !== '...'));
+  }
+}
+
+/**
+ * Original E11b client-side LLM narrative generation (fallback)
+ */
+async function generateNarrativeClientSide({ comparedSchools, familyProfile, visitedSchoolIds, selectedConsultant }) {
   const isJackie = selectedConsultant === 'Jackie';
   const persona = isJackie
     ? 'You are Jackie, a warm and empathetic private school consultant. Speak naturally, like a trusted advisor.'
@@ -32,38 +136,13 @@ export async function handleNarrateComparison({
     familyProfile.boarding_preference ? `Boarding preference: ${familyProfile.boarding_preference}` : '',
   ].filter(Boolean).join('. ') : '';
 
-  // E11b: Build detailed school data for LLM evaluation
-  const schoolDataForMatrix = comparedSchools.map(s => {
+  const schoolSummaries = comparedSchools.map(s => {
     const tuition = s.day_tuition ?? s.tuition;
-    const isVisited = visitedSchoolIds.has(s.id);
-    return {
-      id: s.id,
-      name: s.name,
-      city: s.city,
-      distanceKm: s.distance_km,
-      tuition,
-      currency: s.currency,
-      curriculum: s.curriculum,
-      genderPolicy: s.gender_policy,
-      boardingAvailable: s.boarding_available,
-      avgClassSize: s.avg_class_size,
-      enrollment: s.enrollment,
-      studentTeacherRatio: s.student_teacher_ratio,
-      artsPrograms: s.arts_programs,
-      sportsPrograms: s.sports_programs,
-      universityPlacements: s.university_placements,
-      specializations: s.specializations,
-      highlights: s.highlights,
-      isVisited
-    };
-  });
-
-  const schoolSummaries = schoolDataForMatrix.map(s => {
     return [
       `School: ${s.name}`,
       s.city ? `City: ${s.city}` : '',
       s.distanceKm != null ? `Distance: ${s.distanceKm.toFixed(1)} km` : '',
-      s.tuition ? `Tuition: $${s.tuition.toLocaleString()} ${s.currency || ''}` : '',
+      tuition ? `Tuition: $${tuition.toLocaleString()} ${s.currency || ''}` : '',
       s.curriculum?.length ? `Curriculum: ${s.curriculum.join(', ')}` : '',
       s.genderPolicy ? `Gender: ${s.genderPolicy}` : '',
       s.boardingAvailable != null ? `Boarding: ${s.boardingAvailable ? 'Yes' : 'No'}` : '',
@@ -78,7 +157,6 @@ export async function handleNarrateComparison({
     ].filter(Boolean).join(', ');
   }).join('\n');
 
-  // E11b: Build dimensions from family priorities + standard dimensions
   const standardDimensions = [
     { key: 'budget', label: 'Budget Fit' },
     { key: 'commute', label: 'Commute' },
@@ -91,7 +169,6 @@ export async function handleNarrateComparison({
   }));
   const allDimensions = [...standardDimensions, ...priorityDimensions];
 
-  // E11b: Response JSON schema for structured output
   const response_json_schema = {
     type: 'object',
     properties: {
@@ -166,7 +243,7 @@ Family brief context: ${briefSummary || 'Not provided'}
 Family Priorities (use as dimensions for evaluation): ${familyProfile?.priorities?.join(', ') || 'Not specified'}
 
 **Task 1: Write Narrative**
-Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for this specific family. 
+Write a SHORT (3–5 sentence) synthesis paragraph comparing these schools for this specific family.
 - Highlight the most meaningful differences
 - Call out tradeoffs relevant to their priorities/budget
 - End with a practical suggestion or question
@@ -191,69 +268,13 @@ Standard dimensions context:
 
 For each school, identify 1-2 key trade-offs worth mentioning (e.g., "Higher cost but stronger program").`;
 
-  // Inject a loading placeholder first
-  const loadingMsg = {
-    role: 'assistant',
-    content: '...',
-    timestamp: new Date().toISOString(),
-    isNudge: true,
+  const result = await invokeFunction('invokeLLM', {
+    prompt,
+    response_json_schema
+  }).then(r => r.data || r);
+
+  return {
+    narrativeText: result?.narrative || 'Unable to generate comparison.',
+    comparisonMatrix: result?.comparisonMatrix || null,
   };
-  setMessages(prev => [...prev, loadingMsg]);
-
-  try {
-    const result = await invokeFunction('invokeLLM', {
-      prompt,
-      response_json_schema
-    }).then(r => r.data || r);
-
-    // result is now a parsed object with { narrative, comparisonMatrix }
-    const narrativeText = result?.narrative || 'Unable to generate comparison.';
-    
-    // E11b: Store structured matrix for later use, but override schools with actual comparedSchools
-    if (result?.comparisonMatrix) {
-      // Override the schools array to ensure it contains ONLY the actual compared schools
-      const correctedMatrix = {
-        ...result.comparisonMatrix,
-        schools: comparedSchools.map(s => ({
-          id: s.id,
-          name: s.name,
-          isVisited: visitedSchoolIds.has(s.id)
-        }))
-      };
-      setComparisonMatrix(correctedMatrix);
-    }
-
-    setMessages(prev => {
-      const updated = [...prev];
-      // Replace the last loading message with the narrative
-      for (let i = updated.length - 1; i >= 0; i--) {
-        if (updated[i].content === '...') {
-          updated[i] = { ...updated[i], content: narrativeText };
-          break;
-        }
-      }
-      return updated;
-    });
-
-    // E11b Phase 2: Persist comparison matrix as GeneratedArtifact (fire-and-forget)
-    if (result?.comparisonMatrix && familyProfile?.id) {
-      (async () => {
-        try {
-          const schoolIds = comparedSchools.map(s => s.id).filter(Boolean);
-          await createArtifact({
-            artifact_type: 'comparison',
-            family_profile_id: familyProfile.id,
-            content: JSON.stringify({ matrix: result.comparisonMatrix, narrative: narrativeText }),
-            school_ids: schoolIds,
-            created_date: new Date().toISOString()
-          });
-        } catch (artifactError) {
-          console.warn('[E11b] Failed to persist comparison artifact (non-blocking):', artifactError.message);
-        }
-      })();
-    }
-  } catch (e) {
-    console.error('Comparison synthesis failed:', e);
-    setMessages(prev => prev.filter(m => m.content !== '...'));
-  }
 }
