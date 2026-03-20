@@ -17,7 +17,6 @@ import FamilyBrief from '@/components/chat/FamilyBrief';
 import WelcomeState from '@/components/schools/WelcomeState';
 import ConsultantSelection from '@/components/chat/ConsultantSelection';
 import GuidedIntro from '@/components/chat/GuidedIntro';
-import ConsultantAvatarBadge from '@/components/chat/ConsultantAvatarBadge';
 import { LayoutGroup } from 'framer-motion';
 import SchoolGrid from '@/components/schools/SchoolGrid';
 import SchoolDetailPanel from '@/components/schools/SchoolDetailPanel';
@@ -841,6 +840,19 @@ export default function Consultant() {
 
   // E47: Called when GuidedIntro completes — skip DISCOVERY+BRIEF, go straight to RESULTS
   const handleGuidedIntroComplete = (brief) => {
+    // BUG-E46: Parse budget range string (e.g. "$15K–$25K") to numeric midpoint
+    // so orchestrate.ts Number() call doesn't produce NaN
+    if (brief.budget && typeof brief.budget === 'string') {
+      const nums = brief.budget.match(/\d+/g);
+      if (nums && nums.length >= 2) {
+        brief.budget = ((Number(nums[0]) + Number(nums[1])) / 2) * 1000;
+      } else if (nums && nums.length === 1) {
+        brief.budget = Number(nums[0]) * 1000;
+      }
+      // "Not sure yet" or other non-numeric strings → leave as falsy
+      if (isNaN(brief.budget)) brief.budget = '';
+    }
+
     // E48-FIX: Write to ref synchronously so the handleSendMessage closure
     // (which may fire before React re-renders) reads the correct value.
     familyBriefRef.current = brief;
@@ -1511,13 +1523,7 @@ export default function Consultant() {
       {/* Header */}
       <Navbar variant="minimal" />
 
-      {/* E47: Persistent consultant avatar badge (morphs from selection card) */}
-      {selectedConsultant && (
-        <ConsultantAvatarBadge
-          consultant={selectedConsultant}
-          className="fixed top-4 left-4"
-        />
-      )}
+      {/* E47: Consultant avatar badge — only during guided intro (early return above), hidden in RESULTS/DEEPDIVE */}
 
       {/* E37: Loading overlay on brief confirmation with 5-second minimum */}
       <LoadingOverlay
