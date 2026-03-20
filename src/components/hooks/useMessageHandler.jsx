@@ -148,17 +148,6 @@ export const useMessageHandler = ({
     }
 
     if (isBriefConfirmation && !isGuidedIntroComplete && !isAuthenticated && !isDevMode) {
-      // Save current conversation data to localStorage before showing gate
-      localStorage.setItem('guestConversationData', JSON.stringify({
-        messages,
-        consultant: selectedConsultant,
-        conversationContext: currentConversation?.conversation_context || {},
-        familyProfile: familyProfile || {},
-        briefStatus: briefStatus || null,
-        extractedEntitiesData: extractedEntitiesData || {},
-        sessionId
-      }));
-
       // FIX-RESULTS-VIEW: Show login gate as non-blocking overlay but do NOT
       // return early. The API call proceeds so schools load behind the modal.
       // When the user closes the modal, they see the RESULTS view with schools.
