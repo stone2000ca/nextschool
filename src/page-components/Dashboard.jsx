@@ -301,7 +301,11 @@ export default function Dashboard() {
               <Plus className="w-4 h-4" />
               New Search
             </Button>
-            <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <button
+              onClick={() => router.push('/settings')}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              title="Settings"
+            >
               <Settings className="w-5 h-5 text-white/60" />
             </button>
           </div>
