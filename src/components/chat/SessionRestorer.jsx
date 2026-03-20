@@ -3,7 +3,6 @@
 // Last Modified: 2026-03-01
 
 import { STATES } from '@/lib/stateMachineConfig';
-import { SchoolAnalysis, FamilyProfile } from '@/lib/entities';
 import { fetchSchools } from '@/lib/api/schools';
 import { fetchConversations, fetchConversation } from '@/lib/api/conversations';
 import { fetchSession } from '@/lib/api/sessions';
@@ -213,7 +212,9 @@ export async function restoreSessionFromParam(
         // BUG-RN-PERSIST Fix E: Omit conversationId when falsy to avoid matching empty-string rows
         const restoreFilter = { user_id: user.id };
         if (chatHistory?.id) restoreFilter.conversation_id = chatHistory.id;
-        const recentAnalyses = await SchoolAnalysis.filter(restoreFilter);
+        const analysisParams = new URLSearchParams(restoreFilter);
+        const analysisRes = await fetch(`/api/school-analyses?${analysisParams}`);
+        const recentAnalyses = analysisRes.ok ? await analysisRes.json() : [];
         if (recentAnalyses?.length > 0) {
           // Bug 2: Merge ALL analyses into schoolAnalyses, set most recent as active
           const analysesMap = {};
@@ -263,7 +264,8 @@ export async function restoreSessionFromParam(
     // Fetch and restore FamilyProfile
     let restoredProfile = null;
     if (chatSession.family_profile_id) {
-      restoredProfile = await FamilyProfile.get(chatSession.family_profile_id);
+      const fpRes = await fetch(`/api/family-profile?id=${chatSession.family_profile_id}`);
+      restoredProfile = fpRes.ok ? await fpRes.json() : null;
       if (restoredProfile) {
         setFamilyProfile(restoredProfile);
       }
@@ -463,9 +465,10 @@ export async function restoreMostRecentConversation(
     // 4b. Fallback: check SchoolAnalysis entity if messages lack deepDiveAnalysis
     if (!lastDeepDiveSchoolId && user.id) {
       try {
-        const latestFilter = { user_id: user.id };
-        if (latest.id) latestFilter.conversation_id = latest.id;
-        const recentAnalyses = await SchoolAnalysis.filter(latestFilter);
+        const analysisParams = new URLSearchParams({ user_id: user.id });
+        if (latest.id) analysisParams.set('conversation_id', latest.id);
+        const analysisRes = await fetch(`/api/school-analyses?${analysisParams}`);
+        const recentAnalyses = analysisRes.ok ? await analysisRes.json() : [];
         if (recentAnalyses?.length > 0) {
           // Bug 2: Merge ALL analyses into schoolAnalyses, set most recent as active
           const analysesMap = {};

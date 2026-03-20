@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PhotoCandidate } from '@/lib/entities';
 import { updateSchool } from '@/lib/api/schools';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,8 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const records = await PhotoCandidate.filter({ school_id: school.id });
+      const photosRes = await fetch(`/api/school-photos?school_id=${school.id}`);
+      const records = photosRes.ok ? await photosRes.json() : [];
       const u = authUser;
       setUser(u);
       setCandidates(records);
@@ -54,10 +54,14 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
   const approveAs = async (candidate, approvedAs) => {
     setProc(candidate.id, true);
     try {
-      await PhotoCandidate.update(candidate.id, {
-        status: 'approved',
-        approved_as: approvedAs,
-        reviewed_at: new Date().toISOString(),
+      await fetch(`/api/school-photos/${candidate.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'approved',
+          approved_as: approvedAs,
+          reviewed_at: new Date().toISOString(),
+        }),
       });
 
       if (approvedAs === 'headerPhoto') {
@@ -84,10 +88,14 @@ export default function PhotoReviewSection({ school, onUpdate, onCountChange }) 
   const confirmReject = async (id, reason) => {
     setProc(id, true);
     try {
-      await PhotoCandidate.update(id, {
-        status: 'rejected',
-        rejection_reason: reason || '',
-        reviewed_at: new Date().toISOString(),
+      await fetch(`/api/school-photos/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'rejected',
+          rejection_reason: reason || '',
+          reviewed_at: new Date().toISOString(),
+        }),
       });
       setCandidates(prev => {
         const next = prev.map(c => c.id === id ? { ...c, status: 'rejected', rejection_reason: reason } : c);

@@ -3,7 +3,6 @@
 // Entities: EnrichmentDiff (read/update), School (update on approve)
 
 import { useState, useEffect } from 'react';
-import { EnrichmentDiff } from '@/lib/entities';
 import { updateSchool } from '@/lib/api/schools';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -34,9 +33,8 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
 
   const loadData = async () => {
     setLoading(true);
-    const [allDiffs] = await Promise.all([
-      EnrichmentDiff.filter({ school_id: school.id }),
-    ]);
+    const diffsRes = await fetch(`/api/school-enrichment?school_id=${school.id}`);
+    const allDiffs = diffsRes.ok ? await diffsRes.json() : [];
     const userData = authUser;
     setDiffs(allDiffs);
     setUser(userData);
@@ -63,10 +61,14 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
 
     await Promise.all([
       updateSchool(school.id, { [diff.field]: parsedValue }),
-      EnrichmentDiff.update(diff.id, {
-        status: 'approved',
-        reviewed_by: user?.email || '',
-        reviewed_at: new Date().toISOString(),
+      fetch(`/api/school-enrichment/${diff.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'approved',
+          reviewed_by: user?.email || '',
+          reviewed_at: new Date().toISOString(),
+        }),
       }),
     ]);
     setDiffs(prev => {
@@ -79,10 +81,14 @@ export default function EnrichmentReviewSection({ school, onCountChange }) {
 
   const rejectDiff = async (diff) => {
     setProcessing(p => new Set(p).add(diff.id));
-    await EnrichmentDiff.update(diff.id, {
-      status: 'rejected',
-      reviewed_by: user?.email || '',
-      reviewed_at: new Date().toISOString(),
+    await fetch(`/api/school-enrichment/${diff.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'rejected',
+        reviewed_by: user?.email || '',
+        reviewed_at: new Date().toISOString(),
+      }),
     });
     setDiffs(prev => {
       const next = prev.map(d => d.id === diff.id ? { ...d, status: 'rejected' } : d);

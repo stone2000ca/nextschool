@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GeneratedArtifact, SchoolAnalysis, FamilyProfile } from '@/lib/entities';
 
 export function useDataLoader({ user, currentConversation, isAuthenticated }) {
   const [familyProfile, setFamilyProfile] = useState(null);
@@ -17,10 +16,14 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
       // BUG-RN-PERSIST Fix D: Omit conversationId from filter when falsy to handle legacy rows
       const analysisFilter = { user_id: user.id };
       if (conversationId) analysisFilter.conversation_id = conversationId;
-      const [artifacts, analyses] = await Promise.all([
-        GeneratedArtifact.filter({ conversation_id: conversationId }),
-        user?.id ? SchoolAnalysis.filter(analysisFilter) : Promise.resolve([])
+      const analysisParams = new URLSearchParams({ user_id: user.id });
+      if (conversationId) analysisParams.set('conversation_id', conversationId);
+      const [artifactsRes, analysesRes] = await Promise.all([
+        fetch(`/api/artifacts?conversation_id=${conversationId}`),
+        user?.id ? fetch(`/api/school-analyses?${analysisParams}`) : Promise.resolve(null),
       ]);
+      const artifacts = artifactsRes.ok ? await artifactsRes.json() : [];
+      const analyses = analysesRes && analysesRes.ok ? await analysesRes.json() : [];
 
       // Build indexed map keyed by schoolId_artifactType
       const TYPE_REMAP = {
@@ -59,7 +62,8 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
         console.log('[WC6] No SchoolAnalyses found — scheduling one retry in 800ms');
         setTimeout(async () => {
           try {
-            const retryAnalyses = await SchoolAnalysis.filter({ user_id: user.id, conversation_id: conversationId });
+            const retryRes = await fetch(`/api/school-analyses?user_id=${user.id}&conversation_id=${conversationId}`);
+            const retryAnalyses = retryRes.ok ? await retryRes.json() : [];
             if (retryAnalyses.length > 0) {
               const retryMap = {};
               for (const analysis of retryAnalyses) {
@@ -99,10 +103,8 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
     }
 
     try {
-      const profiles = await FamilyProfile.filter({
-        user_id: user.id,
-        conversation_id: currentConversation.id
-      });
+      const profileRes = await fetch(`/api/family-profile?user_id=${user.id}&conversation_id=${currentConversation.id}`);
+      const profiles = profileRes.ok ? await profileRes.json() : [];
 
       if (profiles.length > 0) {
         setFamilyProfile(profiles[0]);
