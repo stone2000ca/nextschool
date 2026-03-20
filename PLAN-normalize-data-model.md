@@ -101,13 +101,59 @@ The `conversations` table has a `conversation_context` JSONB column that current
 **Write:** `Consultant.jsx` lines 1113-1115 (comparingSchools), `orchestrate.ts` line 1791 (autoRefreshed)
 **Read:** `useMessageHandler.jsx` line 309 (autoRefreshed)
 
-### 1.8 Nested Fallback (familyProfile)
+### 1.8 Debrief Mode (E13a)
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `debriefSchoolId` | `string \| null` | School being debriefed |
+| `debriefQuestionQueue` | `string[]` | Pending debrief questions |
+| `debriefQuestionsAsked` | `string[]` | Already-asked debrief questions |
+| `debriefMode` | `string \| null` | `'debrief'` or `'standard'` |
+
+**Read/Write:** `orchestrate.ts`
+
+### 1.9 Counters & Flags
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `turnCount` | `number` | State machine turn counter |
+| `briefEditCount` | `number` | Number of brief edits |
+| `tier1CompletedTurn` | `number` | Turn when tier1 completed |
+| `deepDiveFollowUpShown_<schoolId>` | `boolean` | Dynamic keys tracking per-school follow-up display |
+
+**Read/Write:** `orchestrate.ts`
+
+### 1.10 Journey Linkage
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `journeyId` | `string \| null` | Reference to family_journeys.id |
+| `journey` | `object \| null` | Cached journey object |
+| `family_journey_id` | `string \| null` | Alternate key for journey |
+| `previousSchoolId` | `string \| null` | Previously viewed school in deep dive |
+
+**Read/Write:** `orchestrate.ts`, `SessionRestorer.jsx`
+
+### 1.11 Nested Fallback (familyProfile)
 
 | Field | Type | Purpose |
 |-------|------|---------|
 | `familyProfile` | `object` | Nested fallback with childGrade, maxTuition |
 
 **Read:** `src/lib/functions/constants.ts` lines 97, 142-143, 185-186
+
+### 1.12 Other `conversations` Table Columns (for reference)
+
+The `conversations` table also has these non-context columns relevant to migration:
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `messages` | JSONB | Array of message objects (artifacts embedded here too) |
+| `long_term_summary` | TEXT | LLM-generated conversation summary |
+| `short_term_context` | JSONB | Last ~8 key points from recent messages |
+| `archived_messages` | JSONB | Old messages truncated from main array |
+| `journey_id` | TEXT | FK to family_journeys (duplicated in context) |
+| `is_active` | BOOLEAN | Active/archived flag |
 
 ---
 
@@ -213,6 +259,23 @@ CREATE TABLE IF NOT EXISTS conversation_state (
   last_deep_dive_school_id TEXT,
   deep_dive_mode TEXT,
   selected_school_id TEXT,
+  previous_school_id TEXT,
+
+  -- Debrief mode (E13a)
+  debrief_school_id TEXT,
+  debrief_question_queue TEXT[] DEFAULT '{}',
+  debrief_questions_asked TEXT[] DEFAULT '{}',
+  debrief_mode TEXT,
+
+  -- Counters & flags
+  turn_count INTEGER DEFAULT 0,
+  brief_edit_count INTEGER DEFAULT 0,
+  tier1_completed_turn INTEGER,
+  auto_refreshed BOOLEAN DEFAULT false,
+
+  -- Journey linkage
+  journey_id TEXT,
+  family_journey_id TEXT,
 
   -- Session linkage
   chat_session_id TEXT,
