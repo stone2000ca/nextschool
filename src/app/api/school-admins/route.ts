@@ -1,10 +1,9 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAdminClient } from '@/lib/supabase/admin'
-import { NextRequest, NextResponse } from 'next/server'
 
-const db = () => getAdminClient().from('school_journeys') as any
+const db = () => getAdminClient().from('school_admins') as any
 
-// GET /api/school-journeys?family_journey_id=X&school_id=Y
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient()
@@ -15,20 +14,23 @@ export async function GET(req: NextRequest) {
 
     const sp = req.nextUrl.searchParams
     let query = db().select('*')
-    if (sp.get('family_journey_id')) query = query.eq('family_journey_id', sp.get('family_journey_id'))
+
     if (sp.get('school_id')) query = query.eq('school_id', sp.get('school_id'))
+    if (sp.get('user_id')) query = query.eq('user_id', sp.get('user_id'))
+    if (sp.get('role')) query = query.eq('role', sp.get('role'))
+    if (sp.get('is_active') !== null && sp.get('is_active') !== undefined) {
+      query = query.eq('is_active', sp.get('is_active') === 'true')
+    }
 
     const { data, error } = await query
     if (error) throw error
-
     return NextResponse.json(data || [])
   } catch (error: any) {
-    console.error('[API /school-journeys GET]', error.message)
+    console.error('[API /school-admins GET]', error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 
-// POST /api/school-journeys — create a school journey
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
     if (error) throw error
     return NextResponse.json(data, { status: 201 })
   } catch (error: any) {
-    console.error('[API /school-journeys POST]', error.message)
+    console.error('[API /school-admins POST]', error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

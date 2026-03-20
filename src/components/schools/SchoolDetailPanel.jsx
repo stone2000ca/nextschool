@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart, ExternalLink, Scale, CalendarDays, Mail, Phone, Globe2, Eye } from "lucide-react";
 import TourRequestModal from './TourRequestModal';
-import { SchoolEvent } from '@/lib/entities';
+import { fetchSchoolEvents } from '@/lib/api/entities-api';
 
 // --- Helpers ---
 
@@ -676,7 +676,7 @@ export default function SchoolDetailPanel({
       return;
     }
     let isMounted = true;
-    SchoolEvent.filter({ school_id: school.id })
+    fetchSchoolEvents({ school_id: school.id })
       .then((data) => {
         if (!isMounted) return;
         setSchoolEvents(Array.isArray(data) ? data : []);

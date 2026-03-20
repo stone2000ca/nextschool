@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { SchoolEvent, VisitorLog } from '@/lib/entities';
+import { fetchSchoolEvents, createVisitorLog } from '@/lib/api/entities-api';
 import { invokeFunction } from '@/lib/functions';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +70,7 @@ export default function SchoolDirectory() {
         }
 
         // Log visitor
-        await VisitorLog.create({
+        await createVisitorLog({
           user_id: userId,
           session_id: sessionId,
           timestamp: new Date().toISOString(),
@@ -140,7 +140,7 @@ export default function SchoolDirectory() {
 
     // Load events separately — don't let it block school rendering
     try {
-      const events = await SchoolEvent.filter({});
+      const events = await fetchSchoolEvents();
       const today = new Date().toISOString();
       const withEvents = new Set(
         (events || []).filter(e => e.date && e.date >= today).map(e => e.school_id)

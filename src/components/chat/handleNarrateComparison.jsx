@@ -1,4 +1,4 @@
-import { GeneratedArtifact } from '@/lib/entities';
+import { createArtifact } from '@/lib/api/entities-api';
 import { invokeFunction } from '@/lib/functions';
 
 /**
@@ -240,7 +240,7 @@ For each school, identify 1-2 key trade-offs worth mentioning (e.g., "Higher cos
       (async () => {
         try {
           const schoolIds = comparedSchools.map(s => s.id).filter(Boolean);
-          await GeneratedArtifact.create({
+          await createArtifact({
             artifact_type: 'comparison',
             family_profile_id: familyProfile.id,
             content: JSON.stringify({ matrix: result.comparisonMatrix, narrative: narrativeText }),

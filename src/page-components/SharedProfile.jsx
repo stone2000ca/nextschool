@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { User } from '@/lib/entities';
+import { fetchUsers } from '@/lib/api/entities-api';
 import { fetchSchools } from '@/lib/api/schools';
 import { fetchSharedProfile } from '@/lib/api/sessions';
 import { Button } from '@/components/ui/button';
@@ -55,9 +55,7 @@ export default function SharedProfile() {
       // Load shortlisted schools if any
       if (chatSession.user_id) {
         try {
-          const user = await User.filter({
-            id: chatSession.user_id
-          });
+          const user = await fetchUsers({ id: chatSession.user_id });
           if (user.length > 0 && user[0].shortlist) {
             const shortlistedData = await fetchSchools({
               ids: user[0].shortlist

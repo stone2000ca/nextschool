@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DisputeRequest } from '@/lib/entities';
+import { createDisputeRequest } from '@/lib/api/entities-api';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, Loader2 } from "lucide-react";
@@ -15,7 +15,7 @@ export default function DisputeForm({ schoolId, schoolName, onCancel }) {
       return;
     }
     setSubmitting(true);
-    await DisputeRequest.create({
+    await createDisputeRequest({
       school_id: schoolId,
       requester_name: form.name,
       requester_role: form.role,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { BetaFeedback } from '@/lib/entities';
+import { fetchBetaFeedback } from '@/lib/api/entities-api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +35,7 @@ export default function AdminFeedback() {
       }
 
       // Load feedback
-      const allFeedback = await BetaFeedback.list('-created_date', undefined, 1000);
+      const allFeedback = await fetchBetaFeedback({ sort: '-created_date', limit: 1000 });
       setFeedback(allFeedback);
     } catch (error) {
       console.error('Failed to load data:', error);

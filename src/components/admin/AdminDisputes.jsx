@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { DisputeRequest, School, SchoolAdmin, User as UserEntity } from '@/lib/entities';
+import { fetchDisputeRequests, updateDisputeRequest, fetchSchoolAdmins, createSchoolAdmin, updateSchoolAdmin, fetchUsers } from '@/lib/api/entities-api';
+import { fetchSchools } from '@/lib/api/schools';
 import { CheckCircle2, XCircle, Clock, RefreshCw, ArrowRightLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -12,7 +13,7 @@ export default function AdminDisputes() {
 
   async function load() {
     setLoading(true);
-    const raw = await DisputeRequest.filter({ status: "pending" });
+    const raw = await fetchDisputeRequests({ status: "pending" });
     raw.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
     // Enrich with school name + current owner from SchoolAdmin
@@ -22,16 +23,16 @@ export default function AdminDisputes() {
       let ownerName = "—";
 
       try {
-        const schools = await School.filter({ id: d.school_id });
+        const schools = await fetchSchools({ ids: [d.school_id] });
         if (schools[0]) schoolName = schools[0].name;
       } catch (_) {}
 
       try {
-        const admins = await SchoolAdmin.filter({ school_id: d.school_id, role: "owner", is_active: true });
+        const admins = await fetchSchoolAdmins({ school_id: d.school_id, role: "owner", is_active: true });
         if (admins[0]) {
           ownerEmail = admins[0].user_id || "—";
           // Try to get user email by userId
-          const users = await UserEntity.filter({ id: admins[0].user_id });
+          const users = await fetchUsers({ id: admins[0].user_id });
           if (users[0]) {
             ownerEmail = users[0].email || "—";
             ownerName = users[0].full_name || "—";
@@ -53,7 +54,7 @@ export default function AdminDisputes() {
     setTransferError(null);
 
     // Find requester user account
-    const users = await UserEntity.filter({ email: dispute.requester_email });
+    const users = await fetchUsers({ email: dispute.requester_email });
     if (!users[0]) {
       setTransferError("No user account found for " + dispute.requester_email + ". They must sign up first.");
       setActionMap(m => ({ ...m, [dispute.id]: null }));
@@ -62,18 +63,18 @@ export default function AdminDisputes() {
     const newUserId = users[0].id;
 
     // Save existing owner IDs for rollback
-    const existingAdmins = await SchoolAdmin.filter({ school_id: dispute.school_id, role: "owner" });
+    const existingAdmins = await fetchSchoolAdmins({ school_id: dispute.school_id, role: "owner" });
     const deactivatedOwnerIds = [];
 
     try {
       // Deactivate existing owner records for this school
       await Promise.all(existingAdmins.map(async a => {
-        await SchoolAdmin.update(a.id, { is_active: false });
+        await updateSchoolAdmin(a.id, { is_active: false });
         deactivatedOwnerIds.push(a.id);
       }));
 
       // Create new owner SchoolAdmin record
-      await SchoolAdmin.create({
+      await createSchoolAdmin({
         school_id: dispute.school_id,
         user_id: newUserId,
         role: "owner",
@@ -81,13 +82,13 @@ export default function AdminDisputes() {
       });
 
       // Mark dispute approved
-      await DisputeRequest.update(dispute.id, { status: "approved" });
+      await updateDisputeRequest(dispute.id, { status: "approved" });
 
       setEnriched(e => e.filter(x => x.id !== dispute.id));
       setActionMap(m => ({ ...m, [dispute.id]: "done" }));
     } catch (err) {
       // Rollback: re-activate any owners that were deactivated
-      await Promise.all(deactivatedOwnerIds.map(id => SchoolAdmin.update(id, { is_active: true })));
+      await Promise.all(deactivatedOwnerIds.map(id => updateSchoolAdmin(id, { is_active: true })));
       setTransferError("Transfer failed: " + (err.message || "Unknown error") + ". Previous ownership has been restored.");
       setActionMap(m => ({ ...m, [dispute.id]: null }));
     }
@@ -95,7 +96,7 @@ export default function AdminDisputes() {
 
   async function reject(dispute) {
     setActionMap(m => ({ ...m, [dispute.id]: "rejecting" }));
-    await DisputeRequest.update(dispute.id, { status: "rejected" });
+    await updateDisputeRequest(dispute.id, { status: "rejected" });
     setEnriched(e => e.filter(x => x.id !== dispute.id));
     setActionMap(m => ({ ...m, [dispute.id]: "done" }));
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ConversationArtifacts } from '@/lib/entities';
+import { fetchConversationArtifacts } from '@/lib/api/entities-api';
 
 /**
  * useArtifacts — Manages artifact state for a conversation + school.
@@ -60,7 +60,7 @@ export function useArtifacts(conversationId, selectedSchoolId) {
     let cancelled = false;
     setIsLoading(true);
 
-    ConversationArtifacts.filter({
+    fetchConversationArtifacts({
       conversation_id: conversationId,
       school_id: selectedSchoolId,
     })

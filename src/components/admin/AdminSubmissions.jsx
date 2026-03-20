@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { SchoolAdmin } from '@/lib/entities';
+import { createSchoolAdmin } from '@/lib/api/entities-api';
 import { fetchSchools, updateSchool } from '@/lib/api/schools';
 import { fetchClaims, updateClaim } from '@/lib/api/school-claims';
 import { invokeFunction } from '@/lib/functions';
@@ -57,7 +57,7 @@ export default function AdminSubmissions() {
     // Create SchoolAdmin for submitter
     if (school.user_id) {
       try {
-        await SchoolAdmin.create({
+        await createSchoolAdmin({
           school_id: school.id,
           user_id: school.user_id,
           role: "owner",

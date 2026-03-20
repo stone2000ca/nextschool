@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TourRequest, FamilyProfile, FamilyJourney, SchoolJourney } from '@/lib/entities';
+import { createTourRequest, fetchFamilyProfiles, fetchFamilyJourneys, updateFamilyJourney, fetchSchoolJourneys, createSchoolJourney, updateSchoolJourney } from '@/lib/api/entities-api';
 import { createInquiry } from '@/lib/api/school-inquiries';
 import { useAuth } from '@/lib/AuthContext';
 import { invokeFunction } from '@/lib/functions';
@@ -55,7 +55,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
     // Fetch FamilyProfile for Family Snapshot section in email
     let familyProfile = null;
     try {
-      const profiles = await FamilyProfile.filter({ user_id: user.id });
+      const profiles = await fetchFamilyProfiles({ user_id: user.id });
       if (profiles && profiles.length > 0) {
         familyProfile = profiles[0];
       }
@@ -74,7 +74,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
     ].filter(Boolean).join('\n');
 
     // E29-005-AC7: Create TourRequest entity (primary) for runtime verification
-    const tourRequest = await TourRequest.create({
+    const tourRequest = await createTourRequest({
       parent_user_id: user.id,
       school_id: school.id,
       requestedAt: new Date().toISOString(),
@@ -130,23 +130,23 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         const me = authUser;
         if (!me?.id) return;
 
-        const journeys = await FamilyJourney.filter({ user_id: me.id }, '-updated_date', 1);
+        const journeys = await fetchFamilyJourneys({ user_id: me.id, sort: '-updated_date', limit: 1 });
         if (!journeys || journeys.length === 0) return;
         const familyJourney = journeys[0];
 
-        const existing = await SchoolJourney.filter({
+        const existing = await fetchSchoolJourneys({
           family_journey_id: familyJourney.id,
           school_id: school.id,
         });
 
         if (existing && existing.length > 0) {
-          await SchoolJourney.update(existing[0].id, {
+          await updateSchoolJourney(existing[0].id, {
             status: 'touring',
             tour_request_id: inquiry?.id || null,
             tour_date: preferredDate || null,
           });
         } else {
-          await SchoolJourney.create({
+          await createSchoolJourney({
             family_journey_id: familyJourney.id,
             school_id: school.id,
             school_name: school.name,
@@ -162,7 +162,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         if (familyJourney.current_phase === 'EVALUATE') {
           try {
             const currentHistory = Array.isArray(familyJourney.phase_history) ? familyJourney.phase_history : [];
-            await FamilyJourney.update(familyJourney.id, {
+            await updateFamilyJourney(familyJourney.id, {
               current_phase: 'EXPERIENCE',
               phase_history: [...currentHistory, { phase: 'EXPERIENCE', enteredAt: new Date().toISOString() }],
             });
@@ -175,7 +175,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         // E29-013: Generate tour prep brief and store on SchoolJourney
         try {
           // Get the SchoolJourney id we just upserted
-          const sjRecords = await SchoolJourney.filter({
+          const sjRecords = await fetchSchoolJourneys({
             family_journey_id: familyJourney.id,
             school_id: school.id,
           });
@@ -185,7 +185,7 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
           // Load family profile for personalization
           let fp = null;
           try {
-            const fps = await FamilyProfile.filter({ user_id: me.id });
+            const fps = await fetchFamilyProfiles({ user_id: me.id });
             fp = fps?.[0] || null;
           } catch (_) {}
 
@@ -215,7 +215,7 @@ Keep each point to one sentence. Be specific to ${school.name} if possible. No i
           const prepText = typeof prepResult === 'string' ? prepResult : (prepResult?.response || prepResult?.text || '');
 
           if (prepText) {
-            await SchoolJourney.update(sjId, {
+            await updateSchoolJourney(sjId, {
               tour_prep_content: prepText,
               tour_prep_sent: true,
             });

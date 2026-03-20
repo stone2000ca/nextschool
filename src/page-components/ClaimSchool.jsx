@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-import { SchoolAdmin, User } from '@/lib/entities';
+import { fetchSchoolAdmins, fetchUsers } from '@/lib/api/entities-api';
 import { fetchSchools } from '@/lib/api/schools';
 import { fetchClaims, createClaim, updateClaim } from '@/lib/api/school-claims';
 import { Button } from '@/components/ui/button';
@@ -118,9 +118,9 @@ export default function ClaimSchool() {
         setSchool(s);
         // Check if already claimed by another user
         if (s.claim_status === 'claimed') {
-          const admins = await SchoolAdmin.filter({ school_id: schoolId, role: 'owner', is_active: true });
+          const admins = await fetchSchoolAdmins({ school_id: schoolId, role: 'owner', is_active: true });
           if (admins.length > 0 && admins[0].user_id) {
-            const users = await User.filter({ id: admins[0].user_id });
+            const users = await fetchUsers({ id: admins[0].user_id });
             const ownerEmail = users[0]?.email || '';
             const domain = ownerEmail.split('@')[1] || null;
             setAlreadyClaimed({ domain });

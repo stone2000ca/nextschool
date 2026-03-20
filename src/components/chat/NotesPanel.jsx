@@ -3,7 +3,7 @@ import { X, Plus, Trash2, Edit2, Save, Brain, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Notes, UserMemory, FamilyProfile } from '@/lib/entities';
+import { fetchNotes, createNote, updateNote, deleteNote, fetchUserMemory, deleteUserMemory, fetchFamilyProfiles, deleteFamilyProfile } from '@/lib/api/entities-api';
 import { fetchConversations, deleteConversation } from '@/lib/api/conversations';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -22,7 +22,7 @@ export default function NotesPanel({ userId, onClose }) {
 
   const loadNotes = async () => {
     try {
-      const userNotes = await Notes.filter({ user_id: userId });
+      const userNotes = await fetchNotes({ user_id: userId });
       setNotes(userNotes);
     } catch (error) {
       console.error('Failed to load notes:', error);
@@ -31,7 +31,7 @@ export default function NotesPanel({ userId, onClose }) {
 
   const loadMemories = async () => {
     try {
-      const userMemories = await UserMemory.filter({ user_id: userId });
+      const userMemories = await fetchUserMemory({ user_id: userId });
       if (userMemories.length > 0) {
         setMemories(userMemories[0].memories || []);
       }
@@ -43,7 +43,7 @@ export default function NotesPanel({ userId, onClose }) {
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
     try {
-      await Notes.create({
+      await createNote({
         user_id: userId,
         content: newNote
       });
@@ -56,7 +56,7 @@ export default function NotesPanel({ userId, onClose }) {
 
   const handleDeleteNote = async (noteId) => {
     try {
-      await Notes.delete(noteId);
+      await deleteNote(noteId);
       loadNotes();
     } catch (error) {
       console.error('Failed to delete note:', error);
@@ -65,7 +65,7 @@ export default function NotesPanel({ userId, onClose }) {
 
   const handleEditNote = async (noteId) => {
     try {
-      await Notes.update(noteId, { content: editContent });
+      await updateNote(noteId, { content: editContent });
       setEditingId(null);
       loadNotes();
     } catch (error) {
@@ -76,15 +76,15 @@ export default function NotesPanel({ userId, onClose }) {
   const handleClearMemory = async () => {
     try {
       // Delete all UserMemory records
-      const userMemories = await UserMemory.filter({ user_id: userId });
+      const userMemories = await fetchUserMemory({ user_id: userId });
       if (userMemories.length > 0) {
-        await UserMemory.delete(userMemories[0].id);
+        await deleteUserMemory(userMemories[0].id);
       }
 
       // Delete all FamilyProfile records
-      const familyProfiles = await FamilyProfile.filter({ user_id: userId });
+      const familyProfiles = await fetchFamilyProfiles({ user_id: userId });
       for (const profile of familyProfiles) {
-        await FamilyProfile.delete(profile.id);
+        await deleteFamilyProfile(profile.id);
       }
 
       // Delete all ChatHistory records

@@ -1,4 +1,4 @@
-import { EmailLog } from '@/lib/entities';
+import { createEmailLog } from '@/lib/api/entities-api';
 import { invokeFunction } from '@/lib/functions';
 
 /**
@@ -38,7 +38,7 @@ export async function sendSchoolEmail({
   // E18b-001: Test mode check - block email and log as test_blocked
   if (test_mode) {
     try {
-      await EmailLog.create({
+      await createEmailLog({
         type,
         to,
         from_name: fromName,
@@ -61,7 +61,7 @@ export async function sendSchoolEmail({
   // WC4: Block emails to unclaimed schools (first layer check)
   if (school && school.claim_status !== 'claimed') {
     try {
-      await EmailLog.create({
+      await createEmailLog({
         type,
         to,
         from_name: fromName,
@@ -92,7 +92,7 @@ export async function sendSchoolEmail({
 
     // Log success
     try {
-      await EmailLog.create({
+      await createEmailLog({
         type,
         to,
         from_name: fromName,
@@ -114,7 +114,7 @@ export async function sendSchoolEmail({
   } catch (error) {
     // Log failure
     try {
-      await EmailLog.create({
+      await createEmailLog({
         type,
         to,
         from_name: fromName,
