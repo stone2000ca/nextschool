@@ -10,6 +10,7 @@ import { searchSchoolsLogic } from './searchSchools'
 import { STATES, BRIEF_STATUS, resolveGrade, resolveBudget, resolveArrayField } from './constants'
 import { syncConversationState, readConversationState } from './dualWrite'
 import { fetchSchoolNotes } from './fetchSchoolNotes'
+import { fetchVisitContext } from './fetchVisitContext'
 
 
 // Function: orchestrateConversation
@@ -1195,6 +1196,25 @@ export async function orchestrateConversationLogic(params: any) {
         returningUserContextBlock = returningUserContextBlock
           ? `${returningUserContextBlock}\n\n${journeyContextBlock}`
           : journeyContextBlock;
+      }
+
+      // E51-S3B: Fetch visit context for AI awareness (RESULTS/DEEP_DIVE only)
+      let visitContextBlock: string | null = null;
+      if (userId) {
+        try {
+          visitContextBlock = await fetchVisitContext(userId, journeyContext?.journeyId);
+          if (visitContextBlock) {
+            console.log('[E51-S3B] Visit context loaded, length:', visitContextBlock.length);
+            // Append visit context to returningUserContextBlock
+            const visitInstruction = `\nIf VISIT EXPERIENCE data is present, reference the family's visits naturally (e.g. "Since you visited..." or "You mentioned loving..."). Never say "According to your visit record." If only impression exists without notes, reference the impression without fabricating details. If only notes exist without impression, reference notes without assuming an overall impression. Visit experience should enrich your response, not dominate it.`;
+            const fullVisitBlock = visitContextBlock + visitInstruction;
+            returningUserContextBlock = returningUserContextBlock
+              ? `${returningUserContextBlock}\n\n${fullVisitBlock}`
+              : fullVisitBlock;
+          }
+        } catch (e: any) {
+          console.warn('[E51-S3B] fetchVisitContext failed (non-blocking):', e?.message);
+        }
       }
 
       // E29-008: Journey resumption — short-circuit for returning users with an active journey
