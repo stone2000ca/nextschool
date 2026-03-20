@@ -186,7 +186,7 @@ export default function LoadingOverlay({ isVisible, onTransitionComplete, family
         {/* Status Badge — E47-P3: Personalised from FamilyBrief */}
         <div style={{display:'inline-block',background:'rgba(24,150,138,0.15)',border:'1px solid rgba(24,150,138,0.3)',padding:'6px 18px',borderRadius:20,fontSize:13,color:'#5eead4',fontWeight:500,animation:'badgePulse 2s ease-in-out infinite',marginBottom:28}}>
           {familyBrief?.grade && familyBrief?.location
-            ? `Searching 1,000+ schools for Grade ${familyBrief.grade} programs in ${familyBrief.location}${familyBrief.budget ? ` under ${familyBrief.budget}` : ''}…`
+            ? `Searching 1,000+ schools for Grade ${familyBrief.grade} programs in ${familyBrief.location}${familyBrief.budget ? ` under $${Number(familyBrief.budget).toLocaleString()}` : ''}…`
             : 'Finding Your Matches...'}
         </div>
 
