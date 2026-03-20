@@ -80,8 +80,8 @@ export async function processDebriefCompletion(params: {
 CRITICAL: Return ONLY valid JSON. Do NOT include any markdown code blocks, explanations, or text outside the JSON.`;
 
       const reevalUserPrompt = `ORIGINAL ANALYSIS:
-- Fit Label: ${originalAnalysis.fitLabel || 'unknown'}
-- Trade-offs: ${(originalAnalysis.tradeOffs || []).map((t: any) => `${t.dimension}: ${t.concern || 'neutral'}`).join('; ') || 'none'}
+- Fit Label: ${originalAnalysis.fit_label || originalAnalysis.fitLabel || 'unknown'}
+- Trade-offs: ${(originalAnalysis.trade_offs || originalAnalysis.tradeOffs || []).map((t: any) => `${t.dimension}: ${t.concern || 'neutral'}`).join('; ') || 'none'}
 - Strengths: ${(originalAnalysis.strengths || []).join(', ') || 'none noted'}
 
 FAMILY PRIORITIES: ${priorities.join(', ') || 'not specified'}
@@ -89,20 +89,20 @@ FAMILY PRIORITIES: ${priorities.join(', ') || 'not specified'}
 POST-VISIT DEBRIEF Q&A:
 ${qaContext}
 
-Based on what the family shared during their visit, provide a fit re-evaluation. Return JSON: { updatedFitLabel (enum: "strong_match", "good_match", "worth_exploring"), fitDirection (enum: "improved", "declined", "unchanged"), revisedStrengths (array of strings), revisedConcerns (array of strings), visitVerdict (string, 1-2 sentences) }`;
+Based on what the family shared during their visit, provide a fit re-evaluation. Return JSON: { updated_fit_label (enum: "strong_match", "good_match", "worth_exploring"), fit_direction (enum: "improved", "declined", "unchanged"), revised_strengths (array of strings), revised_concerns (array of strings), visit_verdict (string, 1-2 sentences) }`;
 
       const structured = await invokeLLM({
         prompt: `${reevalSystemPrompt}\n\n${reevalUserPrompt}`,
         response_json_schema: {
           type: 'object',
           properties: {
-            updatedFitLabel: { type: 'string', enum: ['strong_match', 'good_match', 'worth_exploring'] },
-            fitDirection: { type: 'string', enum: ['improved', 'declined', 'unchanged'] },
-            revisedStrengths: { type: 'array', items: { type: 'string' } },
-            revisedConcerns: { type: 'array', items: { type: 'string' } },
-            visitVerdict: { type: 'string' },
+            updated_fit_label: { type: 'string', enum: ['strong_match', 'good_match', 'worth_exploring'] },
+            fit_direction: { type: 'string', enum: ['improved', 'declined', 'unchanged'] },
+            revised_strengths: { type: 'array', items: { type: 'string' } },
+            revised_concerns: { type: 'array', items: { type: 'string' } },
+            visit_verdict: { type: 'string' },
           },
-          required: ['updatedFitLabel', 'fitDirection', 'revisedStrengths', 'revisedConcerns', 'visitVerdict'],
+          required: ['updated_fit_label', 'fit_direction', 'revised_strengths', 'revised_concerns', 'visit_verdict'],
           additionalProperties: false,
         },
       });
@@ -113,7 +113,7 @@ Based on what the family shared during their visit, provide a fit re-evaluation.
       if (reevalResult) {
         const fitReevalContent = {
           ...reevalResult,
-          originalFitLabel: originalAnalysis.fitLabel || 'unknown',
+          original_fit_label: originalAnalysis.fit_label || originalAnalysis.fitLabel || 'unknown',
           debriefTimestamp: nowIso,
         };
 
@@ -139,11 +139,11 @@ Based on what the family shared during their visit, provide a fit re-evaluation.
 
   // 6) Patch schoolJourney with re-eval fields (if we got them)
   if (reevalResult && item) {
-    item.postVisitFitLabel = reevalResult.updatedFitLabel;
-    item.fitDirection = reevalResult.fitDirection;
-    item.visitVerdict = reevalResult.visitVerdict;
-    item.revisedStrengths = reevalResult.revisedStrengths;
-    item.revisedConcerns = reevalResult.revisedConcerns;
+    item.postVisitFitLabel = reevalResult.updated_fit_label;
+    item.fitDirection = reevalResult.fit_direction;
+    item.visitVerdict = reevalResult.visit_verdict;
+    item.revisedStrengths = reevalResult.revised_strengths;
+    item.revisedConcerns = reevalResult.revised_concerns;
   }
 
   // 7) Phase advance: if all TOURING items now VISITED and phase is EXPERIENCE -> DECIDE

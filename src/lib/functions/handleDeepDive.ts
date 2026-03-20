@@ -84,23 +84,23 @@ const MERGED_RESPONSE_SCHEMA = {
   properties: {
     message: { type: 'string' },
     actions: { type: 'array', items: { type: 'object', properties: { type: { type: 'string', enum: ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL'] }, schoolId: { type: 'string' }, panel: { type: 'string', enum: ['shortlist', 'comparison', 'brief'] } }, required: ['type'] } },
-    schoolAnalysis: {
+    school_analysis: {
       type: 'object',
       properties: {
-        fitLabel: { type: 'string', enum: ['strong_match', 'good_match', 'worth_exploring'] },
-        fitScore: { type: 'number' },
-        tradeOffs: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['dimension', 'strength', 'concern', 'dataSource'], properties: { dimension: { type: 'string' }, strength: { type: 'string' }, concern: { type: 'string' }, dataSource: { type: 'string' } } } },
-        dataGaps: { type: 'array', items: { type: 'string' } },
-        visitQuestions: { type: 'array', items: { type: 'string' } },
-        financialSummary: { type: 'object', additionalProperties: false, required: ['tuition', 'aidAvailable', 'estimatedNetCost', 'budgetFit'], properties: { tuition: { type: 'number' }, aidAvailable: { type: 'boolean' }, estimatedNetCost: { type: 'number' }, budgetFit: { type: 'string' } } },
-        aiInsight: { type: 'string' },
-        priorityMatches: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['priority', 'status', 'detail'], properties: { priority: { type: 'string' }, status: { type: 'string', enum: ['match', 'partial', 'flag'] }, detail: { type: 'string' } } } },
-        communityPulse: { type: 'object', additionalProperties: false, required: ['reviewCount', 'themes', 'sentimentBreakdown', 'parentPerspective'], properties: { reviewCount: { type: 'number' }, themes: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['label', 'sentiment'], properties: { label: { type: 'string' }, sentiment: { type: 'string', enum: ['positive', 'neutral', 'negative'] } } } }, sentimentBreakdown: { type: 'object', additionalProperties: false, required: ['positive', 'neutral', 'negative'], properties: { positive: { type: 'number' }, neutral: { type: 'number' }, negative: { type: 'number' } } }, parentPerspective: { type: 'string' } } }
+        fit_label: { type: 'string', enum: ['strong_match', 'good_match', 'worth_exploring'] },
+        fit_score: { type: 'number' },
+        trade_offs: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['dimension', 'strength', 'concern', 'data_source'], properties: { dimension: { type: 'string' }, strength: { type: 'string' }, concern: { type: 'string' }, data_source: { type: 'string' } } } },
+        data_gaps: { type: 'array', items: { type: 'string' } },
+        visit_questions: { type: 'array', items: { type: 'string' } },
+        financial_summary: { type: 'object', additionalProperties: false, required: ['tuition', 'aid_available', 'estimated_net_cost', 'budget_fit'], properties: { tuition: { type: 'number' }, aid_available: { type: 'boolean' }, estimated_net_cost: { type: 'number' }, budget_fit: { type: 'string' } } },
+        ai_insight: { type: 'string' },
+        priority_matches: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['priority', 'status', 'detail'], properties: { priority: { type: 'string' }, status: { type: 'string', enum: ['match', 'partial', 'flag'] }, detail: { type: 'string' } } } },
+        community_pulse: { type: 'object', additionalProperties: false, required: ['review_count', 'themes', 'sentiment_breakdown', 'parent_perspective'], properties: { review_count: { type: 'number' }, themes: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['label', 'sentiment'], properties: { label: { type: 'string' }, sentiment: { type: 'string', enum: ['positive', 'neutral', 'negative'] } } } }, sentiment_breakdown: { type: 'object', additionalProperties: false, required: ['positive', 'neutral', 'negative'], properties: { positive: { type: 'number' }, neutral: { type: 'number' }, negative: { type: 'number' } } }, parent_perspective: { type: 'string' } } }
       },
-      required: ['fitLabel', 'fitScore', 'tradeOffs', 'dataGaps', 'visitQuestions', 'financialSummary', 'aiInsight']
+      required: ['fit_label', 'fit_score', 'trade_offs', 'data_gaps', 'visit_questions', 'financial_summary', 'ai_insight']
     }
   },
-  required: ['message', 'actions', 'schoolAnalysis']
+  required: ['message', 'actions', 'school_analysis']
 };
 
 export async function handleDeepDiveLogic(params: any) {
@@ -155,7 +155,7 @@ export async function handleDeepDiveLogic(params: any) {
       let cachedVisitPrepKit: any = null;
       try {
         const fullKit = typeof prep.content === 'string' ? JSON.parse(prep.content) : prep.content;
-        cachedVisitPrepKit = isPremiumUser ? fullKit : { schoolName: fullKit.schoolName, intro: fullKit.intro, visitQuestions: (fullKit.visitQuestions || []).slice(0, 2), observations: null, redFlags: null, isLocked: true };
+        cachedVisitPrepKit = isPremiumUser ? fullKit : { schoolName: fullKit.schoolName, intro: fullKit.intro, visitQuestions: (fullKit.visitQuestions || fullKit.visit_questions || []).slice(0, 2), observations: null, redFlags: null, isLocked: true };
       } catch (e) {}
       let cachedActionPlan: any = null;
       try { cachedActionPlan = isPremiumUser ? (typeof plan.content === 'string' ? JSON.parse(plan.content) : plan.content) : null; } catch (e) {}
@@ -172,8 +172,8 @@ export async function handleDeepDiveLogic(params: any) {
   }
 
   // Build school data for LLM
-  const childDisplayName = conversationFamilyProfile?.childName || 'your child';
-  const resolvedMaxTuition = conversationFamilyProfile?.maxTuition ? (typeof conversationFamilyProfile.maxTuition === 'number' ? conversationFamilyProfile.maxTuition : parseInt(conversationFamilyProfile.maxTuition)) : null;
+  const childDisplayName = conversationFamilyProfile?.child_name || 'your child';
+  const resolvedMaxTuition = conversationFamilyProfile?.max_tuition ? (typeof conversationFamilyProfile.max_tuition === 'number' ? conversationFamilyProfile.max_tuition : parseInt(conversationFamilyProfile.max_tuition)) : null;
   const resolvedPriorities = conversationFamilyProfile?.priorities?.length > 0 ? conversationFamilyProfile.priorities : null;
 
   const compressedSchoolData = {
@@ -241,27 +241,27 @@ Write naturally in conversational prose about why this school fits the family. C
 ${area4Instructions}
 
 STRUCTURED ANALYSIS INSTRUCTIONS:
-In your JSON response, also include a schoolAnalysis object with:
-- fitLabel: 'strong_match', 'good_match', or 'worth_exploring'
-- fitScore: 0-100 numeric score
-- tradeOffs: array of {dimension, strength, concern, dataSource} - MUST have at least 3 items
-- dataGaps: array of field names with missing data relevant to this family
-- visitQuestions: array of 3-5 personalized questions for a school visit
-- financialSummary: {tuition (number), aidAvailable (boolean), estimatedNetCost (number), budgetFit (string)}
-- aiInsight: 2-3 sentence summary insight about this school-family match
-- priorityMatches: For each priority from the family Brief, assess fit with status 'match', 'partial', or 'flag'
-- communityPulse: {reviewCount, themes (3-5 items with sentiment), sentimentBreakdown, parentPerspective}`;
+In your JSON response, also include a school_analysis object with:
+- fit_label: 'strong_match', 'good_match', or 'worth_exploring'
+- fit_score: 0-100 numeric score
+- trade_offs: array of {dimension, strength, concern, data_source} - MUST have at least 3 items
+- data_gaps: array of field names with missing data relevant to this family
+- visit_questions: array of 3-5 personalized questions for a school visit
+- financial_summary: {tuition (number), aid_available (boolean), estimated_net_cost (number), budget_fit (string)}
+- ai_insight: 2-3 sentence summary insight about this school-family match
+- priority_matches: For each priority from the family Brief, assess fit with status 'match', 'partial', or 'flag'
+- community_pulse: {review_count, themes (3-5 items with sentiment), sentiment_breakdown, parent_perspective}`;
 
   const deepDiveUserPrompt = `FAMILY BRIEF:
 - Child: ${childDisplayName}
 - Budget: ${resolvedMaxTuition ? '$' + resolvedMaxTuition : 'Not specified'}
 - Priorities: ${resolvedPriorities?.join(', ') || 'Not specified'}
 - Interests: ${conversationFamilyProfile?.interests?.join(', ') || 'Not specified'}
-- Academic Strengths: ${conversationFamilyProfile?.academicStrengths?.join(', ') || 'Not specified'}
-- Academic Struggles: ${conversationFamilyProfile?.academicStruggles?.join(', ') || 'Not specified'}
-- Learning Style: ${conversationFamilyProfile?.learningStyle || 'Not specified'}
-- Personality Traits: ${conversationFamilyProfile?.personalityTraits?.join(', ') || 'Not specified'}
-- Learning Differences: ${conversationFamilyProfile?.learningDifferences?.join(', ') || 'None noted'}
+- Academic Strengths: ${conversationFamilyProfile?.academic_strengths?.join(', ') || 'Not specified'}
+- Academic Struggles: ${conversationFamilyProfile?.academic_struggles?.join(', ') || 'Not specified'}
+- Learning Style: ${conversationFamilyProfile?.learning_style || 'Not specified'}
+- Personality Traits: ${conversationFamilyProfile?.personality_traits?.join(', ') || 'Not specified'}
+- Learning Differences: ${conversationFamilyProfile?.learning_differences?.join(', ') || 'None noted'}
 
 SCHOOL DATA:
 ${JSON.stringify(compressedSchoolData, null, 2)}
@@ -293,37 +293,25 @@ Generate the DEEPDIVE card for this family-school match.`;
       if (Array.isArray(parsed.actions) && parsed.actions.length > 0) {
         rawToolCalls.push({ function: { name: 'execute_ui_action', arguments: JSON.stringify({ actions: parsed.actions }) } });
       }
-      deepDiveAnalysis = parsed.schoolAnalysis || { fitLabel: 'worth_exploring', fitScore: 50, tradeOffs: [], dataGaps: [], visitQuestions: [], financialSummary: null, aiInsight: '', priorityMatches: [], communityPulse: null };
+      deepDiveAnalysis = parsed.school_analysis || { fit_label: 'worth_exploring', fit_score: 50, trade_offs: [], data_gaps: [], visit_questions: [], financial_summary: null, ai_insight: '', priority_matches: [], community_pulse: null };
     }
   } catch (openrouterError: any) {
     console.error('[DEEPDIVE] OpenRouter failed:', openrouterError.message);
     aiMessage = `**Great Fit for ${childDisplayName}**\n\n${selectedSchool.description?.substring(0, 150) || 'School details available upon request.'}\n\nWhat would you like to know more about?`;
-    deepDiveAnalysis = { fitLabel: 'worth_exploring', fitScore: 50, tradeOffs: [], dataGaps: [], visitQuestions: [], financialSummary: null, aiInsight: '', priorityMatches: [], communityPulse: null };
+    deepDiveAnalysis = { fit_label: 'worth_exploring', fit_score: 50, trade_offs: [], data_gaps: [], visit_questions: [], financial_summary: null, ai_insight: '', priority_matches: [], community_pulse: null };
   }
 
   // Save to SchoolAnalysis
   if (userId && selectedSchoolId && deepDiveAnalysis) {
     try {
-      // Convert camelCase deepDiveAnalysis keys to snake_case for DB
-      const ANALYSIS_CAMEL_TO_SNAKE: Record<string, string> = {
-        fitLabel: 'fit_label', fitScore: 'fit_score', tradeOffs: 'trade_offs',
-        dataGaps: 'data_gaps', visitQuestions: 'visit_questions',
-        financialSummary: 'financial_summary', aiInsight: 'ai_insight',
-        priorityMatches: 'priority_matches', communityPulse: 'community_pulse',
-      };
-      const snakeCaseAnalysis: Record<string, any> = {};
-      for (const [k, v] of Object.entries(deepDiveAnalysis)) {
-        snakeCaseAnalysis[ANALYSIS_CAMEL_TO_SNAKE[k] || k] = v;
-      }
-
       const persistFilter: any = { user_id: userId, school_id: selectedSchoolId };
       if (conversationId) persistFilter.conversation_id = conversationId;
       const existing = await SchoolAnalysis.filter(persistFilter);
       if (existing?.length > 0) {
-        await SchoolAnalysis.update(existing[0].id, { ...snakeCaseAnalysis, school_name: selectedSchool.name, last_analyzed_at: new Date().toISOString(), conversation_id: conversationId || null });
+        await SchoolAnalysis.update(existing[0].id, { ...deepDiveAnalysis, school_name: selectedSchool.name, last_analyzed_at: new Date().toISOString(), conversation_id: conversationId || null });
       } else {
-        await SchoolAnalysis.create({ user_id: userId, school_id: selectedSchoolId, school_name: selectedSchool.name, ...snakeCaseAnalysis, last_analyzed_at: new Date().toISOString(), conversation_id: conversationId || null });
-        const childName = conversationFamilyProfile?.childName || null;
+        await SchoolAnalysis.create({ user_id: userId, school_id: selectedSchoolId, school_name: selectedSchool.name, ...deepDiveAnalysis, last_analyzed_at: new Date().toISOString(), conversation_id: conversationId || null });
+        const childName = conversationFamilyProfile?.child_name || null;
         const schoolName = selectedSchool.name;
         if (consultantName === 'Jackie') {
           aiMessage += `\n\nBy the way — I can put together a personalized Visit Prep Kit for ${schoolName}. Want me to prepare that?`;
@@ -342,9 +330,9 @@ Generate the DEEPDIVE card for this family-school match.`;
   if (deepDiveAnalysis && selectedSchool) {
     fullVisitPrepKit = {
       schoolName: selectedSchool.name,
-      visitQuestions: (deepDiveAnalysis.visitQuestions || []).map((q: string) => ({ question: q, priorityTag: 'medium' })),
-      observations: (deepDiveAnalysis.dataGaps || []).map((gap: string) => `Observe how the school addresses: ${gap}`),
-      redFlags: (deepDiveAnalysis.tradeOffs || []).filter((t: any) => t.concern).map((t: any) => `Watch for concerns around ${t.dimension}.`),
+      visitQuestions: (deepDiveAnalysis.visit_questions || []).map((q: string) => ({ question: q, priorityTag: 'medium' })),
+      observations: (deepDiveAnalysis.data_gaps || []).map((gap: string) => `Observe how the school addresses: ${gap}`),
+      redFlags: (deepDiveAnalysis.trade_offs || []).filter((t: any) => t.concern).map((t: any) => `Watch for concerns around ${t.dimension}.`),
       intro: `Here's your personalized Visit Prep Kit for ${selectedSchool.name}.`,
       isLocked: false
     };
@@ -370,7 +358,7 @@ Generate the DEEPDIVE card for this family-school match.`;
     ];
     if (selectedSchool.financial_aid_available) docChecklist.push({ item: 'Financial aid application', status: 'pending' });
 
-    generatedActionPlan = { visitTimeline: visitWindow, dayAdmissionDeadlines: { deadline: selectedSchool.day_admission_deadline || null, financialAidDeadline: selectedSchool.financial_aid_deadline || null, isEstimated: !selectedSchool.day_admission_deadline }, documentChecklist: docChecklist, followUpQuestions: deepDiveAnalysis.visitQuestions || [], fitSummary: deepDiveAnalysis.fitLabel };
+    generatedActionPlan = { visitTimeline: visitWindow, dayAdmissionDeadlines: { deadline: selectedSchool.day_admission_deadline || null, financialAidDeadline: selectedSchool.financial_aid_deadline || null, isEstimated: !selectedSchool.day_admission_deadline }, documentChecklist: docChecklist, followUpQuestions: deepDiveAnalysis.visit_questions || [], fitSummary: deepDiveAnalysis.fit_label };
 
     // Fire-and-forget artifact persistence
     (async () => {
@@ -393,8 +381,8 @@ Generate the DEEPDIVE card for this family-school match.`;
 
   // Follow-up prompt
   let followUpPrompt = '';
-  const fitLabel = deepDiveAnalysis?.fitLabel || 'worth_exploring';
-  const childName = conversationFamilyProfile?.childName || 'your child';
+  const fitLabel = deepDiveAnalysis?.fit_label || 'worth_exploring';
+  const childName = conversationFamilyProfile?.child_name || 'your child';
   const schoolName = selectedSchool?.name || 'this school';
   const deepDiveFollowUpKey = `deepDiveFollowUpShown_${selectedSchoolId}`;
   const alreadyShownFollowUp = context?.[deepDiveFollowUpKey] === true;

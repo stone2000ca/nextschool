@@ -191,7 +191,7 @@ async function callOpenRouter(options) {
 // E41-S6/S7/S10: Extended action types
 const V1_ACTION_TYPES = ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL', 'INITIATE_TOUR', 'EDIT_CRITERIA', 'FILTER_SCHOOLS', 'LOAD_MORE', 'SORT_SCHOOLS'];
 const VALID_PANELS = ['shortlist', 'comparison', 'brief'];
-const ACTION_TOOL_SCHEMA = [{ type: 'function', function: { name: 'execute_ui_action', description: 'Execute UI actions alongside your text response when the user wants to add schools to shortlist, open panels, expand school details, edit criteria, filter results, load more schools, or sort results', parameters: { type: 'object', properties: { actions: { type: 'array', items: { type: 'object', properties: { type: { type: 'string', enum: ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL', 'INITIATE_TOUR', 'EDIT_CRITERIA', 'FILTER_SCHOOLS', 'LOAD_MORE', 'SORT_SCHOOLS'] }, schoolId: { type: 'string', description: 'School entity ID (for ADD_TO_SHORTLIST, EXPAND_SCHOOL)' }, panel: { type: 'string', enum: ['shortlist', 'comparison', 'brief'] }, profileDelta: { type: 'object', description: 'Profile fields to update for EDIT_CRITERIA (e.g. { maxTuition: 25000 })' }, filters: { type: 'object', description: 'Filter overrides for FILTER_SCHOOLS', properties: { boardingType: { type: 'string', enum: ['boarding', 'day', 'both'] }, curriculum: { type: 'string' }, gender: { type: 'string', enum: ['boys', 'girls', 'coed'] }, religiousAffiliation: { type: 'string' }, clear: { type: 'boolean' } } }, sortBy: { type: 'string', enum: ['distance', 'tuition', 'default'], description: 'Sort field for SORT_SCHOOLS' } }, required: ['type'] } } }, required: ['actions'] } } }];
+const ACTION_TOOL_SCHEMA = [{ type: 'function', function: { name: 'execute_ui_action', description: 'Execute UI actions alongside your text response when the user wants to add schools to shortlist, open panels, expand school details, edit criteria, filter results, load more schools, or sort results', parameters: { type: 'object', properties: { actions: { type: 'array', items: { type: 'object', properties: { type: { type: 'string', enum: ['ADD_TO_SHORTLIST', 'OPEN_PANEL', 'EXPAND_SCHOOL', 'INITIATE_TOUR', 'EDIT_CRITERIA', 'FILTER_SCHOOLS', 'LOAD_MORE', 'SORT_SCHOOLS'] }, schoolId: { type: 'string', description: 'School entity ID (for ADD_TO_SHORTLIST, EXPAND_SCHOOL)' }, panel: { type: 'string', enum: ['shortlist', 'comparison', 'brief'] }, profileDelta: { type: 'object', description: 'Profile fields to update for EDIT_CRITERIA (e.g. { max_tuition: 25000 })' }, filters: { type: 'object', description: 'Filter overrides for FILTER_SCHOOLS', properties: { boardingType: { type: 'string', enum: ['boarding', 'day', 'both'] }, curriculum: { type: 'string' }, gender: { type: 'string', enum: ['boys', 'girls', 'coed'] }, religiousAffiliation: { type: 'string' }, clear: { type: 'boolean' } } }, sortBy: { type: 'string', enum: ['distance', 'tuition', 'default'], description: 'Sort field for SORT_SCHOOLS' } }, required: ['type'] } } }, required: ['actions'] } } }];
 
 // =============================================================================
 // E41-S2: Inline classifyIntent — regex keyword gate, no LLM (~5-50ms)
@@ -260,9 +260,9 @@ function resolveTransition(params) {
     currentState = STATES.DISCOVERY;
   }
 
-  const hasLocation = !!(profileData?.locationArea);
-  const hasGrade = profileData?.childGrade !== null && profileData?.childGrade !== undefined;
-  const hasBudget = !!(profileData?.maxTuition);
+  const hasLocation = !!(profileData?.location_area);
+  const hasGrade = profileData?.child_grade !== null && profileData?.child_grade !== undefined;
+  const hasBudget = !!(profileData?.max_tuition);
   const prioritiesCount = profileData?.priorities?.length || 0;
   
   let sufficiency = 'THIN';
@@ -464,7 +464,7 @@ function lightweightExtract(message, existingProfile) {
     const gradeStr = gradeMatch[1].toLowerCase();
     const gradeMap = { 'pk': -2, 'jk': -1, 'sk': 0, 'k': 0, 'kindergarten': 0, 'junior': 11, 'senior': 12 };
     const grade = gradeMap[gradeStr] !== undefined ? gradeMap[gradeStr] : parseInt(gradeStr);
-    if (!isNaN(grade)) bridgeProfile.childGrade = grade;
+    if (!isNaN(grade)) bridgeProfile.child_grade = grade;
   }
 
   // Location extraction
@@ -474,15 +474,15 @@ function lightweightExtract(message, existingProfile) {
     const loc = locMatch[1].trim();
     const NON_GEO = /\b(IB|AP|STEM|IGCSE|Montessori|Waldorf|Reggio|French|Programs?|Immersion|Curriculum|English|Math|Science|Art|Music|Drama)\b/gi;
     const cleanedLoc = loc.replace(NON_GEO, '').replace(/\s+/g, ' ').trim();
-    if (cleanedLoc.length > 2 && /[A-Z]/.test(cleanedLoc)) { bridgeProfile.locationArea = cleanedLoc; }
+    if (cleanedLoc.length > 2 && /[A-Z]/.test(cleanedLoc)) { bridgeProfile.location_area = cleanedLoc; }
   }
   // S113-WC1: Secondary fallback — bare city name or known Canadian region (no preposition required)
-  if (!bridgeProfile.locationArea) {
+  if (!bridgeProfile.location_area) {
     const KNOWN_LOCATIONS = ['Greater Toronto Area', 'GTA', 'Toronto', 'Vancouver', 'Montreal', 'Ottawa', 'Calgary', 'Edmonton', 'Mississauga', 'Oakville', 'Markham', 'Richmond Hill', 'Burlington', 'Hamilton', 'Brampton', 'Vaughan', 'Waterloo', 'Kitchener', 'London', 'Victoria'];
     for (const knownLoc of KNOWN_LOCATIONS) {
       const escaped = knownLoc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       if (new RegExp(`\\b${escaped}\\b`, 'i').test(message)) {
-        bridgeProfile.locationArea = knownLoc;
+        bridgeProfile.location_area = knownLoc;
         break;
       }
     }
@@ -509,18 +509,18 @@ function lightweightExtract(message, existingProfile) {
     }
   }
   if (maxBudgetFound > 0) {
-    bridgeProfile.maxTuition = maxBudgetFound;
+    bridgeProfile.max_tuition = maxBudgetFound;
   }
 
   // Gender extraction
   const strongGenderKw = /\b(son|daughter)\b/i.test(message);
-  if (strongGenderKw || !existingProfile?.childGender) {
-    if (/\b(son|boy|he|him|his)\b/i.test(message)) { bridgeProfile.childGender = 'male'; bridgeProfile.gender = 'male'; }
-    else if (/\b(daughter|girl|she|her)\b/i.test(message)) { bridgeProfile.childGender = 'female'; bridgeProfile.gender = 'female'; }
+  if (strongGenderKw || !existingProfile?.child_gender) {
+    if (/\b(son|boy|he|him|his)\b/i.test(message)) { bridgeProfile.child_gender = 'male'; bridgeProfile.gender = 'male'; }
+    else if (/\b(daughter|girl|she|her)\b/i.test(message)) { bridgeProfile.child_gender = 'female'; bridgeProfile.gender = 'female'; }
   }
 
   // S111-WC3: Child name extraction
-  if (!existingProfile?.childName) {
+  if (!existingProfile?.child_name) {
     const nameMatch = message.match(/\b(?:my\s+)?(?:son|daughter|child|kid)\s+(?:is\s+)?(?:named\s+)?([A-Z][a-z]{1,15})\b/) ||
                       message.match(/\b(?:named|name\s+is|call(?:ed)?)\s+([A-Z][a-z]{1,15})\b/) ||
                       message.match(/\b([A-Z][a-z]{1,15})\s+(?:is\s+)?(?:my\s+)?(?:son|daughter|child|kid)\b/) ||
@@ -529,13 +529,13 @@ function lightweightExtract(message, existingProfile) {
       const candidateName = nameMatch[1];
       const CITY_NAMES = new Set(['Toronto', 'Vancouver', 'Ottawa', 'Montreal', 'Calgary', 'Edmonton', 'Winnipeg', 'Halifax', 'Victoria', 'London', 'Boston', 'Chicago']);
       if (!CITY_NAMES.has(candidateName)) {
-        bridgeProfile.childName = candidateName;
+        bridgeProfile.child_name = candidateName;
       }
     }
   }
 
   // S111-WC3: Curriculum preference extraction
-  if (!existingProfile?.curriculumPreference || existingProfile.curriculumPreference.length === 0) {
+  if (!existingProfile?.curriculum_preference || existingProfile.curriculum_preference.length === 0) {
     const curriculumKeywords = message.match(/\b(montessori|waldorf|reggio|IB|international\s+baccalaureate|AP|advanced\s+placement|french\s+immersion|STEM)\b/gi);
     if (curriculumKeywords) {
       const normalized = curriculumKeywords.map(k => {
@@ -545,7 +545,7 @@ function lightweightExtract(message, existingProfile) {
         if (lower === 'french immersion') return 'French Immersion';
         return k.charAt(0).toUpperCase() + k.slice(1).toLowerCase();
       });
-      bridgeProfile.curriculumPreference = [...new Set(normalized)];
+      bridgeProfile.curriculum_preference = [...new Set(normalized)];
     }
   }
 
@@ -564,10 +564,10 @@ function lightweightExtract(message, existingProfile) {
   }
 
   // S111-WC3: School type extraction
-  if (!existingProfile?.schoolTypeLabel) {
-    if (/\b(?:co-?ed|coed)\b/i.test(message)) bridgeProfile.schoolTypeLabel = 'co-ed';
-    else if (/\ball[- ]?boys\b/i.test(message)) bridgeProfile.schoolTypeLabel = 'all-boys';
-    else if (/\ball[- ]?girls\b/i.test(message)) bridgeProfile.schoolTypeLabel = 'all-girls';
+  if (!existingProfile?.school_type_label) {
+    if (/\b(?:co-?ed|coed)\b/i.test(message)) bridgeProfile.school_type_label = 'co-ed';
+    else if (/\ball[- ]?boys\b/i.test(message)) bridgeProfile.school_type_label = 'all-boys';
+    else if (/\ball[- ]?girls\b/i.test(message)) bridgeProfile.school_type_label = 'all-girls';
   }
 
   // S111-WC3: Interests extraction (verb-anchored)
@@ -639,21 +639,21 @@ async function handleDiscovery(message, conversationFamilyProfile, context, conv
     ? '\n\nIf it feels natural in the conversation, offer to generate their Family Brief.'
     : '';
 
-  const hasGrade = conversationFamilyProfile?.childGrade !== null && conversationFamilyProfile?.childGrade !== undefined;
-  const hasLocation = !!conversationFamilyProfile?.locationArea;
-  const hasBudget = !!conversationFamilyProfile?.maxTuition;
+  const hasGrade = conversationFamilyProfile?.child_grade !== null && conversationFamilyProfile?.child_grade !== undefined;
+  const hasLocation = !!conversationFamilyProfile?.location_area;
+  const hasBudget = !!conversationFamilyProfile?.max_tuition;
   const hasGender = !!conversationFamilyProfile?.gender;
 
   const knownFacts: any[] = [];
-   if (hasGrade) knownFacts.push(`grade ${conversationFamilyProfile.childGrade}`);
+   if (hasGrade) knownFacts.push(`grade ${conversationFamilyProfile.child_grade}`);
    if (hasGender) knownFacts.push(`${conversationFamilyProfile.gender}`);
-   if (hasLocation) knownFacts.push(`location: ${conversationFamilyProfile.locationArea}`);
-   if (hasBudget) knownFacts.push(`budget: $${conversationFamilyProfile.maxTuition}`);
+   if (hasLocation) knownFacts.push(`location: ${conversationFamilyProfile.location_area}`);
+   if (hasBudget) knownFacts.push(`budget: $${conversationFamilyProfile.max_tuition}`);
    if (conversationFamilyProfile?.interests?.length > 0) knownFacts.push(`interests: ${conversationFamilyProfile.interests.join(', ')}`);
    if (conversationFamilyProfile?.priorities?.length > 0) knownFacts.push(`priorities: ${conversationFamilyProfile.priorities.join(', ')}`);
    if (conversationFamilyProfile?.dealbreakers?.length > 0) knownFacts.push(`dealbreakers: ${conversationFamilyProfile.dealbreakers.join(', ')}`);
-   if (conversationFamilyProfile?.curriculumPreference?.length > 0) knownFacts.push(`curriculum: ${conversationFamilyProfile.curriculumPreference.join(', ')}`);
-   if (conversationFamilyProfile?.childName) knownFacts.push(`child name: ${conversationFamilyProfile.childName}`);
+   if (conversationFamilyProfile?.curriculum_preference?.length > 0) knownFacts.push(`curriculum: ${conversationFamilyProfile.curriculum_preference.join(', ')}`);
+   if (conversationFamilyProfile?.child_name) knownFacts.push(`child name: ${conversationFamilyProfile.child_name}`);
    const knownSummary = knownFacts.length > 0
      ? `\nALREADY COLLECTED (DO NOT ASK AGAIN): ${knownFacts.join(', ')}.`
      : '';
@@ -783,9 +783,9 @@ async function handleVisitDebriefInternal(selectedSchoolId, processMessage, conv
     if (!school) return null;
     
     const schoolName = school.name;
-    const childName = conversationFamilyProfile?.childName || 'your child';
-    const priorVisitQuestions = priorAnalysis?.content?.visitQuestions || [];
-    const priorTradeOffs = priorAnalysis?.content?.tradeOffs || [];
+    const childName = conversationFamilyProfile?.child_name || 'your child';
+    const priorVisitQuestions = priorAnalysis?.content?.visit_questions || priorAnalysis?.content?.visitQuestions || [];
+    const priorTradeOffs = priorAnalysis?.content?.trade_offs || priorAnalysis?.content?.tradeOffs || [];
     
     // WC9: Initialize or refresh debrief question queue if switching schools
     const isNewDebrief = context.debriefSchoolId !== selectedSchoolId;
@@ -1163,10 +1163,10 @@ export async function orchestrateConversationLogic(params: any) {
       if (returningUserContext?.isReturningUser) {
         const contextParts: string[] = [];
         if (returningUserContext.profileName) contextParts.push(`Session: ${returningUserContext.profileName}`);
-        if (returningUserContext.childName || returningUserContext.childGrade) {
-          const childInfo = returningUserContext.childName 
-            ? `${returningUserContext.childName}${returningUserContext.childGrade ? `, Grade ${returningUserContext.childGrade}` : ''}`
-            : `Grade ${returningUserContext.childGrade}`;
+        if (returningUserContext.child_name || returningUserContext.child_grade) {
+          const childInfo = returningUserContext.child_name
+            ? `${returningUserContext.child_name}${returningUserContext.child_grade ? `, Grade ${returningUserContext.child_grade}` : ''}`
+            : `Grade ${returningUserContext.child_grade}`;
           contextParts.push(`Child: ${childInfo}`);
         }
         if (returningUserContext.location) contextParts.push(`Location: ${returningUserContext.location}`);
@@ -1300,7 +1300,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
             if (journeyContext?.briefSnapshot) {
               try {
                 const snapshot = typeof journeyContext.briefSnapshot === 'string' ? JSON.parse(journeyContext.briefSnapshot) : journeyContext.briefSnapshot;
-                const seedFields = ['childName','childGrade','childGender','gender','locationArea','maxTuition','interests','priorities','dealbreakers','curriculumPreference','schoolTypeLabel','academicStrengths'];
+                const seedFields = ['child_name','child_grade','child_gender','gender','location_area','max_tuition','interests','priorities','dealbreakers','curriculum_preference','school_type_label','academic_strengths'];
                 const seedData: Record<string, any> = {};
                 for (const key of seedFields) {
                   if (snapshot[key] != null && !conversationFamilyProfile[key]) {
@@ -1322,25 +1322,25 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         }
       } else {
         conversationFamilyProfile = {
-          childName: null, childGrade: null, locationArea: null, maxTuition: null,
-          interests: [], priorities: [], dealbreakers: [], academicStrengths: []
+          child_name: null, child_grade: null, location_area: null, max_tuition: null,
+          interests: [], priorities: [], dealbreakers: [], academic_strengths: []
         };
       }
       
       // E47: Seed FamilyProfile from guided intro FamilyBrief (pre-extracted entities)
       if (familyBrief && conversationFamilyProfile) {
         const briefToProfile: Record<string, any> = {};
-        if (familyBrief.childName && !conversationFamilyProfile.childName) briefToProfile.childName = familyBrief.childName;
-        if (familyBrief.grade != null && conversationFamilyProfile.childGrade == null) {
+        if (familyBrief.childName && !conversationFamilyProfile.child_name) briefToProfile.child_name = familyBrief.childName;
+        if (familyBrief.grade != null && conversationFamilyProfile.child_grade == null) {
           // Parse grade string to number if needed (e.g. "7" → 7, "JK" → -1)
           const gradeMap: Record<string, number> = { 'PK': -2, 'JK': -1, 'SK': 0, 'K': 0 };
           const gradeStr = String(familyBrief.grade).toUpperCase();
-          briefToProfile.childGrade = gradeMap[gradeStr] !== undefined ? gradeMap[gradeStr] : parseInt(gradeStr) || null;
+          briefToProfile.child_grade = gradeMap[gradeStr] !== undefined ? gradeMap[gradeStr] : parseInt(gradeStr) || null;
         }
-        if (familyBrief.location && !conversationFamilyProfile.locationArea) briefToProfile.locationArea = familyBrief.location;
-        if (familyBrief.budget && conversationFamilyProfile.maxTuition == null) briefToProfile.maxTuition = familyBrief.budget;
-        if (familyBrief.schoolTypePreferences?.length > 0 && (!conversationFamilyProfile.schoolTypeLabel)) {
-          briefToProfile.schoolTypeLabel = familyBrief.schoolTypePreferences.join(', ');
+        if (familyBrief.location && !conversationFamilyProfile.location_area) briefToProfile.location_area = familyBrief.location;
+        if (familyBrief.budget && conversationFamilyProfile.max_tuition == null) briefToProfile.max_tuition = familyBrief.budget;
+        if (familyBrief.schoolTypePreferences?.length > 0 && (!conversationFamilyProfile.school_type_label)) {
+          briefToProfile.school_type_label = familyBrief.schoolTypePreferences.join(', ');
         }
         if (Object.keys(briefToProfile).length > 0) {
           Object.assign(conversationFamilyProfile, briefToProfile);
@@ -1374,9 +1374,9 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
       }
 
       const tier1Before = {
-        childGrade: conversationFamilyProfile?.childGrade ?? null,
-        locationArea: conversationFamilyProfile?.locationArea ?? null,
-        maxTuition: conversationFamilyProfile?.maxTuition ?? null,
+        child_grade: conversationFamilyProfile?.child_grade ?? null,
+        location_area: conversationFamilyProfile?.location_area ?? null,
+        max_tuition: conversationFamilyProfile?.max_tuition ?? null,
         gender: conversationFamilyProfile?.gender ?? null
       };
 
@@ -1403,8 +1403,8 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
     if (bridgeProfile?.dealbreakers && Array.isArray(bridgeProfile.dealbreakers) && bridgeProfile.dealbreakers.length > 0) {
       workingProfile.dealbreakers = bridgeProfile.dealbreakers;
     }
-    if (bridgeProfile?.schoolGenderExclusions && Array.isArray(bridgeProfile.schoolGenderExclusions) && bridgeProfile.schoolGenderExclusions.length > 0) {
-      workingProfile.schoolGenderExclusions = bridgeProfile.schoolGenderExclusions;
+    if (bridgeProfile?.school_gender_exclusions && Array.isArray(bridgeProfile.school_gender_exclusions) && bridgeProfile.school_gender_exclusions.length > 0) {
+      workingProfile.school_gender_exclusions = bridgeProfile.school_gender_exclusions;
     }
         }
       }
@@ -1439,9 +1439,9 @@ const { debriefQuestionQueue: _dq, debriefQuestionsAsked: _da, debriefSchoolId: 
 Object.assign(context, safeUpdatedContext);
 
       const tier1After = {
-        childGrade: conversationFamilyProfile?.childGrade ?? null,
-        locationArea: conversationFamilyProfile?.locationArea ?? null,
-        maxTuition: conversationFamilyProfile?.maxTuition ?? null,
+        child_grade: conversationFamilyProfile?.child_grade ?? null,
+        location_area: conversationFamilyProfile?.location_area ?? null,
+        max_tuition: conversationFamilyProfile?.max_tuition ?? null,
         gender: conversationFamilyProfile?.gender ?? null
       };
       const tier1Changed = Object.keys(tier1Before).some(k => {
@@ -1487,13 +1487,13 @@ Object.assign(context, safeUpdatedContext);
       }
       
       const profileData = {
-        locationArea: workingProfile?.locationArea || null,
-        childGrade: workingProfile?.childGrade ?? null,
-        maxTuition: workingProfile?.maxTuition || null,
+        location_area: workingProfile?.location_area || null,
+        child_grade: workingProfile?.child_grade ?? null,
+        max_tuition: workingProfile?.max_tuition || null,
         priorities: workingProfile?.priorities || [],
         dealbreakers: workingProfile?.dealbreakers || [],
-        curriculum: workingProfile?.curriculumPreference || [],
-        schoolTypeLabel: workingProfile?.schoolTypeLabel || null
+        curriculum: workingProfile?.curriculum_preference || [],
+        school_type_label: workingProfile?.school_type_label || null
       };
       
       const turnCount = (conversationHistory?.filter(m => m.role === 'user').length || 0) + 1;
@@ -1730,7 +1730,7 @@ Object.assign(context, safeUpdatedContext);
           (async () => {
             try {
               const briefSnapshot = JSON.parse(JSON.stringify(conversationFamilyProfile || {}));
-              const childName = conversationFamilyProfile?.childName || conversationFamilyProfile?.conversationContext?.childName || 'My Child';
+              const childName = conversationFamilyProfile?.child_name || conversationFamilyProfile?.conversationContext?.child_name || 'My Child';
               const journey = await FamilyJourney.create({
                 user_id: userId,
                 child_name: childName,
@@ -1834,18 +1834,18 @@ Object.assign(context, safeUpdatedContext);
             if (userId && conversationId) {
               (async () => {
                 try {
-                  const CAMEL_TO_SNAKE: Record<string, string> = {
-                    childName: 'child_name', childGrade: 'child_grade', childGender: 'child_gender',
-                    locationArea: 'location_area', maxTuition: 'max_tuition', priorities: 'priorities',
-                    interests: 'interests', dealbreakers: 'dealbreakers', learningDifferences: 'learning_differences',
-                    curriculumPreference: 'curriculum_preference', schoolTypeLabel: 'school_type_label',
-                    academicStrengths: 'academic_strengths', parentNotes: 'parent_notes',
-                    schoolGenderExclusions: 'school_gender_exclusions', schoolGenderPreference: 'school_gender_preference',
-                  };
+                  const PROFILE_FIELDS = [
+                    'child_name', 'child_grade', 'child_gender',
+                    'location_area', 'max_tuition', 'priorities',
+                    'interests', 'dealbreakers', 'learning_differences',
+                    'curriculum_preference', 'school_type_label',
+                    'academic_strengths', 'parent_notes',
+                    'school_gender_exclusions', 'school_gender_preference',
+                  ];
                   const updatePayload: Record<string, any> = {};
-                  for (const [camelKey, snakeKey] of Object.entries(CAMEL_TO_SNAKE)) {
-                    if (delta[camelKey] !== undefined && delta[camelKey] !== null) {
-                      updatePayload[snakeKey] = delta[camelKey];
+                  for (const field of PROFILE_FIELDS) {
+                    if (delta[field] !== undefined && delta[field] !== null) {
+                      updatePayload[field] = delta[field];
                     }
                   }
                   if (Object.keys(updatePayload).length > 0) {
@@ -1863,28 +1863,28 @@ Object.assign(context, safeUpdatedContext);
 
             // Re-invoke searchSchools with updated profile — build proper search params
             const reSearchParams: any = { limit: 50, familyProfile: workingProfile, conversationId, userId };
-            if (workingProfile?.locationArea) {
-              const locLower = workingProfile.locationArea.toLowerCase().trim();
+            if (workingProfile?.location_area) {
+              const locLower = workingProfile.location_area.toLowerCase().trim();
               const metroRegions = ['toronto', 'vancouver', 'montreal', 'calgary', 'ottawa', 'edmonton', 'winnipeg', 'hamilton'];
               const regionAliases = ['gta', 'greater toronto area', 'lower mainland', 'metro vancouver', 'greater vancouver', 'toronto'];
               if (metroRegions.includes(locLower) || regionAliases.includes(locLower)) {
-                reSearchParams.region = workingProfile.locationArea;
+                reSearchParams.region = workingProfile.location_area;
               } else {
-                reSearchParams.city = workingProfile.locationArea;
+                reSearchParams.city = workingProfile.location_area;
               }
             }
-            if (workingProfile?.childGrade != null) {
-              const g = typeof workingProfile.childGrade === 'number' ? workingProfile.childGrade : parseInt(workingProfile.childGrade);
+            if (workingProfile?.child_grade != null) {
+              const g = typeof workingProfile.child_grade === 'number' ? workingProfile.child_grade : parseInt(workingProfile.child_grade);
               if (!isNaN(g)) { reSearchParams.minGrade = g; reSearchParams.maxGrade = g; }
             }
-            if (workingProfile?.maxTuition) {
-              const t = typeof workingProfile.maxTuition === 'number' ? workingProfile.maxTuition : parseInt(workingProfile.maxTuition);
+            if (workingProfile?.max_tuition) {
+              const t = typeof workingProfile.max_tuition === 'number' ? workingProfile.max_tuition : parseInt(workingProfile.max_tuition);
               if (!isNaN(t)) reSearchParams.maxTuition = t;
             }
             if (userLocation?.lat && userLocation?.lng) {
               reSearchParams.resolvedLat = userLocation.lat;
               reSearchParams.resolvedLng = userLocation.lng;
-              reSearchParams.maxDistanceKm = workingProfile?.commuteToleranceMinutes ? Math.ceil(workingProfile.commuteToleranceMinutes / 2) : 75;
+              reSearchParams.maxDistanceKm = workingProfile?.commute_tolerance_minutes ? Math.ceil(workingProfile.commute_tolerance_minutes / 2) : 75;
             }
             const searchResult = await searchSchoolsLogic(reSearchParams);
             if (searchResult.schools?.length > 0) {
@@ -1921,18 +1921,18 @@ Object.assign(context, safeUpdatedContext);
             if (userId && conversationId) {
               try {
                 const delta = extractResult.data.updatedFamilyProfile;
-                const CAMEL_TO_SNAKE_P: Record<string, string> = {
-                  childName: 'child_name', childGrade: 'child_grade', childGender: 'child_gender',
-                  locationArea: 'location_area', maxTuition: 'max_tuition', priorities: 'priorities',
-                  interests: 'interests', dealbreakers: 'dealbreakers', learningDifferences: 'learning_differences',
-                  curriculumPreference: 'curriculum_preference', schoolTypeLabel: 'school_type_label',
-                  academicStrengths: 'academic_strengths', parentNotes: 'parent_notes',
-                  schoolGenderExclusions: 'school_gender_exclusions', schoolGenderPreference: 'school_gender_preference',
-                };
+                const PROFILE_FIELDS_P = [
+                  'child_name', 'child_grade', 'child_gender',
+                  'location_area', 'max_tuition', 'priorities',
+                  'interests', 'dealbreakers', 'learning_differences',
+                  'curriculum_preference', 'school_type_label',
+                  'academic_strengths', 'parent_notes',
+                  'school_gender_exclusions', 'school_gender_preference',
+                ];
                 const updatePayload: Record<string, any> = {};
-                for (const [camelKey, snakeKey] of Object.entries(CAMEL_TO_SNAKE_P)) {
-                  if (delta[camelKey] !== undefined && delta[camelKey] !== null) {
-                    updatePayload[snakeKey] = delta[camelKey];
+                for (const field of PROFILE_FIELDS_P) {
+                  if (delta[field] !== undefined && delta[field] !== null) {
+                    updatePayload[field] = delta[field];
                   }
                 }
                 if (Object.keys(updatePayload).length > 0) {

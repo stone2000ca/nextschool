@@ -123,17 +123,17 @@ export async function extractEntitiesLogic({ message: rawMessage, aiReply, conve
     const t1 = Date.now();
 
     const knownData = conversationFamilyProfile ? {
-      childName: conversationFamilyProfile.child_name,
-      childGrade: conversationFamilyProfile.child_grade,
-      locationArea: conversationFamilyProfile.location_area,
-      maxTuition: conversationFamilyProfile.max_tuition,
+      child_name: conversationFamilyProfile.child_name,
+      child_grade: conversationFamilyProfile.child_grade,
+      location_area: conversationFamilyProfile.location_area,
+      max_tuition: conversationFamilyProfile.max_tuition,
       interests: conversationFamilyProfile.interests,
       priorities: conversationFamilyProfile.priorities,
       dealbreakers: conversationFamilyProfile.dealbreakers,
-      curriculumPreference: conversationFamilyProfile.curriculum_preference,
-      religiousPreference: conversationFamilyProfile.religious_preference,
-      boardingPreference: conversationFamilyProfile.boarding_preference,
-      parentNotes: conversationFamilyProfile.parent_notes || []
+      curriculum_preference: conversationFamilyProfile.curriculum_preference,
+      religious_preference: conversationFamilyProfile.religious_preference,
+      boarding_preference: conversationFamilyProfile.boarding_preference,
+      parent_notes: conversationFamilyProfile.parent_notes || []
     } : {};
 
     const conversationSummary = conversationHistory?.slice(-5)
@@ -277,23 +277,23 @@ GENDER INFERENCE (BUG-ENT-004): Infer the child's gender from relational terms e
 
 BUDGET EXTRACTION (BUG-ENT-004): Extract budget/tuition even in conversational formats:
 - "$25K", "25k", "25 thousand", "around $25,000", "about 25K", "up to 30k" → extract the number (e.g. 25000, 30000)
-- Store as maxTuition (integer number of dollars, or the string "unlimited" if they say no limit/flexible)
+- Store as max_tuition (integer number of dollars, or the string "unlimited" if they say no limit/flexible)
 - Do NOT infer budget if user has not explicitly stated it.
 
-CRITICAL: If the user explicitly negates or removes a previously stated preference (e.g. "actually, not interested in sports", "remove arts from my priorities", "I changed my mind about boarding"), populate the corresponding remove_* field (remove_interests, remove_priorities, remove_dealbreakers) with the items to remove. Leave additive arrays for new additions only.
+CRITICAL: If the user explicitly negates or removes a previously stated preference (e.g. "actually, not interested in sports", "remove arts from my priorities", "I changed my mind about boarding"), populate the corresponding remove_interests, remove_priorities, or remove_dealbreakers field with the items to remove. Leave additive arrays for new additions only.
 
 CRITICAL: If the user mentions having VISITED, TOURED, or SEEN a school — phrases like "I visited Branksome Hall", "we toured the school", "we went to the open house", "just got back from visiting", "we saw the campus" — set intentSignal to 'visit_debrief'. This takes priority over 'continue' and 'ask-about-school'.
 
-LOCATION SPECIFICITY (BUG-LOC-003): For locationArea, always use the most specific location the user mentioned — city name, NOT province or state. Examples: "Montreal" not "Quebec", "Vancouver" not "British Columbia", "Calgary" not "Alberta". If the user says a region alias like "GTA" or "Greater Toronto Area", preserve that exact term as-is.
+LOCATION SPECIFICITY (BUG-LOC-003): For location_area, always use the most specific location the user mentioned — city name, NOT province or state. Examples: "Montreal" not "Quebec", "Vancouver" not "British Columbia", "Calgary" not "Alberta". If the user says a region alias like "GTA" or "Greater Toronto Area", preserve that exact term as-is.
 
-LOCATION vs CURRICULUM: locationArea must ONLY contain geographic places. IB, AP, STEM, Montessori, Waldorf, Reggio, IGCSE, French immersion are curriculum types — put them in priorities, never locationArea.
+LOCATION vs CURRICULUM: location_area must ONLY contain geographic places. IB, AP, STEM, Montessori, Waldorf, Reggio, IGCSE, French immersion are curriculum types — put them in priorities, never location_area.
 
-LOCATION vs ACADEMIC SUBJECTS: Academic subjects like English, Math, Science, Art, Music, History, Drama are NEVER locations. 'does well in English' means the subject, not a place. Only extract geographic places as locationArea.
+LOCATION vs ACADEMIC SUBJECTS: Academic subjects like English, Math, Science, Art, Music, History, Drama are NEVER locations. 'does well in English' means the subject, not a place. Only extract geographic places as location_area.
 
 AGE vs GRADE HANDLING:
 - If the user says "[name] is [number]" or "[name] is [number] years old" WITHOUT the word "grade", treat the number as AGE, not grade.
 - Convert age to grade: age 3 = PK (grade -2), age 4 = JK (grade -1), age 5 = K (grade 0), age 6+ = grade (age - 5). So age 6 = grade 1, age 7 = grade 2, etc.
-- If unclear whether age or grade, return childGrade as null and let the conversation ask for clarification.
+- If unclear whether age or grade, return child_grade as null and let the conversation ask for clarification.
 - "grade 3" or "in grade 3" = grade 3. "is 3" or "is 3 years old" = age 3 = PK.
 
 PRIORITY vs INTEREST CLASSIFICATION:
@@ -307,18 +307,18 @@ CRITICAL: If the user requests a Visit Prep Kit or tour preparation — phrases 
 
 CRITICAL: If the user asks to add, save, shortlist, or bookmark a specific school — phrases like "add Howlett Academy to my shortlist", "save that school", "shortlist Rosedale", "add it", "keep that one", "I want to save this school", "add to my list" — set intentSignal to 'shortlist-action'. This takes priority over 'ask-about-school' and 'continue'.
 
-E41-CONVERSATION CAPTURE: Even when the parent is asking a question (not providing search criteria), capture any implied preferences, concerns, or family context as soft signals in parentNotes[].
+E41-CONVERSATION CAPTURE: Even when the parent is asking a question (not providing search criteria), capture any implied preferences, concerns, or family context as soft signals in parent_notes[].
 Write short, factual observations:
-- "My son has ADHD" → parentNotes: ["Child has ADHD — needs learning support"]
-- "Can we afford private on one income?" → parentNotes: ["Budget-sensitive — single income household"]
-- "Is Montessori good for shy kids?" → parentNotes: ["Exploring Montessori — child may be introverted"]
-- "What about French immersion?" → parentNotes: ["Parent interested in French immersion programs"]
-- "Worried about bullying" → parentNotes: ["Bullying prevention is a concern"]
+- "My son has ADHD" → parent_notes: ["Child has ADHD — needs learning support"]
+- "Can we afford private on one income?" → parent_notes: ["Budget-sensitive — single income household"]
+- "Is Montessori good for shy kids?" → parent_notes: ["Exploring Montessori — child may be introverted"]
+- "What about French immersion?" → parent_notes: ["Parent interested in French immersion programs"]
+- "Worried about bullying" → parent_notes: ["Bullying prevention is a concern"]
 Also map to existing schema when applicable:
-- "French immersion" → priorities: ["French immersion"] AND parentNotes
-- "ADHD" → priorities: ["learning support"] AND parentNotes
-- "Budget is tight" → parentNotes only (no maxTuition override without a number)
-parentNotes are ADDITIVE — never remove prior notes. Deduplicate if semantically identical. Return empty array [] if nothing new to capture.`;
+- "French immersion" → priorities: ["French immersion"] AND parent_notes
+- "ADHD" → priorities: ["learning support"] AND parent_notes
+- "Budget is tight" → parent_notes only (no max_tuition override without a number)
+parent_notes are ADDITIVE — never remove prior notes. Deduplicate if semantically identical. Return empty array [] if nothing new to capture.`;
 
     const userPrompt = `CURRENT KNOWN DATA:
 ${JSON.stringify(knownData, null, 2)}
@@ -369,32 +369,32 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     }
 
     let finalResult: any = result || {};
-    if (extractedGrade !== null && !finalResult.childGrade) {
-      finalResult = { ...finalResult, childGrade: extractedGrade };
+    if (extractedGrade !== null && !finalResult.child_grade) {
+      finalResult = { ...finalResult, child_grade: extractedGrade };
     }
     const strongGenderKeyword = /\b(son|daughter|boy|girl)\b/i.test(message);
     if (extractedGender !== null && (strongGenderKeyword || !finalResult.gender)) {
       finalResult = { ...finalResult, gender: extractedGender };
     }
     if (finalResult.gender) {
-      finalResult.childGender = finalResult.gender;
+      finalResult.child_gender = finalResult.gender;
     }
-    if (extractedChildName && (!finalResult.childName || PRONOUN_BLOCKLIST.has(finalResult.childName.toLowerCase()))) {
-      finalResult = { ...finalResult, childName: extractedChildName };
+    if (extractedChildName && (!finalResult.child_name || PRONOUN_BLOCKLIST.has(finalResult.child_name.toLowerCase()))) {
+      finalResult = { ...finalResult, child_name: extractedChildName };
     }
-    if (extractedSchoolGenderPref && !finalResult.schoolGenderPreference) {
-      finalResult = { ...finalResult, schoolGenderPreference: extractedSchoolGenderPref };
+    if (extractedSchoolGenderPref && !finalResult.school_gender_preference) {
+      finalResult = { ...finalResult, school_gender_preference: extractedSchoolGenderPref };
     }
-    if (extractedSchoolGenderExclusions.length > 0 && (!finalResult.schoolGenderExclusions || finalResult.schoolGenderExclusions.length === 0)) {
-      finalResult = { ...finalResult, schoolGenderExclusions: extractedSchoolGenderExclusions };
+    if (extractedSchoolGenderExclusions.length > 0 && (!finalResult.school_gender_exclusions || finalResult.school_gender_exclusions.length === 0)) {
+      finalResult = { ...finalResult, school_gender_exclusions: extractedSchoolGenderExclusions };
     }
-    if ((finalResult.maxTuition === null || finalResult.maxTuition === undefined) && extractedBudget !== null) {
-      finalResult = { ...finalResult, maxTuition: extractedBudget };
+    if ((finalResult.max_tuition === null || finalResult.max_tuition === undefined) && extractedBudget !== null) {
+      finalResult = { ...finalResult, max_tuition: extractedBudget };
     }
     if (extractedInterests.length > 0 && (!finalResult.interests || finalResult.interests.length < extractedInterests.length)) {
       finalResult = { ...finalResult, interests: [...new Set([...(finalResult.interests || []), ...extractedInterests])] };
     }
-    let effectiveLocation = finalResult.locationArea;
+    let effectiveLocation = finalResult.location_area;
     if (effectiveLocation) {
       effectiveLocation = cleanLocation(effectiveLocation);
     }
@@ -408,7 +408,7 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     }
 
     if (effectiveLocation !== null && effectiveLocation !== undefined) {
-      finalResult = { ...finalResult, locationArea: effectiveLocation };
+      finalResult = { ...finalResult, location_area: effectiveLocation };
     }
 
     const cleaned: any = {};
@@ -420,14 +420,14 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
 
     extractedData = cleaned;
 
-    // E41-S4: Transform parentNotes from LLM (string[]) into structured objects and dedup
-    if (Array.isArray(extractedData.parentNotes) && extractedData.parentNotes.length > 0) {
+    // E41-S4: Transform parent_notes from LLM (string[]) into structured objects and dedup
+    if (Array.isArray(extractedData.parent_notes) && extractedData.parent_notes.length > 0) {
       const existingNotes: any[] = conversationFamilyProfile?.parent_notes || [];
       const existingNormalized = existingNotes.map((n: any) => (n.note || '').toLowerCase().trim());
       const now = new Date().toISOString();
 
       const newNotes: any[] = [];
-      for (const raw of extractedData.parentNotes) {
+      for (const raw of extractedData.parent_notes) {
         const noteText = typeof raw === 'string' ? raw : raw?.note;
         if (!noteText || typeof noteText !== 'string') continue;
         const normalized = noteText.toLowerCase().trim();
@@ -444,12 +444,12 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
       }
 
       if (newNotes.length > 0) {
-        // Replace extractedData.parentNotes with merged array (existing + new)
-        extractedData.parentNotes = [...existingNotes, ...newNotes];
-        console.log('[PARENT_NOTES] Appended', newNotes.length, 'new notes, total:', extractedData.parentNotes.length);
+        // Replace extractedData.parent_notes with merged array (existing + new)
+        extractedData.parent_notes = [...existingNotes, ...newNotes];
+        console.log('[PARENT_NOTES] Appended', newNotes.length, 'new notes, total:', extractedData.parent_notes.length);
       } else {
         // Nothing new — remove from extractedData so we don't overwrite existing
-        delete extractedData.parentNotes;
+        delete extractedData.parent_notes;
         console.log('[PARENT_NOTES] No new notes to add');
       }
     }
@@ -501,8 +501,8 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
       if (key in REMOVAL_MAP) continue;
       if (value !== null && value !== undefined) {
         const existing = updatedFamilyProfile[key];
-        if (key === 'parentNotes') {
-          // E41-S4: parentNotes is already the fully merged array — assign directly
+        if (key === 'parent_notes') {
+          // E41-S4: parent_notes is already the fully merged array — assign directly
           updatedFamilyProfile[key] = value;
         } else if (Array.isArray(value)) {
           if (Array.isArray(existing) && existing.length > 0) {
@@ -519,24 +519,9 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
       try {
         // F11 FIX: Strip non-schema keys before DB write to prevent rejection
         const NON_SCHEMA_KEYS = ['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers', 'gender'];
-        const PROFILE_CAMEL_TO_SNAKE: Record<string, string> = {
-          childName: 'child_name', childGrade: 'child_grade', childGender: 'child_gender',
-          locationArea: 'location_area', maxTuition: 'max_tuition', priorities: 'priorities',
-          interests: 'interests', dealbreakers: 'dealbreakers', learningDifferences: 'learning_differences',
-          curriculumPreference: 'curriculum_preference', schoolTypeLabel: 'school_type_label',
-          academicStrengths: 'academic_strengths', parentNotes: 'parent_notes',
-          schoolGenderExclusions: 'school_gender_exclusions', schoolGenderPreference: 'school_gender_preference',
-          religiousPreference: 'religious_preference', boardingPreference: 'boarding_preference',
-          conversationId: 'conversation_id', userId: 'user_id',
-        };
-        const rawProfile = { ...updatedFamilyProfile };
+        const profileToSave = { ...updatedFamilyProfile };
         for (const key of NON_SCHEMA_KEYS) {
-          delete rawProfile[key];
-        }
-        // Convert camelCase keys to snake_case for DB
-        const profileToSave: Record<string, any> = {};
-        for (const [k, v] of Object.entries(rawProfile)) {
-          profileToSave[PROFILE_CAMEL_TO_SNAKE[k] || k] = v;
+          delete profileToSave[key];
         }
         const persistedProfile = await FamilyProfile.update(updatedFamilyProfile.id, profileToSave);
         Object.assign(updatedFamilyProfile, persistedProfile);

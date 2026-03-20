@@ -177,23 +177,23 @@ export async function handleBriefLogic(params: any) {
   }
 
   try {
-    const { childName, childGrade, locationArea, interests, priorities, dealbreakers, parentNotes } = localProfile;
-    let maxTuition = localProfile.maxTuition;
-    if ((!maxTuition || maxTuition === null || maxTuition === undefined) && context.extractedEntities?.maxTuition) {
-      maxTuition = context.extractedEntities.maxTuition;
-      console.log('[BRIEF] Using extracted maxTuition:', maxTuition);
+    const { child_name, child_grade, location_area, interests, priorities, dealbreakers, parent_notes } = localProfile;
+    let max_tuition = localProfile.max_tuition;
+    if ((!max_tuition || max_tuition === null || max_tuition === undefined) && context.extractedEntities?.max_tuition) {
+      max_tuition = context.extractedEntities.max_tuition;
+      console.log('[BRIEF] Using extracted max_tuition:', max_tuition);
     }
     const interestsStr = Array.isArray(interests) && interests.length > 0 ? interests.join(', ') : '';
     const prioritiesStr = priorities?.length > 0 ? priorities.join(', ') : '';
     const dealbreakersStr = dealbreakers?.length > 0 ? dealbreakers.join(', ') : '';
 
     let budgetDisplay = 'Not yet shared';
-    if (maxTuition === 'unlimited') {
+    if (max_tuition === 'unlimited') {
       budgetDisplay = 'Budget is flexible';
-    } else if (maxTuition && typeof maxTuition === 'number') {
-      budgetDisplay = `$${maxTuition.toLocaleString()}/year`;
-    } else if (maxTuition && typeof maxTuition === 'string') {
-      budgetDisplay = maxTuition;
+    } else if (max_tuition && typeof max_tuition === 'number') {
+      budgetDisplay = `$${max_tuition.toLocaleString()}/year`;
+    } else if (max_tuition && typeof max_tuition === 'string') {
+      budgetDisplay = max_tuition;
     }
 
     const briefChildGenderLabel = localProfile?.gender === 'male'
@@ -201,7 +201,7 @@ export async function handleBriefLogic(params: any) {
       : localProfile?.gender === 'female'
       ? 'Your daughter'
       : 'Your child';
-    let briefChildDisplayName = childName ? childName : briefChildGenderLabel;
+    let briefChildDisplayName = child_name ? child_name : briefChildGenderLabel;
 
     let briefMessageText = "Let me summarize what you've shared.";
 
@@ -212,13 +212,13 @@ export async function handleBriefLogic(params: any) {
         : localProfile?.gender === 'female'
         ? 'Your daughter'
         : 'Your child';
-      const childDisplay = childName ? childName : childLabel;
-      if (childName || childGrade !== null && childGrade !== undefined) {
-        briefLines.push(`- **Child:** ${childDisplay}${childGrade !== null && childGrade !== undefined ? ', Grade ' + childGrade : ''}`);
+      const childDisplay = child_name ? child_name : childLabel;
+      if (child_name || child_grade !== null && child_grade !== undefined) {
+        briefLines.push(`- **Child:** ${childDisplay}${child_grade !== null && child_grade !== undefined ? ', Grade ' + child_grade : ''}`);
       }
-      if (locationArea) briefLines.push(`- **Location:** ${locationArea}`);
-      if (maxTuition) {
-        const budgetStr = maxTuition === 'unlimited' ? 'Flexible' : typeof maxTuition === 'number' ? `Up to $${maxTuition.toLocaleString()}` : String(maxTuition);
+      if (location_area) briefLines.push(`- **Location:** ${location_area}`);
+      if (max_tuition) {
+        const budgetStr = max_tuition === 'unlimited' ? 'Flexible' : typeof max_tuition === 'number' ? `Up to $${max_tuition.toLocaleString()}` : String(max_tuition);
         briefLines.push(`- **Budget:** ${budgetStr}`);
       }
       if ((priorities || []).length > 0) briefLines.push(`- **Priorities:** ${(priorities || []).join(', ')}`);
@@ -233,12 +233,12 @@ export async function handleBriefLogic(params: any) {
         : localProfile?.gender === 'female'
         ? 'Your daughter'
         : 'Your child';
-      const childDisplay = childName ? childName : childLabel;
+      const childDisplay = child_name ? child_name : childLabel;
       const programmaticFallback = [
         "Here's what I'm hearing from you so far:\n",
-        childName || childGrade !== null && childGrade !== undefined ? `- **Child:** ${childDisplay}${childGrade !== null && childGrade !== undefined ? ', Grade ' + childGrade : ''}` : null,
-        locationArea ? `- **Location:** ${locationArea}` : null,
-        maxTuition ? `- **Budget:** ${maxTuition === 'unlimited' ? 'Flexible' : typeof maxTuition === 'number' ? `Up to $${maxTuition.toLocaleString()}` : String(maxTuition)}` : null,
+        child_name || child_grade !== null && child_grade !== undefined ? `- **Child:** ${childDisplay}${child_grade !== null && child_grade !== undefined ? ', Grade ' + child_grade : ''}` : null,
+        location_area ? `- **Location:** ${location_area}` : null,
+        max_tuition ? `- **Budget:** ${max_tuition === 'unlimited' ? 'Flexible' : typeof max_tuition === 'number' ? `Up to $${max_tuition.toLocaleString()}` : String(max_tuition)}` : null,
         (priorities || []).length > 0 ? `- **Priorities:** ${(priorities || []).join(', ')}` : null,
         (interests || []).length > 0 ? `- **Interests:** ${(interests || []).join(', ')}` : null,
         (dealbreakers || []).length > 0 ? `- **Dealbreakers:** ${(dealbreakers || []).join(', ')}` : null,
@@ -261,8 +261,8 @@ FIELD DISPLAY RULES: Include all non-empty fields from the profile. Omit any fie
 
 FAMILY DATA:
 - CHILD: ${briefChildDisplayName}
-- GRADE: ${childGrade !== null && childGrade !== undefined ? 'Grade ' + childGrade : 'Not yet shared'}
-- LOCATION: ${locationArea || 'Not yet shared'}
+- GRADE: ${child_grade !== null && child_grade !== undefined ? 'Grade ' + child_grade : 'Not yet shared'}
+- LOCATION: ${location_area || 'Not yet shared'}
 - BUDGET: ${budgetDisplay}
 - PRIORITIES: ${prioritiesStr || 'Not yet shared'}
 - INTERESTS: ${interestsStr || 'Not yet shared'}
@@ -271,8 +271,8 @@ FAMILY DATA:
 Format:
 - Open with a warm 1-2 sentence intro
 - Then a numbered list:
-  ${childGrade !== null && childGrade !== undefined ? '1. ' + briefChildDisplayName + ': Grade ' + childGrade : ''}
-  ${locationArea ? '2. Location: ' + locationArea : ''}
+  ${child_grade !== null && child_grade !== undefined ? '1. ' + briefChildDisplayName + ': Grade ' + child_grade : ''}
+  ${location_area ? '2. Location: ' + location_area : ''}
   ${budgetDisplay !== 'Not yet shared' ? '3. Budget: ' + budgetDisplay : ''}
   ${prioritiesStr ? '4. Top priorities: ' + prioritiesStr : ''}
   ${interestsStr ? '5. Interests: ' + interestsStr : ''}
@@ -292,12 +292,12 @@ Format:
         briefMessageText = programmaticFallback;
       }
     }
-    // E41-S9: Append "What Else We've Learned" section from parentNotes[]
-    if (Array.isArray(parentNotes) && parentNotes.length > 0) {
+    // E41-S9: Append "What Else We've Learned" section from parent_notes[]
+    if (Array.isArray(parent_notes) && parent_notes.length > 0) {
       const notesSection = '\n\n## What Else We\'ve Learned\n' +
-        parentNotes.map((note: string) => `- ${note}`).join('\n');
+        parent_notes.map((note: string) => `- ${note}`).join('\n');
       briefMessageText = briefMessageText + notesSection;
-      console.log('[BRIEF] Appended parentNotes section:', parentNotes.length, 'notes');
+      console.log('[BRIEF] Appended parent_notes section:', parent_notes.length, 'notes');
     }
     briefMessage = briefMessageText;
   } catch (e: any) {

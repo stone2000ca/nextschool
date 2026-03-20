@@ -103,33 +103,33 @@ export async function generateMatchExplanationsLogic(params: { familyProfile: an
 
   // Build context about the family
   const familyContext = `
-Child's Name: ${familyProfile.childName || 'Not specified'}
-Grade Level: ${familyProfile.childGrade}
-Academic Strengths: ${familyProfile.academicStrengths?.join(', ') || 'Not specified'}
-Academic Struggles: ${familyProfile.academicStruggles?.join(', ') || 'None mentioned'}
+Child's Name: ${familyProfile.child_name || 'Not specified'}
+Grade Level: ${familyProfile.child_grade}
+Academic Strengths: ${familyProfile.academic_strengths?.join(', ') || 'Not specified'}
+Academic Struggles: ${familyProfile.academic_struggles?.join(', ') || 'None mentioned'}
 Interests: ${familyProfile.interests?.join(', ') || 'Not specified'}
-Personality Traits: ${familyProfile.personalityTraits?.join(', ') || 'Not specified'}
-Learning Style: ${familyProfile.learningStyle || 'Not specified'}
+Personality Traits: ${familyProfile.personality_traits?.join(', ') || 'Not specified'}
+Learning Style: ${familyProfile.learning_style || 'Not specified'}
 Priorities: ${familyProfile.priorities?.join(', ') || 'Not specified'}
-Budget: $${familyProfile.maxTuition || 'Not specified'} per year
-Location: ${familyProfile.locationArea || 'Not specified'}
-Commute Tolerance: ${familyProfile.commuteToleranceMinutes || 'Not specified'} minutes
-Curriculum Preferences: ${familyProfile.curriculumPreference?.join(', ') || 'Not specified'}
-Boarding Preference: ${familyProfile.boardingPreference || 'Not specified'}
+Budget: $${familyProfile.max_tuition || 'Not specified'} per year
+Location: ${familyProfile.location_area || 'Not specified'}
+Commute Tolerance: ${familyProfile.commute_tolerance_minutes || 'Not specified'} minutes
+Curriculum Preferences: ${familyProfile.curriculum_preference?.join(', ') || 'Not specified'}
+Boarding Preference: ${familyProfile.boarding_preference || 'Not specified'}
 Deal Breakers: ${familyProfile.dealbreakers?.join(', ') || 'None mentioned'}
 `;
 
   const schoolsList = schools.map((s: any) => `
-- ${s.name} (ID: ${s.id}) (${s.city}, ${s.provinceState})
+- ${s.name} (ID: ${s.id}) (${s.city}, ${s.province_state})
   Curriculum: ${s.curriculum}
   Tuition: $${s.tuition}
   Specializations: ${s.specializations?.join(', ') || 'General'}
-  Gender Policy: ${s.genderPolicy || 'Not specified'}
-  Class Size: ${s.avgClassSize || 'Not specified'}
-  Financial Aid: ${s.financialAidAvailable ? 'Yes' : 'No'}
-  Sports: ${s.sportsPrograms?.slice(0, 3).join(', ') || 'Not specified'}
-  Arts: ${s.artsPrograms?.slice(0, 3).join(', ') || 'Not specified'}
-  Distance: ${s.distanceKm ? s.distanceKm.toFixed(1) + ' km' : 'Not calculated'}
+  Gender Policy: ${s.gender_policy || 'Not specified'}
+  Class Size: ${s.avg_class_size || 'Not specified'}
+  Financial Aid: ${s.financial_aid_available ? 'Yes' : 'No'}
+  Sports: ${s.sports_programs?.slice(0, 3).join(', ') || 'Not specified'}
+  Arts: ${s.arts_programs?.slice(0, 3).join(', ') || 'Not specified'}
+  Distance: ${s.distance_km ? s.distance_km.toFixed(1) + ' km' : 'Not calculated'}
 `).join('\n');
 
   // Fallback explanations in case LLM call fails
