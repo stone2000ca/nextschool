@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 const MIN_LOADER_MS = 3000;
-const TIMEOUT_MS = 120000;
+const TIMEOUT_MS = 60000;
 
 const STEPS = [
   { label: 'Analyzing preferences', icon: (color) => (
