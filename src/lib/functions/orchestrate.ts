@@ -11,6 +11,8 @@ import { STATES, BRIEF_STATUS, resolveGrade, resolveBudget, resolveArrayField } 
 import { syncConversationState, readConversationState } from './dualWrite'
 import { fetchSchoolNotes } from './fetchSchoolNotes'
 import { fetchVisitContext } from './fetchVisitContext'
+import { buildPromptContext, type BuildContextParams, type FamilyBrief, type SessionState, type SchoolArtifact, type ChatMessage } from '@/lib/ai/buildPromptContext'
+import { countTokens } from '@/lib/ai/countTokens'
 
 
 // Function: orchestrateConversation
@@ -629,14 +631,7 @@ function lightweightExtract(message, existingProfile) {
 async function handleDiscovery(message, conversationFamilyProfile, context, conversationHistory, consultantName, currentSchools, flags, returningUserContextBlock) {
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
-  const history = conversationHistory || [];
-  const recentMessages = history.slice(-10);
-  const conversationSummary = recentMessages
-    .filter(msg => msg?.content)
-    .map(msg => `${msg.role === 'user' ? 'Parent' : 'Consultant'}: ${msg.content}`)
-    .join('\n');
-
-  const briefOfferInstruction = flags?.OFFER_BRIEF 
+  const briefOfferInstruction = flags?.OFFER_BRIEF
     ? '\n\nIMPORTANT: You should offer to generate their Family Brief now.'
     : flags?.SUGGEST_BRIEF
     ? '\n\nIf it feels natural in the conversation, offer to generate their Family Brief.'
@@ -676,8 +671,8 @@ async function handleDiscovery(message, conversationFamilyProfile, context, conv
     tier1Guidance = `TIER 1 PRIORITY: We still need: ${missingFields[0]}. Work this in naturally.`;
   }
 
-  const personaInstructions = consultantName === 'Jackie'
-    ? `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
+  // E52-A4: Build persona instructions (phase-specific, used as systemInstructions for buildPromptContext)
+  const personaCore = `[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
 ${knownSummary}
 ${tier1Guidance}
 TURN MANAGEMENT: Transition to BRIEF within 5 turns maximum. If Tier 1 (grade, location, budget) is complete, do not exceed 1 enrichment turn — move to BRIEF on the next turn.
@@ -685,25 +680,52 @@ DUPLICATE QUESTION GUARD: Before asking any question, check the ALREADY COLLECTE
 On your FIRST response only, you may ask about two related things together (e.g., grade and location). After the first turn, ask exactly ONE question per turn. Never ask more than one question after the first turn. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. CRITICAL FORMAT RULE: Your response must be MAX 2 sentences. Be conversational and warm, not robotic.
 CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.
 CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.
-NEVER repeat a question verbatim that the user ignored or didn't answer. If they skip a question, either rephrase it completely or move on to the next priority. Never make the conversation feel like a form.${briefOfferInstruction}
-YOU ARE JACKIE - Senior education consultant, 10+ years placing families in private schools. You're warm but efficient.`
-    : `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
-${knownSummary}
-${tier1Guidance}
-TURN MANAGEMENT: Transition to BRIEF within 5 turns maximum. If Tier 1 (grade, location, budget) is complete, do not exceed 1 enrichment turn — move to BRIEF on the next turn.
-DUPLICATE QUESTION GUARD: Before asking any question, check the ALREADY COLLECTED list above. Never ask about a field that already has a value. If all Tier 1 fields are filled, do not ask about them again under any circumstances.
-On your FIRST response only, you may ask about two related things together (e.g., grade and location). After the first turn, ask exactly ONE question per turn. Never ask more than one question after the first turn. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. CRITICAL FORMAT RULE: Your response must be MAX 2 sentences. Be conversational and warm, not robotic.
-CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.
-CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.
-NEVER repeat a question verbatim that the user ignored or didn't answer. If they skip a question, either rephrase it completely or move on to the next priority. Never make the conversation feel like a form.${briefOfferInstruction}
-YOU ARE LIAM - Senior education strategist, 10+ years in private school placement. You're direct and data-driven.`;
+NEVER repeat a question verbatim that the user ignored or didn't answer. If they skip a question, either rephrase it completely or move on to the next priority. Never make the conversation feel like a form.${briefOfferInstruction}`;
 
-  const discoveryUserPrompt = `Recent chat:\n${conversationSummary}\n\nParent: "${message}"\n\nRespond as ${consultantName}. 1 question (2 allowed on first turn only). No filler.`;
+  const personaTail = consultantName === 'Jackie'
+    ? 'YOU ARE JACKIE - Senior education consultant, 10+ years placing families in private schools. You\'re warm but efficient.'
+    : 'YOU ARE LIAM - Senior education strategist, 10+ years in private school placement. You\'re direct and data-driven.';
+
+  const personaInstructions = (returningUserContextBlock ? returningUserContextBlock + '\n\n' : '') + personaCore + '\n' + personaTail;
+
+  // E52-A4: Map profile → FamilyBrief for buildPromptContext
+  const discoveryFamilyBrief: FamilyBrief = {
+    childName: conversationFamilyProfile?.child_name || undefined,
+    grade: conversationFamilyProfile?.child_grade ?? undefined,
+    location: conversationFamilyProfile?.location_area || undefined,
+    budget: conversationFamilyProfile?.max_tuition || undefined,
+    priorities: conversationFamilyProfile?.priorities || undefined,
+    dealbreakers: conversationFamilyProfile?.dealbreakers || undefined,
+    schoolTypePreferences: conversationFamilyProfile?.curriculum_preference || undefined,
+  };
+
+  const discoverySessionState: SessionState = {
+    currentState: 'DISCOVERY',
+    consultantName: consultantName || undefined,
+    turnCount: (conversationHistory?.filter(m => m.role === 'user').length || 0) + 1,
+  };
+
+  // E52-A4: Map currentSchools to SchoolRef[] for school resolution
+  const knownSchoolRefs = (currentSchools || []).map(s => ({ id: s.id, name: s.name }));
+
+  // E52-A4: Assemble token-budgeted context via buildPromptContext
+  const promptCtx = await buildPromptContext({
+    userMessage: message,
+    systemInstructions: personaInstructions,
+    familyBrief: discoveryFamilyBrief,
+    sessionState: discoverySessionState,
+    conversationHistory: (conversationHistory || []).map(m => ({ role: m.role, content: m.content })),
+    conversationId: context.conversationId || undefined,
+    knownSchools: knownSchoolRefs,
+  });
+  console.log(`[E52-A4] DISCOVERY buildPromptContext: ${promptCtx.totalTokens} tokens, trimmed=${promptCtx.trimmed}${promptCtx.trimmed ? ` (${promptCtx.trimActions.join(', ')})` : ''}`);
+
+  const discoveryUserPrompt = `Parent: "${message}"\n\nRespond as ${consultantName}. 1 question (2 allowed on first turn only). No filler.`;
 
   let discoveryMessageRaw = 'Tell me more about your child.';
   try {
     discoveryMessageRaw = await callOpenRouter({
-      systemPrompt: personaInstructions,
+      systemPrompt: promptCtx.context,
       userPrompt: discoveryUserPrompt,
       maxTokens: 300,
       temperature: 0.7,
@@ -715,7 +737,7 @@ YOU ARE LIAM - Senior education strategist, 10+ years in private school placemen
     try {
       const invokeResult = await Promise.race([
         callOpenRouter({
-          prompt: personaInstructions + '\n\nRecent chat:\n' + conversationSummary + '\n\nParent: "' + message + '"\n\nRespond as ' + consultantName + '. 2-3 questions max. No filler.',
+          prompt: promptCtx.context + '\n\nParent: "' + message + '"\n\nRespond as ' + consultantName + '. 2-3 questions max. No filler.',
           model: 'gpt_5_mini',
           maxTokens: 200
         }),
@@ -848,18 +870,36 @@ async function handleVisitDebriefInternal(selectedSchoolId, processMessage, conv
     const isDebriefComplete = debriefQuestionQueue.length === 0 && debriefQuestionsAsked.length >= 3;
     const debriefQuestionsContext = `${nextQuestion ? `Next focus: "${nextQuestion}"` : 'Wrap up naturally — you\'ve asked your key questions.'}\n\nQuestions asked so far: ${debriefQuestionsAsked.length}/3`;
     
-    // Build debrief prompt with persona-specific framing
-    const basePrompt = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}You are ${consultantName}, an education consultant. The family just returned from visiting ${schoolName}.
+    // E52-A4: Build debrief prompt via buildPromptContext
+    const debriefPersonaTone = consultantName === 'Jackie'
+      ? 'JACKIE TONE: Warm, empathetic, encouraging. Acknowledge their feelings and experiences before asking next question. Validate emotional responses. Help them feel heard.'
+      : 'LIAM TONE: Direct, analytical, practical. Acknowledge their observations factually before asking next question. Compare to expectations and data. Focus on fit assessment.';
 
-${debriefQuestionsContext}`;
+    const debriefInstructions = `${returningUserContextBlock ? returningUserContextBlock + '\n\n' : ''}You are ${consultantName}, an education consultant. The family just returned from visiting ${schoolName}.\n\n${debriefQuestionsContext}\n\n${debriefPersonaTone}`;
 
-    const debriefSystemPrompt = consultantName === 'Jackie'
-      ? `${basePrompt}
+    const debriefFamilyBrief: FamilyBrief = {
+      childName: conversationFamilyProfile?.child_name || undefined,
+      grade: conversationFamilyProfile?.child_grade ?? undefined,
+      location: conversationFamilyProfile?.location_area || undefined,
+      priorities: conversationFamilyProfile?.priorities || undefined,
+      dealbreakers: conversationFamilyProfile?.dealbreakers || undefined,
+    };
 
-JACKIE TONE: Warm, empathetic, encouraging. Acknowledge their feelings and experiences before asking next question. Validate emotional responses. Help them feel heard.`
-      : `${basePrompt}
+    const debriefSessionState: SessionState = {
+      currentState: 'DEEP_DIVE',
+      consultantName: consultantName || undefined,
+      selectedSchoolId: selectedSchoolId || undefined,
+    };
 
-LIAM TONE: Direct, analytical, practical. Acknowledge their observations factually before asking next question. Compare to expectations and data. Focus on fit assessment.`;
+    const debriefPromptCtx = await buildPromptContext({
+      userMessage: processMessage,
+      systemInstructions: debriefInstructions,
+      familyBrief: debriefFamilyBrief,
+      sessionState: debriefSessionState,
+      conversationHistory: [],  // debrief uses its own Q&A tracking, not full history
+      conversationId: context?.conversationId || undefined,
+    });
+    console.log(`[E52-A4] DEBRIEF buildPromptContext: ${debriefPromptCtx.totalTokens} tokens, trimmed=${debriefPromptCtx.trimmed}`);
 
     const debriefUserPrompt = `Family just said: "${processMessage}"
 
@@ -868,7 +908,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
     let debriefMessage = "Tell me about your visit experience.";
     try {
       const debriefResponse = await callOpenRouter({
-        systemPrompt: debriefSystemPrompt,
+        systemPrompt: debriefPromptCtx.context,
         userPrompt: debriefUserPrompt,
         maxTokens: 500,
         temperature: 0.7
@@ -878,7 +918,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
       try {
         const fallbackResponse = await Promise.race([
           callOpenRouter({
-            prompt: debriefSystemPrompt + '\n\n' + debriefUserPrompt,
+            prompt: debriefPromptCtx.context + '\n\n' + debriefUserPrompt,
             model: 'gpt_5_mini'
           }),
           new Promise((_, reject) => setTimeout(() => reject(new Error('InvokeLLM timed out after 8s')), 8000))
