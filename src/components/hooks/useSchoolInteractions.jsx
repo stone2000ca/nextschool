@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { School } from '@/lib/entities';
+import { fetchSchools } from '@/lib/api/schools';
 import { invokeFunction } from '@/lib/functions';
 import { updateConversation } from '@/lib/api/conversations';
 import { handleNarrateComparison as narrateComparison } from '@/components/chat/handleNarrateComparison';
@@ -57,7 +57,7 @@ export function useSchoolInteractions({
     let school = schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId) || extraSchools.find(s => s.id === schoolId);
     if (school && !school.description && !school.website) {
       try {
-        const fullRecords = await School.filter({ id: schoolId });
+        const fullRecords = await fetchSchools({ ids: [schoolId] });
         if (fullRecords[0]) school = fullRecords[0];
       } catch (e) {
         console.error('[SCHOOL DETAIL] Failed to fetch full record:', e.message);
