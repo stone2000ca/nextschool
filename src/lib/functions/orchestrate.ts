@@ -2013,6 +2013,6 @@ Object.assign(context, safeUpdatedContext);
     }
   };
 
-  const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 45000));
+  const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 55000));
   return await Promise.race([processRequest(), timeoutPromise]);
 }

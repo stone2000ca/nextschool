@@ -721,13 +721,18 @@ export const useMessageHandler = ({
     } catch (error) {
       console.error('Error sending message:', error);
       setIsTyping(false);
-      // FIX-RESULTS-VIEW: Clear briefStatus on error so loading overlay doesn't stay stuck
-      setBriefStatus(null);
+      // FIX-RESULTS-TIMEOUT: Only clear briefStatus if NOT in confirmed state.
+      // Clearing 'confirmed' causes retry to lose context and re-ask intake questions.
+      if (briefStatus !== 'confirmed') {
+        setBriefStatus(null);
+      }
 
-      // Add error message to chat
+      // Add error message to chat with context-aware retry guidance
       const errorMessage = {
         role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
+        content: briefStatus === 'confirmed'
+          ? "The search took a bit longer than expected. Please send your message again — I still have all your details."
+          : 'Sorry, something went wrong. Please try again.',
         timestamp: new Date().toISOString()
       };
       setMessages([...updatedMessages, errorMessage]);

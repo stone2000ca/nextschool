@@ -104,7 +104,7 @@ async function callOpenRouter(options: any) {
   const fullPromptStr = messages.map((m: any) => `[${m.role}] ${m.content}`).join('\n');
 
   const controller = new AbortController();
-  const TIMEOUT_MS = 25000;
+  const TIMEOUT_MS = 15000;
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
@@ -265,56 +265,7 @@ export async function handleResultsLogic(params: any) {
 
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
-  // WC10: Generate AI narrative if transitioning from BRIEF to RESULTS (fire-and-forget)
-  if (context.previousState === STATES.BRIEF && briefStatus === 'confirmed' && conversationId) {
-    (async () => {
-      try {
-        console.log('[WC10] Generating AI narrative for ChatSession');
-        const { childName, childGrade, childAge, locationArea, maxTuition, priorities, learningDifferences, commuteToleranceMinutes } = conversationFamilyProfile;
-        const budgetDisplay = maxTuition ? `$${(maxTuition / 1000).toFixed(0)}K/year` : 'not specified';
-        const prioritiesDisplay = priorities?.length > 0 ? priorities.join(', ') : 'none specified';
-        const specialNeedsDisplay = learningDifferences?.length > 0 ? learningDifferences.join(', ') : 'none';
-        const commuteDisplay = commuteToleranceMinutes ? `${commuteToleranceMinutes} minutes` : 'flexible';
-
-        const narrativePrompt = `Write a 2-3 sentence narrative about this child for their School Search Profile. Be warm, professional, and personal.
-Child: ${childName || 'Not named yet'}
-Grade: ${childGrade !== null && childGrade !== undefined ? 'Grade ' + childGrade : 'not specified'}
-Age: ${childAge || 'not specified'}
-Location: ${locationArea || 'not specified'}
-Budget: ${budgetDisplay}
-Priorities: ${prioritiesDisplay}
-Special needs: ${specialNeedsDisplay}
-Commute preference: ${commuteDisplay}`;
-
-        let aiNarrative: string | null = null;
-        try {
-          aiNarrative = await callOpenRouter({
-            systemPrompt: 'You are a skilled education consultant writing warm, personalized school profile narratives. Keep it 2-3 sentences max.',
-            userPrompt: narrativePrompt,
-            maxTokens: 300,
-            temperature: 0.7
-          });
-          console.log('[WC10] Narrative generated via OpenRouter');
-        } catch (openrouterError: any) {
-          console.error('[WC10] Narrative generation failed:', openrouterError.message);
-        }
-
-        if (aiNarrative) {
-          try {
-            const chatSessions = await ChatSession.filter({ id: conversationId });
-            if (chatSessions.length > 0) {
-              await ChatSession.update(conversationId, { ai_narrative: aiNarrative });
-              console.log('[WC10] ChatSession updated with aiNarrative');
-            }
-          } catch (updateError: any) {
-            console.error('[WC10] Failed to update ChatSession with narrative:', updateError.message);
-          }
-        }
-      } catch (e: any) {
-        console.error('[WC10] Narrative generation failed:', e.message);
-      }
-    })();
-  }
+  // WC10: Narrative generation removed — handled by orchestrate.ts to avoid duplicate OpenRouter calls
 
   // handleResults logic
   if (selectedSchoolId) {
@@ -614,17 +565,27 @@ ${schoolIdContext}`;
       const gateHint = gate ? `\n[PRE-CLASSIFIED: gate=${gate}${actionHint ? `, actionHint=${actionHint}` : ''}]` : '';
       const resultsUserPrompt = `Parent's latest message: "${message}"${gateHint}\n\n--- REFERENCE DATA ---\nRecent chat:\n${conversationSummary}\n${schoolContext}\n\nRespond as ${consultantName}. ONE question max.`;
 
-      const llmResult = await callOpenRouter({
-        systemPrompt: resultsSystemPrompt,
-        userPrompt: resultsUserPrompt,
-        maxTokens: 300,
-        temperature: 0.7,
-        tools: ACTION_TOOL_SCHEMA,
-        toolChoice: 'auto',
-        returnRaw: true,
-        _logContext: { conversationId, phase: 'RESULTS', is_test: false }
-      });
-      let rawContent = llmResult.content || '';
+      // Retry narration LLM call once on timeout/failure
+      let llmResult: any = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          llmResult = await callOpenRouter({
+            systemPrompt: resultsSystemPrompt,
+            userPrompt: resultsUserPrompt,
+            maxTokens: 300,
+            temperature: 0.7,
+            tools: ACTION_TOOL_SCHEMA,
+            toolChoice: 'auto',
+            returnRaw: true,
+            _logContext: { conversationId, phase: 'RESULTS', is_test: false }
+          });
+          break; // success
+        } catch (retryErr: any) {
+          console.warn(`[RESULTS] Narration LLM attempt ${attempt + 1} failed:`, retryErr.message);
+          if (attempt === 1) throw retryErr; // re-throw on final attempt
+        }
+      }
+      let rawContent = llmResult?.content || '';
       try { const parsed = JSON.parse(rawContent); aiMessage = parsed.message || rawContent || "Here are your matches."; } catch { aiMessage = rawContent || "Here are your matches."; }
       if (llmResult.toolCalls?.length > 0) rawToolCalls.push(...llmResult.toolCalls);
 
