@@ -1669,7 +1669,7 @@ export default function Consultant() {
                   lastDeepDiveAt={(() => {
                     for (let i = messages.length - 1; i >= 0; i--) {
                       if (messages[i]?.deepDiveAnalysis?.schoolId === deepDiveAnalysis?.schoolId) {
-                        return messages[i]?.createdAt || messages[i]?.timestamp || new Date().toISOString();
+                        return messages[i]?.created_at || messages[i]?.timestamp || new Date().toISOString();
                       }
                     }
                     return null;
