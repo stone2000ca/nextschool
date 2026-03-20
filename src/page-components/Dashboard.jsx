@@ -8,6 +8,7 @@ import SchoolSearchProfile from '@/components/dashboard/SchoolSearchProfile.jsx'
 import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
 import { Plus, Settings, X, AlertCircle, Crown, CheckCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import VisitsTimeline from '@/components/visits/VisitsTimeline';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -313,6 +314,13 @@ export default function Dashboard() {
         {error && (
           <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
             {error}
+          </div>
+        )}
+
+        {/* E51-S3A: Visits Timeline — shown when user has sessions */}
+        {sessions.length > 0 && (
+          <div className="mb-6">
+            <VisitsTimeline variant="card" />
           </div>
         )}
 

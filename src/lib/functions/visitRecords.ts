@@ -68,14 +68,21 @@ export async function listVisitRecords(params: {
 
 /**
  * List all visit records for a user (cross-school).
+ * JOINs schools table to include school_name and school_slug.
  */
 export async function listAllVisitRecords(params: { user_id: string }) {
   const { data, error } = await db()
-    .select('*')
+    .select('*, schools(name, slug)')
     .eq('user_id', params.user_id)
     .order('visit_date', { ascending: true, nullsFirst: false })
   if (error) throw error
-  return data || []
+  // Flatten the joined school data into top-level fields
+  return (data || []).map((r: any) => ({
+    ...r,
+    school_name: r.schools?.name || null,
+    school_slug: r.schools?.slug || null,
+    schools: undefined,
+  }))
 }
 
 /**

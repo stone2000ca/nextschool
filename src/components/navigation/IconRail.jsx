@@ -1,4 +1,4 @@
-import { ClipboardList, Heart, Search, CalendarDays } from 'lucide-react';
+import { ClipboardList, Heart, Search, CalendarDays, MapPin } from 'lucide-react';
 import { STATES } from '@/lib/stateMachineConfig';
 
 // T046 Owner Override: Right-side rail, 3 icons, Family Brief as primary
@@ -26,6 +26,10 @@ export default function IconRail({ currentState, activePanel, onTogglePanel }) {
   // Timeline: enabled only in RESULTS/DEEPDIVE
   const timelineEnabled = isResults;
   const timelineActive = activePanel === 'timeline';
+
+  // Visits: enabled in RESULTS/DEEPDIVE (same as timeline)
+  const visitsEnabled = isResults;
+  const visitsActive = activePanel === 'visits';
 
   return (
     <nav
@@ -103,6 +107,14 @@ export default function IconRail({ currentState, activePanel, onTogglePanel }) {
         enabled={timelineEnabled}
         active={timelineActive}
         onClick={() => timelineEnabled && onTogglePanel('timeline')}
+        disabledTip="Available after finding schools"
+      />
+      <RailIcon
+        icon={MapPin}
+        label="Visits"
+        enabled={visitsEnabled}
+        active={visitsActive}
+        onClick={() => visitsEnabled && onTogglePanel('visits')}
         disabledTip="Available after finding schools"
       />
     </nav>
