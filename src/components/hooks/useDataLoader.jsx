@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GeneratedArtifact, SchoolAnalysis, FamilyProfile, FamilyJourney, SchoolJourney } from '@/lib/entities';
+import { GeneratedArtifact, SchoolAnalysis, FamilyProfile } from '@/lib/entities';
 
 export function useDataLoader({ user, currentConversation, isAuthenticated }) {
   const [familyProfile, setFamilyProfile] = useState(null);
@@ -133,23 +133,30 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
 
         if (currentConversation?.id) {
           // Step (a): Try to find journey specifically linked to this chat
-          const linked = await FamilyJourney.filter({ user_id: user.id, is_archived: false, chat_history_id: currentConversation.id });
+          const linkedRes = await fetch(`/api/family-journey?user_id=${user.id}&is_archived=false&chat_history_id=${currentConversation.id}`);
+          const linked = linkedRes.ok ? await linkedRes.json() : [];
           if (linked.length > 0) {
             journey = linked.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
           } else {
             // Step (b): Fallback — only pick unassigned journeys (no chat_history_id), then stamp
-            const all = await FamilyJourney.filter({ user_id: user.id, is_archived: false });
+            const allRes = await fetch(`/api/family-journey?user_id=${user.id}&is_archived=false`);
+            const all = allRes.ok ? await allRes.json() : [];
             const unassigned = all.filter(j => !j.chat_history_id);
             if (unassigned.length > 0) {
               journey = unassigned.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-              await FamilyJourney.update(journey.id, { chat_history_id: currentConversation.id });
+              await fetch('/api/family-journey', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: journey.id, chat_history_id: currentConversation.id }),
+              });
               journey = { ...journey, chat_history_id: currentConversation.id };
             }
             // If no unassigned journeys, journey stays null — this chat has no journey yet
           }
         } else {
           // Step (c): No conversation context — just pick most recent journey
-          const all = await FamilyJourney.filter({ user_id: user.id, is_archived: false });
+          const allRes = await fetch(`/api/family-journey?user_id=${user.id}&is_archived=false`);
+          const all = allRes.ok ? await allRes.json() : [];
           if (all.length > 0) {
             journey = all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
           }
@@ -157,7 +164,8 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
 
         if (!journey) { setActiveJourney(null); return; }
 
-        const schoolJourneys = await SchoolJourney.filter({ family_journey_id: journey.id });
+        const sjRes = await fetch(`/api/school-journeys?family_journey_id=${journey.id}`);
+        const schoolJourneys = sjRes.ok ? await sjRes.json() : [];
 
         setActiveJourney({
           id: journey.id,

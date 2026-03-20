@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { SchoolEvent } from '@/lib/entities';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,7 +17,8 @@ export default function SchoolDetail({ school, onClose, onToggleShortlist, isSho
   const isPremium = school?.school_tier === 'pro';
   useEffect(() => {
     if (!school?.id) return;
-    SchoolEvent.filter({ school_id: school.id, is_active: true })
+    fetch(`/api/school-events?school_id=${school.id}&is_active=true`)
+      .then(r => r.ok ? r.json() : [])
       .then(data => {
         const upcoming = data
           .filter(e => !e.date || new Date(e.date) >= new Date())

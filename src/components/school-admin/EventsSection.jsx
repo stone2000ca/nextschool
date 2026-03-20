@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { SchoolEvent } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -53,7 +52,8 @@ function FreeTierTeaser({ school }) {
   const [aiEvents, setAiEvents] = useState([]);
 
   useEffect(() => {
-    SchoolEvent.filter({ school_id: school.id, source: 'ai_enriched' })
+    fetch(`/api/school-events?school_id=${school.id}&source=ai_enriched`)
+      .then(r => r.ok ? r.json() : [])
       .then(setAiEvents)
       .catch(() => {});
   }, [school.id]);
@@ -260,7 +260,8 @@ function PremiumEventsManagement({ school }) {
 
   const loadEvents = async () => {
     setLoading(true);
-    const data = await SchoolEvent.filter({ school_id: school.id });
+    const res = await fetch(`/api/school-events?school_id=${school.id}`);
+    const data = res.ok ? await res.json() : [];
     setEvents(data.sort((a, b) => new Date(a.date) - new Date(b.date)));
     setLoading(false);
   };
@@ -269,9 +270,17 @@ function PremiumEventsManagement({ school }) {
 
   const handleSave = async (formData) => {
     if (editing) {
-      await SchoolEvent.update(editing.id, { ...formData, source: 'school_portal', is_confirmed: true });
+      await fetch(`/api/school-events/${editing.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, source: 'school_portal', is_confirmed: true }),
+      });
     } else {
-      await SchoolEvent.create({ ...formData, school_id: school.id, source: 'school_portal', is_confirmed: true, is_active: true });
+      await fetch('/api/school-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, school_id: school.id, source: 'school_portal', is_confirmed: true, is_active: true }),
+      });
     }
     setEditing(null);
     await loadEvents();
@@ -279,7 +288,7 @@ function PremiumEventsManagement({ school }) {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this event?')) return;
-    await SchoolEvent.delete(id);
+    await fetch(`/api/school-events/${id}`, { method: 'DELETE' });
     await loadEvents();
   };
 
