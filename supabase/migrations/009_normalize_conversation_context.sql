@@ -71,7 +71,7 @@ CREATE INDEX idx_conversation_state_conv ON conversation_state(conversation_id);
 CREATE TABLE IF NOT EXISTS conversation_schools (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
   conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-  school_id TEXT NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
   source TEXT NOT NULL DEFAULT 'search',
   rank INTEGER,
   is_current_results BOOLEAN DEFAULT true,
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS conversation_artifacts (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
   conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL,
-  school_id TEXT REFERENCES schools(id) ON DELETE SET NULL,
+  school_id UUID REFERENCES schools(id) ON DELETE SET NULL,
 
   artifact_type TEXT NOT NULL,
   content JSONB NOT NULL DEFAULT '{}',
