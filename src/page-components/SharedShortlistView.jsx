@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { SharedShortlist } from '@/lib/entities';
 import { Check, X, Circle, MapPin, Navigation, DollarSign, ExternalLink } from 'lucide-react';
 import { LOGO_WHITE_TEXT } from '@/lib/brand-assets';
 
@@ -109,12 +108,16 @@ export default function SharedShortlistView() {
       return;
     }
 
-    SharedShortlist.filter({ hash })
-      .then(results => {
-        if (!results || results.length === 0) {
+    fetch(`/api/shared/shortlist/${encodeURIComponent(hash)}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Not found');
+        return res.json();
+      })
+      .then(data => {
+        if (!data.shortlist) {
           setError('This shortlist link is invalid or has expired.');
         } else {
-          setShortlist(results[0]);
+          setShortlist(data.shortlist);
         }
       })
       .catch(err => {

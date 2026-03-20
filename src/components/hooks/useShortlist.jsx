@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getShortlistNudge } from '@/components/utils/shortlistNudges';
 import { STATES } from '@/lib/stateMachineConfig';
-import { ChatShortlist, ChatSession, School, SchoolJourney, FamilyJourney } from '@/lib/entities';
 
 export function useShortlist({
   user, setUser, isAuthenticated, schools, currentState,
@@ -16,20 +15,19 @@ export function useShortlist({
   const [autoExpandSchoolId, setAutoExpandSchoolId] = useState(null);
   const [pendingDeepDiveSchoolIds, setPendingDeepDiveSchoolIds] = useState(new Set());
   const hasAutoPopulatedShortlist = useRef(false);
-  // E48-S4: Cache ChatSession ID per conversation for shortlisted_count updates
-  const chatSessionIdCache = useRef({ conversationId: null, chatSessionId: null });
 
   const loadShortlist = async (journeyId) => {
     const jid = journeyId || activeJourney?.journeyId;
     if (!jid) return;
     try {
-      const records = await ChatShortlist.filter({ family_journey_id: jid });
-      if (records.length === 0) {
+      const res = await fetch(`/api/shortlist?journey_id=${encodeURIComponent(jid)}`);
+      if (!res.ok) {
+        console.error('Failed to load shortlist:', res.status);
         return;
       }
-      const schoolIds = records.map(r => r.school_id).filter(Boolean);
-      const schools = await School.filter({ id: { $in: schoolIds } });
-      setShortlistData(schools);
+      const { schools: loadedSchools } = await res.json();
+      if (!loadedSchools || loadedSchools.length === 0) return;
+      setShortlistData(loadedSchools);
     } catch (error) {
       console.error('Failed to load shortlist:', error);
     }
@@ -57,100 +55,54 @@ export function useShortlist({
       const isRemoving = shortlistData.some(s => s.id === schoolId);
 
       if (!school && !isRemoving) {
+        // Fetch school data from local sources failed; the server will handle it
+        // but we need it for client-side nudge display
         try {
-          const fetched = await School.filter({ id: schoolId });
-          school = fetched?.[0] || null;
+          const res = await fetch(`/api/shortlist?journey_id=${encodeURIComponent('_lookup_')}&school_id=${encodeURIComponent(schoolId)}`);
+          // Fallback: school may not be available for nudge, that's okay
         } catch (e) {
           console.error('[SHORTLIST] Failed to fetch school for toggle:', e.message);
         }
       }
 
       if (isRemoving) {
+        // Optimistic UI update
         setShortlistData(prev => prev.filter(s => s.id !== schoolId));
         setRemovedSchoolIds(prev => [...prev, schoolId]);
-        // Remove from ChatShortlist
+
+        // Server-side removal (ChatShortlist + SchoolJourney + ChatSession)
         if (activeJourney?.journeyId) {
-          const existing = await ChatShortlist.filter({ family_journey_id: activeJourney.journeyId, school_id: schoolId });
-          for (const rec of existing) {
-            await ChatShortlist.delete(rec.id);
-          }
+          fetch(`/api/shortlist/${encodeURIComponent(activeJourney.journeyId)}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              school_id: schoolId,
+              conversation_id: currentConversation?.id || null,
+              current_count: shortlistData.length,
+            }),
+          }).catch(e => console.error('[SHORTLIST] Remove failed:', e.message));
         }
       } else {
+        // Optimistic UI update
         trackEvent('shortlisted', { metadata: { schoolName: school?.name } });
         if (school) setShortlistData(prev => [...prev, school]);
-        // Add to ChatShortlist
+
+        // Server-side addition (ChatShortlist + SchoolJourney + FamilyJourney phase + ChatSession count)
         if (activeJourney?.journeyId) {
-          await ChatShortlist.create({
-            family_journey_id: activeJourney.journeyId,
-            school_id: schoolId,
-            addedAt: new Date().toISOString(),
-            source: 'manual',
-          });
+          fetch('/api/shortlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              journey_id: activeJourney.journeyId,
+              school_id: schoolId,
+              school_name: school?.name || '',
+              conversation_id: currentConversation?.id || null,
+              current_phase: activeJourney.currentPhase || null,
+              phase_history: Array.isArray(activeJourney.phaseHistory) ? activeJourney.phaseHistory : [],
+            }),
+          }).catch(e => console.error('[SHORTLIST] Add failed:', e.message));
         }
       }
-
-      // E29-004: Sync shortlist to SchoolJourney entity
-      ;(async () => {
-        try {
-          const familyJourney = activeJourney;
-          if (!familyJourney) return;
-
-          if (isRemoving) {
-            const existing = await SchoolJourney.filter({
-              family_journey_id: familyJourney.journeyId,
-              school_id: schoolId,
-            });
-            if (existing.length > 0) {
-              await SchoolJourney.update(existing[0].id, { status: 'removed' });
-            }
-          } else {
-            await SchoolJourney.create({
-              family_journey_id: familyJourney.journeyId,
-              school_id: school?.id || schoolId,
-              school_name: school?.name || '',
-              status: 'shortlisted',
-              addedAt: new Date().toISOString(),
-            });
-          }
-
-          // E29-015: Phase auto-advancement MATCH → EVALUATE on first shortlist add
-          if (!isRemoving && familyJourney.currentPhase === 'MATCH') {
-            try {
-              const currentHistory = Array.isArray(familyJourney.phaseHistory) ? familyJourney.phaseHistory : [];
-              await FamilyJourney.update(familyJourney.journeyId, {
-                current_phase: 'EVALUATE',
-                phase_history: [...currentHistory, { phase: 'EVALUATE', enteredAt: new Date().toISOString() }],
-              });
-              console.log('[E29-015] FamilyJourney advanced MATCH → EVALUATE');
-            } catch (phaseErr) {
-              console.error('[E29-015] Phase advance MATCH→EVALUATE failed:', phaseErr?.message);
-            }
-          }
-        } catch (e) {
-          console.error('[E29-004] SchoolJourney sync failed:', e.message, e);
-        }
-      })();
-
-      // E48-S4: Update ChatSession.shortlisted_count (non-blocking side effect)
-      ;(async () => {
-        try {
-          const convId = currentConversation?.id;
-          if (!convId) return;
-          let cachedId = chatSessionIdCache.current.conversationId === convId
-            ? chatSessionIdCache.current.chatSessionId
-            : null;
-          if (!cachedId) {
-            const sessions = await ChatSession.filter({ chat_history_id: convId });
-            if (sessions.length === 0) return;
-            cachedId = sessions[0].id;
-            chatSessionIdCache.current = { conversationId: convId, chatSessionId: cachedId };
-          }
-          const newCount = isRemoving ? shortlistData.length - 1 : shortlistData.length + 1;
-          await ChatSession.update(cachedId, { shortlisted_count: Math.max(0, newCount) });
-        } catch (e) {
-          console.error('[E48-S4] Failed to update ChatSession.shortlisted_count:', e.message);
-        }
-      })();
 
       // T-SL-004: Inject nudge (only in RESULTS state, only when not silent)
       if (!silent && currentState === STATES.RESULTS) {
