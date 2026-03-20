@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChatSession } from '@/lib/entities';
-import { invokeFunction } from '@/lib/functions';
 import { Button } from '@/components/ui/button';
 import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
 import { CheckCircle, Copy } from 'lucide-react';
@@ -108,7 +107,10 @@ export default function SchoolSearchProfile({
   });
 
   const handleViewMatches = () => {
-    router.push('/consultant?sessionId=' + session.id);
+    const target = session.chat_history_id
+      ? `/consultant?sessionId=${session.chat_history_id}`
+      : '/consultant';
+    router.push(target);
     if (onViewMatches) onViewMatches(session);
   };
 
@@ -137,30 +139,8 @@ export default function SchoolSearchProfile({
       };
       await ChatSession.update(session.id, sessionUpdate);
 
-      // Re-run school matching using the edited fields only
-      await invokeFunction('matchSchoolsForProfile', {
-        sessionId: session.id,
-        familyProfile: {
-          childGrade: editData.childGrade,
-          maxTuition: editData.maxTuition,
-          locationArea: editData.locationArea,
-          priorities: editData.priorities,
-          learningDifferences: editData.learningDifferences,
-        },
-      });
-
       setIsEditMode(false);
       if (onArchive) onArchive(); // Trigger refresh
-
-      // E28-S5: Regenerate aiNarrative after profile edit (fire-and-forget)
-      (async () => {
-        try {
-          await invokeFunction('generateProfileNarrative', { sessionId: session.id });
-          console.log('[E28-S5] aiNarrative regenerated after profile edit');
-        } catch (narrativeErr) {
-          console.warn('[E28-S5] Failed to regenerate narrative:', narrativeErr.message);
-        }
-      })();
     } catch (err) {
       console.error('Failed to save edits:', err);
     } finally {
@@ -396,7 +376,7 @@ export default function SchoolSearchProfile({
               disabled={isSaving}
               className="flex-1 min-w-0 bg-teal-600 hover:bg-teal-700 text-white text-sm"
             >
-              {isSaving ? 'Updating matches...' : 'Save Changes'}
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
             <Button
               onClick={() => {
