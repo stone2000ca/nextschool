@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { SchoolEvent } from '@/lib/entities';
 import { X, CalendarDays, ChevronDown, Bell, BellRing, ExternalLink } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, formatEventDate } from '@/components/utils/eventConstants';
@@ -35,7 +34,8 @@ export default function TimelinePanel({ shortlist, onClose }) {
       try {
         const results = await Promise.all(
           shortlist.map(school =>
-            SchoolEvent.filter({ school_id: school.id, is_active: true })
+            fetch(`/api/school-events?school_id=${school.id}&is_active=true`)
+              .then(r => r.ok ? r.json() : [])
               .then(evs => evs
                 .filter(e => e.date && e.date >= today)
                 .map(e => ({ ...e, schoolName: school.name }))

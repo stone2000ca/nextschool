@@ -11,7 +11,7 @@
 import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
 import { validateBriefContent, generateProgrammaticBrief } from '@/components/utils/briefUtils';
 import { extractAndSaveMemories } from '@/components/utils/memoryManager';
-import { FamilyJourney, User } from '@/lib/entities';
+import { User } from '@/lib/entities';
 import { createConversation, updateConversation } from '@/lib/api/conversations';
 import { createSession, updateSession } from '@/lib/api/sessions';
 import { invokeFunction } from '@/lib/functions';
@@ -549,26 +549,35 @@ export const useMessageHandler = ({
           ;(async () => {
             if (!user?.id) return;
             try {
-              const existingJourneys = await FamilyJourney.filter({ user_id: user.id });
-              const activeJourneyList = existingJourneys.filter(j => !j.is_archived);
+              const existingRes = await fetch(`/api/family-journey?user_id=${user.id}&is_archived=false`);
+              const existingJourneys = existingRes.ok ? await existingRes.json() : [];
+              // Also fetch archived to check total — but the API already filters, so
+              // we only need the active list to decide whether to create
+              const activeJourneyList = existingJourneys;
               if (activeJourneyList.length === 0) {
                 const childName = profileForSession?.child_name || 'My Child';
-                const newJourney = await FamilyJourney.create({
-                  user_id: user.id,
-                  child_name: childName,
-                  profile_label: childName + "'s School Search",
-                  current_phase: 'MATCH',
-                  phase_history: JSON.stringify([
-                    { phase: 'UNDERSTAND', enteredAt: new Date().toISOString(), completedAt: new Date().toISOString() },
-                    { phase: 'MATCH', enteredAt: new Date().toISOString() }
-                  ]),
-                  family_profile_id: familyProfile?.id || null,
-                  brief_snapshot: JSON.stringify(profileForSession || {}),
-                  consultant_id: selectedConsultant || 'jackie',
-                  total_sessions: 1,
-                  is_archived: false,
-                  last_active_at: new Date().toISOString(),
+                const createRes = await fetch('/api/family-journey', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    user_id: user.id,
+                    child_name: childName,
+                    profile_label: childName + "'s School Search",
+                    current_phase: 'MATCH',
+                    phase_history: JSON.stringify([
+                      { phase: 'UNDERSTAND', enteredAt: new Date().toISOString(), completedAt: new Date().toISOString() },
+                      { phase: 'MATCH', enteredAt: new Date().toISOString() }
+                    ]),
+                    family_profile_id: familyProfile?.id || null,
+                    brief_snapshot: JSON.stringify(profileForSession || {}),
+                    consultant_id: selectedConsultant || 'jackie',
+                    total_sessions: 1,
+                    is_archived: false,
+                    last_active_at: new Date().toISOString(),
+                  }),
                 });
+                const newJourney = createRes.ok ? await createRes.json() : null;
+                if (!newJourney) throw new Error('Failed to create FamilyJourney');
                 console.log('[E29-003] FamilyJourney created:', newJourney.id);
                 if (typeof setActiveJourney === 'function') {
                   setActiveJourney(newJourney);

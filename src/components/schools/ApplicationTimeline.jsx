@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { SchoolEvent } from '@/lib/entities';
 import { CalendarDays, Bell, BellRing } from 'lucide-react';
 import { EVENT_TYPE_LABELS } from '@/components/utils/eventConstants';
 
@@ -39,7 +38,8 @@ export default function ApplicationTimeline({ shortlist }) {
       try {
         const results = await Promise.all(
           shortlist.map(school =>
-            SchoolEvent.filter({ school_id: school.id, is_active: true })
+            fetch(`/api/school-events?school_id=${school.id}&is_active=true`)
+              .then(r => r.ok ? r.json() : [])
               .then(evs =>
                 evs
                   .filter(e => e.date && e.date >= today)

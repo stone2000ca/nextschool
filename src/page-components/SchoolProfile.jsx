@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Testimonial, SchoolEvent } from '@/lib/entities';
+import { Testimonial } from '@/lib/entities';
 import { fetchSchools } from '@/lib/api/schools';
 import { invokeFunction } from '@/lib/functions';
 import { Button } from "@/components/ui/button";
@@ -560,7 +560,8 @@ export default function SchoolProfile() {
     if (!school?.id) return;
     setLoadingEvents(true);
     const now = new Date().toISOString();
-    SchoolEvent.filter({ school_id: school.id, is_active: true, date: { $gte: now } })
+    fetch(`/api/school-events?school_id=${school.id}&is_active=true&date_gte=${encodeURIComponent(now)}`)
+      .then(r => r.ok ? r.json() : [])
       .then(events => {
         const sorted = (events || []).sort((a, b) => new Date(a.date) - new Date(b.date));
         setUpcomingEvents(sorted.slice(0, 5));
