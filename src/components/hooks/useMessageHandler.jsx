@@ -11,7 +11,6 @@
 import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
 import { validateBriefContent, generateProgrammaticBrief } from '@/components/utils/briefUtils';
 import { extractAndSaveMemories } from '@/components/utils/memoryManager';
-import { User } from '@/lib/entities';
 import { createConversation, updateConversation } from '@/lib/api/conversations';
 import { createSession, updateSession } from '@/lib/api/sessions';
 import { invokeFunction } from '@/lib/functions';
@@ -736,7 +735,11 @@ export const useMessageHandler = ({
           if (isAuthenticated && user && !isPremium) {
             const newTokenBalance = Math.max(0, tokenBalance - 1);
             setTokenBalance(newTokenBalance);
-            await User.update(user.id, { token_balance: newTokenBalance });
+            await fetch('/api/admin-users', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: user.id, token_balance: newTokenBalance }),
+            });
           }
 
           // Save AI memories with deduplication and filtering

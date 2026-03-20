@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { User, TokenTransaction } from '@/lib/entities';
 import { fetchAdminConversations } from '@/lib/api/conversations';
 import { Card } from '@/components/ui/card';
 import { TrendingUp, Info } from 'lucide-react';
@@ -15,20 +14,24 @@ export default function AdminAnalytics() {
 
   const loadAnalytics = async () => {
     try {
-      const users = await User.list('-created_date');
+      let users = [];
+      let transactions = [];
+      try {
+        const analyticsRes = await fetch('/api/admin-analytics');
+        if (analyticsRes.ok) {
+          const analyticsData = await analyticsRes.json();
+          users = analyticsData.users || [];
+          transactions = analyticsData.tokenTransactions || [];
+        }
+      } catch (e) {
+        console.error('Failed to load admin analytics:', e);
+      }
 
       let conversations = [];
       try {
         conversations = await fetchAdminConversations();
       } catch (e) {
         console.error('Failed to load ChatHistory:', e);
-      }
-
-      let transactions = [];
-      try {
-        transactions = await TokenTransaction.list('-created_date', undefined, 1000);
-      } catch (e) {
-        console.error('Failed to load TokenTransaction:', e);
       }
 
       const weeklyUsers = calculateWeeklyData(users, 'created_date', 6);
