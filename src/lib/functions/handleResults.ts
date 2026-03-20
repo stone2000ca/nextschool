@@ -532,7 +532,9 @@ INTENT: edit → Parent wants to change their search criteria (location, grade, 
 
 INTENT: journey → Parent wants to take a next step with a specific school (book tour, request info, visit, apply). Acknowledge interest and guide the next step. Keep specific.
 
-INTENT: expand → Parent wants more detail about a specific school. For a quick question, answer in 3-5 sentences without firing a tool. For "tell me everything" or deep-dive requests, fire execute_ui_action with EXPAND_SCHOOL and the school's ID.
+INTENT: ask-about-school-info → Parent asks a quick factual question about a specific school (tuition, class size, curriculum, location, programs, admissions). Answer in 3-5 sentences directly in chat using the school data provided. Do NOT fire any execute_ui_action tool. End your response with: "Would you like a full deep dive on [school name]?"
+
+INTENT: ask-about-school-deepdive → Parent explicitly requests a deep dive, deep analysis, full profile, or says "yes" / "sure" / "do it" in response to a deep-dive offer. Fire execute_ui_action with EXPAND_SCHOOL and the school's ID. Keep your text response to one sentence (e.g. "Let me pull up the full deep dive on [school name].").
 
 ═══════════════════════════════════════════
 STEP 2B — CONVERSATION: Answer as consultant
