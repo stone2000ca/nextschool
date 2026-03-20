@@ -45,6 +45,9 @@ const TABLE_MAP: Record<string, string> = {
   ImportRun: 'import_runs',
   VisitorLog: 'visitor_logs',
   UserTokenBalance: 'user_profiles',
+  ConversationState: 'conversation_state',
+  ConversationSchools: 'conversation_schools',
+  ConversationArtifacts: 'conversation_artifacts',
 }
 
 function getTableName(entityName: string): string {
@@ -192,3 +195,6 @@ export const EnrichmentDiff = createEntity('EnrichmentDiff')
 export const ImportRun = createEntity('ImportRun')
 export const VisitorLog = createEntity('VisitorLog')
 export const UserTokenBalance = createEntity('UserTokenBalance')
+export const ConversationState = createEntity('ConversationState')
+export const ConversationSchools = createEntity('ConversationSchools')
+export const ConversationArtifacts = createEntity('ConversationArtifacts')
