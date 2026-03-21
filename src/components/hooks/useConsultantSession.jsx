@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { invokeFunction } from '@/lib/functions';
-import { restoreGuestSession } from '@/components/chat/SessionRestorer';
-import { restoreSessionFromParam } from '@/components/chat/SessionRestorer';
+import { restoreMostRecentConversation, restoreSessionFromParam } from '@/components/chat/SessionRestorer';
 
 const PLAN_NAMES = { FREE: 'free', BASIC: 'basic', PREMIUM: 'premium', PRO: 'pro', ENTERPRISE: 'enterprise' };
 const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
@@ -38,7 +37,7 @@ export function useConsultantSession({
   const depsRef = useRef({});
 
   // ─── Derived ───
-  const sessionIdParam = searchParams.get('sessionId');
+  const sessionIdParam = searchParams.get('sessionId') || searchParams.get('session');
   const sessionParamProcessedRef = useRef(false);
 
   const isDevMode = typeof window !== 'undefined'
@@ -103,7 +102,9 @@ export function useConsultantSession({
           setIsPremium(false);
         }
         await loadConversations(userData.id);
-        await loadShortlistRef.current?.();
+        // RC-4 FIX: Removed premature loadShortlistRef.current?.() call.
+        // loadShortlist is now called by restoreMostRecentConversation (RC-3)
+        // or restoreSessionFromParam, which both pass explicit journeyId.
       } else {
         if (!isDevMode) {
           const returnTo = window.location.pathname + window.location.search;
@@ -217,10 +218,27 @@ export function useConsultantSession({
     return () => clearTimeout(timeout);
   }, [sessionIdParam]);
 
-  // ─── Restore guest session ───
+  // ─── RC-3 FIX: Restore most recent conversation on plain F5 (no sessionId) ───
   useEffect(() => {
     if (isAuthenticated && user && !sessionIdParam) {
-      restoreGuestSession(isAuthenticated, user, currentConversation, setMessages, setSelectedConsultant, setCurrentConversation, null);
+      const d = depsRef.current;
+      restoreMostRecentConversation(
+        null, // _unused
+        user,
+        setMessages,
+        setSelectedConsultant,
+        setCurrentConversation,
+        d.setFamilyProfile,
+        setSchools,
+        setCurrentView,
+        setOnboardingPhase,
+        d.setDeepDiveAnalysis,
+        setSelectedSchool,
+        isRestoringSessionRef,
+        d.skipViewOverrideRef,
+        d.setSchoolAnalyses,
+        loadShortlistRef // loadShortlist ref — resolved at call time in SessionRestorer
+      );
     }
   }, [isAuthenticated, user?.id, sessionIdParam]);
 

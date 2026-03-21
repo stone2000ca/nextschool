@@ -339,7 +339,7 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
 
   return (
     <Card
-      className="overflow-hidden transition-all duration-300 group school-card flex flex-col h-full min-h-[450px] w-full"
+      className="overflow-hidden transition-all duration-300 group school-card flex flex-col h-[500px] w-full"
       style={{ '--accent-color': accentColor }}
     >
       <style>{`
@@ -398,7 +398,7 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
       </div>
 
       {/* Collapsed content — always visible */}
-      <div className="p-3 flex flex-col gap-1.5">
+      <div className="p-3 flex flex-col gap-1.5 flex-1 min-h-0 overflow-hidden">
         <div className="flex items-start gap-2">
           <LogoDisplay logoUrl={school.logo_url} schoolName={school.name} schoolWebsite={school.website} size="h-4 w-4" />
           <h3 className="font-bold text-sm leading-tight line-clamp-2 flex-1">{school.name}</h3>
@@ -438,7 +438,7 @@ export default function SchoolCard({ school, onViewDetails, onToggleShortlist, i
         </div>
 
         {/* Matching criteria — always visible */}
-        <div className="mt-2 border-t border-slate-100 pt-2 space-y-2">
+        <div className="mt-2 border-t border-slate-100 pt-2 space-y-2 flex-1 min-h-0 overflow-hidden relative">
             {rationale && (
               <p className="text-xs text-slate-500 line-clamp-2">{rationale}.</p>
             )}

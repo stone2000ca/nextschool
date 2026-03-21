@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, ExternalLink, Scale, CalendarDays, Mail, Phone, Globe2, Eye } from "lucide-react";
+import { Heart, ExternalLink, Scale, CalendarDays, Mail, Phone, Globe2, Eye } from "lucide-react";
 import TourRequestModal from './TourRequestModal';
 import { fetchSchoolEvents } from '@/lib/api/entities-api';
 
@@ -107,7 +107,7 @@ function getMatchReasons(school, familyProfile) {
 
 // --- Section Components ---
 
-function HeroSection({ school, onBack }) {
+function HeroSection({ school }) {
   const boardingType = f(school, 'boarding_type') || (school.boarding_available ? 'Day & Boarding' : 'Day');
   const faithBased = f(school, 'faith_based');
   const logoUrl = f(school, 'logo_url');
@@ -128,18 +128,12 @@ function HeroSection({ school, onBack }) {
       )}
       <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(15,20,25,0.15) 0%, rgba(15,20,25,0.85) 100%)' }} />
 
-      {/* Back + Logo */}
-      <div className="absolute top-5 left-5 flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-lg px-4 py-2 text-[13px] font-medium hover:bg-white/20 transition-colors"
-        >
-          &larr; Back to Results
-        </button>
-        {logoUrl && (
+      {/* Logo */}
+      {logoUrl && (
+        <div className="absolute top-5 left-5">
           <img src={logoUrl} alt="" className="h-9 w-9 rounded-lg bg-white/90 p-1 object-contain" />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Hero Content */}
       <div className="absolute bottom-0 left-0 right-0 px-8 pb-8">
@@ -658,7 +652,6 @@ function CtaBar({ school, isShortlisted, onToggleShortlist, onCompare, hasTourFe
 export default function SchoolDetailPanel({
   school,
   familyProfile,
-  onBack,
   onToggleShortlist,
   onCompare,
   isShortlisted,
@@ -696,7 +689,7 @@ export default function SchoolDetailPanel({
     <div className="h-full flex flex-col text-[#e8e6e1]" style={{ background: '#141a1f', fontFamily: "'Inter', -apple-system, sans-serif" }}>
       {/* Scrollable content */}
       <div className="flex-1 overflow-auto">
-        <HeroSection school={school} onBack={onBack} />
+        <HeroSection school={school} />
         <ScanBar school={school} />
         <AboutSection school={school} />
         <Divider />

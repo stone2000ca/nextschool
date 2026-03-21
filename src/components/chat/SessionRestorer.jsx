@@ -614,9 +614,11 @@ export async function restoreMostRecentConversation(
     });
 
     // FIX-PERSIST-AB: Load shortlist after conversation is set so hearts persist on dashboard resume
-    if (typeof loadShortlist === 'function') {
+    // T-SL-03: loadShortlist may be a ref object — resolve .current at call time
+    const resolvedLoadShortlist = typeof loadShortlist === 'function' ? loadShortlist : loadShortlist?.current;
+    if (typeof resolvedLoadShortlist === 'function') {
       try {
-        await loadShortlist(ctx.journeyId);
+        await resolvedLoadShortlist(ctx.journeyId);
       } catch (e) {
         console.warn('[RESTORE-LATEST] loadShortlist failed:', e.message);
       }
