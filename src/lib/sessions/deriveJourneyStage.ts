@@ -23,7 +23,7 @@ export interface JourneyStageResult {
 
 export interface VisitRecord {
   id: string
-  sessionId: string
+  schoolJourneyId: string
   schoolName: string
   scheduledDate: string | null
   attended: boolean

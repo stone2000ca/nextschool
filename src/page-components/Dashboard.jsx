@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { fetchSessions, updateSession } from '@/lib/api/sessions';
 import { deleteConversation } from '@/lib/api/conversations';
 import DeleteConversationConfirm from '@/components/dialogs/DeleteConversationConfirm';
-import { fetchVisitsBySessionIds, fetchDeepDiveFlags } from '@/lib/api/visits';
+import { fetchVisitsForUser, fetchDeepDiveFlags } from '@/lib/api/visits';
 import { deriveJourneyStage } from '@/lib/sessions/deriveJourneyStage';
 import Navbar from '@/components/navigation/Navbar';
 import SessionRow from '@/components/dashboard/SessionRow';
@@ -225,29 +225,32 @@ export default function Dashboard() {
       const chatHistoryIds = sorted.map((s) => s.chat_history_id).filter(Boolean);
       let visits = [];
       let deepDiveFlags = new Set();
-      if (chatHistoryIds.length > 0) {
-        try {
-          const [v, dd] = await Promise.all([
-            fetchVisitsBySessionIds(chatHistoryIds),
-            fetchDeepDiveFlags(chatHistoryIds),
-          ]);
-          visits = v;
-          deepDiveFlags = dd;
-        } catch (err) {
-          console.error('Failed to fetch visits/deep-dive flags:', err);
+      try {
+        const promises = [
+          fetchVisitsForUser(userData.id),
+        ];
+        if (chatHistoryIds.length > 0) {
+          promises.push(fetchDeepDiveFlags(chatHistoryIds));
         }
+        const results = await Promise.all(promises);
+        visits = results[0] || [];
+        deepDiveFlags = results[1] || new Set();
+      } catch (err) {
+        console.error('Failed to fetch visits/deep-dive flags:', err);
       }
 
-      // Group visits by sessionId (= chat_history_id)
-      const visitsBySession = {};
+      // Group visits by familyJourneyId (= session.journey_id)
+      const visitsByJourney = {};
       for (const v of visits) {
-        if (!visitsBySession[v.sessionId]) visitsBySession[v.sessionId] = [];
-        visitsBySession[v.sessionId].push(v);
+        const fjId = v.familyJourneyId;
+        if (!fjId) continue;
+        if (!visitsByJourney[fjId]) visitsByJourney[fjId] = [];
+        visitsByJourney[fjId].push(v);
       }
 
       const stages = new Map();
       for (const s of sorted) {
-        const sVisits = s.chat_history_id ? (visitsBySession[s.chat_history_id] || []) : [];
+        const sVisits = s.journey_id ? (visitsByJourney[s.journey_id] || []) : [];
         const hasDeepDive = s.chat_history_id ? deepDiveFlags.has(s.chat_history_id) : false;
         stages.set(s.id, deriveJourneyStage(s, sVisits, hasDeepDive));
       }
