@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { invokeFunction } from '@/lib/functions';
 import { restoreGuestSession } from '@/components/chat/SessionRestorer';
-import { restoreSessionFromParam, restoreMostRecentConversation } from '@/components/chat/SessionRestorer';
+import { restoreSessionFromParam } from '@/components/chat/SessionRestorer';
 
 const PLAN_NAMES = { FREE: 'free', BASIC: 'basic', PREMIUM: 'premium', PRO: 'pro', ENTERPRISE: 'enterprise' };
 const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
@@ -40,7 +40,6 @@ export function useConsultantSession({
   // ─── Derived ───
   const sessionIdParam = searchParams.get('sessionId');
   const sessionParamProcessedRef = useRef(false);
-  const latestSessionRestoredRef = useRef(false);
 
   const isDevMode = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('dev') === 'true'
@@ -209,26 +208,6 @@ export function useConsultantSession({
     }, 15000);
     return () => clearTimeout(timeout);
   }, [sessionIdParam]);
-
-  // ─── Auto-restore most recent conversation ───
-  useEffect(() => {
-    if (
-      !sessionIdParam &&
-      isAuthenticated &&
-      user?.id &&
-      !currentConversation?.id &&
-      !latestSessionRestoredRef.current
-    ) {
-      latestSessionRestoredRef.current = true;
-      const d = depsRef.current;
-      restoreMostRecentConversation(
-        null, user, setMessages, setSelectedConsultant, setCurrentConversation,
-        d.setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase,
-        d.setDeepDiveAnalysis, setSelectedSchool, isRestoringSessionRef,
-        d.skipViewOverrideRef, d.setSchoolAnalyses
-      );
-    }
-  }, [sessionIdParam, isAuthenticated, user?.id, currentConversation?.id]);
 
   // ─── Restore guest session ───
   useEffect(() => {
