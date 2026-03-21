@@ -193,6 +193,23 @@ export function useConsultantSession({
     }
   }, [sessionIdParam, isAuthenticated, user?.id]);
 
+  // ─── Safety timeout: ensure sessionRestored resolves within 15s ───
+  // Prevents infinite spinner if restoreSessionFromParam hangs (network, etc.)
+  useEffect(() => {
+    if (!sessionIdParam) return;
+    const timeout = setTimeout(() => {
+      setSessionRestored((current) => {
+        if (!current) {
+          console.warn('[SESSION] Safety timeout triggered — forcing sessionRestored to true');
+          setRestoringSession(false);
+          isRestoringSessionRef.current = false;
+        }
+        return true;
+      });
+    }, 15000);
+    return () => clearTimeout(timeout);
+  }, [sessionIdParam]);
+
   // ─── Auto-restore most recent conversation ───
   useEffect(() => {
     if (
