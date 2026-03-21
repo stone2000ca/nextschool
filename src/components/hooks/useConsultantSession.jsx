@@ -38,6 +38,7 @@ export function useConsultantSession({
 
   // ─── Derived ───
   const sessionIdParam = searchParams.get('sessionId') || searchParams.get('session');
+  const isNewChat = searchParams.get('new') === 'true';
   const sessionParamProcessedRef = useRef(false);
 
   const isDevMode = typeof window !== 'undefined'
@@ -230,30 +231,35 @@ export function useConsultantSession({
   // ─── RC-3 FIX: Restore most recent conversation on plain F5 (no sessionId) ───
   useEffect(() => {
     if (isAuthenticated && user && !sessionIdParam) {
-      const d = depsRef.current;
-      // FIX-SL-LOAD: Await restorer then explicitly call loadShortlist via ref,
-      // ensuring the shortlist loads after conversation_context.journeyId is set.
-      (async () => {
-        await restoreMostRecentConversation(
-          null, // _unused
-          user,
-          setMessages,
-          setSelectedConsultant,
-          setCurrentConversation,
-          d.setFamilyProfile,
-          setSchools,
-          setCurrentView,
-          setOnboardingPhase,
-          d.setDeepDiveAnalysis,
-          setSelectedSchool,
-          isRestoringSessionRef,
-          d.skipViewOverrideRef,
-          d.setSchoolAnalyses
-        );
-        loadShortlistRef.current?.();
-      })();
+      if (!isNewChat) {
+        const d = depsRef.current;
+        // FIX-SL-LOAD: Await restorer then explicitly call loadShortlist via ref,
+        // ensuring the shortlist loads after conversation_context.journeyId is set.
+        (async () => {
+          await restoreMostRecentConversation(
+            null, // _unused
+            user,
+            setMessages,
+            setSelectedConsultant,
+            setCurrentConversation,
+            d.setFamilyProfile,
+            setSchools,
+            setCurrentView,
+            setOnboardingPhase,
+            d.setDeepDiveAnalysis,
+            setSelectedSchool,
+            isRestoringSessionRef,
+            d.skipViewOverrideRef,
+            d.setSchoolAnalyses
+          );
+          loadShortlistRef.current?.();
+        })();
+      } else {
+        // New chat requested from home page — skip restore, clean up the param
+        router.replace('/consultant');
+      }
     }
-  }, [isAuthenticated, user?.id, sessionIdParam]);
+  }, [isAuthenticated, user?.id, sessionIdParam, isNewChat]);
 
   // ─── Loading stage progression ───
   useEffect(() => {
