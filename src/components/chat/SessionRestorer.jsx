@@ -82,7 +82,7 @@ export async function restoreSessionFromParam(
   setCurrentConversation,
   setSessionRestored,
   setRestoringSession,
-  loadShortlist,
+  _loadShortlist_removed,
   isRestoringSessionRef,
   sessionParamProcessedRef,
   setDebugInfo,
@@ -340,10 +340,13 @@ export async function restoreSessionFromParam(
       setCurrentView('detail');
     }
     if (chatHistory) {
+      const restoredJourneyId = normalizedState?.journey_id || chatHistory?.conversation_context?.journeyId || null;
+      console.log('[RESTORE] journeyId surfaced:', restoredJourneyId);
       const restoredContext = {
         ...(chatHistory.conversation_context || {}),
         state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (effectiveResumeView || STATES.RESULTS),
-        schools: restoredSchools
+        schools: restoredSchools,
+        ...(restoredJourneyId ? { journeyId: restoredJourneyId } : {})
       };
       // S97-WC3: Hydrate schools from matchedSchools on reload (parse JSON string and fetch full records)
       let schoolIds = chatSession?.matched_schools;
@@ -361,9 +364,12 @@ export async function restoreSessionFromParam(
       };
       setCurrentConversation(restoredConversation);
     } else {
+      const restoredJourneyIdAlt = normalizedState?.journey_id || null;
+      console.log('[RESTORE] journeyId surfaced (no chatHistory):', restoredJourneyIdAlt);
       const restoredContext = {
         state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (effectiveResumeView || STATES.RESULTS),
-        schools: restoredSchools
+        schools: restoredSchools,
+        ...(restoredJourneyIdAlt ? { journeyId: restoredJourneyIdAlt } : {})
       };
       // S97-WC3: Hydrate schools from matchedSchools on reload (parse JSON string and fetch full records)
       let schoolIds = chatSession?.matched_schools;
@@ -381,17 +387,6 @@ export async function restoreSessionFromParam(
     }
 
 
-
-    // Load shortlist AFTER conversation state is set so it has the right context
-    // FIX-PERSIST-AB: Pass journeyId explicitly so loadShortlist doesn't depend
-    // on React state (activeJourney) which may not have settled yet.
-    if (typeof loadShortlist === 'function') {
-      try {
-        await loadShortlist(restoredContext?.journeyId);
-      } catch (e) {
-        console.warn('[RESTORE] loadShortlist failed:', e.message);
-      }
-    }
 
     // Add welcome-back message
     const childName = chatSession.child_name || 'your child';
@@ -431,8 +426,7 @@ export async function restoreMostRecentConversation(
   setSelectedSchool,
   isRestoringSessionRef,
   skipViewOverrideRef,
-  setSchoolAnalyses,
-  loadShortlist
+  setSchoolAnalyses
 ) {
   if (!user?.id) return;
   isRestoringSessionRef.current = true;
@@ -604,25 +598,17 @@ export async function restoreMostRecentConversation(
     setOnboardingPhase(restoredState);
 
     // 8. Set currentConversation — this is the key: useDataLoader watches currentConversation.id
+    const restoredJourneyId = normalizedState2?.journey_id || ctx.journeyId || null;
+    console.log('[RESTORE] journeyId surfaced:', restoredJourneyId);
     setCurrentConversation({
       ...latest,
       conversation_context: {
         ...ctx,
         state: restoredState,
         schools: restoredSchools,
+        ...(restoredJourneyId ? { journeyId: restoredJourneyId } : {})
       }
     });
-
-    // FIX-PERSIST-AB: Load shortlist after conversation is set so hearts persist on dashboard resume
-    // T-SL-03: loadShortlist may be a ref object — resolve .current at call time
-    const resolvedLoadShortlist = typeof loadShortlist === 'function' ? loadShortlist : loadShortlist?.current;
-    if (typeof resolvedLoadShortlist === 'function') {
-      try {
-        await resolvedLoadShortlist(ctx.journeyId);
-      } catch (e) {
-        console.warn('[RESTORE-LATEST] loadShortlist failed:', e.message);
-      }
-    }
 
     console.log('[RESTORE-LATEST] Restore complete — conversation:', latest.id, 'state:', restoredState);
   } catch (error) {
