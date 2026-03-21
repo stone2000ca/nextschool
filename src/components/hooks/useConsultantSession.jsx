@@ -194,7 +194,7 @@ export function useConsultantSession({
         setSelectedConsultant, d.setRestoredSessionData, setMessages,
         d.setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase,
         setCurrentConversation, setSessionRestored, setRestoringSession,
-        loadShortlistRef, isRestoringSessionRef, sessionParamProcessedRef,
+        loadShortlistRef.current, isRestoringSessionRef, sessionParamProcessedRef,
         setDebugInfo, d.setDeepDiveAnalysis, setSelectedSchool,
         d.setVisitPrepKit, d.setActionPlan, d.skipViewOverrideRef, d.setSchoolAnalyses
       );
