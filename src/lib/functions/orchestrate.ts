@@ -220,6 +220,8 @@ function classifyIntentFn(message: string): { gate: 'ACTION' | 'ACTION_ADJACENT'
   for (const { hint, re } of CLASSIFY_INTENT_ACTION_PATTERNS) {
     if (re.test(message)) return { gate: 'ACTION', actionHint: hint };
   }
+  // E52-B2: Check off-topic regex blocklist (mirrors classifyIntent.ts gate 2)
+  if (detectOffTopic(message.trim())) return { gate: 'OFF_TOPIC' };
   // Generous default (E52-B1): treat ambiguous messages as potentially task-related
   return { gate: 'TASK_DRIVEN' };
 }
