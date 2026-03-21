@@ -138,7 +138,7 @@ export default function Home() {
             onSubmit={(e) => {
               e.preventDefault();
               const trimmed = heroQuery.trim();
-              router.push(trimmed ? `/consultant?q=${encodeURIComponent(trimmed)}` : '/consultant');
+              router.push(trimmed ? `/consultant?q=${encodeURIComponent(trimmed)}&new=true` : '/consultant?new=true');
             }}
             className="max-w-4xl mx-auto mb-4"
           >
@@ -222,7 +222,7 @@ export default function Home() {
 
           {/* CTA */}
           <div className="text-center mt-12">
-            <Link href="/consultant" className="ns-btn-primary inline-flex items-center">
+            <Link href="/consultant?new=true" className="ns-btn-primary inline-flex items-center">
               Find the right school
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
@@ -315,7 +315,7 @@ export default function Home() {
           </div>
 
           <div className="text-center mt-10 sm:mt-12">
-            <Link href="/consultant" className="ns-btn-primary inline-flex items-center">
+            <Link href="/consultant?new=true" className="ns-btn-primary inline-flex items-center">
               Start your free chat <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </div>
