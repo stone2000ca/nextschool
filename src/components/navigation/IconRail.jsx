@@ -2,7 +2,7 @@ import { ClipboardList, Heart, Search, CalendarDays, MapPin } from 'lucide-react
 import { STATES } from '@/lib/stateMachineConfig';
 
 // T046 Owner Override: Right-side rail, 3 icons, Family Brief as primary
-export default function IconRail({ currentState, activePanel, onTogglePanel }) {
+export default function IconRail({ currentState, activePanel, onTogglePanel, shortlistCount = 0 }) {
   const isWelcome = currentState === STATES.WELCOME;
   const isResults = [STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState);
 
@@ -90,7 +90,7 @@ export default function IconRail({ currentState, activePanel, onTogglePanel }) {
         active={shortlistActive}
         onClick={() => shortlistEnabled && onTogglePanel('shortlist')}
         disabledTip="Available after finding schools"
-        shortlistCount={0}
+        shortlistCount={shortlistCount}
       />
       <RailIcon
         icon={Search}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { invokeFunction } from '@/lib/functions';
-import { restoreSessionFromParam } from '@/components/chat/SessionRestorer';
+import { restoreSessionFromParam, restoreMostRecentConversation } from '@/components/chat/SessionRestorer';
 
 const PLAN_NAMES = { FREE: 'free', BASIC: 'basic', PREMIUM: 'premium', PRO: 'pro', ENTERPRISE: 'enterprise' };
 const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
@@ -229,24 +229,53 @@ export function useConsultantSession({
     return () => clearTimeout(timeout);
   }, [sessionIdParam]);
 
-  // ─── Fresh start: no sessionId param means always start a new chat ───
-  // Restore only happens via the sessionIdParam effect above (e.g. from /dashboard).
+  // ─── No sessionId param: restore most recent conversation or start fresh ───
   useEffect(() => {
     if (!isAuthenticated || !user || sessionIdParam) return;
 
     // Clean up ?new=true param if present
     if (isNewChat) {
       router.replace('/consultant');
+      // Explicit new chat — start fresh
+      const greeting = {
+        role: 'assistant',
+        content: DEFAULT_GREETING,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages([greeting]);
+      setSessionRestored(true);
+      return;
     }
 
-    // Always start fresh — inject greeting, mark session as restored
-    const greeting = {
-      role: 'assistant',
-      content: DEFAULT_GREETING,
-      timestamp: new Date().toISOString(),
-    };
-    setMessages([greeting]);
-    setSessionRestored(true);
+    // Try to restore the most recent conversation (e.g. on F5 refresh)
+    const d = depsRef.current;
+    (async () => {
+      let restored = false;
+      try {
+        await restoreMostRecentConversation(
+          null, user, setMessages, setSelectedConsultant,
+          setCurrentConversation, d.setFamilyProfile, setSchools,
+          setCurrentView, setOnboardingPhase, d.setDeepDiveAnalysis,
+          setSelectedSchool, isRestoringSessionRef, d.skipViewOverrideRef,
+          d.setSchoolAnalyses
+        );
+        loadShortlistRef.current?.();
+        restored = true;
+      } catch (e) {
+        console.warn('[SESSION] restoreMostRecentConversation failed:', e.message);
+      }
+
+      // If no conversation was restored, start fresh with greeting
+      setMessages(prev => {
+        if (prev.length > 0) return prev; // restore succeeded
+        return [{
+          role: 'assistant',
+          content: DEFAULT_GREETING,
+          timestamp: new Date().toISOString(),
+        }];
+      });
+      setSessionRestored(true);
+    })();
   }, [isAuthenticated, user?.id, sessionIdParam]);
 
   // ─── Loading stage progression ───
