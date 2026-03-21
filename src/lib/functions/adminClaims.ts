@@ -22,7 +22,7 @@ export async function adminClaims() {
       ? (db.from('schools') as any).select('id, name, city, province_state').in('id', schoolIds)
       : Promise.resolve({ data: [], error: null }),
     userIds.length > 0
-      ? (db.from('users') as any).select('id, email').in('id', userIds)
+      ? (db.from('user_profiles') as any).select('id, email').in('id', userIds)
       : Promise.resolve({ data: [], error: null }),
   ])
 

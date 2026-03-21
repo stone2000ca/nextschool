@@ -53,16 +53,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const explicitLogoutRef = useRef(false)
 
   const fetchUserProfile = useCallback(async (authUser: SupabaseUser): Promise<UserProfile | null> => {
-    // Fetch from both user_profiles and public.users in parallel.
-    // The admin role is stored in public.users, while user_profiles has
-    // subscription/token data. We need both to build a complete profile.
-    const [profileResult, usersResult] = await Promise.all([
-      supabase.from('user_profiles').select('*').eq('id', authUser.id).single(),
-      supabase.from('users').select('role').eq('id', authUser.id).single(),
-    ])
-
-    const profile = profileResult.data
-    const usersRow = usersResult.data
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', authUser.id)
+      .single()
 
     if (!profile) {
       // Profile might not exist yet (trigger delay); return basic info
@@ -70,22 +65,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         id: authUser.id,
         email: authUser.email || '',
         full_name: authUser.user_metadata?.full_name,
-        role: usersRow?.role || 'user',
+        role: 'user',
         token_balance: 3,
         max_sessions: 3,
       }
     }
 
-    // Prefer the role from public.users (where admin role is assigned),
-    // falling back to user_profiles.role
-    const role = usersRow?.role || profile.role || 'user'
-
-    // Return snake_case fields directly from DB
     return {
       id: profile.id,
       email: profile.email,
       full_name: profile.full_name,
-      role,
+      role: profile.role || 'user',
       subscription_plan: profile.subscription_plan,
       token_balance: profile.token_balance,
       max_sessions: profile.max_sessions,
