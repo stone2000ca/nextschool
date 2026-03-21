@@ -308,10 +308,12 @@ export async function restoreSessionFromParam(
     }
 
     // Set schools and conversation state
-    console.log('[RESTORE] Setting RESULTS state with', restoredSchools.length, 'schools');
+    console.log('[RESTORE] Setting state with', restoredSchools.length, 'schools');
     setSchools(restoredSchools);
-    setCurrentView('schools');
-    setOnboardingPhase(STATES.RESULTS);
+    if (restoredSchools.length > 0) {
+      setCurrentView('schools');
+      setOnboardingPhase(STATES.RESULTS);
+    }
 
     // PHASE-1FG: Normalized state is sole source of truth for resumeView/state
     const effectiveResumeView = normalizedState?.resume_view || normalizedState?.state || null;
@@ -344,7 +346,7 @@ export async function restoreSessionFromParam(
       console.log('[RESTORE] journeyId surfaced:', restoredJourneyId);
       const restoredContext = {
         ...(chatHistory.conversation_context || {}),
-        state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (effectiveResumeView || STATES.RESULTS),
+        state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (effectiveResumeView || (restoredSchools.length > 0 ? STATES.RESULTS : STATES.WELCOME)),
         schools: restoredSchools,
         ...(restoredJourneyId ? { journeyId: restoredJourneyId } : {})
       };
@@ -367,7 +369,7 @@ export async function restoreSessionFromParam(
       const restoredJourneyIdAlt = normalizedState?.journey_id || null;
       console.log('[RESTORE] journeyId surfaced (no chatHistory):', restoredJourneyIdAlt);
       const restoredContext = {
-        state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (effectiveResumeView || STATES.RESULTS),
+        state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (effectiveResumeView || (restoredSchools.length > 0 ? STATES.RESULTS : STATES.WELCOME)),
         schools: restoredSchools,
         ...(restoredJourneyIdAlt ? { journeyId: restoredJourneyIdAlt } : {})
       };
@@ -577,7 +579,10 @@ export async function restoreMostRecentConversation(
 
     // PHASE-1FG: Normalized state is sole source of truth
     const hasDeepDive = !!lastDeepDiveSchoolId;
-    const effectiveState = normalizedState2?.resume_view || normalizedState2?.state || STATES.RESULTS;
+    // FIX-ROUTING: Only default to RESULTS if there are actually restored schools.
+    // New/empty conversations without normalized state should stay at WELCOME.
+    const rawEffectiveState = normalizedState2?.resume_view || normalizedState2?.state || null;
+    const effectiveState = rawEffectiveState || (restoredSchools.length > 0 ? STATES.RESULTS : (ctx.state || STATES.WELCOME));
     console.log('[PHASE-1FG] conversation_state state:', effectiveState);
     const restoredState = hasDeepDive ? STATES.DEEP_DIVE : effectiveState;
 
