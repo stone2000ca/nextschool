@@ -531,8 +531,20 @@ export const useMessageHandler = ({
               }
               setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversation_context: updatedContext }));
               console.log('[SESSION] Created ChatHistory with id:', chatHistoryRecord.id);
+              // BUG-FIX: Update URL so refresh restores via ?sessionId param
+              if (typeof window !== 'undefined' && chatHistoryRecord.id) {
+                window.history.replaceState(null, '', '/consultant?sessionId=' + chatHistoryRecord.id);
+              }
             } catch (e) {
               console.error('Failed to create ChatHistory before ChatSession:', e);
+            }
+          }
+
+          // BUG-FIX: Ensure URL has ?sessionId for existing conversations reaching RESULTS
+          if (typeof window !== 'undefined' && !window.location.search.includes('sessionId')) {
+            const resolvedId = conversationIdRef.current || currentConversation?.id;
+            if (resolvedId) {
+              window.history.replaceState(null, '', '/consultant?sessionId=' + resolvedId);
             }
           }
 
