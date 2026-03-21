@@ -94,7 +94,7 @@ export default function SchoolAdminDuo() {
       {/* Desktop: duo pane */}
       <div className="hidden md:flex flex-1 min-h-0">
         <div className="w-[65%] border-r border-border">
-          <DuoLeftPane />
+          <DuoLeftPane schoolId={schoolId} />
         </div>
         <div className="w-[35%]">
           <DuoRightPane schoolName={school.name} />
