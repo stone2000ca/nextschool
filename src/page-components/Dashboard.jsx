@@ -1,15 +1,138 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { fetchSessions, updateSession } from '@/lib/api/sessions';
 import { deleteConversation } from '@/lib/api/conversations';
+import { fetchVisitsBySessionIds, fetchDeepDiveFlags } from '@/lib/api/visits';
+import { deriveJourneyStage } from '@/lib/sessions/deriveJourneyStage';
 import Navbar from '@/components/navigation/Navbar';
-import SchoolSearchProfile from '@/components/dashboard/SchoolSearchProfile.jsx';
+import SessionRow from '@/components/dashboard/SessionRow';
 import EditProfilePanel from '@/components/dashboard/EditProfilePanel';
 import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
-import { Plus, Settings, X, AlertCircle, Crown, CheckCircle, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import VisitsTimeline from '@/components/visits/VisitsTimeline';
+import { Plus, Settings, X, AlertCircle, Crown, CheckCircle, Trash2, MoreVertical, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+// ─── Helpers ────────────────────────────────────────────────────────
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function firstName(fullName) {
+  if (!fullName) return 'there';
+  return fullName.split(' ')[0];
+}
+
+/** Derive a contextual subheading from the session stages map */
+function getSubheading(sessionStages, activeSessions) {
+  if (activeSessions.length === 0) return '';
+  const hasHighUrgency = activeSessions.some(
+    (s) => sessionStages.get(s.id)?.urgency === 'HIGH'
+  );
+  if (hasHighUrgency) return 'You have items needing attention';
+  const allBriefIncomplete = activeSessions.every(
+    (s) => sessionStages.get(s.id)?.stage === 'BRIEF_INCOMPLETE'
+  );
+  if (allBriefIncomplete) return "Let's finish setting up your profiles";
+  return "Here's where things stand";
+}
+
+/** Default stage for sessions not yet computed */
+const DEFAULT_STAGE = {
+  stage: 'BRIEF_INCOMPLETE',
+  statusLine: 'Loading...',
+  ctaLabel: 'Continue',
+  ctaRoute: '/consultant',
+  urgency: 'NORMAL',
+};
+
+// ─── Skeleton Row ───────────────────────────────────────────────────
+
+function SkeletonRow({ opacity }) {
+  return (
+    <div
+      className="flex items-center gap-4 px-5 py-4 w-full rounded-lg bg-[#22222E] animate-pulse"
+      style={{ opacity }}
+    >
+      <div className="w-9 h-9 rounded-full bg-white/10 flex-shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-4 bg-white/10 rounded w-1/3" />
+        <div className="h-3 bg-white/10 rounded w-1/2" />
+      </div>
+      <div className="h-6 w-24 bg-white/10 rounded-full flex-shrink-0" />
+      <div className="h-8 w-28 bg-white/10 rounded-md flex-shrink-0" />
+    </div>
+  );
+}
+
+// ─── Archived Row (simplified, no CTA) ──────────────────────────────
+
+function ArchivedRow({ session, isPaid, onReactivate, onDelete }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const initial = (session.child_name ?? '?')[0].toUpperCase();
+
+  return (
+    <div className="group flex items-center gap-4 px-5 py-4 w-full rounded-lg bg-[#22222E]/60 opacity-50 hover:opacity-70 transition-opacity border-l-2 border-transparent">
+      {/* Avatar */}
+      <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white/50 font-semibold text-sm">
+        {initial}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <span className="text-white/70 font-medium truncate block">
+          {session.child_name ?? session.profile_name ?? 'Unnamed'}
+        </span>
+        <p className="text-white/40 text-sm truncate mt-0.5">
+          Archived
+          {session.child_grade != null && ` · Grade ${session.child_grade}`}
+        </p>
+      </div>
+
+      {/* Overflow (Reactivate / Delete only) */}
+      <div className="relative flex-shrink-0">
+        <button
+          onClick={() => setMenuOpen((prev) => !prev)}
+          className="p-1.5 rounded-md text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+          aria-label="More actions"
+        >
+          <MoreVertical size={16} />
+        </button>
+
+        {menuOpen && (
+          <div className="absolute right-0 top-full mt-1 w-40 rounded-md bg-[#2C2C3A] border border-white/10 shadow-lg z-50 py-1">
+            {isPaid ? (
+              <button
+                onClick={() => { setMenuOpen(false); onReactivate(session); }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <RotateCcw size={14} />
+                Reactivate
+              </button>
+            ) : (
+              <div className="px-3 py-2 text-xs text-amber-300/70">
+                Upgrade to reactivate
+              </div>
+            )}
+            <button
+              onClick={() => { setMenuOpen(false); onDelete(session); }}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-400/70 hover:text-red-400 hover:bg-white/5 transition-colors"
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Dashboard ──────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const router = useRouter();
@@ -23,36 +146,34 @@ export default function Dashboard() {
   const [showArchiveChoiceModal, setShowArchiveChoiceModal] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showArchivedTab, setShowArchivedTab] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [reactivateError, setReactivateError] = useState(null);
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
   const [deleteAllTarget, setDeleteAllTarget] = useState(null); // 'active' | 'archived'
   const [shortlistCounts, setShortlistCounts] = useState({}); // { [journey_id]: count }
   const [editingSession, setEditingSession] = useState(null);
+  const [sessionStages, setSessionStages] = useState(new Map()); // Map<sessionId, JourneyStageResult>
+
+  const isPaid = user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise';
+
+  const activeSessions = useMemo(() => sessions.filter((s) => s.status === 'active'), [sessions]);
+  const archivedSessions = useMemo(() => sessions.filter((s) => s.status === 'archived'), [sessions]);
 
   useEffect(() => {
     // WC15: Check for upgrade success param
     const params = new URLSearchParams(window.location.search);
     if (params.get('upgrade') === 'success') {
       setShowUpgradeSuccess(true);
-      // Clean up URL param
       window.history.replaceState({}, document.title, '/dashboard');
     }
   }, []);
 
   // Wait for auth to finish hydrating before checking authentication.
-  // Previously this ran on mount with useEffect([], []), capturing the initial
-  // isAuthenticated=false (before auth loaded), which caused an immediate
-  // redirect to /login even for authenticated users on hard refresh.
-  //
   // We also depend on authUser because AuthContext sets isAuthenticated=true
   // and isLoadingAuth=false synchronously, but fetches the user profile
-  // asynchronously. Without authUser in deps, loadSessions() would run with
-  // authUser=null, set local user state to null, and the render guard
-  // (!user) would return null — causing a blank page.
+  // asynchronously.
   useEffect(() => {
     if (isLoadingAuth) return;
-    // If authenticated but profile hasn't loaded yet, wait for it
     if (authIsAuthenticated && !authUser) return;
     loadSessions();
   }, [isLoadingAuth, authIsAuthenticated, authUser]);
@@ -83,7 +204,7 @@ export default function Dashboard() {
 
       setSessions(sorted);
 
-      // Fetch shortlist counts from chat_shortlists table (not session.shortlisted_count)
+      // Fetch shortlist counts from chat_shortlists table
       const journeyIds = sorted.map(s => s.journey_id).filter(Boolean);
       if (journeyIds.length > 0) {
         try {
@@ -96,6 +217,38 @@ export default function Dashboard() {
           console.error('Failed to fetch shortlist counts:', err);
         }
       }
+
+      // E53-S4: Derive journey stages for each session
+      const chatHistoryIds = sorted.map((s) => s.chat_history_id).filter(Boolean);
+      let visits = [];
+      let deepDiveFlags = new Set();
+      if (chatHistoryIds.length > 0) {
+        try {
+          const [v, dd] = await Promise.all([
+            fetchVisitsBySessionIds(chatHistoryIds),
+            fetchDeepDiveFlags(chatHistoryIds),
+          ]);
+          visits = v;
+          deepDiveFlags = dd;
+        } catch (err) {
+          console.error('Failed to fetch visits/deep-dive flags:', err);
+        }
+      }
+
+      // Group visits by sessionId (= chat_history_id)
+      const visitsBySession = {};
+      for (const v of visits) {
+        if (!visitsBySession[v.sessionId]) visitsBySession[v.sessionId] = [];
+        visitsBySession[v.sessionId].push(v);
+      }
+
+      const stages = new Map();
+      for (const s of sorted) {
+        const sVisits = s.chat_history_id ? (visitsBySession[s.chat_history_id] || []) : [];
+        const hasDeepDive = s.chat_history_id ? deepDiveFlags.has(s.chat_history_id) : false;
+        stages.set(s.id, deriveJourneyStage(s, sVisits, hasDeepDive));
+      }
+      setSessionStages(stages);
     } catch (err) {
       console.error('Failed to load dashboard:', err);
       setError('Failed to load your sessions. Please try again.');
@@ -104,27 +257,17 @@ export default function Dashboard() {
     }
   };
 
+  // ─── Session action handlers (all preserved from original) ────────
+
   const handleNewSearch = () => {
     // WC8: Case 1 (free user with 0 sessions) - navigate directly
-    const activeSessions = sessions.filter(s => s.status === 'active');
     if (activeSessions.length === 0) {
       router.push('/consultant');
       return;
     }
 
     // WC12: Case 2 (free user with 1+ session) - show upgrade paywall instead
-    const isPaid = user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise';
     if (!isPaid) {
-      // Show upgrade modal for free users
-      const activeSession = activeSessions[0];
-      const matchedCount = activeSession ? (() => {
-        try {
-          return activeSession.matched_schools ? JSON.parse(activeSession.matched_schools).length : 0;
-        } catch {
-          return 0;
-        }
-      })() : 0;
-      
       setShowUpgradeModal(true);
       return;
     }
@@ -144,7 +287,6 @@ export default function Dashboard() {
     try {
       await updateSession(sessionToArchive.id, { status: 'archived' });
       setShowArchiveChoiceModal(false);
-      // Refresh sessions
       await loadSessions();
       router.push('/consultant');
     } catch (err) {
@@ -154,10 +296,16 @@ export default function Dashboard() {
     }
   };
 
+  const handleArchiveSession = async (session) => {
+    try {
+      await updateSession(session.id, { status: 'archived' });
+      await loadSessions();
+    } catch (err) {
+      console.error('Failed to archive session:', err);
+    }
+  };
+
   const handleReactivateSession = async (archivedSession) => {
-    const activeSessions = sessions.filter(s => s.status === 'active');
-    
-    // Check if at 5 active sessions
     if (activeSessions.length >= 5) {
       setReactivateError('You have 5 active profiles. Archive another session first.');
       return;
@@ -174,21 +322,18 @@ export default function Dashboard() {
   };
 
   const handleDeleteArchivedSession = async (sessionToDelete) => {
-    // Show confirmation dialog
     const confirmed = window.confirm(
       'This will permanently delete this search and all conversation history. Cannot be undone. Continue?'
     );
     if (!confirmed) return;
 
     try {
-      // Cascade delete: Remove associated ChatHistory
       if (sessionToDelete.chat_history_id) {
         await deleteConversation(sessionToDelete.chat_history_id);
       }
-      // Delete the session
       await updateSession(sessionToDelete.id, {
         status: 'deleted',
-        is_active: false
+        is_active: false,
       });
       await loadSessions();
     } catch (err) {
@@ -202,7 +347,6 @@ export default function Dashboard() {
       return;
     }
 
-    // Archive the first (most recent) active session
     const activeSession = sessions.find(s => s.status === 'active');
     if (!activeSession) {
       router.push('/consultant');
@@ -213,7 +357,6 @@ export default function Dashboard() {
     try {
       await updateSession(activeSession.id, { status: 'archived' });
       setShowNewSearchModal(false);
-      // Refresh sessions
       await loadSessions();
       router.push('/consultant');
     } catch (err) {
@@ -221,10 +364,6 @@ export default function Dashboard() {
     } finally {
       setModalLoading(false);
     }
-  };
-
-  const handleSessionArchived = async () => {
-    await loadSessions();
   };
 
   const handleEditSave = async (sessionId, data) => {
@@ -244,38 +383,54 @@ export default function Dashboard() {
     setDeleteAllTarget(null);
     await Promise.all(toProcess.map(async (s) => {
       if (isArchivingActive) {
-        // Archive active sessions — soft archive only
         return updateSession(s.id, { status: 'archived' });
       } else {
-        // Permanently delete archived sessions + their chat history
         if (s.chat_history_id) {
           await deleteConversation(s.chat_history_id);
         }
-        return updateSession(s.id, { status: 'deleted', is_active: false});
+        return updateSession(s.id, { status: 'deleted', is_active: false });
       }
     }));
   };
 
+  // ─── Loading skeleton ─────────────────────────────────────────────
+
   if (isLoadingAuth || loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#1E1E2E]">
-        <div className="animate-spin h-8 w-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+      <div className="h-screen flex flex-col bg-[#1A1A24] overflow-hidden">
+        <Navbar />
+        <div className="bg-[#22222E] border-b border-white/10 py-4 flex-shrink-0">
+          <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+            <div className="h-7 w-56 bg-white/10 rounded animate-pulse" />
+            <div className="h-4 w-40 bg-white/10 rounded animate-pulse mt-2" />
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-6 space-y-3">
+            <SkeletonRow opacity={0.6} />
+            <SkeletonRow opacity={0.8} />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!isAuthenticated || !user) {
-    // Not authenticated — navigateToLogin was already called in loadSessions.
-    // Show a spinner while the redirect completes instead of a blank page.
     return (
-      <div className="h-screen flex items-center justify-center bg-[#1E1E2E]">
+      <div className="h-screen flex items-center justify-center bg-[#1A1A24]">
         <div className="animate-spin h-8 w-8 border-4 border-teal-600 border-t-transparent rounded-full" />
       </div>
     );
   }
 
+  // ─── Render ───────────────────────────────────────────────────────
+
+  const greeting = getGreeting();
+  const userFirstName = firstName(user.full_name);
+  const subheading = getSubheading(sessionStages, activeSessions);
+
   return (
-    <div className="h-screen flex flex-col bg-[#1E1E2E] overflow-hidden">
+    <div className="h-screen flex flex-col bg-[#1A1A24] overflow-hidden">
       <Navbar />
 
       {/* WC15: Upgrade Success Banner */}
@@ -297,24 +452,27 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Top Bar */}
-      <div className="bg-[#2A2A3D] border-b border-white/10 py-4 flex-shrink-0">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-white">
-              Welcome back, {user.full_name || 'User'}
-            </h1>
-            {/* WC12: Tier badge */}
-            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-              user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise'
-                ? 'bg-amber-500/20 text-amber-300'
-                : 'bg-slate-500/20 text-slate-300'
-            }`}>
-              {(user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise') && (
-                <Crown className="w-3 h-3" />
-              )}
-              {user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise' ? 'Premium' : 'Free Plan'}
+      {/* Contextual Header */}
+      <div className="bg-[#22222E] border-b border-white/10 py-5 flex-shrink-0">
+        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-white">
+                {greeting}, {userFirstName}
+              </h1>
+              {/* WC12: Tier badge */}
+              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                isPaid
+                  ? 'bg-amber-500/20 text-amber-300'
+                  : 'bg-slate-500/20 text-slate-300'
+              }`}>
+                {isPaid && <Crown className="w-3 h-3" />}
+                {isPaid ? 'Premium' : 'Free Plan'}
+              </div>
             </div>
+            {subheading && (
+              <p className="text-white/50 text-sm mt-1">{subheading}</p>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -337,174 +495,122 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-6">
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
-            {error}
-          </div>
-        )}
-
-        {/* E51-S3A: Visits Timeline — shown when user has sessions */}
-        {sessions.length > 0 && (
-          <div className="mb-6">
-            <VisitsTimeline variant="card" />
-          </div>
-        )}
-
-        {sessions.length === 0 ? (
-          /* No Sessions - Welcome Message */
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center max-w-md">
-              <div className="text-6xl mb-4">🎓</div>
-              <h2 className="text-3xl font-bold text-white mb-3">Welcome to NextSchool!</h2>
-              <p className="text-white/70 mb-8 text-lg">
-                Start your first school search to see your profiles here.
-              </p>
-              <Button
-                onClick={handleNewSearch}
-                className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 text-lg font-semibold gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Start Your First Search
-              </Button>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-6">
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
+              {error}
             </div>
-          </div>
-        ) : (
-          /* Sessions Grid + Shortlist */
-          <div>
-            {/* Active / Archived Toggle */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setShowArchivedTab(false)}
-                  className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
-                    !showArchivedTab 
-                      ? 'text-white border-teal-500' 
-                      : 'text-white/50 border-transparent hover:text-white/70'
-                  }`}
-                >
-                  Active ({sessions.filter(s => s.status === 'active').length})
-                </button>
-                <button
-                  onClick={() => setShowArchivedTab(true)}
-                  className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
-                    showArchivedTab 
-                      ? 'text-white border-teal-500' 
-                      : 'text-white/50 border-transparent hover:text-white/70'
-                  }`}
-                >
-                  Archived ({sessions.filter(s => s.status === 'archived').length})
-                </button>
-              </div>
-              {/* Delete All — only shown when current tab has profiles */}
-              {!showArchivedTab && sessions.filter(s => s.status === 'active').length > 0 && (
-                <button
-                  onClick={() => setDeleteAllTarget('active')}
-                  className="flex items-center gap-1.5 text-sm text-red-400/70 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Archive All
-                </button>
-              )}
-              {showArchivedTab && sessions.filter(s => s.status === 'archived').length > 0 && (
-                <button
-                  onClick={() => setDeleteAllTarget('archived')}
-                  className="flex items-center gap-1.5 text-sm text-red-400/70 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete All
-                </button>
-              )}
+          )}
+
+          {/* E51-S3A: Visits Timeline */}
+          {sessions.length > 0 && (
+            <div className="mb-6">
+              <VisitsTimeline variant="card" />
             </div>
+          )}
 
-            {/* Active Sessions */}
-            {!showArchivedTab && (
-              <div>
-                <div className="flex flex-wrap gap-4 mb-12">
-                  {sessions.filter(s => s.status === 'active').map((session) => (
-                    <SchoolSearchProfile
-                      key={session.id}
-                      session={session}
-                      shortlistCount={session.journey_id ? (shortlistCounts[session.journey_id] ?? 0) : 0}
-                      onViewMatches={() => {}}
-                      onEditProfile={() => setEditingSession(session)}
-                      onArchive={handleSessionArchived}
-                      isPaid={user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise'}
-                    />
-                  ))}
-                </div>
+          {sessions.length === 0 ? (
+            /* Empty State */
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="text-center max-w-sm">
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  Find the right school
+                </h2>
+                <p className="text-white/50 mb-8">
+                  Start a search to get personalized school recommendations.
+                </p>
+                <Button
+                  onClick={handleNewSearch}
+                  className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 text-lg font-semibold gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Start Your First Search
+                </Button>
               </div>
-            )}
-
-            {/* Archived Sessions */}
-            {showArchivedTab && (
-              <div>
-                {sessions.filter(s => s.status === 'archived').length === 0 ? (
-                  <div className="bg-[#2A2A3D] rounded-lg p-8 border border-white/10 text-center">
-                    <div className="text-4xl mb-3">📦</div>
-                    <p className="text-white/60">No archived profiles yet.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {sessions.filter(s => s.status === 'archived').map((session) => (
-                      <div
-                        key={session.id}
-                        className="bg-[#2A2A3D]/60 border border-white/10 rounded-lg p-5 flex items-start justify-between opacity-60 hover:opacity-75 transition-opacity"
-                      >
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-white">
-                            {session.profile_name || 'Untitled Profile'}
-                          </h3>
-                          <p className="text-sm text-white/60 mt-1">
-                            {session.child_name && `${session.child_name}`}
-                            {session.child_name && session.child_grade != null && ` • Grade ${session.child_grade}`}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise' ? (
-                            <>
-                              <button
-                                onClick={() => handleReactivateSession(session)}
-                                className="px-3 py-1.5 bg-teal-600/20 hover:bg-teal-600/40 text-teal-300 text-sm rounded-lg font-medium transition-colors"
-                              >
-                                Reactivate
-                              </button>
-                              <button
-                                onClick={() => handleDeleteArchivedSession(session)}
-                                className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 text-sm rounded-lg font-medium transition-colors"
-                              >
-                                Delete
-                              </button>
-                            </>
-                          ) : (
-                            <div className="px-3 py-1.5 bg-amber-600/20 text-amber-300 text-xs rounded-lg font-medium">
-                              Upgrade to reactivate
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {reactivateError && (
-                      <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
-                        {reactivateError}
-                      </div>
-                    )}
-                  </div>
+            </div>
+          ) : (
+            <div>
+              {/* Active Sessions Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider">
+                  Active ({activeSessions.length})
+                </h2>
+                {activeSessions.length > 0 && (
+                  <button
+                    onClick={() => setDeleteAllTarget('active')}
+                    className="flex items-center gap-1.5 text-sm text-red-400/70 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Archive All
+                  </button>
                 )}
               </div>
-            )}
 
-          </div>
-        )}
+              {/* Active SessionRows */}
+              <div className="space-y-2 mb-8">
+                {activeSessions.map((session) => (
+                  <SessionRow
+                    key={session.id}
+                    session={session}
+                    journeyStage={sessionStages.get(session.id) || DEFAULT_STAGE}
+                    isPaid={isPaid}
+                    onArchive={() => handleArchiveSession(session)}
+                    onEditRequest={(s) => setEditingSession(s)}
+                  />
+                ))}
+              </div>
+
+              {/* Archived — inline expand */}
+              {archivedSessions.length > 0 && (
+                <div>
+                  <button
+                    onClick={() => setShowArchived((prev) => !prev)}
+                    className="flex items-center gap-2 text-sm text-white/40 hover:text-white/60 transition-colors mb-3"
+                  >
+                    {showArchived ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    View archived ({archivedSessions.length})
+                  </button>
+
+                  {showArchived && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-end mb-1">
+                        <button
+                          onClick={() => setDeleteAllTarget('archived')}
+                          className="flex items-center gap-1.5 text-sm text-red-400/70 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete All
+                        </button>
+                      </div>
+                      {archivedSessions.map((session) => (
+                        <ArchivedRow
+                          key={session.id}
+                          session={session}
+                          isPaid={isPaid}
+                          onReactivate={handleReactivateSession}
+                          onDelete={handleDeleteArchivedSession}
+                        />
+                      ))}
+                      {reactivateError && (
+                        <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+                          {reactivateError}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Modals rendered outside scroll container but inside root div */}
+      {/* ─── Modals (all preserved) ─────────────────────────────────── */}
 
       {/* WC14: Archive Choice Modal (Case 4 - 5 active sessions) */}
       {showArchiveChoiceModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#2A2A3D] rounded-lg max-w-md w-full p-6 border border-white/10">
+          <div className="bg-[#22222E] rounded-lg max-w-md w-full p-6 border border-white/10">
             <div className="flex items-start gap-3 mb-4">
               <AlertCircle className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" />
               <div>
@@ -516,7 +622,7 @@ export default function Dashboard() {
             </div>
 
             <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-              {sessions.filter(s => s.status === 'active').map((session) => (
+              {activeSessions.map((session) => (
                 <button
                   key={session.id}
                   onClick={() => handleArchiveSessionForNewSearch(session)}
@@ -526,7 +632,7 @@ export default function Dashboard() {
                   <p className="text-white font-medium text-sm">{session.profile_name || 'Untitled'}</p>
                   <p className="text-white/60 text-xs mt-0.5">
                     {session.child_name && `${session.child_name}`}
-                    {session.child_name && session.child_grade != null && ` • Grade ${session.child_grade}`}
+                    {session.child_name && session.child_grade != null && ` · Grade ${session.child_grade}`}
                   </p>
                 </button>
               ))}
@@ -546,7 +652,7 @@ export default function Dashboard() {
       {/* WC8: New Search Confirmation Modal (Paid Users) */}
       {showNewSearchModal && sessions.length > 0 && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#2A2A3D] rounded-lg max-w-md w-full p-6 border border-white/10">
+          <div className="bg-[#22222E] rounded-lg max-w-md w-full p-6 border border-white/10">
             <div className="flex items-start gap-3 mb-4">
               <AlertCircle className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" />
               <div>
@@ -590,14 +696,14 @@ export default function Dashboard() {
       {/* E22-S1: Delete All Confirmation Modal */}
       {deleteAllTarget && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#2A2A3D] rounded-lg max-w-sm w-full p-6 border border-white/10">
+          <div className="bg-[#22222E] rounded-lg max-w-sm w-full p-6 border border-white/10">
             <h2 className="text-lg font-semibold text-white mb-2">
               {deleteAllTarget === 'archived' ? 'Permanently delete all archived profiles?' : 'Archive all profiles?'}
             </h2>
             <p className="text-white/60 text-sm mb-6">
               {deleteAllTarget === 'archived'
-                ? `This will permanently delete all ${sessions.filter(s => s.status === deleteAllTarget).length} archived profiles and all associated conversation history. Cannot be undone. Continue?`
-                : `Archive all ${sessions.filter(s => s.status === deleteAllTarget).length} active profiles? This cannot be undone.`
+                ? `This will permanently delete all ${archivedSessions.length} archived profiles and all associated conversation history. Cannot be undone. Continue?`
+                : `Archive all ${activeSessions.length} active profiles? This cannot be undone.`
               }
             </p>
             <div className="flex gap-3">
