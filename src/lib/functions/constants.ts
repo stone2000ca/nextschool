@@ -4,7 +4,6 @@
 export const STATES = {
   WELCOME: 'WELCOME',
   DISCOVERY: 'DISCOVERY',
-  BRIEF: 'BRIEF',
   RESULTS: 'RESULTS',
   DEEP_DIVE: 'DEEP_DIVE'
 } as const;

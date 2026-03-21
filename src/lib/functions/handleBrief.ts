@@ -124,7 +124,7 @@ export async function handleBriefLogic(params: any) {
     }
   }
 
-  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
+  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
   const BRIEF_STATUS = { GENERATING: 'generating', PENDING_REVIEW: 'pending_review', EDITING: 'editing', CONFIRMED: 'confirmed' };
 
   let msgLower = (message || '').toLowerCase();
@@ -151,7 +151,7 @@ export async function handleBriefLogic(params: any) {
 
     return {
       message: adjustMessage,
-      state: STATES.BRIEF,
+      state: STATES.DISCOVERY,
       briefStatus: BRIEF_STATUS.EDITING,
       familyProfile: localProfile,
       conversationContext: context,
@@ -314,7 +314,7 @@ Format:
 
   return {
     message: briefMessage,
-    state: STATES.BRIEF,
+    state: STATES.DISCOVERY,
     briefStatus: updatedBriefStatus,
     familyProfile: localProfile,
     conversationContext: updatedCtx,

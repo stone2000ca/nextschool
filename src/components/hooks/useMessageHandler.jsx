@@ -715,20 +715,7 @@ export const useMessageHandler = ({
         }
       }
 
-      // KI-52: Brief content validator — swap thin LLM brief for programmatic fallback
-      // DOUBLE-BRIEF FIX: Only apply when the RESPONSE state is also BRIEF (not when transitioning to RESULTS)
       let aiMessageContent = response.data?.message || 'Here are your school matches based on your preferences.';
-      if (responseState === STATES.BRIEF) {
-        const latestProfile = response.data?.familyProfile || familyProfile;
-        const isEditingBrief = response.data?.briefStatus === 'editing' || response.data?.conversationContext?.briefStatus === 'editing';
-        if (!isEditingBrief && !validateBriefContent(aiMessageContent)) {
-          const fallback = generateProgrammaticBrief(latestProfile);
-          if (fallback) {
-            console.warn('[KI-52] Brief failed validation — using programmatic fallback');
-            aiMessageContent = fallback;
-          }
-        }
-      }
 
       const analyzedSchoolId = explicitSchoolId || response.data?.deepDiveAnalysis?.schoolId || selectedSchool?.id || null;
 

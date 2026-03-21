@@ -27,7 +27,7 @@ import { STATES } from '@/lib/stateMachineConfig';
  * Exported so Consultant.jsx and useMessageHandler can share the same mapping.
  */
 export const mapStateToView = (state) => {
-  if ([STATES.WELCOME, STATES.DISCOVERY, STATES.BRIEF].includes(state)) return 'chat';
+  if ([STATES.WELCOME, STATES.DISCOVERY].includes(state)) return 'chat';
   if (state === STATES.RESULTS) return 'schools';
   if (state === STATES.DEEP_DIVE) return 'detail';
   return 'chat';

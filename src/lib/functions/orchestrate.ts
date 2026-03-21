@@ -7,7 +7,7 @@ import { handleDeepDiveLogic } from './handleDeepDive'
 import { processDebriefCompletion as processDebriefCompletionLogic } from './processDebriefCompletion'
 import { generateProfileNarrativeLogic } from './generateProfileNarrative'
 import { searchSchoolsLogic } from './searchSchools'
-import { STATES, BRIEF_STATUS, resolveGrade, resolveBudget, resolveArrayField } from './constants'
+import { STATES, resolveGrade, resolveBudget, resolveArrayField } from './constants'
 import { syncConversationState, readConversationState } from './dualWrite'
 import { fetchSchoolNotes } from './fetchSchoolNotes'
 import { fetchVisitContext } from './fetchVisitContext'
@@ -18,7 +18,7 @@ import { countTokens } from '@/lib/ai/countTokens'
 
 
 // Function: orchestrateConversation
-// Purpose: Route chat messages through state machine (WELCOME→DISCOVERY→BRIEF→RESULTS→DEEP_DIVE)
+// Purpose: Route chat messages through state machine (WELCOME→DISCOVERY→RESULTS→DEEP_DIVE)
 // Entities: FamilyProfile, ChatHistory, FamilyJourney, SchoolJourney, ConversationArtifacts, LLMLog
 // Last Modified: 2026-03-09
 // Dependencies: OpenRouter API, extractEntities, handleBrief, handleResults, handleDeepDive, processDebriefCompletion
@@ -260,11 +260,12 @@ async function logDroppedAction( conversationId, action, reason) {
 function resolveTransition(params) {
   let { currentState, intentSignal, profileData, turnCount, briefEditCount, selectedSchoolId, previousSchoolId, userMessage, tier1CompletedTurn: storedTier1CompletedTurn, context } = params;
 
-  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE', JOURNEY_RESUMPTION: 'JOURNEY_RESUMPTION' };
+  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE', JOURNEY_RESUMPTION: 'JOURNEY_RESUMPTION' };
 
   // Patch 3: Invalid state reset — prevents unknown states from bricking conversations
+  // Also catches legacy BRIEF state from older conversations
   if (currentState && !Object.values(STATES).includes(currentState)) {
-    console.warn('[RESOLVE] Unknown state detected, resetting to DISCOVERY:', currentState);
+    console.warn('[RESOLVE] Unknown/legacy state detected, resetting to DISCOVERY:', currentState);
     currentState = STATES.DISCOVERY;
   }
 
@@ -278,7 +279,7 @@ function resolveTransition(params) {
     sufficiency = prioritiesCount >= 2 ? 'RICH' : 'MINIMUM';
   }
 
-  const flags: Record<string, any> = { SUGGEST_BRIEF: false, OFFER_BRIEF: false, FORCED_TRANSITION: false, USER_INTENT_OVERRIDE: false };
+  const flags: Record<string, any> = { FORCED_TRANSITION: false, USER_INTENT_OVERRIDE: false };
   let nextState = currentState;
   let transitionReason = 'natural';
 
@@ -349,70 +350,34 @@ function resolveTransition(params) {
     return { nextState: STATES.DEEP_DIVE, sufficiency, flags, transitionReason: 'school_selected' };
   }
   
-  // DETERMINISTIC BRIEF CONFIRMATION CHECK - overrides LLM intent classification
-  const confirmPhrases = new Set(['that looks right', 'show me schools', 'looks good', 'looks right', 'confirmed', 'yes', 'yep', 'yeah', 'yes please', 'that looks right - show me schools']);
-  const msgNormalized = (userMessage || '').toLowerCase().trim();
-  const isConfirmed = Array.from(confirmPhrases).some(p => msgNormalized === p || msgNormalized.startsWith(p));
-  if (currentState === STATES.BRIEF && params.briefStatus === 'pending_review' && isConfirmed) {
-    flags.USER_INTENT_OVERRIDE = true;
-    console.log('[DETERMINISTIC] Brief confirmed by match:', userMessage, 'briefStatus was:', params.briefStatus);
-    return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'brief_confirmed_deterministic', briefStatus: 'confirmed' };
-  }
-  
-  if (currentState === STATES.BRIEF && params.briefStatus === 'pending_review' && (intentSignal === 'confirm-brief' || intentSignal === 'request-results')) {
-    flags.USER_INTENT_OVERRIDE = true;
-    return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'brief_confirmed', briefStatus: 'confirmed' };
-  }
-
-  // FIX-A: STOP_PHRASES — if user explicitly signals they're done with questions,
-  // always route to BRIEF regardless of data sufficiency. Must check BEFORE sufficiency guard.
+  // STOP_PHRASES — user explicitly signals they're done with questions, go to RESULTS
   const STOP_PHRASES = /\b(no more questions|show me schools|i('m| am) done|enough questions|just show|stop asking|skip|let'?s see|move on|go ahead|that'?s enough|ready to see)\b/i;
   if (currentState === STATES.DISCOVERY && STOP_PHRASES.test(userMessage || '')) {
     flags.USER_INTENT_OVERRIDE = true;
-    console.log('[FIX-A] Stop-intent detected, routing to BRIEF regardless of sufficiency:', userMessage);
-    return { nextState: STATES.BRIEF, sufficiency, flags, transitionReason: 'stop_intent', briefStatus: 'generating', tier1CompletedTurn };
+    console.log('[RESOLVE] Stop-intent detected, routing to RESULTS:', userMessage);
+    return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'stop_intent', tier1CompletedTurn };
   }
 
-  // DETERMINISTIC BRIEF PHRASES — explicit phrases that should always route to BRIEF
-  const BRIEF_PHRASES = /\b(show me the brief|show my brief|generate the brief|generate my brief|prepare the brief|ready for the brief|let'?s see the brief|create the brief)\b/i;
-  if (currentState === STATES.DISCOVERY && BRIEF_PHRASES.test(userMessage || '')) {
-    flags.USER_INTENT_OVERRIDE = true;
-    console.log('[FIX-BRIEF] Brief-intent phrase detected:', userMessage);
-    return {
-      nextState: STATES.BRIEF, sufficiency, flags,
-      transitionReason: 'brief_phrase_deterministic',
-      briefStatus: 'generating', tier1CompletedTurn
-    };
-  }
-
-  if ((intentSignal === 'request-brief' || intentSignal === 'request-results') && turnCount >= 3 && currentState === STATES.DISCOVERY) {
+  // Explicit request for results from DISCOVERY
+  if ((intentSignal === 'request-brief' || intentSignal === 'request-results') && currentState === STATES.DISCOVERY) {
     if (sufficiency === 'MINIMUM' || sufficiency === 'RICH') {
       flags.USER_INTENT_OVERRIDE = true;
-      return { nextState: STATES.BRIEF, sufficiency, flags, transitionReason: 'explicit_demand', briefStatus: 'generating' };
+      return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'explicit_demand' };
     }
   }
+  // Auto-transition from DISCOVERY to RESULTS when enough info gathered
   if (currentState === STATES.DISCOVERY) {
     if (tier1Complete && tier1CompletedTurn !== null && turnCount >= (tier1CompletedTurn + 1)) {
       flags.FORCED_TRANSITION = true;
-      return { nextState: STATES.BRIEF, sufficiency, flags, transitionReason: 'enrichment_cap', briefStatus: 'generating', tier1CompletedTurn };
+      return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'enrichment_cap', tier1CompletedTurn };
     } else if (turnCount >= 10) {
       flags.FORCED_TRANSITION = true;
-      return { nextState: STATES.BRIEF, sufficiency, flags, transitionReason: 'hard_cap', briefStatus: 'generating', tier1CompletedTurn };
+      return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'hard_cap', tier1CompletedTurn };
     }
-  }
-  if (intentSignal === 'request-brief' && turnCount < 3 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
-    flags.USER_INTENT_OVERRIDE = true;
-    return { nextState: STATES.BRIEF, sufficiency, flags, transitionReason: 'explicit_intent', briefStatus: 'generating' };
-  }
-  // FIX-B: 'request-results' from DISCOVERY now routes to BRIEF (not directly to RESULTS).
-  // BRIEF is the mandatory confirmation gate before RESULTS.
-  if (intentSignal === 'request-results' && turnCount < 3 && (sufficiency === 'MINIMUM' || sufficiency === 'RICH')) {
-    flags.USER_INTENT_OVERRIDE = true;
-    return { nextState: STATES.BRIEF, sufficiency, flags, transitionReason: 'explicit_intent_via_brief', briefStatus: 'generating' };
   }
   if (intentSignal === 'edit-criteria') {
     flags.USER_INTENT_OVERRIDE = true;
-    return { nextState: STATES.BRIEF, sufficiency, flags, transitionReason: 'explicit_intent', briefStatus: 'editing' };
+    return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'explicit_intent' };
   }
   if (intentSignal === 'back-to-results') {
     flags.USER_INTENT_OVERRIDE = true;
@@ -427,10 +392,6 @@ function resolveTransition(params) {
   }
   if (intentSignal === 'off-topic') {
     return { nextState: currentState, sufficiency, flags, transitionReason };
-  }
-  if (currentState === STATES.BRIEF && briefEditCount >= 3) {
-    flags.FORCED_TRANSITION = true;
-    return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'edit_cap_reached', briefStatus: 'confirmed' };
   }
   return { nextState: currentState, sufficiency, flags, transitionReason };
 }
@@ -632,13 +593,7 @@ function lightweightExtract(message, existingProfile) {
 // INLINED: handleDiscovery
 // =============================================================================
 async function handleDiscovery(message, conversationFamilyProfile, context, conversationHistory, consultantName, currentSchools, flags, returningUserContextBlock) {
-  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
-
-  const briefOfferInstruction = flags?.OFFER_BRIEF
-    ? '\n\nIMPORTANT: You should offer to generate their Family Brief now.'
-    : flags?.SUGGEST_BRIEF
-    ? '\n\nIf it feels natural in the conversation, offer to generate their Family Brief.'
-    : '';
+  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
   const hasGrade = conversationFamilyProfile?.child_grade !== null && conversationFamilyProfile?.child_grade !== undefined;
   const hasLocation = !!conversationFamilyProfile?.location_area;
@@ -678,12 +633,12 @@ async function handleDiscovery(message, conversationFamilyProfile, context, conv
   const personaCore = `[STATE: DISCOVERY] You are gathering family info to find the right school. Your primary goal is to collect Tier 1 data: child's grade/age, preferred location, and budget — in that priority order.
 ${knownSummary}
 ${tier1Guidance}
-TURN MANAGEMENT: Transition to BRIEF within 5 turns maximum. If Tier 1 (grade, location, budget) is complete, do not exceed 1 enrichment turn — move to BRIEF on the next turn.
+TURN MANAGEMENT: Transition to RESULTS within 5 turns maximum. If Tier 1 (grade, location, budget) is complete, do not exceed 1 enrichment turn — move to RESULTS on the next turn.
 DUPLICATE QUESTION GUARD: Before asking any question, check the ALREADY COLLECTED list above. Never ask about a field that already has a value. If all Tier 1 fields are filled, do not ask about them again under any circumstances.
 On your FIRST response only, you may ask about two related things together (e.g., grade and location). After the first turn, ask exactly ONE question per turn. Never ask more than one question after the first turn. Always answer their question first, then ask yours. Do NOT recommend schools or mention school names. CRITICAL FORMAT RULE: Your response must be MAX 2 sentences. Be conversational and warm, not robotic.
 CRITICAL: Do NOT generate a brief, summary, or any bullet-point summary of the family's needs. You are ONLY asking questions right now. Do NOT interrupt emotional or contextual sharing — allow organic conversation flow. Keep gathering information.
 CRITICAL: NEVER ask the user to confirm or repeat information they have already provided in this conversation. If they said their daughter is in grade 9, do not ask what grade again.
-NEVER repeat a question verbatim that the user ignored or didn't answer. If they skip a question, either rephrase it completely or move on to the next priority. Never make the conversation feel like a form.${briefOfferInstruction}`;
+NEVER repeat a question verbatim that the user ignored or didn't answer. If they skip a question, either rephrase it completely or move on to the next priority. Never make the conversation feel like a form.`;
 
   const personaTail = consultantName === 'Jackie'
     ? 'YOU ARE JACKIE - Senior education consultant, 10+ years placing families in private schools. You\'re warm but efficient.'
@@ -1317,21 +1272,18 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         }
       }
 
-      // FIX-C: __CONFIRM_BRIEF__ sentinel goes directly to RESULTS state for immediate school display.
+      // __CONFIRM_BRIEF__ and __GUIDED_INTRO_COMPLETE__ sentinels go directly to RESULTS
       let context = conversationContext || {};
       let processMessage = message;
       const isConfirmBrief = message === '__CONFIRM_BRIEF__';
-      // E47: __GUIDED_INTRO_COMPLETE__ sentinel — skip DISCOVERY+BRIEF, jump to RESULTS
       const isGuidedIntroComplete = message === '__GUIDED_INTRO_COMPLETE__';
       if (isConfirmBrief || isGuidedIntroComplete) {
         processMessage = 'show me schools';
-        context.previousState = context.state || (isGuidedIntroComplete ? 'WELCOME' : 'BRIEF');
+        context.previousState = context.state || 'WELCOME';
         context.state = 'RESULTS';
-        context.briefStatus = 'confirmed';
-        briefStatus = 'confirmed'; // [E42-PERSIST] sync local var so persist gate fires
         console.log(isGuidedIntroComplete
-          ? '[E47] __GUIDED_INTRO_COMPLETE__ sentinel: skipping DISCOVERY+BRIEF, going directly to RESULTS'
-          : '[FIX-C] __CONFIRM_BRIEF__ sentinel: skipping BRIEF, going directly to RESULTS');
+          ? '[E47] __GUIDED_INTRO_COMPLETE__ sentinel: going directly to RESULTS'
+          : '[FIX-C] __CONFIRM_BRIEF__ sentinel: going directly to RESULTS');
       }
 
       console.log('ORCH START', { 
@@ -1342,7 +1294,7 @@ Write a warm, natural 3-sentence welcome-back greeting. Acknowledge where they l
         hasUserLocation: !!userLocation
       });
       
-      const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE', JOURNEY_RESUMPTION: 'JOURNEY_RESUMPTION' };
+      const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE', JOURNEY_RESUMPTION: 'JOURNEY_RESUMPTION' };
       
       let briefEditCount = context.briefEditCount || 0;
       // BUG-RN-PERSIST Fix B2: Prefer top-level conversationId from payload over
@@ -1719,73 +1671,6 @@ Object.assign(context, safeUpdatedContext);
         return (responseData); // DISCOVERY returns early; workingProfile already set above
       }
 
-      if (currentState === STATES.BRIEF) {
-        // Change B: If we transitioned directly from DISCOVERY→BRIEF (stop_intent, enrichment_cap, etc.),
-        // handleDiscovery was correctly skipped above (currentState !== DISCOVERY). Log for confirmation.
-        if (previousState === STATES.DISCOVERY) {
-          console.log('[Change-B] DISCOVERY→BRIEF direct transition — handleDiscovery skipped, routing to handleBrief with workingProfile');
-        }
-        try {
-          const briefResult = await handleBriefLogic( {
-            message: processMessage,
-            localProfile: workingProfile,
-            context,
-            conversationHistory,
-            consultantName,
-            briefStatus,
-            flags,
-            returningUserContextBlock
-          });
-          responseData = briefResult;
-          if (responseData.briefStatus) {
-            context.briefStatus = responseData.briefStatus;
-          }
-          if (responseData.conversationContext?.briefStatus) {
-            context.briefStatus = responseData.conversationContext.briefStatus;
-          }
-          responseData.conversationContext = { ...context, ...responseData.conversationContext };
-          responseData.extractedEntities = extractionResult?.extractedEntities || {};
-          // FIX-RESULTS-HANG: Use `!== undefined` so explicit null clears briefStatus
-          // briefStatus removed from stateEnvelope
-          responseData.stateEnvelope = stateEnvelope;
-
-          // FIX-BRIEF-PERSIST: Sync family profile fields into context so
-          // syncConversationState writes them to the conversation_state table.
-          // Without this, F5 refresh cannot restore the FamilyBrief.
-          if (responseData.familyProfile) {
-            const fp = responseData.familyProfile;
-            context.accumulatedFamilyProfile = {
-              ...(context.accumulatedFamilyProfile || {}),
-              child_name: fp.child_name ?? context.accumulatedFamilyProfile?.child_name ?? null,
-              child_grade: fp.child_grade ?? context.accumulatedFamilyProfile?.child_grade ?? null,
-              location_area: fp.location_area ?? context.accumulatedFamilyProfile?.location_area ?? null,
-              max_tuition: fp.max_tuition ?? context.accumulatedFamilyProfile?.max_tuition ?? null,
-              priorities: fp.priorities ?? context.accumulatedFamilyProfile?.priorities ?? [],
-              learning_differences: fp.learning_differences ?? context.accumulatedFamilyProfile?.learning_differences ?? [],
-            };
-          }
-          // Phase 1c: Dual-write conversation state to normalized table
-          syncConversationState(conversationId, userId, responseData.conversationContext || context);
-
-          return (responseData);
-        } catch (briefError) {
-          console.error('[BRIEF] Invocation failed:', briefError.message);
-          const fallbackMessage = consultantName === 'Jackie'
-            ? "I'm having trouble putting that together right now. Let me try again — could you tell me a bit more about what you're looking for?"
-            : "Hit a snag processing your brief. Can you give me a bit more detail on what you're looking for?";
-          return ({
-            message: fallbackMessage,
-            state: STATES.BRIEF,
-            briefStatus: 'generating',
-            familyProfile: conversationFamilyProfile,
-            conversationContext: context,
-            extractedEntities: extractionResult?.extractedEntities || {},
-            schools: [],
-            stateEnvelope: { ...stateEnvelope, briefStatus: 'generating' }
-          });
-        }
-      }
-
       if (currentState === STATES.RESULTS) {
         // BUG-FLOW-002 FIX: Ensure FamilyProfile is persisted before calling searchSchools
         if (conversationFamilyProfile?.id && Object.keys(extractionResult?.extractedEntities || {}).length > 0) {
@@ -1815,9 +1700,7 @@ Object.assign(context, safeUpdatedContext);
         }
 
         // WC10: Fire-and-forget narrative generation (non-blocking)
-        const isBriefConfirmedTransition =
-          (context.previousState === STATES.BRIEF && briefStatus === 'confirmed') ||
-          isConfirmBrief;
+        const isBriefConfirmedTransition = isConfirmBrief;
         if (isBriefConfirmedTransition && userId && conversationId) {
           (async () => {
             try {
@@ -2064,8 +1947,8 @@ Object.assign(context, safeUpdatedContext);
         }
 
         // E41-S3: Deferred extractEntities — fire after reply, with aiReply for richer context
-        // Skip extraction when transitioning BRIEF→RESULTS on confirmation — profile is already complete
-        const skipExtraction = briefJustConfirmed || (briefStatus === 'confirmed' && previousState === STATES.BRIEF);
+        // Skip extraction when going directly to RESULTS via sentinel — profile is already complete
+        const skipExtraction = briefJustConfirmed;
         const aiReply = responseData.message || '';
         if (skipExtraction) {
           console.log('[E41-S3] Skipping deferred extractEntities — brief confirmation, profile already built');
