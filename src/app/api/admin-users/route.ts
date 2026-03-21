@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify admin role
-    const { data: profile } = await db().select('role').eq('id', user.id).single()
-    if (profile?.role !== 'admin') {
+    // Verify admin role (admin role lives in public.users, not user_profiles)
+    const { data: profile } = await (getAdminClient().from('users').select('role').eq('id', user.id).single() as any)
+    if (!profile || profile.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -50,8 +50,8 @@ export async function PATCH(req: NextRequest) {
 
     // Users can only update their own profile (unless admin)
     if (id !== user.id) {
-      const { data: profile } = await db().select('role').eq('id', user.id).single()
-      if (profile?.role !== 'admin') {
+      const { data: profile } = await (getAdminClient().from('users').select('role').eq('id', user.id).single() as any)
+      if (!profile || profile.role !== 'admin') {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
     }
