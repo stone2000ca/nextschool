@@ -12,6 +12,7 @@ const PROTECTED_PREFIXES = [
   '/school-admin',
   '/claim-school',
   '/submit-school',
+  '/schooladmin',
 ]
 
 function isProtectedRoute(pathname: string): boolean {
