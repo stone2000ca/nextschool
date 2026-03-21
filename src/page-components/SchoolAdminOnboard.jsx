@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { invokeFunction } from '@/lib/functions'
+
+const POLL_INTERVAL_MS = 2000
+const POLL_TIMEOUT_MS = 90_000
 
 export default function SchoolAdminOnboard() {
   const router = useRouter()
@@ -16,6 +19,58 @@ export default function SchoolAdminOnboard() {
   const [phase, setPhase] = useState('form') // 'form' | 'progress' | 'error'
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const pollTimerRef = useRef(null)
+
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current)
+      pollTimerRef.current = null
+    }
+  }, [])
+
+  function pollEnrichmentStatus(schoolId) {
+    const startedAt = Date.now()
+
+    function tick() {
+      if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+        // Timeout — let user continue anyway
+        setErrorMessage(
+          "Enrichment is taking longer than expected. You can continue and we'll finish in the background."
+        )
+        setPhase('error')
+        return
+      }
+
+      fetch(`/api/schools/${schoolId}/enrichment-status`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data) {
+            // Network/auth error — retry
+            pollTimerRef.current = setTimeout(tick, POLL_INTERVAL_MS)
+            return
+          }
+
+          const status = data.enrichmentStatus
+          if (status === 'complete') {
+            router.push('/school-admin')
+          } else if (status === 'failed') {
+            setErrorMessage(
+              "I couldn't find enough info yet. You can still continue and fill details later."
+            )
+            setPhase('error')
+          } else {
+            // Still in progress (or null if enrichment hasn't started writing yet)
+            pollTimerRef.current = setTimeout(tick, POLL_INTERVAL_MS)
+          }
+        })
+        .catch(() => {
+          pollTimerRef.current = setTimeout(tick, POLL_INTERVAL_MS)
+        })
+    }
+
+    // Start first poll after a short delay to give enrichment time to begin
+    pollTimerRef.current = setTimeout(tick, POLL_INTERVAL_MS)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -29,12 +84,7 @@ export default function SchoolAdminOnboard() {
       })
 
       setPhase('progress')
-
-      // TODO: When Sprint 1 schoolAgent enrichment is ready, poll for
-      // enrichment completion here instead of using a fixed delay.
-      setTimeout(() => {
-        router.push('/school-admin')
-      }, 3000)
+      pollEnrichmentStatus(result.schoolId)
     } catch (err) {
       console.error('Onboard error:', err)
       setErrorMessage(
