@@ -7,7 +7,7 @@ const PLAN_NAMES = { FREE: 'free', BASIC: 'basic', PREMIUM: 'premium', PRO: 'pro
 const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
 
 export function useConsultantSession({
-  authUser, authIsAuthenticated, authUpdateMe,
+  authUser, authIsAuthenticated, authIsLoadingAuth, authUpdateMe,
   searchParams, router,
   sessionId,
   currentConversation, setCurrentConversation,
@@ -67,6 +67,9 @@ export function useConsultantSession({
 
   // ─── Auth check ───
   const checkAuth = async () => {
+    // Wait for AuthContext to finish loading before making decisions
+    if (authIsLoadingAuth) return;
+
     try {
       const authenticated = authIsAuthenticated;
       setIsAuthenticated(authenticated);
@@ -101,7 +104,8 @@ export function useConsultantSession({
         await loadShortlistRef.current?.();
       } else {
         if (!isDevMode) {
-          window.location.href = '/login?returnTo=/consultant';
+          const returnTo = window.location.pathname + window.location.search;
+          window.location.href = '/login?returnTo=' + encodeURIComponent(returnTo);
           return;
         }
         const DEV_TOKEN_BALANCE = 100;
@@ -149,7 +153,9 @@ export function useConsultantSession({
     }
     schemaScript.innerHTML = JSON.stringify(schemaData);
 
-    checkAuth();
+    if (!authIsLoadingAuth) {
+      checkAuth();
+    }
 
     fetch('/api/event-reminders')
       .then(r => r.ok ? r.json() : [])
@@ -174,7 +180,7 @@ export function useConsultantSession({
       eventType: 'session_start',
       sessionId
     }).catch(err => console.error('Failed to track session:', err));
-  }, [sessionId]);
+  }, [sessionId, authIsLoadingAuth, authIsAuthenticated]);
 
   // ─── Session restore from URL param ───
   useEffect(() => {

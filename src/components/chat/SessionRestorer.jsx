@@ -382,6 +382,15 @@ export async function restoreSessionFromParam(
 
 
 
+    // Load shortlist AFTER conversation state is set so it has the right context
+    if (typeof loadShortlist === 'function') {
+      try {
+        await loadShortlist();
+      } catch (e) {
+        console.warn('[RESTORE] loadShortlist failed:', e.message);
+      }
+    }
+
     // Add welcome-back message
     const childName = chatSession.child_name || 'your child';
     const welcomeMsg = {

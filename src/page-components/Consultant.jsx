@@ -46,7 +46,7 @@ import { getSchoolsWithDeepDive } from '@/components/utils/deepDiveUtils';
 
 export default function Consultant() {
   const trackEvent = (typeof window !== 'undefined' && window.trackEvent) ? window.trackEvent : () => {};
-  const { user: authUser, isAuthenticated: authIsAuthenticated, updateMe: authUpdateMe } = useAuth();
+  const { user: authUser, isAuthenticated: authIsAuthenticated, isLoadingAuth: authIsLoadingAuth, updateMe: authUpdateMe } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -99,7 +99,7 @@ export default function Consultant() {
 
   // ─── Session management (auth, messages, typing, consultant state) ───
   const session = useConsultantSession({
-    authUser, authIsAuthenticated, authUpdateMe,
+    authUser, authIsAuthenticated, authIsLoadingAuth, authUpdateMe,
     searchParams, router,
     sessionId,
     currentConversation, setCurrentConversation,
