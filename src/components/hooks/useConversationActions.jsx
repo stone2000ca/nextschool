@@ -76,7 +76,7 @@ export function useConversationActions({
   const proceedWithNewConversation = useCallback(async () => {
     try {
       if (newChatPendingRef) newChatPendingRef.current = true;
-      setShortlistData([]);
+      resetChatState();
       const created = await createConversationRecord({ consultant: selectedConsultant });
       if (created) {
         await selectConversation(created);
@@ -86,7 +86,7 @@ export function useConversationActions({
     } finally {
       if (newChatPendingRef) newChatPendingRef.current = false;
     }
-  }, [createConversationRecord, selectedConsultant, selectConversation]);
+  }, [createConversationRecord, selectedConsultant, selectConversation, resetChatState]);
 
   const createNewConversation = useCallback(async () => {
     if (!isAuthenticated) {

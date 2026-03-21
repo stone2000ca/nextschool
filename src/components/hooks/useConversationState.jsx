@@ -172,6 +172,7 @@ export function useConversationState({
   // fetch full School records if only IDs are stored.
   useEffect(() => {
     const hydrate = async () => {
+      if (!currentConversation?.id) return;
       let restored = currentConversation?.conversation_context?.schools;
       if (!restored) return;
       // If stored as JSON string, parse first

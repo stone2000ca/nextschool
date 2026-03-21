@@ -299,6 +299,7 @@ export default function Consultant() {
     setTourRequestSchool: ui.setTourRequestSchool,
     applyDistances, userLocation,
     schoolAnalyses,
+    currentConversation,
   });
 
   // ─── Deep link handling (E51-S1A) ───
