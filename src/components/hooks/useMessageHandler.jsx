@@ -91,6 +91,10 @@ export const useMessageHandler = ({
       conversationIdRef.current = currentConversation?.id || null;
     }, [currentConversation?.id]);
 
+    // BUG-PERSIST-2: Ref tracks latest user to avoid stale closure in async createSession/bookkeeping
+    const userRef = useRef(user);
+    useEffect(() => { userRef.current = user; }, [user]);
+
     // P4-S4.5: Wire stateEnvelope hook — single source of truth for state/briefStatus
     const {
       state: envelopeState,
@@ -508,10 +512,10 @@ export const useMessageHandler = ({
 
           // Ensure a ChatHistory record exists for URL-based flow
           let chatHistoryRecord = null;
-          if ((!currentConversation?.id) && isAuthenticated && user) {
+          if ((!conversationIdRef.current && !currentConversation?.id) && isAuthenticated && userRef.current) {
             try {
               chatHistoryRecord = await createConversation({
-                user_id: user.id,
+                user_id: userRef.current.id,
                 title: profileName,
                 messages: updatedMessages,
                 conversation_context: updatedContext,
@@ -538,8 +542,8 @@ export const useMessageHandler = ({
 
           // E48-S3: Null guard — skip ChatSession create if user is not authenticated
           let chatSessionResult = null;
-          if (!user?.id) {
-            console.warn('[E48-S3] Skipping ChatSession.create — user.id is falsy:', user);
+          if (!userRef.current?.id) {
+            console.warn('[E48-S3] Skipping ChatSession.create — user.id is falsy:', userRef.current);
           } else {
             // E48-S5: Check for existing ChatSession to prevent duplicates on criteria re-match
             const existingChatSessionId = currentConversation?.conversation_context?.chatSessionId;
@@ -561,7 +565,7 @@ export const useMessageHandler = ({
               // First RESULTS — create new ChatSession
               chatSessionResult = await createSession({
                 session_token: sessionId,
-                user_id: user.id,
+                user_id: userRef.current.id,
                 family_profile_id: profileForSession?.id || null,
                 chat_history_id: chatHistoryRecord?.id || currentConversation?.id,
                 status: 'active',
@@ -609,9 +613,9 @@ export const useMessageHandler = ({
 
           // E29-003: Auto-create FamilyJourney at Brief confirmation
           ;(async () => {
-            if (!user?.id) return;
+            if (!userRef.current?.id) return;
             try {
-              const existingRes = await fetch(`/api/family-journey?user_id=${user.id}&is_archived=false`);
+              const existingRes = await fetch(`/api/family-journey?user_id=${userRef.current.id}&is_archived=false`);
               const existingJourneys = existingRes.ok ? await existingRes.json() : [];
               // Also fetch archived to check total — but the API already filters, so
               // we only need the active list to decide whether to create
@@ -622,7 +626,7 @@ export const useMessageHandler = ({
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
-                    user_id: user.id,
+                    user_id: userRef.current.id,
                     child_name: childName,
                     profile_label: childName + "'s School Search",
                     current_phase: 'MATCH',
@@ -640,6 +644,8 @@ export const useMessageHandler = ({
                 });
                 const newJourney = createRes.ok ? await createRes.json() : null;
                 if (!newJourney) throw new Error('Failed to create FamilyJourney');
+                // BUG-PERSIST-1: Patch updatedContext synchronously so bookkeeping persist includes journeyId
+                updatedContext.journeyId = newJourney.id;
                 console.log('[E29-003] FamilyJourney created:', newJourney.id);
                 if (typeof setActiveJourney === 'function') {
                   setActiveJourney({
@@ -669,6 +675,8 @@ export const useMessageHandler = ({
                 console.log('[E29-003] Active FamilyJourney already exists, skipping creation. Journey ID:', activeJourneyList[0].id);
                 if (typeof setActiveJourney === 'function' && !activeJourney) {
                   const j = activeJourneyList[0];
+                  // BUG-PERSIST-1: Patch updatedContext synchronously for existing journey too
+                  updatedContext.journeyId = j.id;
                   setActiveJourney({
                     id: j.id,
                     journeyId: j.id,
@@ -792,11 +800,13 @@ export const useMessageHandler = ({
       // Non-fatal bookkeeping — runs after user-facing response is delivered
       // Errors here are logged but never shown to the user
       (async () => {
+        // BUG-PERSIST-1: Use ref (always fresh) instead of closure-captured currentConversation
+        const persistId = conversationIdRef.current || currentConversation?.id;
         // CRITICAL: Persist messages to ChatHistory FIRST — this is the primary
         // data survival path. Must run before any other bookkeeping that might throw.
-        if (isAuthenticated && typeof currentConversation?.id === 'string' && currentConversation.id.length > 0) {
+        if (isAuthenticated && typeof persistId === 'string' && persistId.length > 0) {
           try {
-            await retryWithBackoff(() => updateConversation(currentConversation.id, {
+            await retryWithBackoff(() => updateConversation(persistId, {
               messages: finalMessages,
               conversation_context: updatedContext
             }));
@@ -808,14 +818,14 @@ export const useMessageHandler = ({
           try {
             const userMessageCount = finalMessages.filter(m => m.role === 'user').length;
 
-            if (userMessageCount === 1 && currentConversation.title === 'New Conversation') {
+            if (userMessageCount === 1 && currentConversation?.title === 'New Conversation') {
               try {
                 const titleResult = await invokeFunction('generateConversationTitle', {
-                  conversationId: currentConversation.id
+                  conversationId: persistId
                 });
                 if (titleResult.title) {
                   setCurrentConversation(prev => ({ ...prev, title: titleResult.title }));
-                  await loadConversations(user.id);
+                  if (userRef.current?.id) await loadConversations(userRef.current.id);
                 }
               } catch (titleError) {
                 console.warn('[WARN] Failed to generate conversation title:', titleError);
@@ -824,31 +834,31 @@ export const useMessageHandler = ({
 
             if (userMessageCount % 5 === 0) {
               await invokeFunction('summarizeConversation', {
-                conversationId: currentConversation.id
+                conversationId: persistId
               });
             }
           } catch (metaErr) {
             console.warn('[BOOKKEEPING] Title/summary error:', metaErr);
           }
         } else {
-          console.warn('[PERSIST] Skipped ChatHistory.update — no currentConversation.id:', currentConversation?.id);
+          console.warn('[PERSIST] Skipped ChatHistory.update — no conversationId:', persistId);
         }
 
         try {
           // Deduct 1 token and persist to database (skip for premium)
-          if (isAuthenticated && user && !isPremium) {
+          if (isAuthenticated && userRef.current && !isPremium) {
             const newTokenBalance = Math.max(0, tokenBalance - 1);
             setTokenBalance(newTokenBalance);
             await fetch('/api/admin-users', {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: user.id, token_balance: newTokenBalance }),
+              body: JSON.stringify({ id: userRef.current.id, token_balance: newTokenBalance }),
             });
           }
 
           // Save AI memories with deduplication and filtering
-          if (isAuthenticated && user) {
-            await extractAndSaveMemories(messageText, response.data?.message || '', user);
+          if (isAuthenticated && userRef.current) {
+            await extractAndSaveMemories(messageText, response.data?.message || '', userRef.current);
           }
         } catch (err) {
           console.error('[BOOKKEEPING] Non-fatal error:', err);
