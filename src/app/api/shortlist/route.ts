@@ -67,16 +67,17 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString()
 
-    // 1. Create ChatShortlist record (scoped to conversation)
+    // 1. Create/update ChatShortlist record (scoped to conversation)
+    // Uses upsert to handle re-shortlisting a school that was previously added
     const { error: csError } = await db('chat_shortlists')
-      .insert({
+      .upsert({
         family_journey_id: journey_id || null,
         conversation_id,
         school_id,
         added_at: now,
         source: 'manual',
         updated_at: now,
-      })
+      }, { onConflict: 'conversation_id,school_id' })
     if (csError) throw csError
 
     // 2-3. Journey side effects (only when journey_id is available)
