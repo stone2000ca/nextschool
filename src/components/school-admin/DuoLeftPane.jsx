@@ -1,8 +1,9 @@
 'use client'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import KeyFactsList from '@/components/school-admin/KeyFactsList'
+import AnalyticsTab from '@/components/school-admin/AnalyticsTab'
 
-export default function DuoLeftPane({ onSectionChange }) {
+export default function DuoLeftPane({ schoolId, onSectionChange }) {
   return (
     <Tabs
       defaultValue="preview"
@@ -36,9 +37,7 @@ export default function DuoLeftPane({ onSectionChange }) {
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-0">
-          <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-            Analytics coming soon.
-          </div>
+          <AnalyticsTab schoolId={schoolId} />
         </TabsContent>
       </div>
     </Tabs>
