@@ -72,19 +72,15 @@ export function useConsultantUI({
   );
   const showSchoolGrid = schools.length > 0;
 
-  // ─── Loading overlay: show while results are loading, dismiss when ready ───
-  // Shows during fresh search, resume, and refresh. Dismisses (teal fade) when
-  // results are loaded (state is RESULTS/DEEP_DIVE and schools are present).
+  // ─── Loading overlay: dismiss when results arrive ───
+  // The overlay is SHOWN explicitly by useMessageHandler when a fresh search starts.
+  // This effect only DISMISSES it when results are ready (state is RESULTS/DEEP_DIVE
+  // and schools are present). We never auto-show the overlay on resume/refresh —
+  // that caused the icon rail to be blocked for 3+ seconds (MIN_LOADER_MS).
   useEffect(() => {
-    const isResultsState = [STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState);
-    const resultsReady = isResultsState && schools.length > 0;
-
-    // Show overlay on resume/refresh: state is RESULTS but schools not yet loaded
-    if (isResultsState && schools.length === 0 && !showLoadingOverlay) {
-      setShowLoadingOverlay(true);
-    }
-    // Dismiss overlay when results are fully loaded
-    if (resultsReady && showLoadingOverlay) {
+    if (!showLoadingOverlay) return;
+    const resultsReady = [STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState) && schools.length > 0;
+    if (resultsReady) {
       setShowLoadingOverlay(false);
     }
   }, [currentState, schools.length, showLoadingOverlay]);
