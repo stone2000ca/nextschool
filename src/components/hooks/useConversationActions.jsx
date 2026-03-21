@@ -50,9 +50,11 @@ export function useConversationActions({
   }, []);
 
   const selectConversation = useCallback(async (convo) => {
-    await switchConversation(convo);
+    // FIX-SL-ISOLATE: Clear shortlist BEFORE switchConversation so the useShortlist
+    // effect (which fires on currentConversation.id change) doesn't merge stale data
     setShortlistData([]);
     setRemovedSchoolIds([]);
+    await switchConversation(convo);
 
     const msgs = convo.messages || [];
     if (msgs.length === 0) {
