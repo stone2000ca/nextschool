@@ -96,6 +96,9 @@ export default function Navbar({ variant = "default", transparent = false }) {
     );
   }
 
+  // Whether to show full nav (links + auth buttons) or just logo
+  const showFull = !transparent || scrolled;
+
   // Default variant for other pages
   return (
     <header className={`${transparent ? 'fixed' : 'sticky'} top-0 left-0 right-0 z-50 transition-colors duration-300 ${transparent && !scrolled ? 'bg-transparent' : 'bg-slate-900'}`}>
@@ -103,12 +106,13 @@ export default function Navbar({ variant = "default", transparent = false }) {
         <Link href={'/'} className="flex items-center gap-2">
           <img src={LOGO_WHITE_TEXT} alt="NextSchool" className="h-10" />
         </Link>
-        <nav className="hidden md:flex gap-6 items-center">
+        <nav className={`hidden md:flex gap-6 items-center transition-opacity duration-300 ${showFull ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <Link href={'/how-it-works'} className="text-white/70 hover:text-white text-sm transition-colors">How it Works</Link>
           <Link href={'/schools'} className="text-white/70 hover:text-white text-sm transition-colors">Browse Schools</Link>
           <Link href={'/pricing'} className="text-white/70 hover:text-white text-sm transition-colors">Pricing</Link>
           <Link href={'/for-schools'} className="text-white/70 hover:text-white text-sm transition-colors">For Schools</Link>
         </nav>
+        <div className={`transition-opacity duration-300 ${showFull ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         {isAuthenticated && user ? (
           <div className="flex items-center gap-2">
             <Link href={'/dashboard'} title="Dashboard">
@@ -141,6 +145,7 @@ export default function Navbar({ variant = "default", transparent = false }) {
             </Link>
           </div>
         )}
+        </div>
       </div>
     </header>
   );
