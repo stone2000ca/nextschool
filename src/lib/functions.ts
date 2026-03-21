@@ -55,6 +55,7 @@ const ROUTE_MAP: Record<string, string> = {
   processUnsubscribe: 'email/unsubscribe',
   queueVisitEmails: 'email/queue',
   processEmailQueue: 'email/process',
+  schoolAdminOnboard: 'schools/onboard',
 }
 
 export async function invokeFunction<T = any>(name: string, payload: any): Promise<T> {
