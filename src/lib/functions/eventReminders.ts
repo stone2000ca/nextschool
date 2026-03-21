@@ -11,7 +11,14 @@ export async function listEventReminders({ user_id }: { user_id: string }) {
     .select('*')
     .eq('user_id', user_id)
     .order('event_date', { ascending: true })
-  if (error) throw error
+  if (error) {
+    // Gracefully handle missing table (e.g. not yet created in schema)
+    if (error.message?.includes('schema cache') || error.code === '42P01' || error.message?.includes('relation') ) {
+      console.warn('[eventReminders] Table not found, returning empty array:', error.message)
+      return []
+    }
+    throw error
+  }
   return data || []
 }
 
