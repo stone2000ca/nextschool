@@ -108,19 +108,25 @@ export function useConversationState({
     // Read normalized state (with fallback)
     const stateData = await readConversationState(convo.id);
 
-    // Resolve briefStatus: prefer conversation_state table, fall back to JSONB
-    const resolvedBriefStatus = stateData?.brief_status
-      ?? convo.conversation_context?.briefStatus
-      ?? null;
-    setBriefStatus(resolvedBriefStatus);
-
-    // Set current conversation
-    setCurrentConversation(convo);
-
     // Resolve conversation state for view mapping
     const resolvedState = stateData?.state
       ?? convo.conversation_context?.state
       ?? STATES.WELCOME;
+
+    // Resolve briefStatus: prefer conversation_state table, fall back to JSONB.
+    // FIX-OVERLAY-RESUME: Never restore 'confirmed' briefStatus for conversations
+    // already in RESULTS — it would re-show the LoadingOverlay (z-index 10000),
+    // blocking all UI interaction including the IconRail.
+    const rawBriefStatus = stateData?.brief_status
+      ?? convo.conversation_context?.briefStatus
+      ?? null;
+    const resolvedBriefStatus = (resolvedState === STATES.RESULTS || resolvedState === STATES.DEEP_DIVE)
+      ? null
+      : rawBriefStatus;
+    setBriefStatus(resolvedBriefStatus);
+
+    // Set current conversation
+    setCurrentConversation(convo);
 
     // BUG-DD-001: Don't override view if in DEEP_DIVE with a selected school
     const isDeepDiveWithSchool = resolvedState === STATES.DEEP_DIVE && selectedSchool !== null;
