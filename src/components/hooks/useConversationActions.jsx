@@ -26,6 +26,7 @@ export function useConversationActions({
   selectedSchool,
   setComparisonData, previousSearchResults,
   resetJourneyData,
+  newChatPendingRef,
 }) {
   const resetChatState = useCallback(() => {
     setMessages([]);
@@ -74,12 +75,16 @@ export function useConversationActions({
 
   const proceedWithNewConversation = useCallback(async () => {
     try {
+      if (newChatPendingRef) newChatPendingRef.current = true;
+      setShortlistData([]);
       const created = await createConversationRecord({ consultant: selectedConsultant });
       if (created) {
         await selectConversation(created);
       }
     } catch (error) {
       console.error('Failed to create conversation:', error);
+    } finally {
+      if (newChatPendingRef) newChatPendingRef.current = false;
     }
   }, [createConversationRecord, selectedConsultant, selectConversation]);
 
