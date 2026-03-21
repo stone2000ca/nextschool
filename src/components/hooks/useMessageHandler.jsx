@@ -637,7 +637,14 @@ export const useMessageHandler = ({
                 if (!newJourney) throw new Error('Failed to create FamilyJourney');
                 console.log('[E29-003] FamilyJourney created:', newJourney.id);
                 if (typeof setActiveJourney === 'function') {
-                  setActiveJourney(newJourney);
+                  setActiveJourney({
+                    id: newJourney.id,
+                    journeyId: newJourney.id,
+                    currentPhase: newJourney.current_phase || 'MATCH',
+                    consultantId: newJourney.consultant_id,
+                    isResuming: false,
+                    schoolsSummary: [],
+                  });
                 }
                 if (chatSessionResult?.id && newJourney?.id) {
                   updateSession(chatSessionResult.id, { journey_id: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
@@ -645,7 +652,15 @@ export const useMessageHandler = ({
               } else {
                 console.log('[E29-003] Active FamilyJourney already exists, skipping creation. Journey ID:', activeJourneyList[0].id);
                 if (typeof setActiveJourney === 'function' && !activeJourney) {
-                  setActiveJourney(activeJourneyList[0]);
+                  const j = activeJourneyList[0];
+                  setActiveJourney({
+                    id: j.id,
+                    journeyId: j.id,
+                    currentPhase: j.current_phase,
+                    consultantId: j.consultant_id,
+                    isResuming: true,
+                    schoolsSummary: [],
+                  });
                 }
               }
             } catch (e) {
