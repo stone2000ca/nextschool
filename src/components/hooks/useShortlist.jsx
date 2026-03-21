@@ -18,11 +18,12 @@ export function useShortlist({
   const loadedForConversationRef = useRef(null);
   const fetchVersionRef = useRef(0); // FIX-SL-BLEED: fetch versioning to discard stale responses
 
-  const loadShortlist = async (journeyId) => {
-    const jid = journeyId || activeJourney?.journeyId || currentConversation?.conversation_context?.journeyId;
-    // TASK-C: If no journeyId available, fall back to conversation_id so the API can derive it
+  const loadShortlist = async () => {
+    // FIX-SL-BLEED-v2: Always use conversation_id and let the API derive journey_id
+    // server-side. This eliminates dependency on activeJourney (which loads async)
+    // and prevents stale journeyId from conversation_context causing cross-chat bleed.
     const conversationId = currentConversation?.id;
-    if (!jid && !conversationId) return;
+    if (!conversationId) return;
 
     // FIX-SL-ISOLATE: If switching to a different conversation, clear shortlist first
     // to prevent stale optimistic state from the previous conversation bleeding through
@@ -36,12 +37,10 @@ export function useShortlist({
     const thisVersion = ++fetchVersionRef.current;
 
     try {
-      const params = jid
-        ? `journey_id=${encodeURIComponent(jid)}`
-        : `conversation_id=${encodeURIComponent(conversationId)}`;
-      const res = await fetch(`/api/shortlist?${params}`);
+      const res = await fetch(`/api/shortlist?conversation_id=${encodeURIComponent(conversationId)}`);
       if (!res.ok) {
-        console.error('Failed to load shortlist:', res.status);
+        // 400 is expected for new chats that don't have a journey yet
+        if (res.status !== 400) console.error('Failed to load shortlist:', res.status);
         return;
       }
       const { schools: loadedSchools } = await res.json();
@@ -186,26 +185,15 @@ export function useShortlist({
     }
   };
 
-  // E29-012: Hydrate shortlistData from ChatShortlist on activeJourney load
-  // FIX-SL-ISOLATE: Only use activeJourney?.journeyId as the authoritative source.
-  // conversation_context.journeyId was removed because it can hold a stale value
-  // from a previous conversation during async loading, causing cross-conversation bleed.
-  const effectiveJourneyId = activeJourney?.journeyId;
+  // FIX-SL-BLEED-v2: Load shortlist whenever conversation changes.
+  // Depends ONLY on currentConversation?.id — not activeJourney?.journeyId.
+  // The API derives journey_id from conversation_id server-side, so we don't
+  // need to wait for the async activeJourney load (which caused cross-chat bleed).
   useEffect(() => {
-    // FIX-SL-PERSIST: Don't clear optimistic state when journeyId is absent —
-    // the user may have already toggled hearts before the async journey creation
-    // completes. Clearing here would wipe those optimistic additions.
-    // TASK-C: Also fire when journeyId is absent but conversation_id is available,
-    // so the API can derive journey_id from family_journeys.chat_history_id
-    if (!effectiveJourneyId && !currentConversation?.id) return;
-    loadShortlist(effectiveJourneyId);
-    // FIX-SL-ISOLATE: Removed currentConversation?.conversation_context?.journeyId
-    // from dep array — it was the source of stale journeyId bleeds between conversations.
-    // activeJourney?.journeyId is authoritative (derived from current conversation's
-    // family_journey record via useDataLoader). currentConversation?.id triggers reload
-    // on conversation switch/restore.
+    if (!currentConversation?.id) return;
+    loadShortlist();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeJourney?.journeyId, currentConversation?.id]);
+  }, [currentConversation?.id]);
 
   // E30-006
   const handleDossierExpandChange = (isExpanding) =>
