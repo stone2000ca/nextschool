@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
     }
 
     const [usersResult, txResult] = await Promise.all([
-      (admin.from('user_profiles') as any).select('*').order('created_date', { ascending: false }),
-      (admin.from('token_transactions') as any).select('*').order('created_date', { ascending: false }).limit(1000),
+      (admin.from('user_profiles') as any).select('*').order('created_at', { ascending: false }),
+      (admin.from('token_transactions') as any).select('*').order('created_at', { ascending: false }).limit(1000),
     ])
 
     if (usersResult.error) throw usersResult.error

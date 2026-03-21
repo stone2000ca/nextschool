@@ -25,7 +25,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const conversations = await ChatHistory.list('-created_date')
+    const conversations = await ChatHistory.list('-created_at')
     return NextResponse.json(conversations)
   } catch (error: any) {
     console.error('GET /api/admin/conversations failed:', error)
