@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: profile } = await (getAdminClient()
-      .from('users')
+      .from('user_profiles')
       .select('role')
       .eq('id', user.id)
       .single() as any)
