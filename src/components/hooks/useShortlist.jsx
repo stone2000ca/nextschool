@@ -86,40 +86,28 @@ export function useShortlist({
     }
     if (!user) return;
 
-    // FIX-SL-PERSIST: Use the same fallback chain as loadShortlist/useEffect
-    // so server writes succeed even when activeJourney is still loading async
-    const journeyId = activeJourney?.journeyId || currentConversation?.conversation_context?.journeyId;
+    const conversationId = currentConversation?.id;
+    // journey_id is optional — used for side effects (SchoolJourney, phase advancement) only
+    const journeyId = activeJourney?.journeyId || null;
 
     try {
       let school = preloadedSchool || schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId) || extraSchools?.find(s => s.id === schoolId);
       const isRemoving = shortlistData.some(s => s.id === schoolId);
-
-      if (!school && !isRemoving) {
-        // Fetch school data from local sources failed; the server will handle it
-        // but we need it for client-side nudge display
-        try {
-          const res = await fetch(`/api/shortlist?journey_id=${encodeURIComponent('_lookup_')}&school_id=${encodeURIComponent(schoolId)}`);
-          // Fallback: school may not be available for nudge, that's okay
-        } catch (e) {
-          console.error('[SHORTLIST] Failed to fetch school for toggle:', e.message);
-        }
-      }
 
       if (isRemoving) {
         // Optimistic UI update
         setShortlistData(prev => prev.filter(s => s.id !== schoolId));
         setRemovedSchoolIds(prev => [...prev, schoolId]);
 
-        // Server-side removal (ChatShortlist + SchoolJourney + ChatSession)
-        if (journeyId) {
+        // Server-side removal scoped to conversation
+        if (conversationId) {
           try {
-            const res = await fetch(`/api/shortlist/${encodeURIComponent(journeyId)}`, {
+            const res = await fetch(`/api/shortlist/${encodeURIComponent(conversationId)}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 school_id: schoolId,
-                conversation_id: currentConversation?.id || null,
-                current_count: shortlistData.length,
+                journey_id: journeyId,
               }),
             });
             if (!res.ok) {
@@ -131,24 +119,24 @@ export function useShortlist({
             toast.error('Failed to remove school from shortlist');
           }
         } else {
-          console.warn('[SHORTLIST] No journeyId available — remove not persisted');
+          console.warn('[SHORTLIST] No conversationId available — remove not persisted');
         }
       } else {
         // Optimistic UI update
         trackEvent('shortlisted', { metadata: { schoolName: school?.name } });
         if (school) setShortlistData(prev => [...prev, school]);
 
-        // Server-side addition (ChatShortlist + SchoolJourney + FamilyJourney phase + ChatSession count)
-        if (journeyId) {
+        // Server-side addition scoped to conversation
+        if (conversationId) {
           try {
             const res = await fetch('/api/shortlist', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 journey_id: journeyId,
+                conversation_id: conversationId,
                 school_id: schoolId,
                 school_name: school?.name || '',
-                conversation_id: currentConversation?.id || null,
                 current_phase: activeJourney?.currentPhase || null,
                 phase_history: Array.isArray(activeJourney?.phaseHistory) ? activeJourney.phaseHistory : [],
               }),
@@ -162,7 +150,7 @@ export function useShortlist({
             toast.error('Failed to save school to shortlist');
           }
         } else {
-          console.warn('[SHORTLIST] No journeyId available — add not persisted');
+          console.warn('[SHORTLIST] No conversationId available — add not persisted');
         }
       }
 
