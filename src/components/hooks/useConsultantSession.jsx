@@ -194,7 +194,7 @@ export function useConsultantSession({
         setSelectedConsultant, d.setRestoredSessionData, setMessages,
         d.setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase,
         setCurrentConversation, setSessionRestored, setRestoringSession,
-        loadShortlistRef.current, isRestoringSessionRef, sessionParamProcessedRef,
+        null, isRestoringSessionRef, sessionParamProcessedRef,
         setDebugInfo, d.setDeepDiveAnalysis, setSelectedSchool,
         d.setVisitPrepKit, d.setActionPlan, d.skipViewOverrideRef, d.setSchoolAnalyses
       );
@@ -236,8 +236,7 @@ export function useConsultantSession({
         setSelectedSchool,
         isRestoringSessionRef,
         d.skipViewOverrideRef,
-        d.setSchoolAnalyses,
-        loadShortlistRef // loadShortlist ref — resolved at call time in SessionRestorer
+        d.setSchoolAnalyses
       );
     }
   }, [isAuthenticated, user?.id, sessionIdParam]);
