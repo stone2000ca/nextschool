@@ -210,6 +210,7 @@ export const ConversationState = createEntity('ConversationState')
 export const ConversationSchools = createEntity('ConversationSchools')
 export const ConversationArtifacts = createEntity('ConversationArtifacts')
 export const MatchExplanationCache = createEntity('MatchExplanationCache')
+/** visit_records: school_journey_id (FK), school_id, user_id (denormalized), event_type, visit_date, status, impression, ... */
 export const VisitRecord = createEntity('VisitRecord')
 export const UnsubscribeToken = createEntity('UnsubscribeToken')
 export const EmailQueue = createEntity('EmailQueue')
