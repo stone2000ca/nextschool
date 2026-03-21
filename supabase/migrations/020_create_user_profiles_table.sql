@@ -3,6 +3,9 @@
 -- but never created in the repository migrations (001-004 are missing).
 -- This migration creates both tables, adds RLS policies, and backfills
 -- rows for any existing auth.users that lack a profile.
+--
+-- NOTE: The existing public.users table has UUID id (not TEXT).
+-- Backfill queries handle the type difference with explicit casts.
 
 -- ============================================================
 -- 1. Create user_profiles table
@@ -25,6 +28,7 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
 
 -- ============================================================
 -- 2. Create public.users table (role lookups, referenced by trigger)
+--    Skipped if already exists (existing table has UUID id)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.users (
   id         TEXT PRIMARY KEY,
@@ -64,33 +68,45 @@ CREATE TRIGGER users_updated_at
 -- ============================================================
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 
--- Users can read their own profile
-CREATE POLICY "Users can view own profile"
-  ON public.user_profiles FOR SELECT
-  USING (auth.uid()::TEXT = id);
+DO $$ BEGIN
+  CREATE POLICY "Users can view own profile"
+    ON public.user_profiles FOR SELECT
+    USING (auth.uid()::TEXT = id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- Users can update their own profile
-CREATE POLICY "Users can update own profile"
-  ON public.user_profiles FOR UPDATE
-  USING (auth.uid()::TEXT = id);
+DO $$ BEGIN
+  CREATE POLICY "Users can update own profile"
+    ON public.user_profiles FOR UPDATE
+    USING (auth.uid()::TEXT = id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- Service role (used by trigger and backend) can do everything
-CREATE POLICY "Service role full access on user_profiles"
-  ON public.user_profiles FOR ALL
-  USING (auth.role() = 'service_role');
+DO $$ BEGIN
+  CREATE POLICY "Service role full access on user_profiles"
+    ON public.user_profiles FOR ALL
+    USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================
 -- 5. RLS policies for public.users
 -- ============================================================
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view own users row"
-  ON public.users FOR SELECT
-  USING (auth.uid()::TEXT = id);
+DO $$ BEGIN
+  CREATE POLICY "Users can view own users row"
+    ON public.users FOR SELECT
+    USING (auth.uid()::TEXT = id::TEXT);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE POLICY "Service role full access on users"
-  ON public.users FOR ALL
-  USING (auth.role() = 'service_role');
+DO $$ BEGIN
+  CREATE POLICY "Service role full access on users"
+    ON public.users FOR ALL
+    USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================
 -- 6. Backfill: create user_profiles for existing auth.users
@@ -113,15 +129,16 @@ WHERE NOT EXISTS (
 )
 ON CONFLICT (id) DO NOTHING;
 
+-- Backfill public.users (existing table has UUID id column)
 INSERT INTO public.users (id, email, role, created_at, updated_at)
 SELECT
-  au.id::TEXT,
+  au.id,
   au.email,
   'user',
   au.created_at,
   NOW()
 FROM auth.users au
 WHERE NOT EXISTS (
-  SELECT 1 FROM public.users u WHERE u.id = au.id::TEXT
+  SELECT 1 FROM public.users u WHERE u.id = au.id
 )
 ON CONFLICT (id) DO NOTHING;
