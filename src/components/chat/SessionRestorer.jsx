@@ -342,7 +342,23 @@ export async function restoreSessionFromParam(
       setCurrentView('detail');
     }
     if (chatHistory) {
-      const restoredJourneyId = normalizedState?.journey_id || chatHistory?.conversation_context?.journeyId || null;
+      let restoredJourneyId = normalizedState?.journey_id || chatHistory?.conversation_context?.journeyId || null;
+
+      // TASK-C: If journeyId is still null, derive from family_journeys via chat_history_id
+      if (!restoredJourneyId && chatHistory?.id && user?.id) {
+        try {
+          const fjRes = await fetch(`/api/family-journey?user_id=${user.id}&is_archived=false&chat_history_id=${chatHistory.id}`);
+          const fjData = fjRes.ok ? await fjRes.json() : [];
+          if (fjData.length > 0) {
+            const sortedFj = fjData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            restoredJourneyId = sortedFj[0].id;
+            console.log('[TASK-C] Derived journeyId from family_journeys (session param):', restoredJourneyId);
+          }
+        } catch (e) {
+          console.warn('[TASK-C] family_journeys lookup failed:', e.message);
+        }
+      }
+
       console.log('[RESTORE] journeyId surfaced:', restoredJourneyId);
       const restoredContext = {
         ...(chatHistory.conversation_context || {}),
@@ -366,7 +382,23 @@ export async function restoreSessionFromParam(
       };
       setCurrentConversation(restoredConversation);
     } else {
-      const restoredJourneyIdAlt = normalizedState?.journey_id || null;
+      let restoredJourneyIdAlt = normalizedState?.journey_id || null;
+
+      // TASK-C: If journeyId is still null, derive from family_journeys
+      if (!restoredJourneyIdAlt && convId && user?.id) {
+        try {
+          const fjRes = await fetch(`/api/family-journey?user_id=${user.id}&is_archived=false&chat_history_id=${convId}`);
+          const fjData = fjRes.ok ? await fjRes.json() : [];
+          if (fjData.length > 0) {
+            const sortedFj = fjData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            restoredJourneyIdAlt = sortedFj[0].id;
+            console.log('[TASK-C] Derived journeyId from family_journeys (no chatHistory):', restoredJourneyIdAlt);
+          }
+        } catch (e) {
+          console.warn('[TASK-C] family_journeys lookup failed:', e.message);
+        }
+      }
+
       console.log('[RESTORE] journeyId surfaced (no chatHistory):', restoredJourneyIdAlt);
       const restoredContext = {
         state: hasDeepDiveRestore ? STATES.DEEP_DIVE : (effectiveResumeView || (restoredSchools.length > 0 ? STATES.RESULTS : STATES.WELCOME)),
@@ -603,7 +635,23 @@ export async function restoreMostRecentConversation(
     setOnboardingPhase(restoredState);
 
     // 8. Set currentConversation — this is the key: useDataLoader watches currentConversation.id
-    const restoredJourneyId = normalizedState2?.journey_id || ctx.journeyId || null;
+    let restoredJourneyId = normalizedState2?.journey_id || ctx.journeyId || null;
+
+    // TASK-C: If journeyId is still null, try to derive it from family_journeys via chat_history_id
+    if (!restoredJourneyId && latest.id) {
+      try {
+        const fjRes = await fetch(`/api/family-journey?user_id=${user.id}&is_archived=false&chat_history_id=${latest.id}`);
+        const fjData = fjRes.ok ? await fjRes.json() : [];
+        if (fjData.length > 0) {
+          const sorted = fjData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          restoredJourneyId = sorted[0].id;
+          console.log('[TASK-C] Derived journeyId from family_journeys:', restoredJourneyId);
+        }
+      } catch (e) {
+        console.warn('[TASK-C] family_journeys lookup failed:', e.message);
+      }
+    }
+
     console.log('[RESTORE] journeyId surfaced:', restoredJourneyId);
     setCurrentConversation({
       ...latest,

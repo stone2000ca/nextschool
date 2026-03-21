@@ -14,9 +14,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const journeyId = req.nextUrl.searchParams.get('journey_id')
+    let journeyId = req.nextUrl.searchParams.get('journey_id')
+    const conversationId = req.nextUrl.searchParams.get('conversation_id')
+
+    // TASK-C: If journey_id is missing, derive it from conversation_id via family_journeys
+    if (!journeyId && conversationId) {
+      const { data: journeys, error: fjError } = await db('family_journeys')
+        .select('id')
+        .eq('chat_history_id', conversationId)
+        .eq('is_archived', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      if (!fjError && journeys && journeys.length > 0) {
+        journeyId = journeys[0].id
+        console.log('[TASK-C] Derived journey_id from conversation_id:', journeyId)
+      }
+    }
+
     if (!journeyId) {
-      return NextResponse.json({ error: 'journey_id is required' }, { status: 400 })
+      return NextResponse.json({ error: 'journey_id or conversation_id is required' }, { status: 400 })
     }
 
     // Fetch shortlist records

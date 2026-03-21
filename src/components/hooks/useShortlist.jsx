@@ -18,9 +18,14 @@ export function useShortlist({
 
   const loadShortlist = async (journeyId) => {
     const jid = journeyId || activeJourney?.journeyId || currentConversation?.conversation_context?.journeyId;
-    if (!jid) return;
+    // TASK-C: If no journeyId available, fall back to conversation_id so the API can derive it
+    const conversationId = currentConversation?.id;
+    if (!jid && !conversationId) return;
     try {
-      const res = await fetch(`/api/shortlist?journey_id=${encodeURIComponent(jid)}`);
+      const params = jid
+        ? `journey_id=${encodeURIComponent(jid)}`
+        : `conversation_id=${encodeURIComponent(conversationId)}`;
+      const res = await fetch(`/api/shortlist?${params}`);
       if (!res.ok) {
         console.error('Failed to load shortlist:', res.status);
         return;
@@ -167,7 +172,9 @@ export function useShortlist({
     // FIX-SL-PERSIST: Don't clear optimistic state when journeyId is absent —
     // the user may have already toggled hearts before the async journey creation
     // completes. Clearing here would wipe those optimistic additions.
-    if (!effectiveJourneyId) return;
+    // TASK-C: Also fire when journeyId is absent but conversation_id is available,
+    // so the API can derive journey_id from family_journeys.chat_history_id
+    if (!effectiveJourneyId && !currentConversation?.id) return;
     loadShortlist(effectiveJourneyId);
     // FIX-SL-LOAD: Watch both journeyId sources independently instead of the
     // combined effectiveJourneyId. The || operator in effectiveJourneyId masks
