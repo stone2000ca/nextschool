@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { FamilyProfile, ChatHistory, FamilyJourney, SchoolJourney, ConversationArtifacts, LLMLog, School } from '@/lib/entities-server'
-import { extractEntitiesLogic } from './extractEntities'
+import { extractEntitiesLogic, applyExtractionDelta } from './extractEntities'
 import { handleBriefLogic } from './handleBrief'
 import { handleResultsLogic } from './handleResults'
 import { handleDeepDiveLogic } from './handleDeepDive'
@@ -1581,6 +1581,7 @@ Object.assign(context, safeUpdatedContext);
       // S136-WC1: E35-REC1 — fire-and-forget for non-RESULTS states
       // E41-S3: RESULTS state defers extraction to post-reply (with aiReply for richer context)
       // S1-S2: Persistence moved here from extractEntitiesLogic (single write point)
+      // S3-S5: Uses applyExtractionDelta for merge, delta-only extraction
       if (currentState !== STATES.RESULTS) {
         extractEntitiesLogic( {
           message: processMessage,
@@ -1588,8 +1589,14 @@ Object.assign(context, safeUpdatedContext);
           context,
           conversationHistory
         }).then(async (extractResult) => {
+          const delta = extractResult?.extractedEntities || {};
+          const deltaFields = Object.keys(delta).filter(k =>
+            !['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers'].includes(k)
+          );
+          if (deltaFields.length === 0) return; // S3-S5: empty delta = no-op
+
           const profile = extractResult?.updatedFamilyProfile;
-          if (profile?.id && Object.keys(extractResult?.extractedEntities || {}).length > 0) {
+          if (profile?.id) {
             try {
               const NON_SCHEMA_KEYS = ['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers', 'gender'];
               const profileToSave = { ...profile };
@@ -1597,9 +1604,9 @@ Object.assign(context, safeUpdatedContext);
                 delete profileToSave[key];
               }
               await FamilyProfile.update(profile.id, profileToSave);
-              console.log('[S1-S2] FamilyProfile persisted (non-RESULTS):', profile.id);
+              console.log('[S3-S5] FamilyProfile persisted (non-RESULTS):', profile.id, 'delta:', deltaFields);
             } catch (e: any) {
-              console.error('[S1-S2] FamilyProfile update failed (non-blocking):', e.message);
+              console.error('[S3-S5] FamilyProfile update failed (non-blocking):', e.message);
             }
           }
         }).catch(e => console.error('[S136-WC1] extractEntities fire-and-forget failed:', e.message));
@@ -1982,14 +1989,19 @@ Object.assign(context, safeUpdatedContext);
           context,
           conversationHistory
         }).then(async (extractResult) => {
-          // S1-S2: Fixed .data. access bug — extractEntitiesLogic returns directly, not wrapped in { data }
+          // S3-S5: Delta-only extraction — skip if empty delta
+          const delta = extractResult?.extractedEntities || {};
+          const deltaFields = Object.keys(delta).filter(k =>
+            !['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers'].includes(k)
+          );
+
           const profile = extractResult?.updatedFamilyProfile;
           if (profile) {
             context.accumulatedFamilyProfile = { ...(context.accumulatedFamilyProfile || {}), ...profile };
             console.log('[E41-S3] Deferred extractEntities complete, updated accumulatedFamilyProfile');
 
-            // S1-S2: Single persistence point for RESULTS state (replaces E42-PERSIST + internal write)
-            if (userId && conversationId && Object.keys(extractResult?.extractedEntities || {}).length > 0) {
+            // S3-S5: Only persist if there are actual field changes
+            if (deltaFields.length > 0 && userId && conversationId) {
               try {
                 const NON_SCHEMA_KEYS = ['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers', 'gender'];
                 const PROFILE_FIELDS = [
@@ -1999,6 +2011,9 @@ Object.assign(context, safeUpdatedContext);
                   'curriculum_preference', 'school_type_label',
                   'academic_strengths', 'parent_notes',
                   'school_gender_exclusions', 'school_gender_preference',
+                  // S3-S5: New constraint/preference fields
+                  'commute_tolerance', 'schedule_preference', 'homework_tolerance',
+                  'open_to_boarding', 'flexible_on_commute',
                 ];
                 const updatePayload: Record<string, any> = {};
                 for (const field of PROFILE_FIELDS) {
@@ -2006,28 +2021,25 @@ Object.assign(context, safeUpdatedContext);
                     updatePayload[field] = profile[field];
                   }
                 }
-                // Strip non-schema keys just in case
                 for (const key of NON_SCHEMA_KEYS) {
                   delete updatePayload[key];
                 }
                 if (Object.keys(updatePayload).length > 0) {
                   if (profile.id) {
-                    // Direct update if profile has an ID
                     await FamilyProfile.update(profile.id, updatePayload);
-                    console.log('[S1-S2] FamilyProfile persisted (RESULTS):', profile.id, Object.keys(updatePayload));
+                    console.log('[S3-S5] FamilyProfile persisted (RESULTS):', profile.id, 'delta:', deltaFields);
                   } else {
-                    // Fallback: look up by user/conversation
                     const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
                     if (profiles && profiles.length > 0) {
                       await FamilyProfile.update(profiles[0].id, updatePayload);
-                      console.log('[S1-S2] FamilyProfile persisted (RESULTS, lookup):', profiles[0].id, Object.keys(updatePayload));
+                      console.log('[S3-S5] FamilyProfile persisted (RESULTS, lookup):', profiles[0].id, 'delta:', deltaFields);
                     } else {
-                      console.warn('[S1-S2] No FamilyProfile found for persist, userId:', userId, 'conversationId:', conversationId);
+                      console.warn('[S3-S5] No FamilyProfile found for persist, userId:', userId, 'conversationId:', conversationId);
                     }
                   }
                 }
               } catch (e: any) {
-                console.error('[S1-S2] FamilyProfile persist failed (non-blocking):', e.message);
+                console.error('[S3-S5] FamilyProfile persist failed (non-blocking):', e.message);
               }
             }
           }
