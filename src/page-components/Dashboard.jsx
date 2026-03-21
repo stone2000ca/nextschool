@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { fetchSessions, updateSession } from '@/lib/api/sessions';
 import { deleteConversation } from '@/lib/api/conversations';
+import DeleteConversationConfirm from '@/components/dialogs/DeleteConversationConfirm';
 import { fetchVisitsBySessionIds, fetchDeepDiveFlags } from '@/lib/api/visits';
 import { deriveJourneyStage } from '@/lib/sessions/deriveJourneyStage';
 import Navbar from '@/components/navigation/Navbar';
@@ -153,6 +154,8 @@ export default function Dashboard() {
   const [shortlistCounts, setShortlistCounts] = useState({}); // { [journey_id]: count }
   const [editingSession, setEditingSession] = useState(null);
   const [sessionStages, setSessionStages] = useState(new Map()); // Map<sessionId, JourneyStageResult>
+  const [deleteConfirmSession, setDeleteConfirmSession] = useState(null); // session to delete (single)
+  const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false); // batch delete confirm
 
   const isPaid = user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise';
 
@@ -321,12 +324,14 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeleteArchivedSession = async (sessionToDelete) => {
-    const confirmed = window.confirm(
-      'This will permanently delete this search and all conversation history. Cannot be undone. Continue?'
-    );
-    if (!confirmed) return;
+  const handleDeleteArchivedSession = (sessionToDelete) => {
+    setDeleteConfirmSession(sessionToDelete);
+  };
 
+  const executeDeleteSession = async () => {
+    const sessionToDelete = deleteConfirmSession;
+    if (!sessionToDelete) return;
+    setDeleteConfirmSession(null);
     try {
       if (sessionToDelete.chat_history_id) {
         await deleteConversation(sessionToDelete.chat_history_id);
@@ -373,6 +378,8 @@ export default function Dashboard() {
   };
 
   const handleDeleteAll = async () => {
+    // This now only handles "archive all active" (deleteAllTarget === 'active')
+    // "Delete all archived" goes through the two-step DeleteConversationConfirm dialog
     const toProcess = sessions.filter(s => s.status === deleteAllTarget);
     const isArchivingActive = deleteAllTarget === 'active';
     // Optimistic UI update
@@ -390,6 +397,19 @@ export default function Dashboard() {
         }
         return updateSession(s.id, { status: 'deleted', is_active: false });
       }
+    }));
+  };
+
+  const executeDeleteAllArchived = async () => {
+    const toProcess = sessions.filter(s => s.status === 'archived');
+    setDeleteAllConfirmOpen(false);
+    // Optimistic UI update
+    setSessions(prev => prev.filter(s => s.status !== 'archived'));
+    await Promise.all(toProcess.map(async (s) => {
+      if (s.chat_history_id) {
+        await deleteConversation(s.chat_history_id);
+      }
+      return updateSession(s.id, { status: 'deleted', is_active: false });
     }));
   };
 
@@ -575,7 +595,7 @@ export default function Dashboard() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-end mb-1">
                         <button
-                          onClick={() => setDeleteAllTarget('archived')}
+                          onClick={() => setDeleteAllConfirmOpen(true)}
                           className="flex items-center gap-1.5 text-sm text-red-400/70 hover:text-red-400 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -723,6 +743,25 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Single session delete — two-step confirmation */}
+      <DeleteConversationConfirm
+        open={!!deleteConfirmSession}
+        onOpenChange={(open) => { if (!open) setDeleteConfirmSession(null); }}
+        conversationTitle={deleteConfirmSession?.child_name || deleteConfirmSession?.profile_name || 'Unnamed'}
+        childName={deleteConfirmSession?.child_name}
+        onConfirmDelete={executeDeleteSession}
+      />
+
+      {/* Batch delete all archived — two-step confirmation */}
+      <DeleteConversationConfirm
+        open={deleteAllConfirmOpen}
+        onOpenChange={setDeleteAllConfirmOpen}
+        conversationTitle="all archived profiles"
+        onConfirmDelete={executeDeleteAllArchived}
+        isBatch
+        batchCount={archivedSessions.length}
+      />
 
       {/* E53-S3: Edit Profile Side Panel */}
       {editingSession && (
