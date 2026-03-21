@@ -122,6 +122,10 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
   useEffect(() => {
     if (user?.id && currentConversation?.id) {
       loadFamilyProfile();
+    } else if (user?.id && currentConversation && !currentConversation.id) {
+      // TASK-C: Warn when conversation object exists but has no id — likely a
+      // stub from a race condition (Task A). useDataLoader won't fetch until id is set.
+      console.warn('[TASK-C] currentConversation exists but .id is undefined — notepad/artifact restore blocked. This may self-heal once session restore race condition is fixed.');
     }
   }, [user?.id, currentConversation?.id]);
 
