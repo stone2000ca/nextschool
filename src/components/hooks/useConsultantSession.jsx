@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { invokeFunction } from '@/lib/functions';
-import { restoreMostRecentConversation, restoreSessionFromParam } from '@/components/chat/SessionRestorer';
+import { restoreSessionFromParam } from '@/components/chat/SessionRestorer';
 
 const PLAN_NAMES = { FREE: 'free', BASIC: 'basic', PREMIUM: 'premium', PRO: 'pro', ENTERPRISE: 'enterprise' };
 const DEFAULT_GREETING = "Hi! I'm your NextSchool education consultant. I help families across Canada, the US, and Europe find the perfect private school. Tell me about your child — what grade are they in, and what matters most to you in a school?";
@@ -105,8 +105,8 @@ export function useConsultantSession({
         }
         await loadConversations(userData.id);
         // RC-4 FIX: Removed premature loadShortlistRef.current?.() call.
-        // loadShortlist is now called by restoreMostRecentConversation (RC-3)
-        // or restoreSessionFromParam, which both pass explicit journeyId.
+        // loadShortlist is now called by restoreSessionFromParam (via ?sessionId=),
+        // which passes explicit journeyId.
       } else {
         if (!isDevMode) {
           const returnTo = window.location.pathname + window.location.search;
@@ -229,39 +229,25 @@ export function useConsultantSession({
     return () => clearTimeout(timeout);
   }, [sessionIdParam]);
 
-  // ─── RC-3 FIX: Restore most recent conversation on plain F5 (no sessionId) ───
+  // ─── Fresh start: no sessionId param means always start a new chat ───
+  // Restore only happens via the sessionIdParam effect above (e.g. from /dashboard).
   useEffect(() => {
-    if (isAuthenticated && user && !sessionIdParam) {
-      if (!isNewChat) {
-        if (newChatPendingRef.current) return;
-        const d = depsRef.current;
-        // FIX-SL-LOAD: Await restorer then explicitly call loadShortlist via ref,
-        // ensuring the shortlist loads after conversation_context.journeyId is set.
-        (async () => {
-          await restoreMostRecentConversation(
-            null, // _unused
-            user,
-            setMessages,
-            setSelectedConsultant,
-            setCurrentConversation,
-            d.setFamilyProfile,
-            setSchools,
-            setCurrentView,
-            setOnboardingPhase,
-            d.setDeepDiveAnalysis,
-            setSelectedSchool,
-            isRestoringSessionRef,
-            d.skipViewOverrideRef,
-            d.setSchoolAnalyses
-          );
-          loadShortlistRef.current?.();
-        })();
-      } else {
-        // New chat requested from home page — skip restore, clean up the param
-        router.replace('/consultant');
-      }
+    if (!isAuthenticated || !user || sessionIdParam) return;
+
+    // Clean up ?new=true param if present
+    if (isNewChat) {
+      router.replace('/consultant');
     }
-  }, [isAuthenticated, user?.id, sessionIdParam, isNewChat]);
+
+    // Always start fresh — inject greeting, mark session as restored
+    const greeting = {
+      role: 'assistant',
+      content: DEFAULT_GREETING,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages([greeting]);
+    setSessionRestored(true);
+  }, [isAuthenticated, user?.id, sessionIdParam]);
 
   // ─── Loading stage progression ───
   useEffect(() => {
