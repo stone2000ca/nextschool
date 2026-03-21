@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ComparisonView from '@/components/schools/ComparisonView';
 import SchoolDetailPanel from '@/components/schools/SchoolDetailPanel';
 import SchoolGrid from '@/components/schools/SchoolGrid';
@@ -35,6 +35,20 @@ export default function ResultsPhaseContent({
   useEffect(() => {
     setDetailTab(deepDiveAnalysis ? 'notepad' : 'overview');
   }, [selectedSchool?.id]);
+
+  // Auto-navigate to Deep Dive tab when analysis arrives for the current school
+  const prevDeepDiveRef = useRef(null);
+  useEffect(() => {
+    if (deepDiveAnalysis && !prevDeepDiveRef.current) {
+      setDetailTab('notepad');
+      // Scroll to Findings section after a short delay for render
+      setTimeout(() => {
+        const container = document.querySelector('[data-section-id="findings"]');
+        if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    }
+    prevDeepDiveRef.current = deepDiveAnalysis;
+  }, [deepDiveAnalysis]);
 
   // E51-S1B: Event slideout state
   const [activeEvent, setActiveEvent] = useState(null);
@@ -102,7 +116,7 @@ export default function ResultsPhaseContent({
         <div className="flex items-center gap-1 px-4 py-2 border-b border-white/[0.08] shrink-0">
           {[
             { key: 'overview', label: 'Overview' },
-            { key: 'notepad', label: 'Research Notepad', disabled: !deepDiveAnalysis },
+            { key: 'notepad', label: 'Deep Dive', disabled: !deepDiveAnalysis && !isTyping, loading: isTyping && !deepDiveAnalysis },
             { key: 'website', label: 'Website' },
           ].map((tab) => (
             <button
@@ -118,9 +132,20 @@ export default function ResultsPhaseContent({
               }`}
             >
               {tab.label}
+              {tab.loading && (
+                <span className="inline-block ml-1.5 w-3 h-3 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+              )}
             </button>
           ))}
         </div>
+
+        {/* Analysis in progress banner */}
+        {isTyping && !deepDiveAnalysis && (
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-teal-900/40 border-b border-teal-700/30 shrink-0">
+            <span className="inline-block w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-[13px] text-teal-300 font-medium">Analyzing school — Deep Dive results will appear shortly...</span>
+          </div>
+        )}
 
         {/* Tab content */}
         <div className="flex-1 overflow-hidden">
@@ -144,6 +169,7 @@ export default function ResultsPhaseContent({
 
           {detailTab === 'notepad' && selectedSchool && deepDiveAnalysis && (
             <ResearchNotepad
+              isPremium={isPremium}
               schoolData={{
                 name: selectedSchool.name || selectedSchool.school_name || 'Unknown School',
                 location: `${selectedSchool.city || ''}, ${selectedSchool.province_state || selectedSchool.province || ''}`.trim().replace(/^,\s*/, ''),
