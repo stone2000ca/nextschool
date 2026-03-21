@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { CONSULTANT_AVATARS } from '@/lib/brand-assets';
-import { ArrowRight, Pencil } from 'lucide-react';
+import Link from 'next/link';
+import { useAuth } from '@/lib/AuthContext';
+import { CONSULTANT_AVATARS, LOGO_WHITE_TEXT } from '@/lib/brand-assets';
+import { ArrowRight, Pencil, Home, LayoutDashboard, LogOut } from 'lucide-react';
 
 // ─── Persona copy variants ───────────────────────────────────────────
 const COPY = {
@@ -69,6 +71,7 @@ const STEP_KEYS = [1, 2, 2.5, 3, 4, 5, 5.5, 6];
 const TOTAL_STEPS = STEP_KEYS.length;
 
 export default function GuidedIntro({ consultantName, onComplete }) {
+  const { logout } = useAuth();
   const [stepIndex, setStepIndex] = useState(0);
   const [animating, setAnimating] = useState(false);
   const [direction, setDirection] = useState('forward'); // 'forward' | 'back'
@@ -447,6 +450,36 @@ export default function GuidedIntro({ consultantName, onComplete }) {
           className="h-full bg-teal-400 transition-all duration-500 ease-out"
           style={{ width: `${progressPct}%` }}
         />
+      </div>
+
+      {/* Top nav: logo left, icons right */}
+      <div className="relative z-20 flex items-center justify-between px-4 pt-3">
+        <Link href="/" className="opacity-60 hover:opacity-100 transition-opacity">
+          <img src={LOGO_WHITE_TEXT} alt="NextSchool" className="h-6" />
+        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/"
+            className="p-2 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition-colors"
+            title="Home"
+          >
+            <Home className="w-4 h-4" />
+          </Link>
+          <Link
+            href="/dashboard"
+            className="p-2 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition-colors"
+            title="Dashboard"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+          </Link>
+          <button
+            onClick={() => logout()}
+            className="p-2 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition-colors"
+            title="Log out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Consultant avatar badge */}
