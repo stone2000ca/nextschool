@@ -133,6 +133,8 @@ const KEY_FACT_CARDS = [
   },
 ]
 
+export { KEY_FACT_CARDS }
+
 // ─── Main tab component ─────────────────────────────────────────────
 export default function KeyFactsTab({ school, onSchoolUpdate }) {
   const [confirmingCard, setConfirmingCard] = useState(null)

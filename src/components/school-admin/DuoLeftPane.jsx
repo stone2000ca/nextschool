@@ -2,9 +2,20 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import KeyFactsList from '@/components/school-admin/KeyFactsList'
 
-export default function DuoLeftPane() {
+export default function DuoLeftPane({ onSectionChange }) {
   return (
-    <Tabs defaultValue="preview" className="flex flex-col h-full">
+    <Tabs
+      defaultValue="preview"
+      className="flex flex-col h-full"
+      onValueChange={(val) => {
+        // When switching to keyfacts tab, notify parent
+        if (val === 'keyfacts' && onSectionChange) {
+          onSectionChange({ title: 'Key Facts', fields: [] })
+        } else if (onSectionChange) {
+          onSectionChange(null)
+        }
+      }}
+    >
       <div className="border-b border-border px-4 pt-3 shrink-0">
         <TabsList className="bg-muted">
           <TabsTrigger value="preview">Preview</TabsTrigger>
