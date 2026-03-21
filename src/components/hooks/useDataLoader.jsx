@@ -147,6 +147,10 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
 
+    // FIX-SL-BLEED: Clear stale journey synchronously so downstream effects
+    // don't use the previous conversation's journeyId during async loading
+    setActiveJourney(null);
+
     (async () => {
       try {
         let journey = null;

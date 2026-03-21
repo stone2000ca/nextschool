@@ -16,6 +16,7 @@ export function useShortlist({
   const [pendingDeepDiveSchoolIds, setPendingDeepDiveSchoolIds] = useState(new Set());
   const hasAutoPopulatedShortlist = useRef(false);
   const loadedForConversationRef = useRef(null);
+  const fetchVersionRef = useRef(0); // FIX-SL-BLEED: fetch versioning to discard stale responses
 
   const loadShortlist = async (journeyId) => {
     const jid = journeyId || activeJourney?.journeyId || currentConversation?.conversation_context?.journeyId;
@@ -31,6 +32,9 @@ export function useShortlist({
     }
     loadedForConversationRef.current = conversationId;
 
+    // FIX-SL-BLEED: Increment version so we can discard stale responses
+    const thisVersion = ++fetchVersionRef.current;
+
     try {
       const params = jid
         ? `journey_id=${encodeURIComponent(jid)}`
@@ -41,13 +45,19 @@ export function useShortlist({
         return;
       }
       const { schools: loadedSchools } = await res.json();
+
+      // FIX-SL-BLEED: Discard result if a newer loadShortlist call has started
+      if (thisVersion !== fetchVersionRef.current) return;
+
       // FIX-SL-PERSIST: Merge server data with any optimistic state instead of replacing.
       // This prevents the race where loadShortlist fires (via useEffect on effectiveJourneyId)
       // before fire-and-forget server writes have completed, wiping optimistic additions.
       setShortlistData(prev => {
         if (!loadedSchools || loadedSchools.length === 0) {
-          // Server returned empty — keep optimistic state intact
-          // Safe because isSwitching already cleared prev above if needed
+          // FIX-SL-BLEED: If we just switched conversations, return empty
+          // instead of preserving prev (which belongs to the old conversation)
+          if (isSwitching) return [];
+          // Server returned empty — keep optimistic state intact (same conversation)
           return prev;
         }
         // Merge: start with server data, then add any optimistic items not yet on server

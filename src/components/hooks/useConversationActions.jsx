@@ -54,6 +54,9 @@ export function useConversationActions({
     // effect (which fires on currentConversation.id change) doesn't merge stale data
     setShortlistData([]);
     setRemovedSchoolIds([]);
+    // FIX-SL-BLEED: Clear stale journey so useShortlist effect doesn't fetch
+    // the previous conversation's shortlist using the old journeyId
+    setActiveJourney(null);
     await switchConversation(convo);
 
     const msgs = convo.messages || [];
