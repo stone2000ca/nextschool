@@ -26,8 +26,19 @@ export function useShortlist({
         return;
       }
       const { schools: loadedSchools } = await res.json();
-      if (!loadedSchools || loadedSchools.length === 0) return;
-      setShortlistData(loadedSchools);
+      // FIX-SL-PERSIST: Merge server data with any optimistic state instead of replacing.
+      // This prevents the race where loadShortlist fires (via useEffect on effectiveJourneyId)
+      // before fire-and-forget server writes have completed, wiping optimistic additions.
+      setShortlistData(prev => {
+        if (!loadedSchools || loadedSchools.length === 0) {
+          // Server returned empty — keep optimistic state intact
+          return prev;
+        }
+        // Merge: start with server data, then add any optimistic items not yet on server
+        const serverIds = new Set(loadedSchools.map(s => s.id));
+        const optimisticOnly = prev.filter(s => !serverIds.has(s.id));
+        return [...loadedSchools, ...optimisticOnly];
+      });
     } catch (error) {
       console.error('Failed to load shortlist:', error);
     }
@@ -50,6 +61,10 @@ export function useShortlist({
     }
     if (!user) return;
 
+    // FIX-SL-PERSIST: Use the same fallback chain as loadShortlist/useEffect
+    // so server writes succeed even when activeJourney is still loading async
+    const journeyId = activeJourney?.journeyId || currentConversation?.conversation_context?.journeyId;
+
     try {
       let school = preloadedSchool || schools.find(s => s.id === schoolId) || shortlistData.find(s => s.id === schoolId) || extraSchools?.find(s => s.id === schoolId);
       const isRemoving = shortlistData.some(s => s.id === schoolId);
@@ -71,16 +86,27 @@ export function useShortlist({
         setRemovedSchoolIds(prev => [...prev, schoolId]);
 
         // Server-side removal (ChatShortlist + SchoolJourney + ChatSession)
-        if (activeJourney?.journeyId) {
-          fetch(`/api/shortlist/${encodeURIComponent(activeJourney.journeyId)}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              school_id: schoolId,
-              conversation_id: currentConversation?.id || null,
-              current_count: shortlistData.length,
-            }),
-          }).catch(e => console.error('[SHORTLIST] Remove failed:', e.message));
+        if (journeyId) {
+          try {
+            const res = await fetch(`/api/shortlist/${encodeURIComponent(journeyId)}`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                school_id: schoolId,
+                conversation_id: currentConversation?.id || null,
+                current_count: shortlistData.length,
+              }),
+            });
+            if (!res.ok) {
+              console.error('[SHORTLIST] Remove failed:', res.status);
+              toast.error('Failed to remove school from shortlist');
+            }
+          } catch (e) {
+            console.error('[SHORTLIST] Remove failed:', e.message);
+            toast.error('Failed to remove school from shortlist');
+          }
+        } else {
+          console.warn('[SHORTLIST] No journeyId available — remove not persisted');
         }
       } else {
         // Optimistic UI update
@@ -88,19 +114,30 @@ export function useShortlist({
         if (school) setShortlistData(prev => [...prev, school]);
 
         // Server-side addition (ChatShortlist + SchoolJourney + FamilyJourney phase + ChatSession count)
-        if (activeJourney?.journeyId) {
-          fetch('/api/shortlist', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              journey_id: activeJourney.journeyId,
-              school_id: schoolId,
-              school_name: school?.name || '',
-              conversation_id: currentConversation?.id || null,
-              current_phase: activeJourney.currentPhase || null,
-              phase_history: Array.isArray(activeJourney.phaseHistory) ? activeJourney.phaseHistory : [],
-            }),
-          }).catch(e => console.error('[SHORTLIST] Add failed:', e.message));
+        if (journeyId) {
+          try {
+            const res = await fetch('/api/shortlist', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                journey_id: journeyId,
+                school_id: schoolId,
+                school_name: school?.name || '',
+                conversation_id: currentConversation?.id || null,
+                current_phase: activeJourney?.currentPhase || null,
+                phase_history: Array.isArray(activeJourney?.phaseHistory) ? activeJourney.phaseHistory : [],
+              }),
+            });
+            if (!res.ok) {
+              console.error('[SHORTLIST] Add failed:', res.status);
+              toast.error('Failed to save school to shortlist');
+            }
+          } catch (e) {
+            console.error('[SHORTLIST] Add failed:', e.message);
+            toast.error('Failed to save school to shortlist');
+          }
+        } else {
+          console.warn('[SHORTLIST] No journeyId available — add not persisted');
         }
       }
 
@@ -127,7 +164,10 @@ export function useShortlist({
   // Falls back to conversation_context.journeyId when activeJourney is null
   const effectiveJourneyId = activeJourney?.journeyId || currentConversation?.conversation_context?.journeyId;
   useEffect(() => {
-    if (!effectiveJourneyId) { setShortlistData([]); return; }
+    // FIX-SL-PERSIST: Don't clear optimistic state when journeyId is absent —
+    // the user may have already toggled hearts before the async journey creation
+    // completes. Clearing here would wipe those optimistic additions.
+    if (!effectiveJourneyId) return;
     loadShortlist(effectiveJourneyId);
   }, [effectiveJourneyId]);
 
