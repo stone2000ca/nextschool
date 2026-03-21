@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     // The signup trigger should create this row, but some edge cases miss it.
     const admin = getAdminClient()
     await admin.from('users').upsert(
-      { id: user.id, email: user.email ?? '', role: 'user' },
+      { id: user.id, email: user.email ?? '', role: 'user' } as any,
       { onConflict: 'id', ignoreDuplicates: true }
     )
 
