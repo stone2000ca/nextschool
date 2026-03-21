@@ -23,7 +23,7 @@ export default function AdminSchools() {
 
   const loadSchools = async () => {
     try {
-      const data = await fetchSchools({ sort: '-updated_date' });
+      const data = await fetchSchools({ sort: '-updated_at' });
       setSchools(data);
     } catch (error) {
       console.error('Failed to load schools:', error);
@@ -111,9 +111,9 @@ export default function AdminSchools() {
   };
 
   const filteredSchools = schools.filter(school => {
-    const matchesSearch = school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         school.city.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRegion = filterRegion === 'all' || school.region === filterRegion;
+    const matchesSearch = school.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (school.city || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRegion = filterRegion === 'all' || school.market_region === filterRegion;
     return matchesSearch && matchesRegion;
   });
 
@@ -204,7 +204,7 @@ export default function AdminSchools() {
                     <div className="font-medium text-slate-900">{school.name}</div>
                   </td>
                   <td className="p-4 text-sm text-slate-600">{school.city}</td>
-                  <td className="p-4 text-sm text-slate-600">{school.region}</td>
+                  <td className="p-4 text-sm text-slate-600">{school.market_region}</td>
                   <td className="p-4">
                     <Badge className={tierColors[school.school_tier || 'free']}>
                       {(school.school_tier || 'free').toUpperCase()}
@@ -218,7 +218,7 @@ export default function AdminSchools() {
                     )}
                   </td>
                   <td className="p-4 text-sm text-slate-600">
-                    {new Date(school.updated_date).toLocaleDateString()}
+                    {school.updated_at ? new Date(school.updated_at).toLocaleDateString() : '-'}
                   </td>
                   <td className="p-4 text-sm">
                     {school.website ? (

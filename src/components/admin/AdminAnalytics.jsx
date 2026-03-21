@@ -34,8 +34,8 @@ export default function AdminAnalytics() {
         console.error('Failed to load ChatHistory:', e);
       }
 
-      const weeklyUsers = calculateWeeklyData(users, 'created_date', 6);
-      const dailyConversations = calculateDailyData(conversations, 'created_date', 7);
+      const weeklyUsers = calculateWeeklyData(users, 'created_at', 6);
+      const dailyConversations = calculateDailyData(conversations, 'created_at', 7);
 
       // Calculate period-over-period token trend (30-day windows)
       const now = new Date();
@@ -45,11 +45,11 @@ export default function AdminAnalytics() {
       previousStart.setDate(currentStart.getDate() - 30);
 
       const currentTokens = transactions
-        .filter(t => new Date(t.created_date) >= currentStart)
-        .reduce((sum, t) => sum + t.tokens_deducted, 0);
+        .filter(t => new Date(t.created_at) >= currentStart)
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
       const previousTokens = transactions
-        .filter(t => new Date(t.created_date) >= previousStart && new Date(t.created_date) < currentStart)
-        .reduce((sum, t) => sum + t.tokens_deducted, 0);
+        .filter(t => new Date(t.created_at) >= previousStart && new Date(t.created_at) < currentStart)
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
 
       let tokenTrend = 'Insufficient data';
       if (previousTokens > 0) {
