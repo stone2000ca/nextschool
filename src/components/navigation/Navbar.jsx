@@ -98,7 +98,7 @@ export default function Navbar({ variant = "default", transparent = false }) {
 
   // Default variant for other pages
   return (
-    <header className={`sticky top-0 z-50 transition-colors duration-300 ${transparent && !scrolled ? 'bg-transparent' : 'bg-slate-900'}`}>
+    <header className={`${transparent ? 'fixed' : 'sticky'} top-0 left-0 right-0 z-50 transition-colors duration-300 ${transparent && !scrolled ? 'bg-transparent' : 'bg-slate-900'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
         <Link href={'/'} className="flex items-center gap-2">
           <img src={LOGO_WHITE_TEXT} alt="NextSchool" className="h-10" />
