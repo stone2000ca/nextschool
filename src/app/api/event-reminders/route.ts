@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
       school_name: body.school_name,
       event_title: body.event_title,
       event_date: body.event_date,
+      conversation_id: body.conversation_id,
     })
     return NextResponse.json(result)
   } catch (error: any) {

@@ -28,12 +28,14 @@ export async function toggleEventReminder({
   school_name,
   event_title,
   event_date,
+  conversation_id,
 }: {
   user_id: string
   event_id: string
   school_name?: string
   event_title?: string
   event_date?: string
+  conversation_id?: string
 }) {
   // Check if reminder already exists
   const { data: existing, error: fetchError } = await db()
@@ -51,7 +53,7 @@ export async function toggleEventReminder({
   } else {
     // Add reminder
     const { data, error: insertError } = await db()
-      .insert({ user_id, event_id, school_name, event_title, event_date })
+      .insert({ user_id, event_id, school_name, event_title, event_date, conversation_id })
       .select()
       .single()
     if (insertError) throw insertError
