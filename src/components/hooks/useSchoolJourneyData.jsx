@@ -49,18 +49,18 @@ export function useSchoolJourneyData({ selectedSchool, isAuthenticated, user, de
       setResearchNotes('');
       return;
     }
-    fetchResearchNotes({ school_id: selectedSchool.id }).then(results => {
+    fetchResearchNotes({ school_id: selectedSchool.id, user_id: user.id }).then(results => {
       setResearchNotes(results[0]?.notes || '');
     }).catch(() => setResearchNotes(''));
   }, [selectedSchool?.id, isAuthenticated, user?.id]);
 
   const handleSaveNotes = async () => {
     if (!selectedSchool?.id || !user?.id) return;
-    const existing = await fetchResearchNotes({ school_id: selectedSchool.id });
+    const existing = await fetchResearchNotes({ school_id: selectedSchool.id, user_id: user.id });
     if (existing.length > 0) {
-      await updateResearchNote(existing[0].id, { notes: researchNotes, updated_at: new Date().toISOString() });
+      await updateResearchNote(existing[0].id, { notes: researchNotes, user_id: user.id, updated_at: new Date().toISOString() });
     } else {
-      await createResearchNote({ school_id: selectedSchool.id, notes: researchNotes, updated_at: new Date().toISOString() });
+      await createResearchNote({ school_id: selectedSchool.id, notes: researchNotes, user_id: user.id, updated_at: new Date().toISOString() });
     }
   };
 

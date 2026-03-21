@@ -299,9 +299,10 @@ export async function createTourRequest(data: Record<string, any>): Promise<any>
 
 // ── ResearchNotes ─────────────────────────────────────────────────────
 
-export async function fetchResearchNotes(params: { school_id?: string } = {}): Promise<any[]> {
+export async function fetchResearchNotes(params: { school_id?: string; user_id?: string } = {}): Promise<any[]> {
   const sp = new URLSearchParams()
   if (params.school_id) sp.set('school_id', params.school_id)
+  if (params.user_id) sp.set('user_id', params.user_id)
   const qs = sp.toString()
   const res = await fetch(`/api/research-notes${qs ? `?${qs}` : ''}`)
   return handleResponse<any[]>(res)
