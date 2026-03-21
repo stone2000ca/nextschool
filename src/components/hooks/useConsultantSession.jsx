@@ -189,15 +189,24 @@ export function useConsultantSession({
   useEffect(() => {
     if (sessionIdParam && !sessionParamProcessedRef.current && isAuthenticated && user) {
       const d = depsRef.current;
-      restoreSessionFromParam(
-        sessionIdParam, null, isAuthenticated, user,
-        setSelectedConsultant, d.setRestoredSessionData, setMessages,
-        d.setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase,
-        setCurrentConversation, setSessionRestored, setRestoringSession,
-        null, isRestoringSessionRef, sessionParamProcessedRef,
-        setDebugInfo, d.setDeepDiveAnalysis, setSelectedSchool,
-        d.setVisitPrepKit, d.setActionPlan, d.skipViewOverrideRef, d.setSchoolAnalyses
-      );
+      // FIX-SL-LOAD: Await restorer then explicitly call loadShortlist via ref,
+      // ensuring the shortlist loads even if the useShortlist effect doesn't fire
+      // (e.g. when activeJourney was already set by useDataLoader with same journeyId).
+      (async () => {
+        await restoreSessionFromParam(
+          sessionIdParam, null, isAuthenticated, user,
+          setSelectedConsultant, d.setRestoredSessionData, setMessages,
+          d.setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase,
+          setCurrentConversation, setSessionRestored, setRestoringSession,
+          null, isRestoringSessionRef, sessionParamProcessedRef,
+          setDebugInfo, d.setDeepDiveAnalysis, setSelectedSchool,
+          d.setVisitPrepKit, d.setActionPlan, d.skipViewOverrideRef, d.setSchoolAnalyses
+        );
+        // Belt-and-suspenders: call loadShortlist after restore completes.
+        // The ref always points to the latest function which derives journeyId
+        // from activeJourney or conversation_context.
+        loadShortlistRef.current?.();
+      })();
     }
   }, [sessionIdParam, isAuthenticated, user?.id]);
 
@@ -222,22 +231,27 @@ export function useConsultantSession({
   useEffect(() => {
     if (isAuthenticated && user && !sessionIdParam) {
       const d = depsRef.current;
-      restoreMostRecentConversation(
-        null, // _unused
-        user,
-        setMessages,
-        setSelectedConsultant,
-        setCurrentConversation,
-        d.setFamilyProfile,
-        setSchools,
-        setCurrentView,
-        setOnboardingPhase,
-        d.setDeepDiveAnalysis,
-        setSelectedSchool,
-        isRestoringSessionRef,
-        d.skipViewOverrideRef,
-        d.setSchoolAnalyses
-      );
+      // FIX-SL-LOAD: Await restorer then explicitly call loadShortlist via ref,
+      // ensuring the shortlist loads after conversation_context.journeyId is set.
+      (async () => {
+        await restoreMostRecentConversation(
+          null, // _unused
+          user,
+          setMessages,
+          setSelectedConsultant,
+          setCurrentConversation,
+          d.setFamilyProfile,
+          setSchools,
+          setCurrentView,
+          setOnboardingPhase,
+          d.setDeepDiveAnalysis,
+          setSelectedSchool,
+          isRestoringSessionRef,
+          d.skipViewOverrideRef,
+          d.setSchoolAnalyses
+        );
+        loadShortlistRef.current?.();
+      })();
     }
   }, [isAuthenticated, user?.id, sessionIdParam]);
 

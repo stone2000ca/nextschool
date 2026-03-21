@@ -169,7 +169,14 @@ export function useShortlist({
     // completes. Clearing here would wipe those optimistic additions.
     if (!effectiveJourneyId) return;
     loadShortlist(effectiveJourneyId);
-  }, [effectiveJourneyId]);
+    // FIX-SL-LOAD: Watch both journeyId sources independently instead of the
+    // combined effectiveJourneyId. The || operator in effectiveJourneyId masks
+    // changes to the lower-priority source (conversation_context.journeyId)
+    // when the higher-priority source (activeJourney) is already set. Watching
+    // them separately ensures loadShortlist fires when EITHER source changes.
+    // Also watch currentConversation?.id to reload on conversation switch/restore.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeJourney?.journeyId, currentConversation?.conversation_context?.journeyId, currentConversation?.id]);
 
   // E30-006
   const handleDossierExpandChange = (isExpanding) =>
