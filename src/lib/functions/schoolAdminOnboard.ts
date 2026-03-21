@@ -1,4 +1,4 @@
-import { getAdminClient } from '@/lib/supabase/admin'
+import { School, SchoolAdmin } from '@/lib/entities-server'
 
 interface OnboardParams {
   name: string
@@ -7,37 +7,24 @@ interface OnboardParams {
 }
 
 export async function schoolAdminOnboard({ name, websiteUrl, userId }: OnboardParams) {
-  const supabase = getAdminClient()
-
-  // Create the school row
-  const { data: school, error: schoolError } = await supabase
-    .from('schools')
-    .insert({
-      name,
-      status: 'draft',
-      data_source: 'admin_intake',
-      website_url: websiteUrl || null,
-    })
-    .select('id, name')
-    .single()
-
-  if (schoolError) {
-    console.error('[schoolAdminOnboard] school insert error:', schoolError)
-    throw new Error('Failed to create school')
-  }
+  // Create the school row via entity client (bypasses RLS, avoids typed table issues)
+  const school = await School.create({
+    name,
+    status: 'draft',
+    data_source: 'admin_intake',
+    website_url: websiteUrl || null,
+  })
 
   // Link the user as a school admin
-  const { error: adminError } = await supabase
-    .from('school_admins')
-    .insert({
+  try {
+    await SchoolAdmin.create({
       school_id: school.id,
       user_id: userId,
       role: 'owner',
       is_active: true,
     })
-
-  if (adminError) {
-    console.error('[schoolAdminOnboard] school_admins insert error:', adminError)
+  } catch (adminError: any) {
+    console.error('[schoolAdminOnboard] school_admins insert error:', adminError.message)
     // Non-fatal — school was created, admin link can be retried
   }
 
