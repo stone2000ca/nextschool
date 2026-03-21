@@ -1,33 +1,13 @@
 import { ClipboardList, Heart, Search, CalendarDays, MapPin } from 'lucide-react';
-import { STATES } from '@/lib/stateMachineConfig';
 
 // T046 Owner Override: Right-side rail, 3 icons, Family Brief as primary
 export default function IconRail({ currentState, activePanel, onTogglePanel, shortlistCount = 0 }) {
-  const isWelcome = currentState === STATES.WELCOME;
-  const isResults = [STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState);
-
   const accentColor = '#0D9488'; // brand teal
 
-  // Brief: disabled only in WELCOME
-  const briefEnabled = !isWelcome;
-  const briefOpacity = briefEnabled ? 1 : 0.4;
   const briefActive = activePanel === 'brief';
-
-  // Shortlist: enabled only in RESULTS/DEEPDIVE
-  const shortlistEnabled = isResults;
-  const shortlistOpacity = shortlistEnabled ? 1 : 0.35;
   const shortlistActive = activePanel === 'shortlist';
-
-  // Add School: enabled only in RESULTS/DEEPDIVE
-  const addSchoolEnabled = isResults;
   const addSchoolActive = activePanel === 'addSchool';
-
-  // Timeline: enabled only in RESULTS/DEEPDIVE
-  const timelineEnabled = isResults;
   const timelineActive = activePanel === 'timeline';
-
-  // Visits: enabled in RESULTS/DEEPDIVE (same as timeline)
-  const visitsEnabled = isResults;
   const visitsActive = activePanel === 'visits';
 
   return (
@@ -39,13 +19,12 @@ export default function IconRail({ currentState, activePanel, onTogglePanel, sho
       {/* --- Family Brief (PRIMARY) --- */}
       <div className="relative group flex flex-col items-center gap-0.5">
         <button
-          onClick={() => briefEnabled && onTogglePanel('brief')}
-          disabled={!briefEnabled}
+          onClick={() => onTogglePanel('brief')}
           aria-label="Family Brief"
           className="relative flex items-center justify-center rounded-full transition-all"
           style={{
-            opacity: briefOpacity,
-            cursor: briefEnabled ? 'pointer' : 'not-allowed',
+            opacity: 1,
+            cursor: 'pointer',
             width: 32,
             height: 32,
             borderRadius: 9999,
@@ -56,10 +35,10 @@ export default function IconRail({ currentState, activePanel, onTogglePanel, sho
             transition: 'all 0.15s ease',
           }}
           onMouseEnter={e => {
-            if (briefEnabled && !briefActive) e.currentTarget.style.background = accentColor;
+            if (!briefActive) e.currentTarget.style.background = accentColor;
           }}
           onMouseLeave={e => {
-            if (briefEnabled && !briefActive) e.currentTarget.style.background = accentColor + 'CC';
+            if (!briefActive) e.currentTarget.style.background = accentColor + 'CC';
           }}
         >
           {/* Left-edge active bar */}
@@ -86,49 +65,41 @@ export default function IconRail({ currentState, activePanel, onTogglePanel, sho
       <RailIcon
         icon={Heart}
         label="Shortlist"
-        enabled={shortlistEnabled}
         active={shortlistActive}
-        onClick={() => shortlistEnabled && onTogglePanel('shortlist')}
-        disabledTip="Available after finding schools"
+        onClick={() => onTogglePanel('shortlist')}
         shortlistCount={shortlistCount}
       />
       <RailIcon
         icon={Search}
         label="+ School"
-        enabled={addSchoolEnabled}
         active={addSchoolActive}
-        onClick={() => addSchoolEnabled && onTogglePanel('addSchool')}
-        disabledTip="Available after finding schools"
+        onClick={() => onTogglePanel('addSchool')}
       />
       <RailIcon
         icon={CalendarDays}
         label="Timeline"
-        enabled={timelineEnabled}
         active={timelineActive}
-        onClick={() => timelineEnabled && onTogglePanel('timeline')}
-        disabledTip="Available after finding schools"
+        onClick={() => onTogglePanel('timeline')}
       />
       <RailIcon
         icon={MapPin}
         label="Visits"
-        enabled={visitsEnabled}
         active={visitsActive}
-        onClick={() => visitsEnabled && onTogglePanel('visits')}
-        disabledTip="Available after finding schools"
+        onClick={() => onTogglePanel('visits')}
       />
     </nav>
   );
 }
 
-function RailIcon({ icon: Icon, label, enabled, active, onClick, disabledTip, shortlistCount }) {
+function RailIcon({ icon: Icon, label, active, onClick, shortlistCount }) {
   return (
     <div className="relative group">
       <button
         onClick={onClick}
         aria-label={label}
         style={{
-          opacity: enabled ? 1 : 0.35,
-          cursor: enabled ? 'pointer' : 'not-allowed',
+          opacity: 1,
+          cursor: 'pointer',
           width: 32,
           height: 32,
           borderRadius: 8,
@@ -141,10 +112,10 @@ function RailIcon({ icon: Icon, label, enabled, active, onClick, disabledTip, sh
           position: 'relative',
         }}
         onMouseEnter={e => {
-          if (enabled && !active) e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+          if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
         }}
         onMouseLeave={e => {
-          if (enabled && !active) e.currentTarget.style.background = 'transparent';
+          if (!active) e.currentTarget.style.background = 'transparent';
         }}
       >
         <Icon style={{ width: 17, height: 17 }} />
@@ -162,7 +133,6 @@ function RailIcon({ icon: Icon, label, enabled, active, onClick, disabledTip, sh
                       opacity-0 group-hover:opacity-100 transition-opacity border border-white/10 shadow-lg">
         {label}
         {shortlistCount > 0 && <span className="text-teal-300"> ({shortlistCount})</span>}
-        {!enabled && disabledTip && <span className="ml-1 text-white/40">({disabledTip})</span>}
       </div>
     </div>
   );
