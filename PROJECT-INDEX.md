@@ -12,17 +12,6 @@ Stripe payments | Google Maps API
 Analytics: GTM (GTM-NVZZNTX3) + GA4 (G-8QBPQ74KPK)
 Domain: nextschool.ca (Vercel — IONOS/Base44 retired)
 
-## MIGRATION STATUS
-
-Migrated FROM: Base44 app builder + Base44 cloud functions
-Migrated TO: Next.js + Supabase + Vercel
-Auth pages: BUILT — /login (Login.jsx) and /signup (Signup.jsx) exist in src/page-components/ and routed via src/app/login/ and src/app/signup/
-Auth callback: src/app/auth/callback/ and src/app/auth/confirm/ exist
-Middleware: src/middleware.ts — session refresh active; confirm route protection status (E43-103)
-AuthContext: src/lib/AuthContext.tsx — ACTIVE (Supabase Auth, useAuth hook: login, signup, logout, updateMe, refreshUser, navigateToLogin). Not dead — do not delete.
-Orphan audit still needed: index.html (root level), src/lib/PageNotFound.jsx
-Active epic: E43 — Auth system build + full app restoration testing
-
 ## ENTITY TREE
 
 ```
