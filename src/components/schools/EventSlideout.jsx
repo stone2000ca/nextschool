@@ -88,7 +88,7 @@ export default function EventSlideout({ event, schoolName, onClose, onInterestTo
     if (onInterestToggle) {
       onInterestToggle(event.id, val);
     } else {
-      // Placeholder: Sprint 2 will write to visit_record
+      // Placeholder: Sprint 2 will write to visit_record via school_journey_id
       console.log(`[EventSlideout] Interest toggle: event=${event.id}, interested=${val}`);
     }
   };

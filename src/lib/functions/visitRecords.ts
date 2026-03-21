@@ -23,12 +23,12 @@ function initialStatus(visitDate: string | null | undefined): string {
 export async function createVisitRecord(params: {
   user_id: string
   school_id: string
-  chat_history_id?: string | null
+  school_journey_id?: string | null
   event_type: string
   visit_date?: string | null
   prep_notes?: string | null
 }) {
-  const { user_id, school_id, chat_history_id, event_type, visit_date, prep_notes } = params
+  const { user_id, school_id, school_journey_id, event_type, visit_date, prep_notes } = params
 
   if (!school_id) throw new Error('school_id is required')
   if (!event_type) throw new Error('event_type is required')
@@ -39,7 +39,7 @@ export async function createVisitRecord(params: {
     .insert({
       user_id,
       school_id,
-      chat_history_id: chat_history_id || null,
+      school_journey_id: school_journey_id || null,
       event_type,
       visit_date: visit_date || null,
       status,
