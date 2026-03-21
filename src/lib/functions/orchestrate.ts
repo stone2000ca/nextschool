@@ -1580,12 +1580,28 @@ Object.assign(context, safeUpdatedContext);
 
       // S136-WC1: E35-REC1 — fire-and-forget for non-RESULTS states
       // E41-S3: RESULTS state defers extraction to post-reply (with aiReply for richer context)
+      // S1-S2: Persistence moved here from extractEntitiesLogic (single write point)
       if (currentState !== STATES.RESULTS) {
         extractEntitiesLogic( {
           message: processMessage,
           conversationFamilyProfile,
           context,
           conversationHistory
+        }).then(async (extractResult) => {
+          const profile = extractResult?.updatedFamilyProfile;
+          if (profile?.id && Object.keys(extractResult?.extractedEntities || {}).length > 0) {
+            try {
+              const NON_SCHEMA_KEYS = ['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers', 'gender'];
+              const profileToSave = { ...profile };
+              for (const key of NON_SCHEMA_KEYS) {
+                delete profileToSave[key];
+              }
+              await FamilyProfile.update(profile.id, profileToSave);
+              console.log('[S1-S2] FamilyProfile persisted (non-RESULTS):', profile.id);
+            } catch (e: any) {
+              console.error('[S1-S2] FamilyProfile update failed (non-blocking):', e.message);
+            }
+          }
         }).catch(e => console.error('[S136-WC1] extractEntities fire-and-forget failed:', e.message));
       }
 
@@ -1966,16 +1982,17 @@ Object.assign(context, safeUpdatedContext);
           context,
           conversationHistory
         }).then(async (extractResult) => {
-          if (extractResult?.data?.updatedFamilyProfile) {
-            context.accumulatedFamilyProfile = { ...(context.accumulatedFamilyProfile || {}), ...extractResult.data.updatedFamilyProfile };
+          // S1-S2: Fixed .data. access bug — extractEntitiesLogic returns directly, not wrapped in { data }
+          const profile = extractResult?.updatedFamilyProfile;
+          if (profile) {
+            context.accumulatedFamilyProfile = { ...(context.accumulatedFamilyProfile || {}), ...profile };
             console.log('[E41-S3] Deferred extractEntities complete, updated accumulatedFamilyProfile');
 
-            // E42-PERSIST Phase 1b: Upsert FamilyProfile entity with latest extracted fields
-            // This ensures the canonical FamilyProfile in Firestore stays in sync with conversation state.
-            if (userId && conversationId) {
+            // S1-S2: Single persistence point for RESULTS state (replaces E42-PERSIST + internal write)
+            if (userId && conversationId && Object.keys(extractResult?.extractedEntities || {}).length > 0) {
               try {
-                const delta = extractResult.data.updatedFamilyProfile;
-                const PROFILE_FIELDS_P = [
+                const NON_SCHEMA_KEYS = ['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers', 'gender'];
+                const PROFILE_FIELDS = [
                   'child_name', 'child_grade', 'child_gender',
                   'location_area', 'max_tuition', 'priorities',
                   'interests', 'dealbreakers', 'learning_differences',
@@ -1984,22 +2001,33 @@ Object.assign(context, safeUpdatedContext);
                   'school_gender_exclusions', 'school_gender_preference',
                 ];
                 const updatePayload: Record<string, any> = {};
-                for (const field of PROFILE_FIELDS_P) {
-                  if (delta[field] !== undefined && delta[field] !== null) {
-                    updatePayload[field] = delta[field];
+                for (const field of PROFILE_FIELDS) {
+                  if (profile[field] !== undefined && profile[field] !== null) {
+                    updatePayload[field] = profile[field];
                   }
+                }
+                // Strip non-schema keys just in case
+                for (const key of NON_SCHEMA_KEYS) {
+                  delete updatePayload[key];
                 }
                 if (Object.keys(updatePayload).length > 0) {
-                  const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
-                  if (profiles && profiles.length > 0) {
-                    await FamilyProfile.update(profiles[0].id, updatePayload);
-                    console.log('[E42-PERSIST] FamilyProfile updated:', profiles[0].id, Object.keys(updatePayload));
+                  if (profile.id) {
+                    // Direct update if profile has an ID
+                    await FamilyProfile.update(profile.id, updatePayload);
+                    console.log('[S1-S2] FamilyProfile persisted (RESULTS):', profile.id, Object.keys(updatePayload));
                   } else {
-                    console.warn('[E42-PERSIST] No FamilyProfile found for upsert, userId:', userId, 'conversationId:', conversationId);
+                    // Fallback: look up by user/conversation
+                    const profiles = await FamilyProfile.filter({ user_id: userId, conversation_id: conversationId });
+                    if (profiles && profiles.length > 0) {
+                      await FamilyProfile.update(profiles[0].id, updatePayload);
+                      console.log('[S1-S2] FamilyProfile persisted (RESULTS, lookup):', profiles[0].id, Object.keys(updatePayload));
+                    } else {
+                      console.warn('[S1-S2] No FamilyProfile found for persist, userId:', userId, 'conversationId:', conversationId);
+                    }
                   }
                 }
-              } catch (e) {
-                console.error('[E42-PERSIST] FamilyProfile upsert failed (non-blocking):', e.message);
+              } catch (e: any) {
+                console.error('[S1-S2] FamilyProfile persist failed (non-blocking):', e.message);
               }
             }
           }

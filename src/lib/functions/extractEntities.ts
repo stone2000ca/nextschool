@@ -1,13 +1,52 @@
 // Function: extractEntities
-// Purpose: Extract and persist family profile data from parent messages with intent classification
-// Entities: FamilyProfile
-// Last Modified: 2026-03-09
+// Purpose: Extract family profile data from parent messages with intent classification (pure — no DB writes)
+// Last Modified: 2026-03-21
 // Dependencies: InvokeLLM
 // WC-1: F11 FIX — strip non-schema keys before DB write to prevent Firestore rejection
 // WC-2: LLM model upgrade — MiniMax M2.5 as primary model in callOpenRouter waterfall
 // WC-3: S122 extraction bug fixes — location false positive, interests list, gender keywords
+// S1-S2: Typed contracts + decoupled persistence (FamilyProfile.update moved to orchestrate.ts)
 
-import { FamilyProfile } from '@/lib/entities-server'
+// =============================================================================
+// TYPES: Extraction input/output contracts
+// =============================================================================
+
+export interface ExtractionInput {
+  message: string;
+  aiReply?: string;
+  conversationFamilyProfile?: Record<string, any>;
+  context?: Record<string, any>;
+  conversationHistory?: Array<{ role: string; content: string }>;
+}
+
+export interface ExtractedDelta {
+  child_name?: string;
+  child_grade?: number;
+  child_gender?: string;
+  location_area?: string;
+  max_tuition?: number | string;
+  interests?: string[];
+  priorities?: string[];
+  dealbreakers?: string[];
+  curriculum_preference?: string;
+  religious_preference?: string;
+  boarding_preference?: string;
+  school_gender_preference?: string;
+  school_gender_exclusions?: string[];
+  parent_notes?: Array<{ note: string; source: string; timestamp: string }>;
+  remove_priorities?: string[];
+  remove_interests?: string[];
+  remove_dealbreakers?: string[];
+  [key: string]: any; // escape hatch for LLM extras not yet in schema
+}
+
+export interface ExtractionOutput {
+  extractedEntities: ExtractedDelta;
+  updatedFamilyProfile: Record<string, any>;
+  updatedContext: Record<string, any>;
+  intentSignal: string;
+  briefDelta: { additions: any[]; updates: any[]; removals: any[] };
+}
 
 // =============================================================================
 // INLINED: callOpenRouter (from handleBrief pattern)
@@ -101,13 +140,7 @@ async function callOpenRouter(options: any) {
 // =============================================================================
 // INLINED: extractEntitiesLogic
 // =============================================================================
-export async function extractEntitiesLogic({ message: rawMessage, aiReply, conversationFamilyProfile, context, conversationHistory }: {
-  message: string;
-  aiReply?: string;
-  conversationFamilyProfile?: any;
-  context?: any;
-  conversationHistory?: any[];
-}) {
+export async function extractEntitiesLogic({ message: rawMessage, aiReply, conversationFamilyProfile, context, conversationHistory }: ExtractionInput): Promise<ExtractionOutput> {
   // E41-S3: When aiReply is provided (RESULTS deferred extraction), append it to the user prompt for richer context
   const message = aiReply
     ? `${rawMessage}\n\n[AI CONSULTANT REPLY FOR CONTEXT: ${aiReply}]`
@@ -515,21 +548,7 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
         }
       }
     }
-    if (updatedFamilyProfile?.id) {
-      try {
-        // F11 FIX: Strip non-schema keys before DB write to prevent rejection
-        const NON_SCHEMA_KEYS = ['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers', 'gender'];
-        const profileToSave = { ...updatedFamilyProfile };
-        for (const key of NON_SCHEMA_KEYS) {
-          delete profileToSave[key];
-        }
-        const persistedProfile = await FamilyProfile.update(updatedFamilyProfile.id, profileToSave);
-        Object.assign(updatedFamilyProfile, persistedProfile);
-        console.log('[EXTRACT] FamilyProfile persisted successfully:', updatedFamilyProfile.id);
-      } catch (e: any) {
-        console.error('[EXTRACT] Non-fatal: FamilyProfile update failed, using stale profile:', e.message);
-      }
-    }
+    // S1-S2: Persistence removed — caller (orchestrate.ts) is responsible for FamilyProfile.update()
   }
 
   const briefDelta = extractedData?.briefDelta || { additions: [], updates: [], removals: [] };
