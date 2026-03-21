@@ -112,7 +112,6 @@ export default function Navbar({ variant = "default", transparent = false }) {
           <Link href={'/pricing'} className="text-white/70 hover:text-white text-sm transition-colors">Pricing</Link>
           <Link href={'/for-schools'} className="text-white/70 hover:text-white text-sm transition-colors">For Schools</Link>
         </nav>
-        <div className={`transition-opacity duration-300 ${showFull ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         {isAuthenticated && user ? (
           <div className="flex items-center gap-2">
             <Link href={'/dashboard'} title="Dashboard">
@@ -138,14 +137,13 @@ export default function Navbar({ variant = "default", transparent = false }) {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className={`flex items-center gap-3 transition-opacity duration-300 ${showFull ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <button className="text-white/70 hover:text-white text-sm transition-colors" onClick={() => navigateToLogin(window.location.pathname)}>Log in</button>
             <Link href="/consultant">
               <button className="ns-btn-primary text-sm">Start free chat</button>
             </Link>
           </div>
         )}
-        </div>
       </div>
     </header>
   );
