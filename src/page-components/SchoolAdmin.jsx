@@ -6,7 +6,7 @@ import { fetchSchools, updateSchool } from '@/lib/api/schools';
 import { fetchClaims } from '@/lib/api/school-claims';
 import { fetchInquiries } from '@/lib/api/school-inquiries';
 import { invokeFunction } from '@/lib/functions';
-import { Building2, BarChart3, Mail, CreditCard, Upload, Crown, Sparkles, Image, ImagePlus, MessageSquareQuote, User as UserIcon, CalendarDays, FileText, FlaskConical, Loader2, ArrowLeft, Clock, XCircle } from 'lucide-react';
+import { Building2, BarChart3, Mail, CreditCard, Upload, Crown, Sparkles, Image, ImagePlus, MessageSquareQuote, User as UserIcon, CalendarDays, FileText, FlaskConical, Loader2, ArrowLeft, Clock, XCircle, ClipboardCheck } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import ProfileEditor from '@/components/school-admin/ProfileEditor';
@@ -21,6 +21,7 @@ import ProfileCompletenessRing from '@/components/school-admin/ProfileCompletene
 import AdmissionsSection from '@/components/school-admin/AdmissionsSection';
 import EnrichmentReviewSection from '@/components/school-admin/EnrichmentReviewSection';
 import PhotoReviewSection from '@/components/school-admin/PhotoReviewSection';
+import KeyFactsTab from '@/components/school-admin/KeyFactsTab';
 
 export default function SchoolAdmin() {
   const { user: authUser, isLoadingAuth } = useAuth();
@@ -330,6 +331,7 @@ export default function SchoolAdmin() {
     {
       label: 'Content',
       items: [
+        { id: 'key-facts', label: 'Key Facts', icon: ClipboardCheck },
         { id: 'profile', label: 'Profile Editor', icon: Building2 },
         { id: 'media', label: 'Photos & Media', icon: Image },
         { id: 'testimonials', label: 'Testimonials', icon: MessageSquareQuote },
@@ -446,6 +448,9 @@ export default function SchoolAdmin() {
 
         {/* Main Content */}
         <main className="flex-1">
+          {currentView === 'key-facts' && (
+            <KeyFactsTab school={school} onSchoolUpdate={(updated) => setSchool(updated)} />
+          )}
           {currentView === 'profile' && (
             <ProfileEditor school={school} onSave={handleSaveSchool} isSaving={isSaving} onDirtyChange={handleDirtyChange} />
           )}
