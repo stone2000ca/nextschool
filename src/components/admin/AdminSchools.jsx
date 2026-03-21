@@ -238,7 +238,7 @@ export default function AdminSchools() {
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => window.open(`/SchoolAdmin?schoolId=${school.id}`, '_blank')}
+                        onClick={() => window.open(`/schooladmin/${school.id}`, '_blank')}
                         title="Manage as this school"
                         className="p-1 hover:bg-gray-100 rounded"
                       >

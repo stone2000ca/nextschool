@@ -11,6 +11,7 @@ export default function Navbar({ variant = "default" }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSchoolAdmin, setIsSchoolAdmin] = useState(false);
+  const [schoolAdminRecords, setSchoolAdminRecords] = useState([]);
 
   useEffect(() => {
     checkAuth();
@@ -26,6 +27,7 @@ export default function Navbar({ variant = "default" }) {
           const adminRecords = await fetchSchoolAdmins({ user_id: authUser.id, is_active: true });
           if (adminRecords && adminRecords.length > 0) {
             setIsSchoolAdmin(true);
+            setSchoolAdminRecords(adminRecords);
           }
         } catch (filterError) {
           // Silently fail - user just won't see the Manage School button
@@ -35,6 +37,10 @@ export default function Navbar({ variant = "default" }) {
       console.error('Auth check failed:', error);
     }
   };
+
+  const schoolAdminHref = schoolAdminRecords.length === 1
+    ? `/schooladmin/${schoolAdminRecords[0].school_id}`
+    : '/school-admin';
 
   // Minimal variant for Consultant page
   if (variant === "minimal") {
@@ -52,7 +58,7 @@ export default function Navbar({ variant = "default" }) {
                 </Button>
               </Link>
               {isSchoolAdmin && (
-                <Link href={'/school-admin'} title="Manage School">
+                <Link href={schoolAdminHref} title="Manage School">
                   <Button variant="ghost" size="icon">
                     <Building2 className="h-4 w-4" />
                   </Button>
@@ -102,7 +108,7 @@ export default function Navbar({ variant = "default" }) {
               </Button>
             </Link>
             {isSchoolAdmin && (
-              <Link href={'/school-admin'} title="Manage School">
+              <Link href={schoolAdminHref} title="Manage School">
                 <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10">
                   <Building2 className="h-4 w-4" />
                 </Button>

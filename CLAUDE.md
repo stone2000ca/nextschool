@@ -218,7 +218,8 @@ Routes that require authentication:
 - `/consultant` — Core product (AI school consultant)
 - `/dashboard` — User dashboard
 - `/admin`, `/admin/*` — Admin panel (also needs `role === 'admin'`)
-- `/school-admin` — School management (needs SchoolAdmin record)
+- `/schooladmin/:id` — School management duo-pane UI (needs SchoolAdmin record)
+- `/school-admin` — Legacy redirect to `/schooladmin/:id`
 - `/claim-school`, `/submit-school` — School ownership
 
 Public routes: `/`, `/home`, `/about`, `/schools`, `/pricing`, `/contact`, `/guides`, `/blog/*`, `/school/[slug]`, `/shared/*`, `/portal`, `/feedback`, `/for-schools`, `/how-it-works`, `/terms`, `/privacy`
