@@ -13,6 +13,7 @@ import { validateBriefContent, generateProgrammaticBrief } from '@/components/ut
 import { extractAndSaveMemories } from '@/components/utils/memoryManager';
 import { createConversation, updateConversation } from '@/lib/api/conversations';
 import { createSession, updateSession } from '@/lib/api/sessions';
+import { toast } from 'sonner';
 import { invokeFunction } from '@/lib/functions';
 import { retryWithBackoff } from '@/components/utils/retryWithBackoff';
 import { useRef, useEffect } from 'react';
@@ -573,6 +574,10 @@ export const useMessageHandler = ({
                 matched_schools: JSON.stringify(matchedSchoolIds),
                 profile_name: profileName,
                 journey_id: null,
+                // FIX-DASH-EMPTY: Ensure created_at is set explicitly —
+                // entities-server.create() only auto-adds updated_at, so if the
+                // DB column has no DEFAULT, sessions would have created_at = null.
+                created_at: new Date().toISOString(),
               });
               // E48-S5: Store chatSessionId in conversation_context to prevent duplicates
               if (chatSessionResult?.id) {
@@ -646,6 +651,17 @@ export const useMessageHandler = ({
                     schoolsSummary: [],
                   });
                 }
+                // FIX-SL-PERSIST: Store journeyId in conversation_context so
+                // useShortlist can resolve it immediately via the fallback chain
+                // (activeJourney?.journeyId || conversation_context.journeyId)
+                // without waiting for the React re-render of activeJourney.
+                setCurrentConversation(prev => ({
+                  ...prev,
+                  conversation_context: {
+                    ...(prev?.conversation_context || {}),
+                    journeyId: newJourney.id,
+                  },
+                }));
                 if (chatSessionResult?.id && newJourney?.id) {
                   updateSession(chatSessionResult.id, { journey_id: newJourney.id }).catch(e => console.error('[E29-003] Failed to link ChatSession:', e));
                 }
@@ -661,6 +677,14 @@ export const useMessageHandler = ({
                     isResuming: true,
                     schoolsSummary: [],
                   });
+                  // FIX-SL-PERSIST: Also store in conversation_context for shortlist fallback
+                  setCurrentConversation(prev => ({
+                    ...prev,
+                    conversation_context: {
+                      ...(prev?.conversation_context || {}),
+                      journeyId: j.id,
+                    },
+                  }));
                 }
               }
             } catch (e) {
@@ -668,7 +692,9 @@ export const useMessageHandler = ({
             }
           })();
         } catch (sessionError) {
-          console.error('Failed to create ChatSession:', sessionError);
+          // FIX-DASH-EMPTY: Surface session creation failures so they're not silently lost
+          console.error('[FIX-DASH] Failed to create ChatSession:', sessionError);
+          toast.error('Failed to save your session. Your results are still visible but may not appear on your dashboard.');
         }
       }
 
