@@ -1,11 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Bot, ClipboardCheck } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import DuoLeftPane from '@/components/school-admin/DuoLeftPane'
 import DuoRightPane from '@/components/school-admin/DuoRightPane'
-import KeyFactsList from '@/components/school-admin/KeyFactsList'
+import SchoolPreviewTab from '@/components/school-admin/preview/SchoolPreviewTab'
+import KeyFactsTab from '@/components/school-admin/KeyFactsTab'
 
 const MOBILE_SEGMENTS = ['preview', 'facts', 'chat']
 
@@ -24,7 +25,7 @@ export default function SchoolAdminDuo() {
     const supabase = createClient()
     supabase
       .from('schools')
-      .select('id, name')
+      .select('*')
       .eq('id', schoolId)
       .single()
       .then(({ data, error: err }) => {
@@ -33,6 +34,10 @@ export default function SchoolAdminDuo() {
         setLoading(false)
       })
   }, [schoolId])
+
+  const handleSchoolUpdate = (updated) => {
+    setSchool(prev => ({ ...prev, ...updated }))
+  }
 
   if (loading) {
     return (
@@ -94,7 +99,7 @@ export default function SchoolAdminDuo() {
       {/* Desktop: duo pane */}
       <div className="hidden md:flex flex-1 min-h-0">
         <div className="w-[65%] border-r border-border">
-          <DuoLeftPane schoolId={schoolId} />
+          <DuoLeftPane schoolId={schoolId} school={school} onSchoolUpdate={handleSchoolUpdate} />
         </div>
         <div className="w-[35%]">
           <DuoRightPane schoolName={school.name} />
@@ -103,12 +108,12 @@ export default function SchoolAdminDuo() {
 
       {/* Mobile: single pane */}
       <div className="flex-1 min-h-0 md:hidden overflow-y-auto">
-        {mobileSegment === 'preview' && (
-          <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-            Profile preview coming soon.
-          </div>
+        {mobileSegment === 'preview' && school && (
+          <SchoolPreviewTab school={school} onEditWithAi={() => setMobileSegment('chat')} />
         )}
-        {mobileSegment === 'facts' && <KeyFactsList />}
+        {mobileSegment === 'facts' && school && (
+          <KeyFactsTab school={school} onSchoolUpdate={handleSchoolUpdate} />
+        )}
         {mobileSegment === 'chat' && (
           <div className="h-full">
             <DuoRightPane schoolName={school.name} />
