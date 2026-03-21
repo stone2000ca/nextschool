@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import ComparisonView from '@/components/schools/ComparisonView';
 import SchoolDetailPanel from '@/components/schools/SchoolDetailPanel';
 import SchoolGrid from '@/components/schools/SchoolGrid';
@@ -100,6 +102,24 @@ export default function ResultsPhaseContent({
       <div className="h-full flex flex-col" style={{ background: '#141a1f' }}>
         {/* S3A: Tab navigation */}
         <div className="flex items-center gap-1 px-4 py-2 border-b border-white/[0.08] shrink-0">
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => {
+                    setSelectedSchool(null);
+                    setCurrentView('schools');
+                  }}
+                  className="p-1.5 rounded-md text-[#b8b5af] hover:text-[#e8e6e1] hover:bg-white/[0.06] transition-colors mr-1"
+                  aria-label="Back to Results"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Back to Results</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           {[
             { key: 'overview', label: 'Overview' },
             { key: 'notepad', label: 'Research Notepad', disabled: !deepDiveAnalysis },
@@ -109,7 +129,7 @@ export default function ResultsPhaseContent({
               key={tab.key}
               onClick={() => !tab.disabled && setDetailTab(tab.key)}
               disabled={tab.disabled}
-              className={`px-4 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
+              className={`px-4 py-1.5 rounded-md text-[13px] font-medium transition-colors whitespace-nowrap ${
                 detailTab === tab.key
                   ? 'bg-teal-600 text-white'
                   : tab.disabled
@@ -120,6 +140,10 @@ export default function ResultsPhaseContent({
               {tab.label}
             </button>
           ))}
+
+          <span className="ml-auto text-[13px] font-medium text-[#b8b5af] truncate min-w-0 pl-3" title={selectedSchool?.name || selectedSchool?.school_name || ''}>
+            {selectedSchool?.name || selectedSchool?.school_name || ''}
+          </span>
         </div>
 
         {/* Tab content */}
@@ -128,10 +152,6 @@ export default function ResultsPhaseContent({
             <SchoolDetailPanel
               school={selectedSchool}
               familyProfile={familyProfile}
-              onBack={() => {
-                setSelectedSchool(null);
-                setCurrentView('schools');
-              }}
               onToggleShortlist={handleToggleShortlist}
               isShortlisted={shortlistData.some(s => s.id === selectedSchool?.id)}
               onCompare={(school) => handleOpenComparison([school])}
