@@ -35,6 +35,7 @@ export function useConsultantSession({
   const loadShortlistRef = useRef(null);
   const handleSendMessageRef = useRef(null);
   const depsRef = useRef({});
+  const newChatPendingRef = useRef(false);
 
   // ─── Derived ───
   const sessionIdParam = searchParams.get('sessionId') || searchParams.get('session');
@@ -232,6 +233,7 @@ export function useConsultantSession({
   useEffect(() => {
     if (isAuthenticated && user && !sessionIdParam) {
       if (!isNewChat) {
+        if (newChatPendingRef.current) return;
         const d = depsRef.current;
         // FIX-SL-LOAD: Await restorer then explicitly call loadShortlist via ref,
         // ensuring the shortlist loads after conversation_context.journeyId is set.
@@ -296,6 +298,6 @@ export function useConsultantSession({
     showGuidedIntro, setShowGuidedIntro,
     familyBrief, setFamilyBrief, familyBriefRef,
     // Refs for late-bound deps
-    loadShortlistRef, handleSendMessageRef, depsRef,
+    loadShortlistRef, handleSendMessageRef, depsRef, newChatPendingRef,
   };
 }

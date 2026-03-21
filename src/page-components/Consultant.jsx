@@ -121,7 +121,7 @@ export default function Consultant() {
     selectedConsultant, setSelectedConsultant,
     showGuidedIntro, setShowGuidedIntro,
     familyBrief, setFamilyBrief, familyBriefRef,
-    loadShortlistRef, handleSendMessageRef, depsRef,
+    loadShortlistRef, handleSendMessageRef, depsRef, newChatPendingRef,
   } = session;
 
   // ─── Derived state ───
@@ -259,6 +259,7 @@ export default function Consultant() {
     selectedSchool,
     setComparisonData, previousSearchResults,
     resetJourneyData,
+    newChatPendingRef,
   });
 
   // ─── School interactions ───
