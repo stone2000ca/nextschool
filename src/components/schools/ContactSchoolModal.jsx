@@ -65,7 +65,7 @@ export default function ContactSchoolModal({ school, onClose }) {
   <p style="color:#475569;margin:0;white-space:pre-wrap;">${formData.message}</p>
 </div>
 <p style="margin-top:24px;">
-  <a href="https://nextschool.ca/SchoolAdmin" style="background:#0d9488;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View in School Portal → Inquiries</a>
+  <a href="https://nextschool.ca/schooladmin" style="background:#0d9488;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View in School Portal → Inquiries</a>
 </p>
 <p style="color:#94a3b8;font-size:12px;margin-top:24px;">This notification was sent by NextSchool. Do not reply to this email — use the portal to manage your inquiries.</p>
       `.trim();

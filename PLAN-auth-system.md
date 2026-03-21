@@ -32,7 +32,8 @@
   - `/consultant` — requires any authenticated user
   - `/dashboard` — requires any authenticated user
   - `/admin`, `/admin/*` — requires authenticated user (role check stays in component)
-  - `/school-admin` — requires authenticated user (admin record check stays in component)
+  - `/school-admin` — redirects to `/schooladmin/:id` (legacy route, kept for backwards compat)
+  - `/schooladmin/:id` — requires authenticated user (admin record check stays in component)
   - `/claim-school` — requires authenticated user
   - `/submit-school` — requires authenticated user
 - If no valid session → redirect to `/login?returnTo={requested_path}`

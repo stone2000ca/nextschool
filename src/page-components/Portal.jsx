@@ -180,7 +180,7 @@ export default function Portal() {
             <p className="mt-6 text-sm text-slate-400">
               Already claimed?{" "}
               <Link href="/school-admin" className="text-teal-600 hover:underline">
-                Go to your dashboard
+                Go to your school dashboard
               </Link>
             </p>
           )}
