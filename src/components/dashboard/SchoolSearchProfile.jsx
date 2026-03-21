@@ -285,7 +285,7 @@ export default function SchoolSearchProfile({
               View Matches
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); setIsEditMode(true); }}
+              onClick={(e) => { e.stopPropagation(); onEditProfile ? onEditProfile(session) : setIsEditMode(true); }}
               title="Edit Profile"
               className="w-9 h-9 flex items-center justify-center border border-white/10 rounded-lg bg-transparent text-white/50 hover:bg-white/10 hover:text-white transition-colors flex-shrink-0"
             >
