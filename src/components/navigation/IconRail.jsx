@@ -4,7 +4,6 @@ import { STATES } from '@/lib/stateMachineConfig';
 // T046 Owner Override: Right-side rail, 3 icons, Family Brief as primary
 export default function IconRail({ currentState, activePanel, onTogglePanel }) {
   const isWelcome = currentState === STATES.WELCOME;
-  const isDiscoveryOrBrief = [STATES.DISCOVERY, STATES.BRIEF].includes(currentState);
   const isResults = [STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState);
 
   const accentColor = '#0D9488'; // brand teal

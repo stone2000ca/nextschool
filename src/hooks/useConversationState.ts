@@ -1,16 +1,14 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
+import { STATES } from '@/lib/stateMachineConfig';
 
 // --- Types ---
 
 type State = (typeof STATES)[keyof typeof STATES];
-type BriefStatus = (typeof BRIEF_STATUS)[keyof typeof BRIEF_STATUS] | null;
 
 export interface StateEnvelope {
   state: State;
-  briefStatus: BriefStatus;
   previousState: State | null;
   transitionReason: string | null;
 }
@@ -24,7 +22,6 @@ interface UseConversationStateReturn extends StateEnvelope {
 
 const INITIAL_ENVELOPE: StateEnvelope = {
   state: STATES.WELCOME,
-  briefStatus: null,
   previousState: null,
   transitionReason: null,
 };
@@ -35,9 +32,9 @@ const INITIAL_ENVELOPE: StateEnvelope = {
  * useConversationState (P4-S4.3)
  *
  * Consumes the stateEnvelope returned by orchestrate API responses and
- * exposes { state, briefStatus, previousState, transitionReason }.
+ * exposes { state, previousState, transitionReason }.
  *
- * Falls back to legacy flat fields (response.data.state / .briefStatus)
+ * Falls back to legacy flat fields (response.data.state)
  * when stateEnvelope is absent, for backward compatibility.
  */
 export function useConversationState(
@@ -62,7 +59,6 @@ export function useConversationState(
         // Primary path: stateEnvelope present
         setEnvelope({
           state: raw.state as State,
-          briefStatus: (raw.briefStatus as BriefStatus) ?? null,
           previousState: (raw.previousState as State) ?? envelopeRef.current.state,
           transitionReason: (raw.transitionReason as string) ?? null,
         });
@@ -70,7 +66,6 @@ export function useConversationState(
         // Legacy fallback: flat fields on response.data
         setEnvelope((prev) => ({
           state: data.state as State,
-          briefStatus: (data.briefStatus as BriefStatus) ?? prev.briefStatus,
           previousState: prev.state,
           transitionReason: null,
         }));

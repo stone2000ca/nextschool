@@ -75,7 +75,6 @@ export default function Consultant() {
   const {
     currentConversation, setCurrentConversation,
     conversations,
-    briefStatus, setBriefStatus,
     onboardingPhase, setOnboardingPhase,
     currentView, setCurrentView,
     sessionId, sessionRestored, setSessionRestored,
@@ -133,7 +132,7 @@ export default function Consultant() {
     currentConversation, selectedSchool, schools,
     currentView, setCurrentView,
     isRestoringSessionRef, currentState,
-    briefStatus, isTyping, messages,
+    isTyping, messages,
     leftPanelMode,
   });
 
@@ -212,7 +211,8 @@ export default function Consultant() {
   const { handleSendMessage } = useMessageHandler({
     messages, setMessages, selectedConsultant, sessionId,
     isAuthenticated, setShowLoginGate: ui.setShowLoginGate,
-    currentConversation, familyProfile, briefStatus, setBriefStatus,
+    currentConversation, familyProfile,
+    setShowLoadingOverlay: ui.setShowLoadingOverlay,
     extractedEntitiesData, setExtractedEntitiesData,
     isPremium, tokenBalance, setTokenBalance, user, setUser,
     shortlistData, schools, setSchools, selectedSchool, setSelectedSchool,
@@ -245,7 +245,7 @@ export default function Consultant() {
     createConversationRecord, switchConversation, archiveConversation,
     loadConversations, setMessages,
     setSchools, setSelectedSchool, setCurrentView,
-    setBriefStatus, setOnboardingPhase, setActiveJourney,
+    setOnboardingPhase, setActiveJourney,
     resetSchoolState, clearAllArtifacts,
     setFamilyProfile, setExtractedEntitiesData,
     setSchoolAnalyses, setArtifactCache,
@@ -322,7 +322,7 @@ export default function Consultant() {
   const chatPanelProps = {
     ref: ui.inputRef,
     messages, schools, selectedConsultant, currentState,
-    briefStatus, isTyping, tokenBalance, isPremium,
+    isTyping, tokenBalance, isPremium,
     loadingStage, loadingStages, feedbackPromptShown, familyProfile,
     onSendMessage: handleSendMessage,
     onTogglePanel: ui.setActivePanel,
@@ -470,10 +470,7 @@ export default function Consultant() {
         showLoginGate={ui.showLoginGate} setShowLoginGate={ui.setShowLoginGate}
         onLoginGateClose={() => {
           ui.setShowLoginGate(false);
-          if (briefStatus === 'confirmed' && !isTyping) {
-            setBriefStatus(null);
-            ui.setShowLoadingOverlay(false);
-          }
+          ui.setShowLoadingOverlay(false);
         }}
         selectedConsultant={selectedConsultant} familyProfile={familyProfile}
         isDebugMode={isDebugMode} extractedEntitiesData={extractedEntitiesData}

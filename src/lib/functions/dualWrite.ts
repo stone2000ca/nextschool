@@ -20,7 +20,7 @@ export function syncConversationState(
     user_id: userId,
     state: context.state || 'WELCOME',
     resume_view: context.resumeView ?? null,
-    brief_status: context.briefStatus ?? null,
+    brief_status: null,
     // Extracted family preferences (from accumulatedFamilyProfile or context)
     child_name: context.accumulatedFamilyProfile?.child_name ?? context.child_name ?? null,
     child_grade: context.accumulatedFamilyProfile?.child_grade ?? context.child_grade ?? null,

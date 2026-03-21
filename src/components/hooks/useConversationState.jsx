@@ -55,7 +55,6 @@ export function useConversationState({
   // ─── Conversation state (moved from Consultant.jsx) ────────────
   const [currentConversation, setCurrentConversation] = useState(null);
   const [conversations, setConversations] = useState([]);
-  const [briefStatus, setBriefStatus] = useState(null);
   const [onboardingPhase, setOnboardingPhase] = useState(null);
   const [currentView, setCurrentView] = useState('welcome');
   const [sessionId] = useState(() => crypto.randomUUID());
@@ -113,18 +112,6 @@ export function useConversationState({
       ?? convo.conversation_context?.state
       ?? STATES.WELCOME;
 
-    // Resolve briefStatus: prefer conversation_state table, fall back to JSONB.
-    // FIX-OVERLAY-RESUME: Never restore 'confirmed' briefStatus for conversations
-    // already in RESULTS — it would re-show the LoadingOverlay (z-index 10000),
-    // blocking all UI interaction including the IconRail.
-    const rawBriefStatus = stateData?.brief_status
-      ?? convo.conversation_context?.briefStatus
-      ?? null;
-    const resolvedBriefStatus = (resolvedState === STATES.RESULTS || resolvedState === STATES.DEEP_DIVE)
-      ? null
-      : rawBriefStatus;
-    setBriefStatus(resolvedBriefStatus);
-
     // Set current conversation
     setCurrentConversation(convo);
 
@@ -134,7 +121,7 @@ export function useConversationState({
       setCurrentView(mapStateToView(resolvedState));
     }
 
-    return { stateData, resolvedBriefStatus, resolvedState };
+    return { stateData, resolvedState };
   }, [readConversationState, selectedSchool]);
 
   // ─── Create a new conversation ─────────────────────────────────
@@ -199,26 +186,10 @@ export function useConversationState({
     hydrate();
   }, [currentConversation?.conversation_context?.schools, setSchools]);
 
-  // ─── BriefStatus sync from conversation_context ────────────────
-  // FIX 17: Sync briefStatus from context but never re-lock when RESULTS arrived.
-  // FIX-RACE (Defensive): Never re-lock the overlay when RESULTS have already arrived.
-  // Without this guard, a stale 'confirmed' from a batched setCurrentConversation
-  // update can re-set briefStatus and re-show the LoadingOverlay after dismissal.
-  useEffect(() => {
-    const contextBriefStatus = currentConversation?.conversation_context?.briefStatus;
-    const contextState = currentConversation?.conversation_context?.state;
-    if (contextState === STATES.RESULTS) return;
-    if (contextBriefStatus !== briefStatus) {
-      console.log('[useConversationState] Syncing briefStatus:', contextBriefStatus);
-      setBriefStatus(contextBriefStatus);
-    }
-  }, [currentConversation?.conversation_context?.briefStatus]);
-
   return {
     // State + setters
     currentConversation, setCurrentConversation,
     conversations,
-    briefStatus, setBriefStatus,
     onboardingPhase, setOnboardingPhase,
     currentView, setCurrentView,
     sessionId,

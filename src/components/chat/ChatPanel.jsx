@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { Lock } from 'lucide-react';
 import { fetchSchools } from '@/lib/api/schools';
-import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
+import { STATES } from '@/lib/stateMachineConfig';
 import { Button } from "@/components/ui/button";
 import MessageBubble from '@/components/chat/MessageBubble';
 import ChatInput from '@/components/chat/ChatInput';
@@ -22,7 +22,6 @@ const ChatPanel = forwardRef(function ChatPanel({
   schools = [],
   selectedConsultant,
   currentState,
-  briefStatus,
   isTyping,
   tokenBalance,
   isPremium,
@@ -104,16 +103,9 @@ const ChatPanel = forwardRef(function ChatPanel({
     }
   };
 
-  // Response chips logic
-  const shouldShowChips = (() => {
-    // Never show chips if brief is already confirmed (DOUBLE-BRIEF FIX)
-    if (briefStatus === BRIEF_STATUS.CONFIRMED) return false;
-    // E47: DISCOVERY response chips removed — only BRIEF confirmation chips remain
-    return (currentState === STATES.BRIEF && [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus));
-  })();
-
-  const isBriefChipState = currentState === STATES.BRIEF &&
-    [BRIEF_STATUS.PENDING_REVIEW, BRIEF_STATUS.EDITING].includes(briefStatus);
+  // Response chips logic — briefStatus removed, chips no longer needed for brief flow
+  const shouldShowChips = false;
+  const isBriefChipState = false;
 
   // Chip text varies slightly between intake and sidebar
   const briefConfirmText = variant === 'intake'

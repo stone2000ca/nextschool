@@ -13,13 +13,6 @@ export const STATES = {
   DEEP_DIVE: 'DEEP_DIVE'
 } as const;
 
-export const BRIEF_STATUS = {
-  GENERATING: 'generating',
-  PENDING_REVIEW: 'pending_review',
-  EDITING: 'editing',
-  CONFIRMED: 'confirmed'
-} as const;
-
 export const PROGRESS_WEIGHTS = {
   childName: 0.05,
   grade: 0.20,

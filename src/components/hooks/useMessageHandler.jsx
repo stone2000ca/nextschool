@@ -8,7 +8,7 @@
 // (provided via props) for sidebar refresh after title generation.
 // ─────────────────────────────────────────────────────────────────────
 
-import { STATES, BRIEF_STATUS } from '@/lib/stateMachineConfig';
+import { STATES } from '@/lib/stateMachineConfig';
 import { validateBriefContent, generateProgrammaticBrief } from '@/components/utils/briefUtils';
 import { extractAndSaveMemories } from '@/components/utils/memoryManager';
 import { createConversation, updateConversation } from '@/lib/api/conversations';
@@ -32,8 +32,7 @@ export const useMessageHandler = ({
   setShowLoginGate,
   currentConversation,
   familyProfile,
-  briefStatus,
-  setBriefStatus,
+  setShowLoadingOverlay,
   extractedEntitiesData,
   setExtractedEntitiesData,
   isPremium,
@@ -95,19 +94,11 @@ export const useMessageHandler = ({
     const userRef = useRef(user);
     useEffect(() => { userRef.current = user; }, [user]);
 
-    // P4-S4.5: Wire stateEnvelope hook — single source of truth for state/briefStatus
+    // P4-S4.5: Wire stateEnvelope hook — single source of truth for state
     const {
       state: envelopeState,
-      briefStatus: envelopeBriefStatus,
       updateFromResponse,
     } = useStateEnvelope();
-
-    // Sync hook's briefStatus → Phase 3b setBriefStatus for ongoing renders
-    useEffect(() => {
-      if (envelopeBriefStatus !== undefined && envelopeBriefStatus !== briefStatus) {
-        setBriefStatus(envelopeBriefStatus);
-      }
-    }, [envelopeBriefStatus]);
 
     // CRT-S109-F15: Message queue to prevent message loss during rapid input
     let isProcessing = false;
@@ -147,9 +138,9 @@ export const useMessageHandler = ({
                                  messageText.toLowerCase().includes("that looks right") ||
                                  messageText.toLowerCase().includes("show me schools");
 
-    // BUG-BRIEF-DUPE: Immediately lock briefStatus to confirmed so chips disappear before response arrives
+    // Show loading overlay when search begins (guided intro complete or brief confirmed)
     if (messageText === '__CONFIRM_BRIEF__' || isGuidedIntroComplete) {
-      setBriefStatus('confirmed');
+      setShowLoadingOverlay?.(true);
     }
 
     if (isBriefConfirmation && !isGuidedIntroComplete && !isAuthenticated && !isDevMode) {
@@ -217,10 +208,7 @@ export const useMessageHandler = ({
 
     try {
       // CRITICAL FIX: When confirming brief, pass empty array to force fresh search
-      const isBriefConfirmingForResults = isBriefConfirmation ||
-                                          (briefStatus === BRIEF_STATUS.PENDING_REVIEW &&
-                                           (messageText.toLowerCase().includes('show') ||
-                                            messageText.toLowerCase().includes('right')));
+      const isBriefConfirmingForResults = isBriefConfirmation;
 
       // WC6: Build returning user context if session was restored
       let returningUserContext = null;
@@ -404,20 +392,6 @@ export const useMessageHandler = ({
       // state AND the context that gets stored in conversationContext. If we only clear
       // the local state, the sync effect (Consultant.jsx FIX 17) reads 'confirmed' from
       // context and reverses the clearing — causing the overlay to stay stuck forever.
-      // P4-S4.5: Prefer stateEnvelope fields, fall back to flat response fields
-      let newBriefStatus = response.data?.stateEnvelope?.briefStatus ?? response.data?.briefStatus ?? null;
-      // FIX-RESULTS-HANG: Always clear briefStatus when transitioning to RESULTS,
-      // regardless of school count or confirmation flags.  The overlay must dismiss
-      // even when zero schools match the search criteria.
-      if (responseState === STATES.RESULTS) {
-        newBriefStatus = null;
-        setBriefStatus(null);
-        console.log('[BRIEF STATUS] Cleared on RESULTS arrival');
-      } else if (newBriefStatus) {
-        setBriefStatus(newBriefStatus);
-        console.log('[BRIEF STATUS] Updated to:', newBriefStatus);
-      }
-
       // CRITICAL FIX: Merge backend's full context (including extractedEntities) with frontend state
       const deepDiveSchoolId = response.data?.deepDiveAnalysis?.schoolId || selectedSchool?.id || resolvedSchoolId || null;
       const prevContext = currentConversation?.conversation_context || {};
@@ -427,7 +401,6 @@ export const useMessageHandler = ({
         ...prevContext,
         ...(response.data?.conversationContext || {}),
         state: responseState,
-        briefStatus: newBriefStatus,
         conversationId: conversationIdRef.current || currentConversation?.id || null,
         resumeView: responseState || null,
         lastDeepDiveSchoolId: (responseState === 'DEEP_DIVE' || deepDiveSchoolId) ? deepDiveSchoolId : (prevContext?.lastDeepDiveSchoolId || null),
@@ -622,11 +595,6 @@ export const useMessageHandler = ({
                   conversation_context: {
                     ...(prev?.conversation_context || {}),
                     chatSessionId: chatSessionResult.id,
-                    // FIX-RACE: Explicitly re-assert briefStatus: null on RESULTS.
-                    // Without this, React batching spreads prev.conversation_context
-                    // which still has briefStatus: 'confirmed' from the prior render,
-                    // overwriting the null that was set earlier in this handler.
-                    briefStatus: null,
                   },
                 }));
               }
@@ -909,20 +877,14 @@ export const useMessageHandler = ({
     } catch (error) {
       console.error('Error sending message:', error);
       setIsTyping(false);
-      // Always clear briefStatus on error to dismiss the LoadingOverlay.
-      // The overlay is a display-only component — it never times out on its own.
-      // Context (familyBrief) is preserved in Consultant state for retry.
-      const wasBriefConfirmed = briefStatus === 'confirmed';
-      setBriefStatus(null);
+      // Dismiss LoadingOverlay on error
+      setShowLoadingOverlay?.(false);
 
       // Add error message to chat with context-aware retry guidance
       const errorMessage = {
         role: 'assistant',
-        content: wasBriefConfirmed
-          ? "The search took a bit longer than expected. Click **Try Again** below to retry — I still have all your details."
-          : 'Sorry, something went wrong. Please try again.',
+        content: 'Sorry, something went wrong. Please try again.',
         timestamp: new Date().toISOString(),
-        ...(wasBriefConfirmed ? { retryAction: 'GUIDED_INTRO_RETRY' } : {}),
       };
       setMessages([...updatedMessages, errorMessage]);
     }

@@ -105,20 +105,20 @@ const MERGED_RESPONSE_SCHEMA = {
 };
 
 export async function handleDeepDiveLogic(params: any) {
-  const { selectedSchoolId, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, briefStatus, currentSchools, userId, returningUserContextBlock, flags, conversationId, userSchoolNotes } = params;
+  const { selectedSchoolId, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, currentSchools, userId, returningUserContextBlock, flags, conversationId, userSchoolNotes } = params;
 
   const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
   // Back-to-results detection
   const backToResultsPattern = /\b(what about another|show me other|different school|go back|other options|other schools|what else|see other|back to results|show me more|look at other|compare other|other matches|show other|different one|another school)\b/i;
   if (backToResultsPattern.test(message)) {
-    return { message: "Of course! Here are your school matches — click any card to explore it in detail.", state: STATES.RESULTS, briefStatus, schools: currentSchools || [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
+    return { message: "Of course! Here are your school matches — click any card to explore it in detail.", state: STATES.RESULTS, schools: currentSchools || [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
   }
 
   // Tour booking detection
   const TOUR_BOOKING_RE = /\b(book|schedule|arrange|request|sign\s*up\s*for|register\s*for|set\s*up)\b.{0,30}\b(tour|visit|open\s*house|campus\s*visit|info\s*session)\b|\b(want\s+to|like\s+to|ready\s+to)\s+(visit|tour|see|check\s*out)\b/i;
   if (TOUR_BOOKING_RE.test(message) && selectedSchoolId) {
-    return { message: `Great — let me pull up the tour request form for that school.`, state: STATES.DEEP_DIVE, briefStatus, schools: currentSchools || [], familyProfile: conversationFamilyProfile, conversationContext: context, actions: [{ type: 'INITIATE_TOUR', payload: { schoolId: selectedSchoolId }, timing: 'immediate' }], rawToolCalls: [] };
+    return { message: `Great — let me pull up the tour request form for that school.`, state: STATES.DEEP_DIVE, schools: currentSchools || [], familyProfile: conversationFamilyProfile, conversationContext: context, actions: [{ type: 'INITIATE_TOUR', payload: { schoolId: selectedSchoolId }, timing: 'immediate' }], rawToolCalls: [] };
   }
 
   console.log('[DEEPDIVE_START]', selectedSchoolId);
@@ -142,7 +142,7 @@ export async function handleDeepDiveLogic(params: any) {
 
   let selectedSchool = (schoolResults as any)?.[0] || null;
   if (!selectedSchool) {
-    return { message: "I couldn't load that school's details. Please try selecting it again.", state: currentState, briefStatus, schools: currentSchools || [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
+    return { message: "I couldn't load that school's details. Please try selecting it again.", state: currentState, schools: currentSchools || [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
   }
 
   // Cache check
@@ -168,7 +168,7 @@ export async function handleDeepDiveLogic(params: any) {
         if (analyses?.[0]) cachedDeepDiveAnalysis = analyses[0];
       } catch (e) {}
       const isPremiumSchool = selectedSchool.school_tier === 'growth' || selectedSchool.school_tier === 'pro';
-      return { message: extractConciseSummary(rec.content), state: currentState, briefStatus, schools: currentSchools || [], familyProfile: conversationFamilyProfile, conversationContext: { ...(context || {}), [`deepDiveFollowUpShown_${selectedSchoolId}`]: true }, deepDiveAnalysis: cachedDeepDiveAnalysis, visitPrepKit: cachedVisitPrepKit, actionPlan: cachedActionPlan, tourRequestOffered: isPremiumSchool, fromCache: true, rawToolCalls: [] };
+      return { message: extractConciseSummary(rec.content), state: currentState, schools: currentSchools || [], familyProfile: conversationFamilyProfile, conversationContext: { ...(context || {}), [`deepDiveFollowUpShown_${selectedSchoolId}`]: true }, deepDiveAnalysis: cachedDeepDiveAnalysis, visitPrepKit: cachedVisitPrepKit, actionPlan: cachedActionPlan, tourRequestOffered: isPremiumSchool, fromCache: true, rawToolCalls: [] };
     }
   }
 
@@ -424,8 +424,7 @@ Generate the DEEPDIVE card for this family-school match.`;
   return {
     message: finalMessage,
     state: currentState,
-    briefStatus,
-    schools: currentSchools || [],
+       schools: currentSchools || [],
     familyProfile: conversationFamilyProfile,
     conversationContext: { ...context, [deepDiveFollowUpKey]: true },
     deepDiveAnalysis,
