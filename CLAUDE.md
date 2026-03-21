@@ -254,3 +254,78 @@ When asked to create a PR, just verify the latest commit was pushed to the remot
 6. **Middleware** currently only refreshes auth sessions — does NOT enforce route protection yet
 7. **`layout.tsx`** is marked `'use client'` — the entire app renders client-side under AuthProvider
 8. **Entity existence checks** — When writing new functions that call entities, always verify the entity/table exists in Supabase first (use the Supabase MCP tools to check). If it doesn't exist, create the table or update the schema before writing the function code.
+
+## Coding Standards — Mandatory Workflow
+
+Follow these rules for every task (bugfix, refactor, or feature), unless explicitly overridden.
+
+### 1. Understand before you edit
+
+Before making any changes, scan the relevant files and summarize:
+- What this module/component does.
+- How state flows through it.
+- Any related tests.
+
+Confirm understanding back in **3–6 bullet points** before proposing or making changes.
+
+### 2. Plan before you implement
+
+Propose a short plan (3–7 bullets) that includes:
+- The minimal code changes you intend to make.
+- Which files/functions will be touched.
+- How you will verify behavior (tests, manual steps).
+
+Ask for confirmation on the plan if there is any ambiguity.
+
+### 3. Default to minimal, localized changes
+
+- Prefer the smallest, most localized change that solves the problem.
+- Do not refactor, rename, or move logic across layers unless explicitly requested.
+- Preserve existing behavior and invariants outside the scope of the current task.
+
+### 4. Architecture constraints
+
+- Business rules and complex logic live on the backend and shared domain layers.
+- Frontend React components are primarily for presentation, orchestration, and simple UI state.
+- Do not pull business logic into components or hooks unless there is an established pattern in this codebase.
+
+### 5. Tests are mandatory for behavior changes
+
+For any bugfix or behavior change:
+- Identify or write at least one focused test that would fail before your change and pass after.
+- Never delete or weaken existing tests to "make things green" without calling that out and getting explicit approval.
+- If adding a test is genuinely impossible or out of scope, clearly explain why.
+
+### 6. Make your changes inspectable
+
+When proposing changes, always:
+- Specify **file > function/component > line/section** for each edit.
+- Explain the intent of each edit in plain English.
+- Avoid large mixed diffs; group changes by purpose (bugfix vs. cleanup vs. logging).
+
+### 7. Regression-safety checklist
+
+Before considering any task complete, check:
+- Does this touch any known fragile areas (multi-step flows, shared state, caching, async/loading overlays, shortlist counts, chat, etc.)?
+- Could this break:
+  - Existing navigation flows or transitions?
+  - Shared state used in other views?
+  - Previously fixed bugs related to this area?
+- If risk is non-trivial, add or update tests to cover those specific risks before considering the task complete.
+
+### 8. Never claim success without verification
+
+Do not say "this is fixed" or "you can deploy" unless:
+- Relevant tests are passing (or you've clearly stated which tests still need to be run).
+- You have walked through the expected flow in your explanation.
+- If unsure, say so and propose concrete next checks to run.
+
+### 9. Communicate like a collaborator
+
+- Think out loud about trade-offs and risks concisely.
+- Ask clarifying questions when requirements or existing behavior are ambiguous.
+- If a request conflicts with these rules, call that out and ask whether to prioritize speed or safety.
+
+### Workflow summary
+
+**Understand → Plan → (Tests if applicable) → Implement minimal change → Verify & run regression checklist → Report with file-level references and remaining risks.**
