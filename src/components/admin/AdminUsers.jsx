@@ -99,22 +99,26 @@ export default function AdminUsers() {
     }
 
     setSavingId(user.id);
-    await updateAdminUser(user.id, {
-      role: newRole,
-      subscription_plan: edits.subscriptionPlan,
-      token_balance: Number(edits.tokenBalance),
-      updated_by: currentUser?.email,
-      updated_date: new Date().toISOString(),
-    });
+    try {
+      await updateAdminUser(user.id, {
+        role: newRole,
+        subscription_plan: edits.subscriptionPlan,
+        token_balance: Number(edits.tokenBalance),
+      });
 
-    setUsers(prev => prev.map(u =>
-      u.id === user.id
-        ? { ...u, role: newRole, subscription_plan: edits.subscriptionPlan, token_balance: Number(edits.tokenBalance) }
-        : u
-    ));
-    cancelEdit(user.id);
-    setSavingId(null);
-    toast.success('User updated.');
+      setUsers(prev => prev.map(u =>
+        u.id === user.id
+          ? { ...u, role: newRole, subscription_plan: edits.subscriptionPlan, token_balance: Number(edits.tokenBalance) }
+          : u
+      ));
+      cancelEdit(user.id);
+      toast.success('User updated.');
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      toast.error('Failed to save changes. Please try again.');
+    } finally {
+      setSavingId(null);
+    }
   };
 
   if (loading) {
@@ -157,10 +161,7 @@ export default function AdminUsers() {
             <SelectContent>
               <SelectItem value="all">All Plans</SelectItem>
               <SelectItem value="free">Free</SelectItem>
-              <SelectItem value="basic">Basic</SelectItem>
               <SelectItem value="premium">Premium</SelectItem>
-              <SelectItem value="pro">Pro</SelectItem>
-              <SelectItem value="enterprise">Enterprise</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -231,10 +232,7 @@ export default function AdminUsers() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="free">free</SelectItem>
-                            <SelectItem value="basic">basic</SelectItem>
                             <SelectItem value="premium">premium</SelectItem>
-                            <SelectItem value="pro">pro</SelectItem>
-                            <SelectItem value="enterprise">enterprise</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
