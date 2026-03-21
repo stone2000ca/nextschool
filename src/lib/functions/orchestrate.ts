@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { FamilyProfile, ChatHistory, FamilyJourney, SchoolJourney, GeneratedArtifact, LLMLog, School } from '@/lib/entities-server'
+import { FamilyProfile, ChatHistory, FamilyJourney, SchoolJourney, ConversationArtifacts, LLMLog, School } from '@/lib/entities-server'
 import { extractEntitiesLogic } from './extractEntities'
 import { handleBriefLogic } from './handleBrief'
 import { handleResultsLogic } from './handleResults'
@@ -19,7 +19,7 @@ import { countTokens } from '@/lib/ai/countTokens'
 
 // Function: orchestrateConversation
 // Purpose: Route chat messages through state machine (WELCOME→DISCOVERY→BRIEF→RESULTS→DEEP_DIVE)
-// Entities: FamilyProfile, ChatHistory, FamilyJourney, SchoolJourney, GeneratedArtifact, LLMLog
+// Entities: FamilyProfile, ChatHistory, FamilyJourney, SchoolJourney, ConversationArtifacts, LLMLog
 // Last Modified: 2026-03-09
 // Dependencies: OpenRouter API, extractEntities, handleBrief, handleResults, handleDeepDive, processDebriefCompletion
 // WC-2: LLM model upgrade — google/gemini-3-flash-preview as primary model in callOpenRouter waterfall
@@ -792,12 +792,12 @@ async function handleVisitDebriefInternal(selectedSchoolId, processMessage, conv
     let deepDiveArtifacts: any[] = [];
     if (context?.conversationId) {
       [artifacts, deepDiveArtifacts] = await Promise.all([
-        GeneratedArtifact.filter({
+        ConversationArtifacts.filter({
           conversation_id: context.conversationId,
           school_id: selectedSchoolId,
           artifact_type: 'visit_prep'
         }),
-        GeneratedArtifact.filter({
+        ConversationArtifacts.filter({
           conversation_id: context.conversationId,
           school_id: selectedSchoolId,
           artifact_type: 'deep_dive_analysis'
@@ -941,7 +941,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
           timestamp: new Date().toISOString()
         };
 
-        const existingArtifacts = await GeneratedArtifact.filter({
+        const existingArtifacts = await ConversationArtifacts.filter({
           conversation_id: context.conversationId,
           school_id: selectedSchoolId,
           artifact_type: 'visit_debrief'
@@ -950,12 +950,12 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
         if (existingArtifacts && existingArtifacts.length > 0) {
           const artifact = existingArtifacts[0];
           const updatedQAPairs = (artifact.content?.qaPairs || []).concat([newQAPair]);
-          await GeneratedArtifact.update(artifact.id, {
+          await ConversationArtifacts.update(artifact.id, {
             content: { ...artifact.content, qaPairs: updatedQAPairs }
           });
           console.log('[E13a] Debrief Q&A appended to artifact:', artifact.id);
         } else {
-          const created = await GeneratedArtifact.create({
+          const created = await ConversationArtifacts.create({
             user_id: context.userId,
             conversation_id: context.conversationId,
             school_id: selectedSchoolId,
@@ -1008,7 +1008,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
           // E29-014: Generate debrief summary + sentiment from Q&A pairs
           if (sjId && context.conversationId) {
             try {
-              const debriefArtifacts = await GeneratedArtifact.filter({
+              const debriefArtifacts = await ConversationArtifacts.filter({
                 conversation_id: context.conversationId,
                 school_id: selectedSchoolId,
                 artifact_type: 'visit_debrief'
@@ -1833,7 +1833,7 @@ Object.assign(context, safeUpdatedContext);
             }
           })();
 
-          // E42-PERSIST Phase 1a: Persist Family Brief as GeneratedArtifact at BRIEF→RESULTS transition
+          // E42-PERSIST Phase 1a: Persist Family Brief as ConversationArtifacts at BRIEF→RESULTS transition
           // Use responseData.message (the just-generated brief) — NOT conversationHistory which doesn't contain it yet.
           if (userId && conversationId) {
             (async () => {
@@ -1843,7 +1843,7 @@ Object.assign(context, safeUpdatedContext);
                   console.warn('[E42-PERSIST] No brief text in responseData.message, skipping artifact write');
                   return;
                 }
-                const existing = await GeneratedArtifact.filter({
+                const existing = await ConversationArtifacts.filter({
                   user_id: userId,
                   conversation_id: conversationId,
                   artifact_type: 'family_brief'
@@ -1851,14 +1851,14 @@ Object.assign(context, safeUpdatedContext);
                 const generatedAt = new Date().toISOString();
                 const artifactContent = JSON.stringify({ briefText, structuredProfile: workingProfile });
                 if (existing && existing.length > 0) {
-                  await GeneratedArtifact.update(existing[0].id, {
+                  await ConversationArtifacts.update(existing[0].id, {
                     content: artifactContent,
                     generated_at: generatedAt,
                     metadata: { consultantName: consultantName || 'jackie', version: 'E42_V1' }
                   });
                   console.log('[E42-PERSIST] family_brief updated:', existing[0].id);
                 } else {
-                  const created = await GeneratedArtifact.create({
+                  const created = await ConversationArtifacts.create({
                     user_id: userId,
                     conversation_id: conversationId,
                     artifact_type: 'family_brief',

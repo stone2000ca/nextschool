@@ -381,7 +381,7 @@ export async function createVisitorLog(data: Record<string, any>): Promise<any> 
   return handleResponse<any>(res)
 }
 
-// ── GeneratedArtifact ──────────────────────────────────────────────────
+// ── Artifacts (conversation_artifacts) ────────────────────────────────
 
 export async function createArtifact(data: Record<string, any>): Promise<any> {
   const res = await fetch('/api/artifacts', {

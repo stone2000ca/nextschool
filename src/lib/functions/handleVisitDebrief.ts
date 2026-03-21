@@ -1,9 +1,9 @@
 // Function: handleVisitDebrief
 // Purpose: Handle visit debrief conversation flow after school tour
-// Entities: GeneratedArtifact, School, FamilyJourney
+// Entities: ConversationArtifacts, School, FamilyJourney
 // Last Modified: 2026-03-02
 
-import { School, GeneratedArtifact, FamilyJourney } from '@/lib/entities-server'
+import { School, ConversationArtifacts, FamilyJourney } from '@/lib/entities-server'
 
 export async function handleVisitDebriefLogic(params: {
   selectedSchoolId: string;
@@ -23,12 +23,12 @@ export async function handleVisitDebriefLogic(params: {
 
     const [schoolResults, artifacts, deepDiveArtifacts] = await Promise.all([
       School.filter({ id: selectedSchoolId }),
-      GeneratedArtifact.filter({
+      ConversationArtifacts.filter({
         conversation_id: context.conversationId,
         school_id: selectedSchoolId,
         artifact_type: 'visit_prep'
       }),
-      GeneratedArtifact.filter({
+      ConversationArtifacts.filter({
         conversation_id: context.conversationId,
         school_id: selectedSchoolId,
         artifact_type: 'deep_dive_analysis'
@@ -111,7 +111,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
     if (nextQuestion && context.userId) {
       const newQAPair = { question: nextQuestion, answer: processMessage, timestamp: new Date().toISOString() };
 
-      GeneratedArtifact.filter({
+      ConversationArtifacts.filter({
         conversation_id: context.conversationId,
         school_id: selectedSchoolId,
         artifact_type: 'visit_debrief'
@@ -119,9 +119,9 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
         if (existingArtifacts && existingArtifacts.length > 0) {
           const artifact = existingArtifacts[0];
           const updatedQAPairs = (artifact.content?.qaPairs || []).concat([newQAPair]);
-          await GeneratedArtifact.update(artifact.id, { content: { ...artifact.content, qaPairs: updatedQAPairs } });
+          await ConversationArtifacts.update(artifact.id, { content: { ...artifact.content, qaPairs: updatedQAPairs } });
         } else {
-          await GeneratedArtifact.create({
+          await ConversationArtifacts.create({
             user_id: context.userId,
             conversation_id: context.conversationId,
             school_id: selectedSchoolId,
@@ -141,7 +141,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
     if (isDebriefComplete && deepDiveAnalysis && context.userId) {
       (async () => {
         try {
-          const debriefArtifacts = await GeneratedArtifact.filter({ conversation_id: context.conversationId, school_id: selectedSchoolId, artifact_type: 'visit_debrief' });
+          const debriefArtifacts = await ConversationArtifacts.filter({ conversation_id: context.conversationId, school_id: selectedSchoolId, artifact_type: 'visit_debrief' });
           const debriefArtifact = debriefArtifacts?.[0];
           if (!debriefArtifact?.content?.qaPairs?.length) return;
 
@@ -181,7 +181,7 @@ ${isDebriefComplete ? 'They\'ve shared their impressions. Wrap up warmly, valida
           });
 
           if (reevalResult) {
-            await GeneratedArtifact.create({ user_id: context.userId, conversation_id: context.conversationId, school_id: selectedSchoolId, artifact_type: 'fit_reevaluation', title: 'Fit Re-evaluation - ' + schoolName, content: { ...reevalResult, original_fit_label: originalAnalysis.fit_label || originalAnalysis.fitLabel || 'unknown', debriefTimestamp: new Date().toISOString() }, status: 'ready', is_shared: false, pdf_url: null, share_token: null });
+            await ConversationArtifacts.create({ user_id: context.userId, conversation_id: context.conversationId, school_id: selectedSchoolId, artifact_type: 'fit_reevaluation', title: 'Fit Re-evaluation - ' + schoolName, content: { ...reevalResult, original_fit_label: originalAnalysis.fit_label || originalAnalysis.fitLabel || 'unknown', debriefTimestamp: new Date().toISOString() }, status: 'ready', is_shared: false, pdf_url: null, share_token: null });
 
             if (journey) {
               const sjs = Array.isArray(journey.school_journeys) ? [...journey.school_journeys] : [];

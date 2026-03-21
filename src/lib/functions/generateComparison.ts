@@ -1,9 +1,9 @@
 // Function: generateComparison
 // Purpose: Generate AI-powered school comparison matrix and insights, with premium content gating
-// Entities: School, FamilyProfile, GeneratedArtifact, User, FamilyJourney
+// Entities: School, FamilyProfile, ConversationArtifacts, User, FamilyJourney
 // Last Modified: 2026-03-06
 
-import { School, FamilyProfile, GeneratedArtifact, User, FamilyJourney } from '@/lib/entities-server'
+import { School, FamilyProfile, ConversationArtifacts, User, FamilyJourney } from '@/lib/entities-server'
 
 // =============================================================================
 // INLINED: callOpenRouter
@@ -282,11 +282,11 @@ Generate 3-5 comparison insights. Return JSON: { "insights": ["insight 1", "insi
 
   comparison.insights = finalInsights;
 
-  // Persist to GeneratedArtifact (non-blocking)
+  // Persist to ConversationArtifacts (non-blocking)
   if (familyProfileId) {
     try {
       const artifactKey = [...schoolIds].sort().join('_');
-      const existing = await GeneratedArtifact.filter({
+      const existing = await ConversationArtifacts.filter({
         family_profile_id: familyProfileId,
         artifact_type: 'comparison'
       });
@@ -306,14 +306,14 @@ Generate 3-5 comparison insights. Return JSON: { "insights": ["insight 1", "insi
       };
 
       if (found) {
-        await GeneratedArtifact.update(found.id, artifactData);
-        console.log('[COMPARISON] GeneratedArtifact updated:', found.id);
+        await ConversationArtifacts.update(found.id, artifactData);
+        console.log('[COMPARISON] ConversationArtifacts updated:', found.id);
       } else {
-        const created = await GeneratedArtifact.create(artifactData);
-        console.log('[COMPARISON] GeneratedArtifact created:', created.id);
+        const created = await ConversationArtifacts.create(artifactData);
+        console.log('[COMPARISON] ConversationArtifacts created:', created.id);
       }
     } catch (persistError: any) {
-      console.error('[COMPARISON] GeneratedArtifact persistence failed (non-blocking):', persistError.message);
+      console.error('[COMPARISON] ConversationArtifacts persistence failed (non-blocking):', persistError.message);
     }
   }
 
