@@ -572,9 +572,9 @@ export async function restoreMostRecentConversation(
         priorities: normalizedState2.priorities || [],
         learning_differences: normalizedState2.learning_differences || [],
       };
-      if (Object.values(fp).some(v => v != null && v !== '' && !(Array.isArray(v) && v.length === 0))) {
-        setFamilyProfile(fp);
-      }
+      // FIX-BRIEF-PERSIST: Relax guard — the outer check already guarantees at
+      // least child_name or child_grade is present, so always set the profile.
+      setFamilyProfile(fp);
     }
 
     // PHASE-1FG: Normalized state is sole source of truth

@@ -1748,6 +1748,25 @@ Object.assign(context, safeUpdatedContext);
           // FIX-RESULTS-HANG: Use `!== undefined` so explicit null clears briefStatus
           stateEnvelope.briefStatus = responseData.briefStatus !== undefined ? responseData.briefStatus : stateEnvelope.briefStatus;
           responseData.stateEnvelope = stateEnvelope;
+
+          // FIX-BRIEF-PERSIST: Sync family profile fields into context so
+          // syncConversationState writes them to the conversation_state table.
+          // Without this, F5 refresh cannot restore the FamilyBrief.
+          if (responseData.familyProfile) {
+            const fp = responseData.familyProfile;
+            context.accumulatedFamilyProfile = {
+              ...(context.accumulatedFamilyProfile || {}),
+              child_name: fp.child_name ?? context.accumulatedFamilyProfile?.child_name ?? null,
+              child_grade: fp.child_grade ?? context.accumulatedFamilyProfile?.child_grade ?? null,
+              location_area: fp.location_area ?? context.accumulatedFamilyProfile?.location_area ?? null,
+              max_tuition: fp.max_tuition ?? context.accumulatedFamilyProfile?.max_tuition ?? null,
+              priorities: fp.priorities ?? context.accumulatedFamilyProfile?.priorities ?? [],
+              learning_differences: fp.learning_differences ?? context.accumulatedFamilyProfile?.learning_differences ?? [],
+            };
+          }
+          // Phase 1c: Dual-write conversation state to normalized table
+          syncConversationState(conversationId, userId, responseData.conversationContext || context);
+
           return (responseData);
         } catch (briefError) {
           console.error('[BRIEF] Invocation failed:', briefError.message);
