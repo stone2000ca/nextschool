@@ -109,7 +109,7 @@ export default function Home() {
         Skip to main content
       </a>
       
-      <Navbar />
+      <Navbar transparent />
 
       {/* HERO SECTION */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">

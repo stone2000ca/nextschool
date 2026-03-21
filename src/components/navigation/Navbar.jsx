@@ -6,16 +6,25 @@ import { useAuth } from '@/lib/AuthContext';
 import { fetchSchoolAdmins } from '@/lib/api/entities-api';
 import { LOGO_BLACK_TEXT, LOGO_WHITE_TEXT } from '@/lib/brand-assets';
 
-export default function Navbar({ variant = "default" }) {
+export default function Navbar({ variant = "default", transparent = false }) {
   const { user: authUser, isAuthenticated: authIsAuthenticated, navigateToLogin, logout } = useAuth();
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSchoolAdmin, setIsSchoolAdmin] = useState(false);
   const [schoolAdminRecords, setSchoolAdminRecords] = useState([]);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     checkAuth();
   }, [authIsAuthenticated, authUser]);
+
+  useEffect(() => {
+    if (!transparent) return;
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    onScroll(); // check initial position
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [transparent]);
 
   const checkAuth = async () => {
     try {
@@ -89,7 +98,7 @@ export default function Navbar({ variant = "default" }) {
 
   // Default variant for other pages
   return (
-    <header className="bg-slate-900 sticky top-0 z-50">
+    <header className={`sticky top-0 z-50 transition-colors duration-300 ${transparent && !scrolled ? 'bg-transparent' : 'bg-slate-900'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
         <Link href={'/'} className="flex items-center gap-2">
           <img src={LOGO_WHITE_TEXT} alt="NextSchool" className="h-10" />
