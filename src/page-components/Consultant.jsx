@@ -336,7 +336,7 @@ export default function Consultant() {
 
   // ─── Early returns ───
   const spinner = <div className="h-screen flex items-center justify-center bg-slate-50"><div className="animate-spin h-8 w-8 border-4 border-teal-600 border-t-transparent rounded-full" /></div>;
-  if (loading || (!selectedConsultant && sessionIdParam && !sessionRestored)) return spinner;
+  if (loading || (!selectedConsultant && sessionIdParam && (!sessionRestored || restoringSession))) return spinner;
   if (sessionIdParam && !sessionRestored && restoringSession) {
     return <div className="h-screen relative bg-slate-50"><LoadingOverlay isVisible={true} onTransitionComplete={() => {}} /></div>;
   }

@@ -124,6 +124,11 @@ export async function restoreSessionFromParam(
     // CRITICAL: Restore consultant selection FIRST so chat panel can render correctly
     if (chatSession.consultant_selected) {
       setSelectedConsultant(chatSession.consultant_selected);
+    } else {
+      // Fallback: older sessions may lack consultant_selected — default to jackie
+      // to prevent the consultant picker from showing on refresh
+      console.log('[RESTORE] consultant_selected missing, defaulting to jackie');
+      setSelectedConsultant('jackie');
     }
 
     // DIRECT SEARCH CALL - Match orchestrateConversation's pattern
@@ -447,6 +452,11 @@ export async function restoreMostRecentConversation(
     if (restoredConsultant) {
       console.log('[PHASE-1FG] Using conversation_state for consultant:', restoredConsultant);
       setSelectedConsultant(restoredConsultant);
+    } else if (latest.messages?.length > 0) {
+      // Fallback: conversation has messages but consultant not in normalized state —
+      // default to jackie to prevent consultant picker from showing on refresh
+      console.log('[RESTORE-LATEST] consultant missing from conversation_state, defaulting to jackie');
+      setSelectedConsultant('jackie');
     }
 
     // 4. Bug 2: Collect ALL deep dive analyses from messages, set most recent as active
