@@ -4,7 +4,7 @@
 // Last Modified: 2026-03-09
 // Dependencies: OpenRouter API, searchSchools
 
-import { ChatSession, LLMLog, TourRequest } from '@/lib/entities-server'
+import { ChatSession, LLMLog } from '@/lib/entities-server'
 import { searchSchoolsLogic } from './searchSchools'
 import { syncConversationSchools } from './dualWrite'
 
@@ -349,19 +349,7 @@ export async function handleResultsLogic(params: any) {
     }
     if (jMatched) {
       console.log(`[TOUR-FAST-PATH] Matched "${jMatched.name}" (${jMatched.id})`);
-      // Fire-and-forget TourRequest creation
-      if (userId && conversationId) {
-        TourRequest.create({
-          parent_user_id: userId,
-          school_id: jMatched.id,
-          requested_at: new Date().toISOString(),
-          status: 'pending',
-          tour_type: 'in_person',
-          message: `Tour request initiated from RESULTS state for ${jMatched.name}`,
-          conversation_id: conversationId,
-          child_grade: conversationFamilyProfile?.child_grade || undefined,
-        }).catch((err: any) => console.error('[E29-005-AC7] TourRequest creation failed:', err?.message));
-      }
+      // TourRequest creation handled by TourRequestModal (frontend) after user submits form
       return { message: `Great choice! Let me pull up the tour request form for ${jMatched.name}.`, state: STATES.RESULTS, briefStatus: briefStatus, schools: jSchoolPool, familyProfile: conversationFamilyProfile, conversationContext: context, actions: [{ type: 'INITIATE_TOUR', payload: { schoolId: jMatched.id }, timing: 'immediate' }] };
     }
     console.log('[TOUR-FAST-PATH] No school match — falling through to LLM');

@@ -73,9 +73,44 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
       form.specialRequests ? `Special requests: ${form.specialRequests}` : null,
     ].filter(Boolean).join('\n');
 
-    // E29-005-AC7: Create TourRequest entity (primary) for runtime verification
+    // Resolve school journey BEFORE creating tour request (ownership: school_journey -> tour_request)
+    let schoolJourneyId = null;
+    let familyJourney = null;
+    let existingSchoolJourney = null;
+    try {
+      const me = authUser;
+      if (me?.id) {
+        const journeys = await fetchFamilyJourneys({ user_id: me.id, sort: '-updated_date', limit: 1 });
+        if (journeys && journeys.length > 0) {
+          familyJourney = journeys[0];
+          const existing = await fetchSchoolJourneys({
+            family_journey_id: familyJourney.id,
+            school_id: school.id,
+          });
+          if (existing && existing.length > 0) {
+            existingSchoolJourney = existing[0];
+            schoolJourneyId = existing[0].id;
+          } else {
+            const created = await createSchoolJourney({
+              family_journey_id: familyJourney.id,
+              school_id: school.id,
+              school_name: school.name,
+              status: 'touring',
+              tour_date: preferredDate || null,
+              added_at: new Date().toISOString(),
+            });
+            schoolJourneyId = created?.id || null;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[E29-005] School journey resolution failed:', err?.message);
+      // schoolJourneyId stays null — column is nullable, tour request still proceeds
+    }
+
+    // E29-005-AC7: Create TourRequest entity (scoped to school_journey)
     const tourRequest = await createTourRequest({
-      parent_user_id: user.id,
+      school_journey_id: schoolJourneyId,
       school_id: school.id,
       requestedAt: new Date().toISOString(),
       status: 'pending',
@@ -121,42 +156,32 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         profileSnapshotAt: new Date().toISOString(),
       }),
     });
-    
-    console.log('[E29-005-AC7] TourRequest created:', tourRequest.id);
 
-    // E29-005: Fire-and-forget — sync tour request to SchoolJourney entity
+    console.log('[E29-005-AC7] TourRequest created:', tourRequest.id, 'school_journey_id:', schoolJourneyId);
+
+    // Fire-and-forget: sync tour_request_id back to school journey + phase advance + tour prep
     ;(async () => {
       try {
         const me = authUser;
-        if (!me?.id) return;
+        if (!me?.id || !familyJourney) return;
 
-        const journeys = await fetchFamilyJourneys({ user_id: me.id, sort: '-updated_date', limit: 1 });
-        if (!journeys || journeys.length === 0) return;
-        const familyJourney = journeys[0];
-
-        const existing = await fetchSchoolJourneys({
-          family_journey_id: familyJourney.id,
-          school_id: school.id,
-        });
-
-        if (existing && existing.length > 0) {
-          await updateSchoolJourney(existing[0].id, {
-            status: 'touring',
-            tour_request_id: inquiry?.id || null,
-            tour_date: preferredDate || null,
-          });
-        } else {
-          await createSchoolJourney({
-            family_journey_id: familyJourney.id,
-            school_id: school.id,
-            school_name: school.name,
-            status: 'touring',
-            tour_request_id: inquiry?.id || null,
-            tour_date: preferredDate || null,
-            added_at: new Date().toISOString(),
-          });
+        // Update school journey with tour_request_id and status
+        const sjId = schoolJourneyId || existingSchoolJourney?.id;
+        if (sjId) {
+          if (existingSchoolJourney) {
+            await updateSchoolJourney(sjId, {
+              status: 'touring',
+              tour_request_id: inquiry?.id || null,
+              tour_date: preferredDate || null,
+            });
+          } else {
+            // Already created above with status 'touring', just link the tour_request_id
+            await updateSchoolJourney(sjId, {
+              tour_request_id: inquiry?.id || null,
+            });
+          }
+          console.log('[E29-005] SchoolJourney tour sync completed for', school.name);
         }
-        console.log('[E29-005] SchoolJourney tour sync completed for', school.name);
 
         // E29-015: Phase auto-advancement EVALUATE → EXPERIENCE on tour request
         if (familyJourney.current_phase === 'EVALUATE') {
@@ -173,27 +198,13 @@ export default function TourRequestModal({ school, onClose, upcomingEvents = [] 
         }
 
         // E29-013: Generate tour prep brief and store on SchoolJourney
-        try {
-          // Get the SchoolJourney id we just upserted
-          const sjRecords = await fetchSchoolJourneys({
-            family_journey_id: familyJourney.id,
-            school_id: school.id,
-          });
-          const sjId = sjRecords?.[0]?.id;
-          if (!sjId) throw new Error('SchoolJourney record not found after upsert');
-
-          // Load family profile for personalization
-          let fp = null;
+        if (sjId) {
           try {
-            const fps = await fetchFamilyProfiles({ user_id: me.id });
-            fp = fps?.[0] || null;
-          } catch (_) {}
+            const priorities = familyProfile?.priorities?.slice(0, 4).join(', ') || 'general fit, academics, community';
+            const childGrade = familyProfile?.child_grade ?? form.childGrade ?? 'unknown';
+            const tourTypeLabel = form.tourType === 'in_person' ? 'in-person' : 'virtual';
 
-          const priorities = fp?.priorities?.slice(0, 4).join(', ') || 'general fit, academics, community';
-          const childGrade = fp?.child_grade ?? form.childGrade ?? 'unknown';
-          const tourTypeLabel = form.tourType === 'in_person' ? 'in-person' : 'virtual';
-
-          const prepPrompt = `You are an education consultant preparing a family for a ${tourTypeLabel} tour at ${school.name}.
+            const prepPrompt = `You are an education consultant preparing a family for a ${tourTypeLabel} tour at ${school.name}.
 
 Family priorities: ${priorities}
 Child's grade: ${childGrade}
@@ -211,18 +222,19 @@ List 4 things to observe during the tour that relate to their priorities.
 
 Keep each point to one sentence. Be specific to ${school.name} if possible. No intro paragraph.`;
 
-          const prepResult = await invokeFunction('invokeLLM', { prompt: prepPrompt });
-          const prepText = typeof prepResult === 'string' ? prepResult : (prepResult?.response || prepResult?.text || '');
+            const prepResult = await invokeFunction('invokeLLM', { prompt: prepPrompt });
+            const prepText = typeof prepResult === 'string' ? prepResult : (prepResult?.response || prepResult?.text || '');
 
-          if (prepText) {
-            await updateSchoolJourney(sjId, {
-              tour_prep_content: prepText,
-              tour_prep_sent: true,
-            });
-            console.log('[E29-013] Tour prep brief stored on SchoolJourney', sjId);
+            if (prepText) {
+              await updateSchoolJourney(sjId, {
+                tour_prep_content: prepText,
+                tour_prep_sent: true,
+              });
+              console.log('[E29-013] Tour prep brief stored on SchoolJourney', sjId);
+            }
+          } catch (prepErr) {
+            console.error('[E29-013] Tour prep generation failed:', prepErr?.message);
           }
-        } catch (prepErr) {
-          console.error('[E29-013] Tour prep generation failed:', prepErr?.message);
         }
       } catch (err) {
         console.error('[E29-005] SchoolJourney tour sync failed:', err?.message || err);
