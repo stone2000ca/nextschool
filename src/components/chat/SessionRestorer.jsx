@@ -37,6 +37,30 @@ async function loadConversationState(conversationId) {
 }
 
 /**
+ * FIX-DD-RESTORE: Normalize a deepDiveAnalysis object to ensure snake_case keys
+ * exist (which ResultsPhaseContent reads). Handles data from messages (already snake_case),
+ * SchoolAnalysis API (snake_case from DB), or entity layer (could be camelCase).
+ */
+function normalizeDeepDiveAnalysis(raw) {
+  if (!raw) return null;
+  return {
+    ...raw,
+    schoolId: raw.schoolId || raw.school_id || null,
+    schoolName: raw.schoolName || raw.school_name || null,
+    fit_score: raw.fit_score ?? raw.fitScore ?? null,
+    fit_label: raw.fit_label || raw.fitLabel || null,
+    trade_offs: raw.trade_offs || raw.tradeOffs || raw.tradeoffs || [],
+    ai_insight: raw.ai_insight || raw.aiInsight || raw.insight || null,
+    chat_summary: raw.chat_summary || raw.chatSummary || null,
+    priority_matches: raw.priority_matches || raw.priorityMatches || [],
+    community_pulse: raw.community_pulse || raw.communityPulse || null,
+    financial_summary: raw.financial_summary || raw.financialSummary || null,
+    visit_questions: raw.visit_questions || raw.visitQuestions || [],
+    data_gaps: raw.data_gaps || raw.dataGaps || [],
+  };
+}
+
+/**
  * Load current schools from the normalized conversation_schools table,
  * joined with the schools table to get full school objects.
  * Returns empty array if not found (normalized tables are sole source of truth).
@@ -307,7 +331,8 @@ export async function restoreSessionFromParam(
     let lastDeepDiveSchoolName = null;
     for (const msg of restoredMessages) {
       if (msg.role === 'assistant' && msg.deepDiveAnalysis?.schoolId) {
-        allDeepDiveAnalyses[msg.deepDiveAnalysis.schoolId] = msg.deepDiveAnalysis;
+        // FIX-DD-RESTORE: Normalize keys so ResultsPhaseContent can read snake_case
+        allDeepDiveAnalyses[msg.deepDiveAnalysis.schoolId] = normalizeDeepDiveAnalysis(msg.deepDiveAnalysis);
       }
     }
     const deepDiveSchoolIds = Object.keys(allDeepDiveAnalyses);
@@ -315,8 +340,8 @@ export async function restoreSessionFromParam(
       const lastId = deepDiveSchoolIds[deepDiveSchoolIds.length - 1];
       lastDeepDiveSchoolId = lastId;
       lastDeepDiveSchoolName = allDeepDiveAnalyses[lastId].schoolName;
-      if (setDeepDiveAnalysis) setDeepDiveAnalysis(allDeepDiveAnalyses[lastId]);
-      // Merge ALL analyses into schoolAnalyses state so every notepad renders
+      // FIX-DD-RESUME: Don't set active deepDiveAnalysis on restore — we show results grid.
+      // Only populate schoolAnalyses cache so data is available when user clicks a school.
       if (setSchoolAnalyses) {
         setSchoolAnalyses(prev => ({ ...prev, ...allDeepDiveAnalyses }));
       }
@@ -333,20 +358,11 @@ export async function restoreSessionFromParam(
         const recentAnalyses = analysisRes.ok ? await analysisRes.json() : [];
         if (recentAnalyses?.length > 0) {
           // Bug 2: Merge ALL analyses into schoolAnalyses, set most recent as active
+          // FIX-DD-RESTORE: Use normalizeDeepDiveAnalysis for consistent snake_case keys
           const analysesMap = {};
           for (const analysis of recentAnalyses) {
             if (analysis.school_id) {
-              const mapped = {
-                schoolId: analysis.school_id,
-                schoolName: analysis.school_name || 'School',
-                fitScore: analysis.fit_score,
-                fitLabel: analysis.fit_label,
-                priorityMatches: analysis.priority_matches || [],
-                aiInsight: analysis.ai_insight || analysis.insight || null,
-                tradeOffs: analysis.trade_offs || analysis.tradeoffs || [],
-                ...analysis
-              };
-              analysesMap[analysis.school_id] = mapped;
+              analysesMap[analysis.school_id] = normalizeDeepDiveAnalysis(analysis);
             }
           }
           if (setSchoolAnalyses && Object.keys(analysesMap).length > 0) {
@@ -358,19 +374,17 @@ export async function restoreSessionFromParam(
           lastDeepDiveSchoolId = latest.school_id;
           lastDeepDiveSchoolName = latest.school_name || 'School';
           console.log('[RESTORE] Fallback: found', recentAnalyses.length, 'SchoolAnalysis rows, active school:', lastDeepDiveSchoolId);
-          if (setDeepDiveAnalysis) {
-            const mappedAnalysis = analysesMap[latest.school_id] || latest;
-            setDeepDiveAnalysis(mappedAnalysis);
-            // WC-2: Inject analysis onto last assistant message so E39-S4a can find it
-            const injectedMsgs = [...restoredMessages];
-            for (let i = injectedMsgs.length - 1; i >= 0; i--) {
-              if (injectedMsgs[i].role === 'assistant') {
-                injectedMsgs[i] = { ...injectedMsgs[i], deepDiveAnalysis: mappedAnalysis };
-                break;
-              }
+          // FIX-DD-RESUME: Don't set active deepDiveAnalysis — show results grid.
+          // Inject analysis onto last assistant message so it's available if user clicks the school.
+          const mappedAnalysis = analysesMap[latest.school_id] || normalizeDeepDiveAnalysis(latest);
+          const injectedMsgs = [...restoredMessages];
+          for (let i = injectedMsgs.length - 1; i >= 0; i--) {
+            if (injectedMsgs[i].role === 'assistant') {
+              injectedMsgs[i] = { ...injectedMsgs[i], deepDiveAnalysis: mappedAnalysis };
+              break;
             }
-            setMessages(injectedMsgs);
           }
+          setMessages(injectedMsgs);
         }
       } catch (e) {
         console.warn('[RESTORE] SchoolAnalysis fallback failed:', e.message);
@@ -424,27 +438,11 @@ export async function restoreSessionFromParam(
     const effectiveResumeView = normalizedState?.resume_view || normalizedState?.state || null;
     console.log('[PHASE-1FG] conversation_state resumeView/state:', effectiveResumeView);
     const hasDeepDiveRestore = !!lastDeepDiveSchoolId;
-    if (lastDeepDiveSchoolId && setSelectedSchool) {
-      console.log('[RESTORE] Found deep dive in messages for school:', lastDeepDiveSchoolId, lastDeepDiveSchoolName);
-      const targetSchool = restoredSchools.find(s => s.id === lastDeepDiveSchoolId);
-      if (targetSchool) {
-        setSelectedSchool(targetSchool);
-      } else {
-        // School not in search results - fetch full record from entity
-        try {
-          const fullSchools = await fetchSchools({ ids: [lastDeepDiveSchoolId] });
-          if (fullSchools && fullSchools.length > 0) {
-            setSelectedSchool(fullSchools[0]);
-          } else {
-            setSelectedSchool({ id: lastDeepDiveSchoolId, name: lastDeepDiveSchoolName || 'School' });
-          }
-        } catch (e) {
-          console.warn('[RESTORE] Failed to fetch full school record:', e.message);
-          setSelectedSchool({ id: lastDeepDiveSchoolId, name: lastDeepDiveSchoolName || 'School' });
-        }
-      }
-      setOnboardingPhase(STATES.DEEP_DIVE);
-      setCurrentView('detail');
+    // FIX-DD-RESUME: On resume with deep-dived school, show school results grid
+    // instead of opening ResearchNotepad. Deep dive data is still in schoolAnalyses
+    // state and will be available when user clicks on the school.
+    if (lastDeepDiveSchoolId) {
+      console.log('[RESTORE] Found deep dive for school:', lastDeepDiveSchoolId, '— showing results grid instead of notepad');
     }
     if (chatHistory) {
       let restoredJourneyId = normalizedState?.journey_id || chatHistory?.conversation_context?.journeyId || null;
@@ -610,14 +608,16 @@ export async function restoreMostRecentConversation(
     const allDeepDiveAnalyses = {};
     for (const msg of msgs) {
       if (msg.role === 'assistant' && msg.deepDiveAnalysis?.schoolId) {
-        allDeepDiveAnalyses[msg.deepDiveAnalysis.schoolId] = msg.deepDiveAnalysis;
+        // FIX-DD-RESTORE: Normalize keys so ResultsPhaseContent can read snake_case
+        allDeepDiveAnalyses[msg.deepDiveAnalysis.schoolId] = normalizeDeepDiveAnalysis(msg.deepDiveAnalysis);
       }
     }
     const deepDiveSchoolIds = Object.keys(allDeepDiveAnalyses);
     if (deepDiveSchoolIds.length > 0) {
       const lastId = deepDiveSchoolIds[deepDiveSchoolIds.length - 1];
       lastDeepDiveSchoolId = lastId;
-      if (setDeepDiveAnalysis) setDeepDiveAnalysis(allDeepDiveAnalyses[lastId]);
+      // FIX-DD-RESUME: Don't set active deepDiveAnalysis — show results grid.
+      // Only populate schoolAnalyses cache.
       if (setSchoolAnalyses) {
         setSchoolAnalyses(prev => ({ ...prev, ...allDeepDiveAnalyses }));
       }
@@ -632,20 +632,11 @@ export async function restoreMostRecentConversation(
         const recentAnalyses = analysisRes.ok ? await analysisRes.json() : [];
         if (recentAnalyses?.length > 0) {
           // Bug 2: Merge ALL analyses into schoolAnalyses, set most recent as active
+          // FIX-DD-RESTORE: Use normalizeDeepDiveAnalysis for consistent snake_case keys
           const analysesMap = {};
           for (const analysis of recentAnalyses) {
             if (analysis.school_id) {
-              const mapped = {
-                schoolId: analysis.school_id,
-                schoolName: analysis.school_name || 'School',
-                fitScore: analysis.fit_score,
-                fitLabel: analysis.fit_label,
-                priorityMatches: analysis.priority_matches || [],
-                aiInsight: analysis.ai_insight || analysis.insight || null,
-                tradeOffs: analysis.trade_offs || analysis.tradeoffs || [],
-                ...analysis
-              };
-              analysesMap[analysis.school_id] = mapped;
+              analysesMap[analysis.school_id] = normalizeDeepDiveAnalysis(analysis);
             }
           }
           if (setSchoolAnalyses && Object.keys(analysesMap).length > 0) {
@@ -656,19 +647,17 @@ export async function restoreMostRecentConversation(
           const la = sortedAnalyses[0];
           lastDeepDiveSchoolId = la.school_id;
           console.log('[RESTORE-LATEST] Fallback: found', recentAnalyses.length, 'SchoolAnalysis rows, active school:', la.school_id);
-          if (setDeepDiveAnalysis) {
-            const mappedAnalysis = analysesMap[la.school_id] || la;
-            setDeepDiveAnalysis(mappedAnalysis);
-            // Inject onto last assistant message so downstream components find it
-            const injectedMsgs = [...msgs];
-            for (let j = injectedMsgs.length - 1; j >= 0; j--) {
-              if (injectedMsgs[j].role === 'assistant') {
-                injectedMsgs[j] = { ...injectedMsgs[j], deepDiveAnalysis: mappedAnalysis };
-                break;
-              }
+          // FIX-DD-RESUME: Don't set active deepDiveAnalysis — show results grid.
+          // Inject analysis onto messages so it's available if user clicks the school.
+          const mappedAnalysis = analysesMap[la.school_id] || normalizeDeepDiveAnalysis(la);
+          const injectedMsgs = [...msgs];
+          for (let j = injectedMsgs.length - 1; j >= 0; j--) {
+            if (injectedMsgs[j].role === 'assistant') {
+              injectedMsgs[j] = { ...injectedMsgs[j], deepDiveAnalysis: mappedAnalysis };
+              break;
             }
-            setMessages(injectedMsgs);
           }
+          setMessages(injectedMsgs);
         }
       } catch (e) {
         console.warn('[RESTORE-LATEST] SchoolAnalysis fallback failed:', e.message);
@@ -721,20 +710,14 @@ export async function restoreMostRecentConversation(
     const rawEffectiveState = normalizedState2?.resume_view || normalizedState2?.state || null;
     const effectiveState = rawEffectiveState || (restoredSchools.length > 0 ? STATES.RESULTS : (ctx.state || STATES.WELCOME));
     console.log('[PHASE-1FG] conversation_state state:', effectiveState);
-    const restoredState = hasDeepDive ? STATES.DEEP_DIVE : effectiveState;
+    // FIX-DD-RESUME: On resume, always show results grid — don't open ResearchNotepad.
+    // Deep dive data stays in schoolAnalyses state for when user clicks the school.
+    const restoredState = restoredSchools.length > 0 ? STATES.RESULTS : effectiveState;
 
-    if (hasDeepDive && setSelectedSchool) {
-      const target = restoredSchools.find(s => s.id === lastDeepDiveSchoolId);
-      if (target) {
-        setSelectedSchool(target);
-      } else {
-        try {
-          const fullSchools = await fetchSchools({ ids: [lastDeepDiveSchoolId] });
-          if (fullSchools?.length > 0) setSelectedSchool(fullSchools[0]);
-        } catch (_) { /* best effort */ }
-      }
-      setCurrentView('detail');
-    } else if (restoredSchools.length > 0) {
+    if (hasDeepDive) {
+      console.log('[RESTORE-LATEST] Found deep dive for school:', lastDeepDiveSchoolId, '— showing results grid instead of notepad');
+    }
+    if (restoredSchools.length > 0) {
       setCurrentView('schools');
     }
     setOnboardingPhase(restoredState);

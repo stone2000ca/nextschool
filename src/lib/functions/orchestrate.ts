@@ -343,11 +343,13 @@ function resolveTransition(params) {
     return { nextState: STATES.RESULTS, sufficiency, flags, transitionReason: 'journey_resumption_continue' };
   }
 
-  if (currentState === STATES.WELCOME && turnCount > 0) {
-    return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason: 'auto_welcome_exit' };
-  }
+  // FIX-DD-STARTUP: Check school selection BEFORE WELCOME→DISCOVERY transition
+  // so that clicking "analyze this school" always routes to DEEP_DIVE regardless of state
   if (selectedSchoolId && selectedSchoolId !== previousSchoolId) {
     return { nextState: STATES.DEEP_DIVE, sufficiency, flags, transitionReason: 'school_selected' };
+  }
+  if (currentState === STATES.WELCOME && turnCount > 0) {
+    return { nextState: STATES.DISCOVERY, sufficiency, flags, transitionReason: 'auto_welcome_exit' };
   }
   
   // STOP_PHRASES — user explicitly signals they're done with questions, go to RESULTS
@@ -1507,7 +1509,7 @@ Object.assign(context, safeUpdatedContext);
         console.log('[T047] Changed entities:', extractedKeys, '| Tier1 changed:', tier1Changed);
       }
 
-      if (isFirstMessage && !context.state && !journeyContext?.isResuming) { // S169-WC1: E29-RESUMPTION-FIX    if (!activeJourney?.isResuming) {
+      if (isFirstMessage && !context.state && !journeyContext?.isResuming && !selectedSchoolId) { // FIX-DD-STARTUP: bypass welcome when school selected // S169-WC1: E29-RESUMPTION-FIX    if (!activeJourney?.isResuming) {
     // Initialize first message with consultant's greeting
         console.log('[ORCH] First message, return WELCOME greeting');
         const welcomeMessage = consultantName === 'Jackie'

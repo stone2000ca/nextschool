@@ -246,20 +246,33 @@ export const useMessageHandler = ({
     }
     if (resolvedSchoolId && resolvedSchoolId !== explicitSchoolId) { lastResolvedSchoolId = resolvedSchoolId; }
 
-      // FIX-PERSIST-AB: Pre-flight guard — deep dive requires a conversation record.
-      // If explicitSchoolId is set but conversationIdRef is still null (e.g. fresh
-      // GuidedIntro where ChatHistory hasn't been created yet), show a friendly
-      // message instead of letting orchestrate fail with "Something went wrong".
+      // FIX-DD-STARTUP: If deep dive requested but no conversationId exists yet,
+      // create the ChatHistory record on-the-fly instead of blocking.
       if (explicitSchoolId && !conversationIdRef.current) {
-        console.warn('[FIX-DD-PREFLIGHT] Deep dive requested but no conversationId yet — asking user to wait');
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: "I'm still setting up your session — give me just a moment and then try again!",
-          timestamp: new Date().toISOString(),
-        }]);
-        setIsTyping(false);
-        isProcessing = false;
-        return;
+        if (isAuthenticated && userRef.current) {
+          try {
+            console.log('[FIX-DD-PREFLIGHT] Creating conversation on-the-fly for deep dive');
+            const chatHistoryRecord = await createConversation({
+              user_id: userRef.current.id,
+              title: 'School Search',
+              messages: [...messages],
+              conversation_context: currentConversation?.conversation_context || {},
+              is_active: true
+            });
+            if (chatHistoryRecord?.id) {
+              const idStr = String(chatHistoryRecord.id);
+              conversationIdRef.current = idStr;
+              setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversation_context: { ...(prev?.conversation_context || {}), conversationId: idStr } }));
+              if (typeof window !== 'undefined') {
+                window.history.replaceState(null, '', '/consultant?sessionId=' + chatHistoryRecord.id);
+              }
+              console.log('[FIX-DD-PREFLIGHT] Created conversation:', idStr);
+            }
+          } catch (e) {
+            console.error('[FIX-DD-PREFLIGHT] Failed to create conversation on-the-fly:', e);
+          }
+        }
+        // Fall through to orchestrate — don't block the deep dive
       }
 
       // Call orchestrateConversation with current schools context and user location
