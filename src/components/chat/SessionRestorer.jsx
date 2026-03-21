@@ -385,9 +385,11 @@ export async function restoreSessionFromParam(
     // Load shortlist AFTER conversation state is set so it has the right context
     // FIX-PERSIST-AB: Pass journeyId explicitly so loadShortlist doesn't depend
     // on React state (activeJourney) which may not have settled yet.
-    if (typeof loadShortlist === 'function') {
+    // T-SL-03: loadShortlist may be a ref object — resolve .current at call time
+    const resolvedLoadShortlist = typeof loadShortlist === 'function' ? loadShortlist : loadShortlist?.current;
+    if (typeof resolvedLoadShortlist === 'function') {
       try {
-        await loadShortlist(restoredContext?.journeyId);
+        await resolvedLoadShortlist(restoredContext?.journeyId);
       } catch (e) {
         console.warn('[RESTORE] loadShortlist failed:', e.message);
       }
@@ -614,9 +616,11 @@ export async function restoreMostRecentConversation(
     });
 
     // FIX-PERSIST-AB: Load shortlist after conversation is set so hearts persist on dashboard resume
-    if (typeof loadShortlist === 'function') {
+    // T-SL-03: loadShortlist may be a ref object — resolve .current at call time
+    const resolvedLoadShortlist = typeof loadShortlist === 'function' ? loadShortlist : loadShortlist?.current;
+    if (typeof resolvedLoadShortlist === 'function') {
       try {
-        await loadShortlist(ctx.journeyId);
+        await resolvedLoadShortlist(ctx.journeyId);
       } catch (e) {
         console.warn('[RESTORE-LATEST] loadShortlist failed:', e.message);
       }

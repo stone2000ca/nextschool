@@ -111,7 +111,7 @@ export function deriveJourneyStage(
       stage: 'DECIDING',
       statusLine: `${shortlistedCount} schools shortlisted — ready to decide`,
       ctaLabel: 'Compare Top Schools',
-      ctaRoute: `/consultant?session=${session.id}`,
+      ctaRoute: `/consultant?sessionId=${session.id}`,
       urgency: 'NORMAL',
     }
   }
@@ -122,7 +122,7 @@ export function deriveJourneyStage(
       stage: 'RESEARCHING',
       statusLine: `${shortlistedCount} shortlisted — explore more options`,
       ctaLabel: 'Continue Research',
-      ctaRoute: `/consultant?session=${session.id}`,
+      ctaRoute: `/consultant?sessionId=${session.id}`,
       urgency: 'NORMAL',
     }
   }
@@ -133,7 +133,7 @@ export function deriveJourneyStage(
       stage: 'SHORTLISTING',
       statusLine: `${shortlistedCount} shortlisted — keep building your list`,
       ctaLabel: 'Keep Shortlisting',
-      ctaRoute: `/consultant?session=${session.id}`,
+      ctaRoute: `/consultant?sessionId=${session.id}`,
       urgency: 'NORMAL',
     }
   }
@@ -144,7 +144,7 @@ export function deriveJourneyStage(
       stage: 'RESULTS_READY',
       statusLine: `${matchedSchools.length} school matches ready`,
       ctaLabel: 'Explore Your Matches',
-      ctaRoute: `/consultant?session=${session.id}`,
+      ctaRoute: `/consultant?sessionId=${session.id}`,
       urgency: 'NORMAL',
     }
   }
@@ -156,7 +156,7 @@ export function deriveJourneyStage(
       ? `Continue setting up ${session.child_name}'s profile`
       : 'Complete your school brief to get started',
     ctaLabel: 'Finish Your Brief',
-    ctaRoute: `/consultant?session=${session.id}`,
+    ctaRoute: `/consultant?sessionId=${session.id}`,
     urgency: 'NORMAL',
   }
 }
