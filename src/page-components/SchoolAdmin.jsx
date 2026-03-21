@@ -370,6 +370,13 @@ export default function SchoolAdmin() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href={`/schooladmin/${school.id}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition-colors"
+          >
+            <Sparkles className="h-3 w-3" />
+            AI Manager
+          </Link>
           {isDirty && (
             <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
               Unsaved changes
