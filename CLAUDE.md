@@ -252,3 +252,4 @@ When asked to create a PR, just verify the latest commit was pushed to the remot
 5. **Base44 legacy code** still exists (`@base44/sdk`, `src/api/base44Client.js`, `src/lib/app-params.js`) — avoid using it, will be removed
 6. **Middleware** currently only refreshes auth sessions — does NOT enforce route protection yet
 7. **`layout.tsx`** is marked `'use client'` — the entire app renders client-side under AuthProvider
+8. **Entity existence checks** — When writing new functions that call entities, always verify the entity/table exists in Supabase first (use the Supabase MCP tools to check). If it doesn't exist, create the table or update the schema before writing the function code.
