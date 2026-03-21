@@ -75,6 +75,8 @@ export function useConsultantSession({
       setIsAuthenticated(authenticated);
 
       if (authenticated) {
+        // Guard: profile not yet loaded — wait for next trigger
+        if (!authUser || !authUser.id) return;
         const userData = authUser;
         setUser(userData);
 
@@ -180,7 +182,7 @@ export function useConsultantSession({
       eventType: 'session_start',
       sessionId
     }).catch(err => console.error('Failed to track session:', err));
-  }, [sessionId, authIsLoadingAuth, authIsAuthenticated]);
+  }, [sessionId, authIsLoadingAuth, authIsAuthenticated, authUser?.id]);
 
   // ─── Session restore from URL param ───
   useEffect(() => {
