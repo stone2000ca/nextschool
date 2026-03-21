@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       .insert({
         family_journey_id: journey_id,
         school_id,
-        addedAt: now,
+        added_at: now,
         source: 'manual',
         updated_at: now,
       })
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
         school_id,
         school_name: school_name || '',
         status: 'shortlisted',
-        addedAt: now,
+        added_at: now,
         updated_at: now,
       })
     if (sjError) {
