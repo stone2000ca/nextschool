@@ -13,7 +13,7 @@ import { fetchConversationArtifacts } from '@/lib/api/entities-api';
  * @param {string|null} selectedSchoolId - Currently selected school ID
  * @returns Artifact state + setters + loading/refresh controls
  */
-export function useArtifacts(conversationId, selectedSchoolId) {
+export function useArtifacts(conversationId, selectedSchoolId, schoolAnalysesFallback) {
   const [deepDiveAnalysis, setDeepDiveAnalysis] = useState(null);
   const [visitPrepKit, setVisitPrepKit] = useState(null);
   const [actionPlan, setActionPlan] = useState(null);
@@ -62,14 +62,16 @@ export function useArtifacts(conversationId, selectedSchoolId) {
 
   // Fetch artifacts from conversation_artifacts table when conversation or school changes
   useEffect(() => {
-    // On school switch, clear school-specific artifacts immediately
+    // On school switch, hydrate from schoolAnalyses cache if available, otherwise clear.
+    // This preserves deep dive data restored by SessionRestorer (stored in schoolAnalyses).
     if (prevSchoolIdRef.current !== selectedSchoolId) {
       prevSchoolIdRef.current = selectedSchoolId;
-      setDeepDiveAnalysis(null);
+      const cachedAnalysis = selectedSchoolId && schoolAnalysesFallback?.[selectedSchoolId];
+      setDeepDiveAnalysis(cachedAnalysis ? { ...cachedAnalysis, schoolId: selectedSchoolId } : null);
       setVisitPrepKit(null);
       setActionPlan(null);
       setFitReEvaluation(null);
-      setHydrationSource(null);
+      setHydrationSource(cachedAnalysis ? 'HYDRATED_CACHE' : null);
     }
 
     if (!conversationId || !selectedSchoolId) {
@@ -87,24 +89,40 @@ export function useArtifacts(conversationId, selectedSchoolId) {
         if (cancelled) return;
 
         if (!artifacts || artifacts.length === 0) {
-          // No data in table — graceful fallback (return nulls)
           console.log('[useArtifacts] No artifacts found in DB for school:', selectedSchoolId);
+          // Fall back to schoolAnalyses cache if DB is empty
+          const cachedAnalysis = schoolAnalysesFallback?.[selectedSchoolId];
+          if (cachedAnalysis) {
+            setDeepDiveAnalysis({ ...cachedAnalysis, schoolId: selectedSchoolId });
+            setHydrationSource('HYDRATED_CACHE');
+          }
           return;
         }
 
+        let deepDiveHydrated = false;
         for (const artifact of artifacts) {
           const setter = ARTIFACT_MAP[artifact.artifact_type];
           if (setter) {
             console.log(`[useArtifacts] Hydrating ${artifact.artifact_type} from DB`);
             setter(artifact.content);
+            if (artifact.artifact_type === 'deep_dive_recommendation') {
+              // Check if the setter actually produced valid data
+              const parsed = safeParse(artifact.content);
+              deepDiveHydrated = !!(parsed && typeof parsed === 'object' && (parsed.fit_score !== undefined || parsed.fit_label));
+            }
           }
+        }
+        // If DB had artifacts but deep_dive_recommendation was invalid (plain text),
+        // fall back to schoolAnalyses cache
+        if (!deepDiveHydrated && schoolAnalysesFallback?.[selectedSchoolId]) {
+          console.log('[useArtifacts] DB deep_dive invalid, falling back to schoolAnalyses cache');
+          setDeepDiveAnalysis({ ...schoolAnalysesFallback[selectedSchoolId], schoolId: selectedSchoolId });
         }
         setHydrationSource('HYDRATED_DB');
       })
       .catch((err) => {
         if (cancelled) return;
         console.error('[useArtifacts] Failed to fetch artifacts:', err);
-        // Graceful fallback — keep nulls, don't crash
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);

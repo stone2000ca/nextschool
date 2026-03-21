@@ -160,7 +160,8 @@ export async function restoreSessionFromParam(
           const ddIds = Object.keys(allAnalyses);
           if (ddIds.length > 0) {
             lastDeepDiveSchoolId = ddIds[ddIds.length - 1];
-            if (setDeepDiveAnalysis) setDeepDiveAnalysis(allAnalyses[lastDeepDiveSchoolId]);
+            // FIX-DD-RESUME: Don't set active deepDiveAnalysis — show results grid.
+            // Data goes into schoolAnalyses cache; useArtifacts hydrates when user clicks school.
             if (setSchoolAnalyses) setSchoolAnalyses(prev => ({ ...prev, ...allAnalyses }));
           }
 
@@ -193,16 +194,12 @@ export async function restoreSessionFromParam(
           }
 
           // Resolve state
-          const hasDeepDive = !!lastDeepDiveSchoolId;
+          // FIX-DD-RESUME: On resume, always show results grid — don't open ResearchNotepad.
           const rawState = normalizedState?.resume_view || normalizedState?.state || null;
           const effectiveState = rawState || (restoredSchools.length > 0 ? STATES.RESULTS : (ctx.state || STATES.WELCOME));
-          const restoredState = hasDeepDive ? STATES.DEEP_DIVE : effectiveState;
+          const restoredState = restoredSchools.length > 0 ? STATES.RESULTS : effectiveState;
 
-          if (hasDeepDive && setSelectedSchool) {
-            const target = restoredSchools.find(s => s.id === lastDeepDiveSchoolId);
-            if (target) setSelectedSchool(target);
-            setCurrentView('detail');
-          } else if (restoredSchools.length > 0) {
+          if (restoredSchools.length > 0) {
             setCurrentView('schools');
           }
           setOnboardingPhase(restoredState);
