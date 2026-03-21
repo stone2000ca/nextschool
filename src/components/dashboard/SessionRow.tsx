@@ -4,17 +4,17 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { MoreVertical, Edit2, Share2, Archive } from 'lucide-react'
 import type { ChatSessionRecord } from '@/lib/api/types'
-import type { JourneyStageResult, StageKey } from './types'
+import type { JourneyStageResult, JourneyStage } from '@/lib/sessions/deriveJourneyStage'
 
 // ─── Badge label mapping ────────────────────────────────────────────
-const STAGE_LABELS: Record<StageKey, string> = {
-  DEBRIEF_PENDING: 'Debrief Waiting',
-  VISIT_UPCOMING: 'Visit Soon',
-  DECIDING: 'Ready to Decide',
-  RESEARCHING: 'Researching',
-  SHORTLISTING: 'Shortlisting',
-  RESULTS_READY: 'Results Ready',
-  BRIEF_INCOMPLETE: 'Brief Incomplete',
+const STAGE_LABELS: Record<JourneyStage, string> = {
+  DEBRIEF_PENDING: '📋 Debrief Waiting',
+  VISIT_UPCOMING: '🗓 Visit Soon',
+  DECIDING: '⚖️ Ready to Decide',
+  RESEARCHING: '🔍 Researching',
+  SHORTLISTING: '🔖 Shortlisting',
+  RESULTS_READY: '✨ Results Ready',
+  BRIEF_INCOMPLETE: '📝 Brief Incomplete',
 }
 
 // ─── Grade display helper ───────────────────────────────────────────
@@ -59,7 +59,7 @@ export default function SessionRow({
   const initial = (session.child_name ?? '?')[0].toUpperCase()
   const grade = gradeLabel(session.child_grade)
   const isHigh = journeyStage.urgency === 'HIGH'
-  const badgeLabel = STAGE_LABELS[journeyStage.stage] ?? journeyStage.label
+  const badgeLabel = STAGE_LABELS[journeyStage.stage]
 
   return (
     <div
