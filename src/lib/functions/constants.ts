@@ -9,13 +9,6 @@ export const STATES = {
   DEEP_DIVE: 'DEEP_DIVE'
 } as const;
 
-export const BRIEF_STATUS = {
-  GENERATING: 'generating',
-  PENDING_REVIEW: 'pending_review',
-  EDITING: 'editing',
-  CONFIRMED: 'confirmed'
-} as const;
-
 // KI-12 FIX PART B: City coordinates lookup table (single source)
 export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   'vancouver': { lat: 49.2827, lng: -123.1207 },

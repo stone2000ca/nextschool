@@ -55,7 +55,6 @@ export interface FamilyBrief {
 export interface SessionState {
   currentState: string
   consultantName?: string
-  briefStatus?: string | null
   turnCount?: number
   selectedSchoolId?: string | null
   journeyId?: string | null
@@ -243,7 +242,6 @@ function buildStaticLayer(
     const stateLines: string[] = []
     stateLines.push(`State: ${sessionState.currentState}`)
     if (sessionState.consultantName) stateLines.push(`Consultant: ${sessionState.consultantName}`)
-    if (sessionState.briefStatus) stateLines.push(`Brief: ${sessionState.briefStatus}`)
     if (sessionState.turnCount != null) stateLines.push(`Turn: ${sessionState.turnCount}`)
     if (sessionState.selectedSchoolId) stateLines.push(`Selected school: ${sessionState.selectedSchoolId}`)
     parts.push(`SESSION STATE:\n- ${stateLines.join('\n- ')}`)

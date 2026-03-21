@@ -1746,7 +1746,7 @@ Object.assign(context, safeUpdatedContext);
           responseData.conversationContext = { ...context, ...responseData.conversationContext };
           responseData.extractedEntities = extractionResult?.extractedEntities || {};
           // FIX-RESULTS-HANG: Use `!== undefined` so explicit null clears briefStatus
-          stateEnvelope.briefStatus = responseData.briefStatus !== undefined ? responseData.briefStatus : stateEnvelope.briefStatus;
+          // briefStatus removed from stateEnvelope
           responseData.stateEnvelope = stateEnvelope;
 
           // FIX-BRIEF-PERSIST: Sync family profile fields into context so
@@ -2125,7 +2125,7 @@ Object.assign(context, safeUpdatedContext);
         // FIX-RESULTS-HANG: Use `!== undefined` instead of `??` so that explicit
         // `null` from handleResults.ts clears briefStatus.  The `??` operator
         // treats null as nullish, so `null ?? 'confirmed'` kept the overlay stuck.
-        stateEnvelope.briefStatus = responseData.briefStatus !== undefined ? responseData.briefStatus : stateEnvelope.briefStatus;
+        // briefStatus removed from stateEnvelope
         stateEnvelope.state = responseData.state !== undefined ? responseData.state : stateEnvelope.state;
         responseData.stateEnvelope = stateEnvelope;
         return (responseData);
@@ -2194,7 +2194,7 @@ Object.assign(context, safeUpdatedContext);
         syncConversationState(conversationId, userId, responseData.conversationContext || context);
 
         // FIX-RESULTS-HANG: Use `!== undefined` so explicit null clears briefStatus
-        stateEnvelope.briefStatus = responseData.briefStatus !== undefined ? responseData.briefStatus : stateEnvelope.briefStatus;
+        // briefStatus removed from stateEnvelope
         stateEnvelope.state = responseData.state !== undefined ? responseData.state : stateEnvelope.state;
         responseData.stateEnvelope = stateEnvelope;
         return (responseData);

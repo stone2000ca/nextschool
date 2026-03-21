@@ -6,7 +6,7 @@ export function useConsultantUI({
   currentConversation, selectedSchool, schools,
   currentView, setCurrentView,
   isRestoringSessionRef, currentState,
-  briefStatus, isTyping, messages,
+  isTyping, messages,
   leftPanelMode,
 }) {
   // Detail tab state (S3A: Overview | Research Notepad | Website)
@@ -38,7 +38,6 @@ export function useConsultantUI({
   // Transition / loading
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
-  const briefConfirmTimeRef = useRef(null);
   const prevIsIntakePhaseRef = useRef(true);
   const skipViewOverrideRef = useRef(false);
   const [lastTypingTime, setLastTypingTime] = useState(Date.now());
@@ -73,20 +72,22 @@ export function useConsultantUI({
   );
   const showSchoolGrid = schools.length > 0;
 
-  // ─── Loading overlay driven by briefStatus ───
+  // ─── Loading overlay: show while results are loading, dismiss when ready ───
+  // Shows during fresh search, resume, and refresh. Dismisses (teal fade) when
+  // results are loaded (state is RESULTS/DEEP_DIVE and schools are present).
   useEffect(() => {
-    if (briefStatus === 'confirmed') {
+    const isResultsState = [STATES.RESULTS, STATES.DEEP_DIVE].includes(currentState);
+    const resultsReady = isResultsState && schools.length > 0;
+
+    // Show overlay on resume/refresh: state is RESULTS but schools not yet loaded
+    if (isResultsState && schools.length === 0 && !showLoadingOverlay) {
       setShowLoadingOverlay(true);
-    } else if (showLoadingOverlay) {
+    }
+    // Dismiss overlay when results are fully loaded
+    if (resultsReady && showLoadingOverlay) {
       setShowLoadingOverlay(false);
     }
-  }, [briefStatus]);
-
-  useEffect(() => {
-    if (showLoadingOverlay && !briefConfirmTimeRef.current) {
-      briefConfirmTimeRef.current = Date.now();
-    }
-  }, [showLoadingOverlay]);
+  }, [currentState, schools.length, showLoadingOverlay]);
 
   // ─── BRIEF->RESULTS transition animation ───
   useEffect(() => {

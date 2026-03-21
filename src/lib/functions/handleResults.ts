@@ -235,7 +235,6 @@ export async function handleResultsLogic(params: any) {
     context: rawContext,
     conversationHistory,
     consultantName,
-    briefStatus,
     selectedSchoolId,
     conversationId,
     userId,
@@ -274,8 +273,7 @@ export async function handleResultsLogic(params: any) {
     return {
       message: "Let me pull up that school's details for you.",
       state: 'DEEP_DIVE',
-      briefStatus: briefStatus,
-      schools: [],
+            schools: [],
       familyProfile: conversationFamilyProfile,
       conversationContext: { ...context, state: 'DEEP_DIVE' },
       rawToolCalls: []
@@ -316,8 +314,7 @@ export async function handleResultsLogic(params: any) {
       return {
         message: `Done — ${matched.name} has been added to your shortlist.`,
         state: STATES.RESULTS,
-        briefStatus: briefStatus,
-        schools: schoolPool,
+                schools: schoolPool,
         familyProfile: conversationFamilyProfile,
         conversationContext: context,
         actions: [{ type: 'ADD_TO_SHORTLIST', payload: { schoolId: matched.id }, timing: 'immediate' }]
@@ -350,7 +347,7 @@ export async function handleResultsLogic(params: any) {
     if (jMatched) {
       console.log(`[TOUR-FAST-PATH] Matched "${jMatched.name}" (${jMatched.id})`);
       // TourRequest creation handled by TourRequestModal (frontend) after user submits form
-      return { message: `Great choice! Let me pull up the tour request form for ${jMatched.name}.`, state: STATES.RESULTS, briefStatus: briefStatus, schools: jSchoolPool, familyProfile: conversationFamilyProfile, conversationContext: context, actions: [{ type: 'INITIATE_TOUR', payload: { schoolId: jMatched.id }, timing: 'immediate' }] };
+      return { message: `Great choice! Let me pull up the tour request form for ${jMatched.name}.`, state: STATES.RESULTS, schools: jSchoolPool, familyProfile: conversationFamilyProfile, conversationContext: context, actions: [{ type: 'INITIATE_TOUR', payload: { schoolId: jMatched.id }, timing: 'immediate' }] };
     }
     console.log('[TOUR-FAST-PATH] No school match — falling through to LLM');
   }
@@ -358,7 +355,7 @@ export async function handleResultsLogic(params: any) {
   console.log('[SEARCH] Running fresh school search in RESULTS state');
 
   if (!conversationFamilyProfile || typeof conversationFamilyProfile !== 'object') {
-    return { message: "I need a bit more information to find the right schools. Could you remind me — where are you looking and what grade?", state: STATES.RESULTS, briefStatus, schools: [], familyProfile: conversationFamilyProfile || {}, conversationContext: context, rawToolCalls: [] };
+    return { message: "I need a bit more information to find the right schools. Could you remind me — where are you looking and what grade?", state: STATES.RESULTS, schools: [], familyProfile: conversationFamilyProfile || {}, conversationContext: context, rawToolCalls: [] };
   }
 
   if (!conversationFamilyProfile?.location_area && context.extractedEntities?.location_area) {
@@ -366,7 +363,7 @@ export async function handleResultsLogic(params: any) {
   }
 
   if (!conversationFamilyProfile?.location_area && !conversationFamilyProfile?.child_grade) {
-    return { message: "I need to know your location and your child's grade to search for schools. Could you tell me both?", state: STATES.RESULTS, briefStatus, schools: [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
+    return { message: "I need to know your location and your child's grade to search for schools. Could you tell me both?", state: STATES.RESULTS, schools: [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
   }
 
   let parsedGrade: number | null = null;
@@ -429,7 +426,7 @@ export async function handleResultsLogic(params: any) {
     if (!Array.isArray(schools)) schools = [];
   } catch (e: any) {
     console.error('[ERROR] searchSchools failed:', e.message);
-    return { message: "I'm having trouble searching for schools right now. Could you tell me a bit more about your preferences?", state: STATES.RESULTS, briefStatus, schools: [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
+    return { message: "I'm having trouble searching for schools right now. Could you tell me a bit more about your preferences?", state: STATES.RESULTS, schools: [], familyProfile: conversationFamilyProfile, conversationContext: context, rawToolCalls: [] };
   }
 
   const preFilterCount = schools.length;
@@ -631,7 +628,6 @@ ${schoolIdContext}`;
     state: STATES.RESULTS,
     // E48-FIX: Return null to dismiss LoadingOverlay when results arrive.
     // Previously returned 'confirmed' which kept the overlay spinning forever.
-    briefStatus: null,
     schools: matchingSchools,
     familyProfile: conversationFamilyProfile,
     conversationContext: context,

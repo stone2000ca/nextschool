@@ -12,7 +12,7 @@ export function useConversationActions({
   loadConversations,
   setMessages,
   setSchools, setSelectedSchool, setCurrentView,
-  setBriefStatus, setOnboardingPhase,
+  setOnboardingPhase,
   setActiveJourney,
   resetSchoolState, clearAllArtifacts,
   setFamilyProfile, setExtractedEntitiesData,
@@ -31,7 +31,6 @@ export function useConversationActions({
   const resetChatState = useCallback(() => {
     setMessages([]);
     setCurrentConversation({ conversation_context: {} });
-    setBriefStatus(null);
     setOnboardingPhase(null);
     setActiveJourney(null);
     resetSchoolState();
