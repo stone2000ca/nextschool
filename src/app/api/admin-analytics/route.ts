@@ -12,9 +12,8 @@ export async function GET(req: NextRequest) {
     }
 
     const admin = getAdminClient()
-    const { data: profile } = await (admin.from('user_profiles') as any)
-      .select('role').eq('id', user.id).single()
-    if (profile?.role !== 'admin') {
+    const { data: profile } = await (admin.from('users').select('role').eq('id', user.id).single() as any)
+    if (!profile || profile.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
