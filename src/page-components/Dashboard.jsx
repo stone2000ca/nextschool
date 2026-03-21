@@ -5,6 +5,7 @@ import { fetchSessions, updateSession } from '@/lib/api/sessions';
 import { deleteConversation } from '@/lib/api/conversations';
 import Navbar from '@/components/navigation/Navbar';
 import SchoolSearchProfile from '@/components/dashboard/SchoolSearchProfile.jsx';
+import EditProfilePanel from '@/components/dashboard/EditProfilePanel';
 import UpgradePaywallModal from '@/components/dialogs/UpgradePaywallModal';
 import { Plus, Settings, X, AlertCircle, Crown, CheckCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
   const [deleteAllTarget, setDeleteAllTarget] = useState(null); // 'active' | 'archived'
   const [shortlistCounts, setShortlistCounts] = useState({}); // { [journey_id]: count }
+  const [editingSession, setEditingSession] = useState(null);
 
   useEffect(() => {
     // WC15: Check for upgrade success param
@@ -225,6 +227,12 @@ export default function Dashboard() {
     await loadSessions();
   };
 
+  const handleEditSave = async (sessionId, data) => {
+    await updateSession(sessionId, data);
+    await loadSessions();
+    setEditingSession(null);
+  };
+
   const handleDeleteAll = async () => {
     const toProcess = sessions.filter(s => s.status === deleteAllTarget);
     const isArchivingActive = deleteAllTarget === 'active';
@@ -419,7 +427,7 @@ export default function Dashboard() {
                       session={session}
                       shortlistCount={session.journey_id ? (shortlistCounts[session.journey_id] ?? 0) : 0}
                       onViewMatches={() => {}}
-                      onEditProfile={() => {}}
+                      onEditProfile={() => setEditingSession(session)}
                       onArchive={handleSessionArchived}
                       isPaid={user?.subscription_plan === 'pro' || user?.subscription_plan === 'enterprise'}
                     />
@@ -608,6 +616,15 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* E53-S3: Edit Profile Side Panel */}
+      {editingSession && (
+        <EditProfilePanel
+          session={editingSession}
+          onSave={handleEditSave}
+          onClose={() => setEditingSession(null)}
+        />
       )}
 
       {/* WC12: Upgrade Paywall Modal for Free Users */}
