@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export function useDataLoader({ user, currentConversation, isAuthenticated }) {
   const [familyProfile, setFamilyProfile] = useState(null);
@@ -8,6 +8,7 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
   const [activeJourney, setActiveJourney] = useState(null);
   const [extractedEntitiesData, setExtractedEntitiesData] = useState({});
   const [restoredSessionData, setRestoredSessionData] = useState(null);
+  const profileLoadedForConvRef = useRef(null);
 
   const loadPreviousArtifacts = useCallback(async (conversationId) => {
     if (!conversationId) return;
@@ -91,16 +92,27 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
   const loadFamilyProfile = useCallback(async () => {
     if (!user?.id || !currentConversation?.id) return;
 
-    // Guard: if familyProfile already has meaningful data from orchestrateConversation, skip DB fetch
-    const METADATA_KEYS = ['id', 'user_id', 'conversation_id', 'created_at', 'updated_at', 'created_by'];
-    const hasRealData = familyProfile && Object.entries(familyProfile).some(
-      ([k, v]) => !METADATA_KEYS.includes(k) && v != null && v !== '' && !(Array.isArray(v) && v.length === 0)
-    );
-    if (hasRealData) {
-      console.log('[loadFamilyProfile] Skipping DB fetch — meaningful data already in state');
-      await loadPreviousArtifacts(currentConversation.id);
-      return;
+    // FIX-PROFILE-ISOLATE: Detect conversation switch to bypass the hasRealData guard.
+    // The guard is valid only for same-conversation in-flight writes, not cross-chat switches.
+    const isSwitching = profileLoadedForConvRef.current !== null
+      && profileLoadedForConvRef.current !== currentConversation.id;
+    profileLoadedForConvRef.current = currentConversation.id;
+
+    if (!isSwitching) {
+      // Guard: if familyProfile already has meaningful data from orchestrateConversation, skip DB fetch
+      const METADATA_KEYS = ['id', 'user_id', 'conversation_id', 'created_at', 'updated_at', 'created_by'];
+      const hasRealData = familyProfile && Object.entries(familyProfile).some(
+        ([k, v]) => !METADATA_KEYS.includes(k) && v != null && v !== '' && !(Array.isArray(v) && v.length === 0)
+      );
+      if (hasRealData) {
+        console.log('[loadFamilyProfile] Skipping DB fetch — meaningful data already in state');
+        await loadPreviousArtifacts(currentConversation.id);
+        return;
+      }
     }
+
+    // FIX-PROFILE-ISOLATE: Clear stale profile from previous conversation before fetching
+    if (isSwitching) setFamilyProfile(null);
 
     try {
       const profileRes = await fetch(`/api/family-profile?user_id=${user.id}&conversation_id=${currentConversation.id}`);
@@ -108,6 +120,8 @@ export function useDataLoader({ user, currentConversation, isAuthenticated }) {
 
       if (profiles.length > 0) {
         setFamilyProfile(profiles[0]);
+      } else {
+        setFamilyProfile(null); // chat genuinely has no profile yet
       }
     } catch (error) {
       console.error('Failed to load family profile:', error);
