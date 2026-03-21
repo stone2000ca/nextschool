@@ -264,7 +264,7 @@ export async function handleResultsLogic(params: any) {
     }
   }
 
-  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
+  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
   // WC10: Narrative generation removed — handled by orchestrate.ts to avoid duplicate OpenRouter calls
 

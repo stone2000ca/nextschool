@@ -106,7 +106,112 @@ export async function restoreSessionFromParam(
     console.log('[RESTORE] ChatSession fetched:', chatSession ? 'Success' : 'Not found');
     
     if (!chatSession) {
-      console.error('[RESTORE] ChatSession not found with ID:', sessionIdParam);
+      // sessionIdParam might be a conversations.id (URL set by useMessageHandler)
+      // Fall back to restoring from the conversation directly
+      console.log('[RESTORE] ChatSession not found, trying as conversation ID:', sessionIdParam);
+      try {
+        const conversation = await fetchConversation(sessionIdParam);
+        if (conversation) {
+          console.log('[RESTORE] Found conversation, restoring from it');
+          const normalizedState = await loadConversationState(conversation.id);
+          const normalizedSchools = await loadConversationSchools(conversation.id);
+          const ctx = conversation.conversation_context || {};
+
+          // Restore consultant
+          const consultant = normalizedState?.consultant || ctx.consultant || null;
+          if (consultant) setSelectedConsultant(consultant);
+          else if (conversation.messages?.length > 0) setSelectedConsultant('jackie');
+
+          // Restore messages
+          if (conversation.messages?.length > 0) setMessages(conversation.messages);
+
+          // Restore deep dive analyses from messages
+          let lastDeepDiveSchoolId = null;
+          const allAnalyses = {};
+          for (const msg of (conversation.messages || [])) {
+            if (msg.role === 'assistant' && msg.deepDiveAnalysis?.schoolId) {
+              allAnalyses[msg.deepDiveAnalysis.schoolId] = msg.deepDiveAnalysis;
+            }
+          }
+          const ddIds = Object.keys(allAnalyses);
+          if (ddIds.length > 0) {
+            lastDeepDiveSchoolId = ddIds[ddIds.length - 1];
+            if (setDeepDiveAnalysis) setDeepDiveAnalysis(allAnalyses[lastDeepDiveSchoolId]);
+            if (setSchoolAnalyses) setSchoolAnalyses(prev => ({ ...prev, ...allAnalyses }));
+          }
+
+          // Restore schools
+          let restoredSchools = normalizedSchools;
+          if (restoredSchools.length === 0) {
+            let schoolIds = ctx.matched_schools || conversation.matched_schools;
+            if (typeof schoolIds === 'string') {
+              try { schoolIds = JSON.parse(schoolIds); } catch (_) { schoolIds = []; }
+            }
+            if (Array.isArray(schoolIds) && schoolIds.length > 0) {
+              try {
+                const fullSchools = await fetchSchools({ ids: schoolIds });
+                if (fullSchools?.length > 0) restoredSchools = fullSchools;
+              } catch (_) { /* best effort */ }
+            }
+          }
+          if (restoredSchools.length > 0) setSchools(restoredSchools);
+
+          // Restore family profile from normalized state
+          if (normalizedState && (normalizedState.child_name || normalizedState.child_grade || normalizedState.location_area)) {
+            setFamilyProfile({
+              child_name: normalizedState.child_name,
+              child_grade: normalizedState.child_grade,
+              location_area: normalizedState.location_area,
+              max_tuition: normalizedState.max_tuition,
+              priorities: normalizedState.priorities || [],
+              learning_differences: normalizedState.learning_differences || [],
+            });
+          }
+
+          // Resolve state
+          const hasDeepDive = !!lastDeepDiveSchoolId;
+          const rawState = normalizedState?.resume_view || normalizedState?.state || null;
+          const effectiveState = rawState || (restoredSchools.length > 0 ? STATES.RESULTS : (ctx.state || STATES.WELCOME));
+          const restoredState = hasDeepDive ? STATES.DEEP_DIVE : effectiveState;
+
+          if (hasDeepDive && setSelectedSchool) {
+            const target = restoredSchools.find(s => s.id === lastDeepDiveSchoolId);
+            if (target) setSelectedSchool(target);
+            setCurrentView('detail');
+          } else if (restoredSchools.length > 0) {
+            setCurrentView('schools');
+          }
+          setOnboardingPhase(restoredState);
+
+          // Derive journey ID
+          let journeyId = normalizedState?.journey_id || ctx.journeyId || null;
+          if (!journeyId && user?.id) {
+            try {
+              const fjRes = await fetch(`/api/family-journey?user_id=${user.id}&is_archived=false&chat_history_id=${conversation.id}`);
+              const fjData = fjRes.ok ? await fjRes.json() : [];
+              if (fjData.length > 0) journeyId = fjData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].id;
+            } catch (_) { /* best effort */ }
+          }
+
+          setCurrentConversation({
+            ...conversation,
+            conversation_context: {
+              ...ctx,
+              state: restoredState,
+              schools: restoredSchools,
+              ...(journeyId ? { journeyId } : {}),
+            },
+          });
+
+          console.log('[RESTORE] Conversation restore complete, state:', restoredState);
+          setSessionRestored(true);
+          return;
+        }
+      } catch (e) {
+        console.warn('[RESTORE] Conversation fallback failed:', e.message);
+      }
+
+      console.error('[RESTORE] Neither ChatSession nor conversation found for ID:', sessionIdParam);
       setSessionRestored(true);
       return;
     }

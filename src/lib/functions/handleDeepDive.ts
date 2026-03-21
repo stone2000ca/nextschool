@@ -107,7 +107,7 @@ const MERGED_RESPONSE_SCHEMA = {
 export async function handleDeepDiveLogic(params: any) {
   const { selectedSchoolId, message, conversationFamilyProfile, context, conversationHistory, consultantName, currentState, currentSchools, userId, returningUserContextBlock, flags, conversationId, userSchoolNotes } = params;
 
-  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', BRIEF: 'BRIEF', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
+  const STATES = { WELCOME: 'WELCOME', DISCOVERY: 'DISCOVERY', RESULTS: 'RESULTS', DEEP_DIVE: 'DEEP_DIVE' };
 
   // Back-to-results detection
   const backToResultsPattern = /\b(what about another|show me other|different school|go back|other options|other schools|what else|see other|back to results|show me more|look at other|compare other|other matches|show other|different one|another school)\b/i;
