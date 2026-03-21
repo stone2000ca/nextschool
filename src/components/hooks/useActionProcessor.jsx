@@ -12,6 +12,7 @@ export function useActionProcessor({
   setTourRequestSchool,
   applyDistances, userLocation,
   schoolAnalyses,
+  currentConversation,
 }) {
   // E30-012: Prevent double-processing the same deep dive school
   const deepDiveAutoAddedRef = useRef(new Set());
@@ -21,6 +22,7 @@ export function useActionProcessor({
   // E30-012 + E30-013: Auto-add to shortlist + auto-open panel after deep dive
   useEffect(() => {
     if (isTyping) return;
+    if (!currentConversation?.id) return;
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg?.deepDiveAnalysis || lastMsg.role !== 'assistant') return;
     const schoolId = lastMsg.deepDiveAnalysis.schoolId;
@@ -61,6 +63,7 @@ export function useActionProcessor({
   // E32-003: Action processor - executes UI actions from backend
   useEffect(() => {
     if (isTyping) return;
+    if (!currentConversation?.id) return;
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg?.actions?.length || lastMsg.role !== 'assistant') return;
 
