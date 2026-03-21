@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getAdminClient } from '@/lib/supabase/admin'
 import { ChatSession } from '@/lib/entities-server'
 import type { CreateSessionInput } from '@/lib/api/types'
 
@@ -32,6 +33,14 @@ export async function POST(req: NextRequest) {
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Defensive guard: ensure user exists in public.users to satisfy FK constraint.
+    // The signup trigger should create this row, but some edge cases miss it.
+    const admin = getAdminClient()
+    await admin.from('users').upsert(
+      { id: user.id, email: user.email ?? '', role: 'user' },
+      { onConflict: 'id', ignoreDuplicates: true }
+    )
 
     const body: CreateSessionInput = await req.json()
 
