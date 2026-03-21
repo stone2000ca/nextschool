@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from '@/lib/AuthContext';
 import LoginGateModal from "@/components/dialogs/LoginGateModal";
 import UpgradePaywallModal from "@/components/dialogs/UpgradePaywallModal";
+import DeleteConversationConfirm from "@/components/dialogs/DeleteConversationConfirm";
 import DebugPanel from "@/components/utils/DebugPanel";
 
 export default function ConsultantDialogs({
@@ -28,23 +29,14 @@ export default function ConsultantDialogs({
   const { navigateToLogin } = useAuth();
   return (
     <>
-      {/* 1. Delete Conversation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{conversationToDelete?.title}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteConversation} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* 1. Delete Conversation Dialog — Two-step confirmation */}
+      <DeleteConversationConfirm
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        conversationTitle={conversationToDelete?.title}
+        childName={familyProfile?.child_name}
+        onConfirmDelete={deleteConversation}
+      />
 
       {/* 2. Archive Confirmation Dialog */}
       <AlertDialog open={archiveConfirmOpen} onOpenChange={setArchiveConfirmOpen}>
