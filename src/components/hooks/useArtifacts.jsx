@@ -29,16 +29,35 @@ export function useArtifacts(conversationId, selectedSchoolId) {
   // Track the previous school ID to detect switches
   const prevSchoolIdRef = useRef(selectedSchoolId);
 
+  // FIX-DD-RESTORE: Helper to safely parse content that may be a JSON string or object
+  const safeParse = (content) => {
+    if (!content) return null;
+    if (typeof content === 'object') return content;
+    if (typeof content === 'string') {
+      try { return JSON.parse(content); } catch { return null; }
+    }
+    return null;
+  };
+
   // Artifact type → state setter mapping
   const ARTIFACT_MAP = {
-    deep_dive_recommendation: (content) =>
-      setDeepDiveAnalysis(content ? { ...content, schoolId: selectedSchoolId } : null),
-    visit_prep_kit: (content) =>
-      setVisitPrepKit(content ? { ...content, schoolId: selectedSchoolId } : null),
+    deep_dive_recommendation: (content) => {
+      // FIX-DD-RESTORE: content may be plain text (AI message) or JSON string.
+      // Only set deepDiveAnalysis if it's a valid structured object with fit_score.
+      const parsed = safeParse(content);
+      if (parsed && typeof parsed === 'object' && (parsed.fit_score !== undefined || parsed.fit_label)) {
+        setDeepDiveAnalysis({ ...parsed, schoolId: selectedSchoolId });
+      }
+      // If content is plain text (not structured analysis), skip — don't set garbage data
+    },
+    visit_prep_kit: (content) => {
+      const parsed = safeParse(content);
+      setVisitPrepKit(parsed ? { ...parsed, schoolId: selectedSchoolId } : null);
+    },
     action_plan: (content) =>
-      setActionPlan(content || null),
+      setActionPlan(safeParse(content) || null),
     fit_reevaluation: (content) =>
-      setFitReEvaluation(content || null),
+      setFitReEvaluation(safeParse(content) || null),
   };
 
   // Fetch artifacts from conversation_artifacts table when conversation or school changes
