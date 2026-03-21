@@ -6,6 +6,7 @@
 // WC-2: LLM model upgrade — MiniMax M2.5 as primary model in callOpenRouter waterfall
 // WC-3: S122 extraction bug fixes — location false positive, interests list, gender keywords
 // S1-S2: Typed contracts + decoupled persistence (FamilyProfile.update moved to orchestrate.ts)
+// S3-S5: Narrowed LLM scope, protected fields, delta-only output
 
 // =============================================================================
 // TYPES: Extraction input/output contracts
@@ -37,6 +38,12 @@ export interface ExtractedDelta {
   remove_priorities?: string[];
   remove_interests?: string[];
   remove_dealbreakers?: string[];
+  // S3-S5: Habits, constraints, preferences
+  commute_tolerance?: string;
+  schedule_preference?: string;
+  homework_tolerance?: string;
+  open_to_boarding?: boolean;
+  flexible_on_commute?: boolean;
   [key: string]: any; // escape hatch for LLM extras not yet in schema
 }
 
@@ -47,6 +54,16 @@ export interface ExtractionOutput {
   intentSignal: string;
   briefDelta: { additions: any[]; updates: any[]; removals: any[] };
 }
+
+// =============================================================================
+// S3-S5: Protected fields — only updated on explicit correction patterns
+// =============================================================================
+
+const PROTECTED_FIELDS = new Set([
+  'child_name', 'child_grade', 'child_gender', 'gender', 'location_area', 'max_tuition'
+]);
+
+const CORRECTION_PATTERN = /\b(actually|correct(?:ion)?|changed?\s+(?:to|my)|moved?\s+to|we\s+moved|use\s+\w+\s+instead|not\s+\w+\s*,?\s*(?:but|it'?s)|now\s+(?:in|at|going)|switch(?:ed|ing)\s+to|update\s+(?:my|the|our)|wrong|mistake|meant\s+to\s+say|no\s*,?\s*(?:it'?s|she'?s|he'?s|we'?re)|let\s+me\s+correct)\b/i;
 
 // =============================================================================
 // INLINED: callOpenRouter (from handleBrief pattern)
@@ -301,57 +318,44 @@ export async function extractEntitiesLogic({ message: rawMessage, aiReply, conve
       }
     }
 
-    const systemPrompt = `Extract factual data from the parent's message. Return JSON with NULL for anything not mentioned.
+    // S3-S5: Narrowed LLM prompt — focused on preferences, values, constraints, and intent.
+    // Protected fields (name, grade, gender, location, budget) are handled by regex only.
+    const systemPrompt = `You are a school-preference extractor. Analyze the parent's message and return a JSON delta of ONLY newly mentioned or changed preferences. Return NULL for anything not mentioned in THIS message.
 
-GENDER INFERENCE (BUG-ENT-004): Infer the child's gender from relational terms even if not stated directly:
-- "my son", "my boy", "he", "him", "his" → gender = "male"
-- "my daughter", "my girl", "she", "her" → gender = "female"
-- If gender is ambiguous or not mentioned, return null for gender.
+YOUR SCOPE — extract ONLY these categories:
 
-BUDGET EXTRACTION (BUG-ENT-004): Extract budget/tuition even in conversational formats:
-- "$25K", "25k", "25 thousand", "around $25,000", "about 25K", "up to 30k" → extract the number (e.g. 25000, 30000)
-- Store as max_tuition (integer number of dollars, or the string "unlimited" if they say no limit/flexible)
-- Do NOT infer budget if user has not explicitly stated it.
+1. PRIORITIES (school requirements): curriculum type, teaching style, class size, gender policy, religious affiliation, boarding, learning support, structured environment, STEM focus, French immersion, arts program, etc.
+2. INTERESTS (child activities): robotics, art, soccer, coding, music, drama, debate, swimming, hockey, etc.
+3. DEALBREAKERS (hard no's): things the parent explicitly rejects or won't accept.
+4. PARENT_NOTES (soft signals): implied preferences, concerns, or family context not captured above. Write short, factual observations:
+   - "My son has ADHD" → ["Child has ADHD — needs learning support"]
+   - "Can we afford private on one income?" → ["Budget-sensitive — single income household"]
+   - "Worried about bullying" → ["Bullying prevention is a concern"]
+   Also map to schema when applicable: "ADHD" → priorities: ["learning support"] AND parent_notes.
+   parent_notes are ADDITIVE — return empty [] if nothing new.
+5. HABITS & CONSTRAINTS:
+   - commute_tolerance: "short"/"medium"/"long"/"any" (only if mentioned)
+   - schedule_preference: "early drop-off"/"late pickup"/"before-after care needed" (only if mentioned)
+   - homework_tolerance: "light"/"moderate"/"heavy"/"any" (only if mentioned)
+   - open_to_boarding: true/false (only if mentioned)
+   - flexible_on_commute: true/false (only if mentioned)
 
-CRITICAL: If the user explicitly negates or removes a previously stated preference (e.g. "actually, not interested in sports", "remove arts from my priorities", "I changed my mind about boarding"), populate the corresponding remove_interests, remove_priorities, or remove_dealbreakers field with the items to remove. Leave additive arrays for new additions only.
+CLASSIFICATION RULES:
+- PRIORITIES = what the SCHOOL must offer/be. INTERESTS = what the CHILD likes doing.
+- 'STEM-focused school' = PRIORITY. 'likes robotics' = INTEREST. 'boys-only' = PRIORITY. 'structured learning' = PRIORITY. 'coding' = INTEREST.
 
-CRITICAL: If the user mentions having VISITED, TOURED, or SEEN a school — phrases like "I visited Branksome Hall", "we toured the school", "we went to the open house", "just got back from visiting", "we saw the campus" — set intentSignal to 'visit_debrief'. This takes priority over 'continue' and 'ask-about-school'.
+REMOVALS: If the user negates a preference ("not interested in sports", "remove arts", "changed my mind about boarding"), populate remove_interests, remove_priorities, or remove_dealbreakers. Additive arrays are for NEW additions only.
 
-LOCATION SPECIFICITY (BUG-LOC-003): For location_area, always use the most specific location the user mentioned — city name, NOT province or state. Examples: "Montreal" not "Quebec", "Vancouver" not "British Columbia", "Calgary" not "Alberta". If the user says a region alias like "GTA" or "Greater Toronto Area", preserve that exact term as-is.
+INTENT SIGNALS — set intentSignal to one of:
+- 'continue' (default — normal conversation)
+- 'confirm-brief' — user confirms brief ("that looks right", "show me schools", "yes", "confirmed", "go ahead")
+- 'visit_debrief' — user mentions having VISITED/TOURED a school ("I visited Branksome Hall", "we toured the school")
+- 'visit_prep_request' — user requests visit prep kit ("prepare my visit kit", "tour preparation")
+- 'shortlist-action' — user wants to add/save/bookmark a school ("add to shortlist", "save that school")
 
-LOCATION vs CURRICULUM: location_area must ONLY contain geographic places. IB, AP, STEM, Montessori, Waldorf, Reggio, IGCSE, French immersion are curriculum types — put them in priorities, never location_area.
+DO NOT extract: child_name, child_grade, child_gender, location_area, max_tuition. These are handled separately.
 
-LOCATION vs ACADEMIC SUBJECTS: Academic subjects like English, Math, Science, Art, Music, History, Drama are NEVER locations. 'does well in English' means the subject, not a place. Only extract geographic places as location_area.
-
-AGE vs GRADE HANDLING:
-- If the user says "[name] is [number]" or "[name] is [number] years old" WITHOUT the word "grade", treat the number as AGE, not grade.
-- Convert age to grade: age 3 = PK (grade -2), age 4 = JK (grade -1), age 5 = K (grade 0), age 6+ = grade (age - 5). So age 6 = grade 1, age 7 = grade 2, etc.
-- If unclear whether age or grade, return child_grade as null and let the conversation ask for clarification.
-- "grade 3" or "in grade 3" = grade 3. "is 3" or "is 3 years old" = age 3 = PK.
-
-PRIORITY vs INTEREST CLASSIFICATION:
-- PRIORITIES = requirements the SCHOOL must meet (curriculum type, teaching style, class size, gender policy, religious affiliation, boarding, learning support, structured environment, boys-only, STEM focus, French immersion)
-- INTERESTS = things the CHILD enjoys or wants to do (robotics club, art classes, soccer, coding, music, drama, debate)
-- When in doubt, if it describes what the SCHOOL should offer/be, it's a PRIORITY. If it describes what the CHILD likes doing, it's an INTEREST.
-- Examples: 'STEM-focused school' = PRIORITY. 'likes robotics' = INTEREST. 'boys-only' = PRIORITY. 'structured learning' = PRIORITY. 'coding' = INTEREST.
-
-CRITICAL: If the user confirms the brief or says something like "that looks right", "show me schools", "yes", "confirmed", "let's see", "go ahead", set intentSignal to 'confirm-brief'.
-CRITICAL: If the user requests a Visit Prep Kit or tour preparation — phrases like "yes prepare my visit kit", "prepare the kit", "yes make it", "visit prep", "tour preparation", "prepare that", "yes please" (in context of a visit kit offer) — set intentSignal to 'visit_prep_request'.
-
-CRITICAL: If the user asks to add, save, shortlist, or bookmark a specific school — phrases like "add Howlett Academy to my shortlist", "save that school", "shortlist Rosedale", "add it", "keep that one", "I want to save this school", "add to my list" — set intentSignal to 'shortlist-action'. This takes priority over 'ask-about-school' and 'continue'.
-
-E41-CONVERSATION CAPTURE: Even when the parent is asking a question (not providing search criteria), capture any implied preferences, concerns, or family context as soft signals in parent_notes[].
-Write short, factual observations:
-- "My son has ADHD" → parent_notes: ["Child has ADHD — needs learning support"]
-- "Can we afford private on one income?" → parent_notes: ["Budget-sensitive — single income household"]
-- "Is Montessori good for shy kids?" → parent_notes: ["Exploring Montessori — child may be introverted"]
-- "What about French immersion?" → parent_notes: ["Parent interested in French immersion programs"]
-- "Worried about bullying" → parent_notes: ["Bullying prevention is a concern"]
-Also map to existing schema when applicable:
-- "French immersion" → priorities: ["French immersion"] AND parent_notes
-- "ADHD" → priorities: ["learning support"] AND parent_notes
-- "Budget is tight" → parent_notes only (no max_tuition override without a number)
-parent_notes are ADDITIVE — never remove prior notes. Deduplicate if semantically identical. Return empty array [] if nothing new to capture.`;
+Return ONLY changed/new fields as JSON. Omit fields with no new information. Do NOT explain.`;
 
     const userPrompt = `CURRENT KNOWN DATA:
 ${JSON.stringify(knownData, null, 2)}
@@ -444,6 +448,20 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
       finalResult = { ...finalResult, location_area: effectiveLocation };
     }
 
+    // S3-S5: Protected-field gating — strip protected fields unless correction detected
+    const isCorrection = CORRECTION_PATTERN.test(rawMessage);
+    if (!isCorrection) {
+      for (const field of PROTECTED_FIELDS) {
+        if (field in finalResult) {
+          console.log(`[PROTECTED] Stripping "${field}" — no correction pattern detected`);
+          delete finalResult[field];
+        }
+      }
+    } else {
+      console.log('[PROTECTED] Correction pattern detected — allowing protected field updates');
+    }
+
+    // Clean nulls and empty arrays
     const cleaned: any = {};
     for (const [key, value] of Object.entries(finalResult)) {
       if (value !== null && value !== undefined && !(Array.isArray(value) && value.length === 0)) {
@@ -451,7 +469,43 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
       }
     }
 
-    extractedData = cleaned;
+    // S3-S5: Delta-only — diff against existing profile, keep only changed fields
+    const NON_DIFFABLE_KEYS = new Set(['intentSignal', 'briefDelta', 'remove_priorities', 'remove_interests', 'remove_dealbreakers']);
+    const delta: any = {};
+    for (const [key, value] of Object.entries(cleaned)) {
+      if (NON_DIFFABLE_KEYS.has(key)) {
+        delta[key] = value; // always pass through control fields
+        continue;
+      }
+      const existing = conversationFamilyProfile?.[key];
+      if (Array.isArray(value)) {
+        // For arrays: include if any new items not in existing
+        if (!Array.isArray(existing) || existing.length === 0) {
+          delta[key] = value;
+        } else {
+          const existingSet = new Set(existing.map((s: any) => typeof s === 'string' ? s.toLowerCase() : JSON.stringify(s)));
+          const newItems = value.filter((item: any) => {
+            const normalized = typeof item === 'string' ? item.toLowerCase() : JSON.stringify(item);
+            return !existingSet.has(normalized);
+          });
+          if (newItems.length > 0) {
+            delta[key] = value; // pass full array so merge logic in orchestrate can union
+          }
+        }
+      } else {
+        // For scalars: include only if different from existing
+        if (existing !== value) {
+          delta[key] = value;
+        }
+      }
+    }
+
+    extractedData = delta;
+    if (Object.keys(delta).filter(k => !NON_DIFFABLE_KEYS.has(k)).length === 0) {
+      console.log('[EXTRACT] Empty delta — no actionable changes detected');
+    } else {
+      console.log('[EXTRACT] Delta fields:', Object.keys(delta).filter(k => !NON_DIFFABLE_KEYS.has(k)));
+    }
 
     // E41-S4: Transform parent_notes from LLM (string[]) into structured objects and dedup
     if (Array.isArray(extractedData.parent_notes) && extractedData.parent_notes.length > 0) {
@@ -464,7 +518,6 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
         const noteText = typeof raw === 'string' ? raw : raw?.note;
         if (!noteText || typeof noteText !== 'string') continue;
         const normalized = noteText.toLowerCase().trim();
-        // Skip if semantically identical: exact match, or one contains the other
         const isDup = existingNormalized.some((ex: string) =>
           ex === normalized || ex.includes(normalized) || normalized.includes(ex)
         );
@@ -473,15 +526,13 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
           continue;
         }
         newNotes.push({ note: noteText, source: 'conversation', timestamp: now });
-        existingNormalized.push(normalized); // prevent intra-batch dupes
+        existingNormalized.push(normalized);
       }
 
       if (newNotes.length > 0) {
-        // Replace extractedData.parent_notes with merged array (existing + new)
         extractedData.parent_notes = [...existingNotes, ...newNotes];
         console.log('[PARENT_NOTES] Appended', newNotes.length, 'new notes, total:', extractedData.parent_notes.length);
       } else {
-        // Nothing new — remove from extractedData so we don't overwrite existing
         delete extractedData.parent_notes;
         console.log('[PARENT_NOTES] No new notes to add');
       }
@@ -492,11 +543,11 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     console.error('[ERROR] Extraction failed:', e.message);
   }
 
+  // Build updatedContext with delta merged into extractedEntities
   const updatedContext = { ...context };
   if (!updatedContext.extractedEntities) {
     updatedContext.extractedEntities = {};
   }
-  // CRT-S109-F11 FIX: Merge extracted data directly into context for FamilyBrief display
   for (const [key, value] of Object.entries(extractedData)) {
     if (value !== null && value !== undefined) {
       if (Array.isArray(value)) {
@@ -511,45 +562,8 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     }
   }
 
-  const REMOVAL_MAP: Record<string, string> = {
-    remove_priorities: 'priorities',
-    remove_interests: 'interests',
-    remove_dealbreakers: 'dealbreakers'
-  };
-
-  const updatedFamilyProfile = { ...conversationFamilyProfile };
-  if (Object.keys(extractedData).length > 0) {
-    for (const [removeKey, targetField] of Object.entries(REMOVAL_MAP)) {
-      const toRemove = extractedData[removeKey];
-      if (Array.isArray(toRemove) && toRemove.length > 0 && Array.isArray(updatedFamilyProfile[targetField])) {
-        const removeSet = new Set(toRemove.filter(Boolean).map((s: string) => s.toLowerCase()));
-        updatedFamilyProfile[targetField] = updatedFamilyProfile[targetField].filter(
-          (item: string) => !removeSet.has(item.toLowerCase())
-        );
-        console.log(`[REMOVE] ${targetField}: removed [${toRemove.join(', ')}]`);
-      }
-    }
-
-    for (const [key, value] of Object.entries(extractedData)) {
-      if (key in REMOVAL_MAP) continue;
-      if (value !== null && value !== undefined) {
-        const existing = updatedFamilyProfile[key];
-        if (key === 'parent_notes') {
-          // E41-S4: parent_notes is already the fully merged array — assign directly
-          updatedFamilyProfile[key] = value;
-        } else if (Array.isArray(value)) {
-          if (Array.isArray(existing) && existing.length > 0) {
-            updatedFamilyProfile[key] = [...new Set([...existing, ...value])];
-          } else {
-            updatedFamilyProfile[key] = value;
-          }
-        } else if (value !== '') {
-          updatedFamilyProfile[key] = value;
-        }
-      }
-    }
-    // S1-S2: Persistence removed — caller (orchestrate.ts) is responsible for FamilyProfile.update()
-  }
+  // S3-S5: Apply delta to profile using applyExtractionDelta (exported for use by orchestrate.ts)
+  const updatedFamilyProfile = applyExtractionDelta(conversationFamilyProfile || {}, extractedData);
 
   const briefDelta = extractedData?.briefDelta || { additions: [], updates: [], removals: [] };
   intentSignal = intentSignal || 'continue';
@@ -561,4 +575,58 @@ Extract all factual data from the parent's message. Return ONLY valid JSON. Do N
     intentSignal,
     briefDelta
   };
+}
+
+// =============================================================================
+// S3-S5: applyExtractionDelta — apply an ExtractedDelta to an existing profile
+// Exported so orchestrate.ts can use the same merge logic.
+// =============================================================================
+export function applyExtractionDelta(
+  existingProfile: Record<string, any>,
+  delta: ExtractedDelta
+): Record<string, any> {
+  const REMOVAL_MAP: Record<string, string> = {
+    remove_priorities: 'priorities',
+    remove_interests: 'interests',
+    remove_dealbreakers: 'dealbreakers'
+  };
+
+  const updated = { ...existingProfile };
+  const deltaKeys = Object.keys(delta);
+  if (deltaKeys.length === 0) return updated;
+
+  // Process removals first
+  for (const [removeKey, targetField] of Object.entries(REMOVAL_MAP)) {
+    const toRemove = delta[removeKey];
+    if (Array.isArray(toRemove) && toRemove.length > 0 && Array.isArray(updated[targetField])) {
+      const removeSet = new Set(toRemove.filter(Boolean).map((s: string) => s.toLowerCase()));
+      updated[targetField] = updated[targetField].filter(
+        (item: string) => !removeSet.has(item.toLowerCase())
+      );
+      console.log(`[DELTA-MERGE] ${targetField}: removed [${toRemove.join(', ')}]`);
+    }
+  }
+
+  // Process additions/updates
+  for (const [key, value] of Object.entries(delta)) {
+    if (key in REMOVAL_MAP) continue;
+    if (value === null || value === undefined) continue;
+    const existing = updated[key];
+    if (key === 'parent_notes') {
+      // parent_notes: already fully merged array from extraction — assign directly
+      updated[key] = value;
+    } else if (Array.isArray(value)) {
+      // Arrays: union-merge with existing
+      if (Array.isArray(existing) && existing.length > 0) {
+        updated[key] = [...new Set([...existing, ...value])];
+      } else {
+        updated[key] = value;
+      }
+    } else if (value !== '') {
+      // Scalars: overwrite
+      updated[key] = value;
+    }
+  }
+
+  return updated;
 }
