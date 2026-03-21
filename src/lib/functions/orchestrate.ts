@@ -12,6 +12,8 @@ import { syncConversationState, readConversationState } from './dualWrite'
 import { fetchSchoolNotes } from './fetchSchoolNotes'
 import { fetchVisitContext } from './fetchVisitContext'
 import { buildPromptContext, type BuildContextParams, type FamilyBrief, type SessionState, type SchoolArtifact, type ChatMessage } from '@/lib/ai/buildPromptContext'
+import { detectOffTopic } from './detectOffTopic'
+import { guardrailResponse } from '@/lib/ai/guardrailResponse'
 import { countTokens } from '@/lib/ai/countTokens'
 
 
@@ -1658,6 +1660,44 @@ Object.assign(context, safeUpdatedContext);
 
       context.state = currentState;
       context.briefStatus = briefStatus;
+
+      // E52-B2: OFF_TOPIC guardrail — tiered warm deflections, no school context injected
+      if (detectOffTopic(processMessage || '')) {
+        context.offTopicCount = (context.offTopicCount || 0) + 1;
+        console.log('[E52-B2] OFF_TOPIC detected, tier:', Math.min(context.offTopicCount, 3), '| count:', context.offTopicCount);
+
+        const shortlistCount = (currentSchools || []).length;
+        const activeSchoolName = selectedSchoolId
+          ? (currentSchools || []).find(s => s.id === selectedSchoolId)?.name || null
+          : null;
+        const hasActiveDebrief = !!(context.hasActiveDebrief || context.activeDebriefSchoolName);
+        const journeyPhase = journeyContext?.currentPhase || null;
+
+        const deflection = guardrailResponse(context.offTopicCount, {
+          shortlistCount,
+          activeSchoolName,
+          hasActiveDebrief,
+          journeyPhase,
+          consultantName,
+        });
+
+        return ({
+          message: deflection,
+          state: currentState,
+          briefStatus,
+          familyProfile: conversationFamilyProfile,
+          conversationContext: context,
+          extractedEntities: extractionResult?.extractedEntities || {},
+          schools: currentSchools || [],
+          stateEnvelope,
+        });
+      }
+      // E52-B2: Reset off-topic counter on any on-topic message
+      if (context.offTopicCount) {
+        console.log('[E52-B2] On-topic message, resetting offTopicCount from', context.offTopicCount);
+        context.offTopicCount = 0;
+      }
+
       context.dataSufficiency = resolveResult.sufficiency;
       context.transitionReason = resolveResult.transitionReason;
       if (resolveResult.tier1CompletedTurn !== undefined && resolveResult.tier1CompletedTurn !== null) {
