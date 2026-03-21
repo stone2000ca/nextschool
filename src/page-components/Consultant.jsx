@@ -180,7 +180,7 @@ export default function Consultant() {
     hydrationSource, setHydrationSource,
     isLoading: artifactsLoading,
     refreshArtifacts, clearAll: clearAllArtifacts,
-  } = useArtifacts(currentConversation?.id, selectedSchool?.id);
+  } = useArtifacts(currentConversation?.id, selectedSchool?.id, schoolAnalyses);
 
   // ─── School journey data ───
   const {
