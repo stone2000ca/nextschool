@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const db = () => getAdminClient().from('generated_artifacts') as any
+// Consolidated: now points to conversation_artifacts (generated_artifacts dropped)
+const db = () => getAdminClient().from('conversation_artifacts') as any
 
 // GET /api/artifacts?conversation_id=X
 export async function GET(req: NextRequest) {
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/artifacts — create a generated artifact
+// POST /api/artifacts — create an artifact
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()

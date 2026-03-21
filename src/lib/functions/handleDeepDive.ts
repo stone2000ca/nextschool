@@ -1,10 +1,9 @@
 // Function: handleDeepDive
 // Purpose: Handle deep-dive school analysis with visit prep generation and debrief mode routing
-// Entities: School, SchoolAnalysis, GeneratedArtifact, SchoolEvent, User, Testimonial
+// Entities: School, SchoolAnalysis, ConversationArtifacts, SchoolEvent, User, Testimonial
 // Last Modified: 2026-03-09
 
-import { School, SchoolAnalysis, GeneratedArtifact, SchoolEvent, User, Testimonial, LLMLog } from '@/lib/entities-server'
-import { syncConversationArtifact } from './dualWrite'
+import { School, SchoolAnalysis, ConversationArtifacts, SchoolEvent, User, Testimonial, LLMLog } from '@/lib/entities-server'
 
 // =============================================================================
 // INLINED: callOpenRouter
@@ -130,9 +129,9 @@ export async function handleDeepDiveLogic(params: any) {
     userId ? User.filter({ id: userId }).catch(() => []) : Promise.resolve([]),
     selectedSchoolId ? School.filter({ id: selectedSchoolId }).catch(() => []) : Promise.resolve([]),
     (userId && selectedSchoolId) ? Promise.all([
-      GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'deep_dive_recommendation' }),
-      GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'visit_prep_kit' }),
-      GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'action_plan' })
+      ConversationArtifacts.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'deep_dive_recommendation' }),
+      ConversationArtifacts.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'visit_prep_kit' }),
+      ConversationArtifacts.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: 'action_plan' })
     ]).catch(() => [[], [], []]) : Promise.resolve([[], [], []]),
     selectedSchoolId ? SchoolEvent.filter({ school_id: selectedSchoolId, is_active: true }).catch(() => []) : Promise.resolve([]),
     selectedSchoolId ? Testimonial.filter({ school_id: selectedSchoolId, is_visible: true }).catch(() => []) : Promise.resolve([])
@@ -375,11 +374,11 @@ Generate the DEEPDIVE card for this family-school match.`;
     (async () => {
       const generatedAt = new Date().toISOString();
       const upsert = async (artifactType: string, fields: any) => {
-        const existing = await GeneratedArtifact.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: artifactType });
+        const existing = await ConversationArtifacts.filter({ user_id: userId, school_id: selectedSchoolId, artifact_type: artifactType });
         if (existing?.length > 0) {
-          await GeneratedArtifact.update(existing[0].id, { ...fields, generated_at: generatedAt, conversation_id: conversationId || '' });
+          await ConversationArtifacts.update(existing[0].id, { ...fields, generated_at: generatedAt, conversation_id: conversationId || '' });
         } else {
-          await GeneratedArtifact.create({ user_id: userId, school_id: selectedSchoolId, conversation_id: conversationId || '', artifact_type: artifactType, school_name: selectedSchool.name, generated_at: generatedAt, status: 'active', ...fields });
+          await ConversationArtifacts.create({ user_id: userId, school_id: selectedSchoolId, conversation_id: conversationId || '', artifact_type: artifactType, school_name: selectedSchool.name, generated_at: generatedAt, status: 'active', ...fields });
         }
       };
       await Promise.allSettled([
@@ -388,14 +387,7 @@ Generate the DEEPDIVE card for this family-school match.`;
         ...(fullVisitPrepKit ? [upsert('visit_prep_kit', { content: JSON.stringify(fullVisitPrepKit), is_locked: false, metadata: { version: 'E30_V1' } })] : [])
       ]);
 
-      // Phase 1c: Dual-write artifacts to normalized conversation_artifacts table
-      if (conversationId) {
-        syncConversationArtifact(conversationId, userId, selectedSchoolId, 'action_plan', generatedActionPlan, !isPremiumUser);
-        syncConversationArtifact(conversationId, userId, selectedSchoolId, 'deep_dive_recommendation', { text: sanitizedMessage, chat_summary: deepDiveAnalysis?.chat_summary || '' });
-        if (fullVisitPrepKit) {
-          syncConversationArtifact(conversationId, userId, selectedSchoolId, 'visit_prep_kit', fullVisitPrepKit);
-        }
-      }
+      // Dual-write removed — ConversationArtifacts is now the single source of truth
     })();
   }
 

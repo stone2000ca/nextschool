@@ -136,35 +136,5 @@ export function syncConversationSchools(
     .catch((e: any) => console.error('[DUAL-WRITE] conversation_schools exception:', e.message));
 }
 
-// ─── conversation_artifacts upsert ──────────────────────────────────
-// Mirrors artifact data into conversation_artifacts table.
-
-export function syncConversationArtifact(
-  conversationId: string,
-  userId: string,
-  schoolId: string | null,
-  artifactType: string,
-  content: any,
-  isLocked: boolean = false
-) {
-  if (!conversationId || !userId || !artifactType) return;
-
-  const row: Record<string, any> = {
-    conversation_id: conversationId,
-    user_id: userId,
-    school_id: schoolId || null,
-    artifact_type: artifactType,
-    content: typeof content === 'string' ? JSON.parse(content) : (content || {}),
-    is_locked: isLocked,
-  };
-
-  const admin = getAdminClient();
-  (admin
-    .from('conversation_artifacts') as any)
-    .upsert(row, { onConflict: 'conversation_id,school_id,artifact_type' })
-    .then(({ error }: any) => {
-      if (error) console.error(`[DUAL-WRITE] conversation_artifacts upsert failed (${artifactType}):`, error.message);
-      else console.log(`[DUAL-WRITE] conversation_artifacts synced (${artifactType}) for:`, conversationId);
-    })
-    .catch((e: any) => console.error(`[DUAL-WRITE] conversation_artifacts exception (${artifactType}):`, e.message));
-}
+// syncConversationArtifact removed — generated_artifacts eliminated,
+// ConversationArtifacts is now the single source of truth for all artifacts.

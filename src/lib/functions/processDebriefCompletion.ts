@@ -1,4 +1,4 @@
-import { GeneratedArtifact, FamilyJourney } from '@/lib/entities-server'
+import { ConversationArtifacts, FamilyJourney } from '@/lib/entities-server'
 import { invokeLLM } from '@/lib/integrations'
 
 export async function processDebriefCompletion(params: {
@@ -16,12 +16,12 @@ export async function processDebriefCompletion(params: {
 
   // 1) Load artifacts (visit_debrief and deep_dive_analysis)
   const [debriefArtifacts, deepDiveArtifacts] = await Promise.all([
-    GeneratedArtifact.filter({
+    ConversationArtifacts.filter({
       conversation_id: conversationId,
       school_id: schoolId,
       artifact_type: 'visit_debrief',
     }),
-    GeneratedArtifact.filter({
+    ConversationArtifacts.filter({
       conversation_id: conversationId,
       school_id: schoolId,
       artifact_type: 'deep_dive_analysis',
@@ -117,7 +117,7 @@ Based on what the family shared during their visit, provide a fit re-evaluation.
           debriefTimestamp: nowIso,
         };
 
-        await GeneratedArtifact.create({
+        await ConversationArtifacts.create({
           user_id: userId,
           conversation_id: conversationId,
           school_id: schoolId,

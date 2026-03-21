@@ -19,7 +19,6 @@ const TABLE_MAP: Record<string, string> = {
   SchoolClaim: 'school_claims',
   SchoolAdmin: 'school_admins',
   SchoolInquiry: 'school_inquiries',
-  GeneratedArtifact: 'generated_artifacts',
   User: 'user_profiles',
   UserMemory: 'user_memories',
   Blog: 'blog_posts',
@@ -172,7 +171,6 @@ export const SchoolEvent = createEntity('SchoolEvent')
 export const SchoolClaim = createEntity('SchoolClaim')
 export const SchoolAdmin = createEntity('SchoolAdmin')
 export const SchoolInquiry = createEntity('SchoolInquiry')
-export const GeneratedArtifact = createEntity('GeneratedArtifact')
 export const User = createEntity('User')
 export const UserMemory = createEntity('UserMemory')
 export const Blog = createEntity('Blog')

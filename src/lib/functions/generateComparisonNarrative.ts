@@ -1,10 +1,10 @@
 // Function: generateComparisonNarrative
 // Purpose: E49-S4B — Generate a multi-school narrative comparison using deep-dive artifacts,
 //          match explanations, and visit debrief data. Cached per family+school set+profile hash.
-// Entities: School, FamilyProfile, GeneratedArtifact, FamilyJourney, ConversationArtifacts, MatchExplanationCache
-// Last Modified: 2026-03-20
+// Entities: School, FamilyProfile, ConversationArtifacts, FamilyJourney, MatchExplanationCache
+// Last Modified: 2026-03-21
 
-import { School, FamilyProfile, GeneratedArtifact, FamilyJourney, ConversationArtifacts } from '@/lib/entities-server'
+import { School, FamilyProfile, FamilyJourney, ConversationArtifacts } from '@/lib/entities-server'
 import { getAdminClient } from '@/lib/supabase/admin'
 import { computeProfileHash } from './generateMatchExplanations'
 
@@ -99,11 +99,11 @@ async function fetchDeepDiveArtifacts(conversationId: string | null, userId: str
     }
   }
 
-  // Fallback: generated_artifacts table for schools without conversation_artifacts
+  // Fallback: check for schools without conversation_artifacts data
   const missingSchoolIds = schoolIds.filter(id => !artifacts[id]?.deepDive);
   if (missingSchoolIds.length > 0 && userId) {
     try {
-      const gaResults = await GeneratedArtifact.filter({ user_id: userId, artifact_type: 'deep_dive_recommendation' });
+      const gaResults = await ConversationArtifacts.filter({ user_id: userId, artifact_type: 'deep_dive_recommendation' });
       for (const ga of (gaResults || [])) {
         if (missingSchoolIds.includes(ga.school_id) && ga.content) {
           if (!artifacts[ga.school_id]) artifacts[ga.school_id] = {};
@@ -111,7 +111,7 @@ async function fetchDeepDiveArtifacts(conversationId: string | null, userId: str
         }
       }
     } catch (e: any) {
-      console.warn('[E49-S4B] GeneratedArtifact fallback fetch failed:', e.message);
+      console.warn('[E49-S4B] ConversationArtifacts fallback fetch failed:', e.message);
     }
   }
 
@@ -183,7 +183,7 @@ async function fetchMatchExplanations(familyProfileId: string, schoolIds: string
 // =============================================================================
 async function checkCache(familyProfileId: string, cacheKey: string): Promise<string | null> {
   try {
-    const existing = await GeneratedArtifact.filter({
+    const existing = await ConversationArtifacts.filter({
       family_profile_id: familyProfileId,
       artifact_type: 'comparison_narrative'
     });
@@ -203,7 +203,7 @@ async function checkCache(familyProfileId: string, cacheKey: string): Promise<st
 // =============================================================================
 async function persistToCache(familyProfileId: string, cacheKey: string, narrative: string, schoolIds: string[]) {
   try {
-    const existing = await GeneratedArtifact.filter({
+    const existing = await ConversationArtifacts.filter({
       family_profile_id: familyProfileId,
       artifact_type: 'comparison_narrative'
     });
@@ -218,10 +218,10 @@ async function persistToCache(familyProfileId: string, cacheKey: string, narrati
     };
 
     if (found) {
-      await GeneratedArtifact.update(found.id, artifactData);
+      await ConversationArtifacts.update(found.id, artifactData);
       console.log('[E49-S4B] Cache updated:', found.id);
     } else {
-      const created = await GeneratedArtifact.create(artifactData);
+      const created = await ConversationArtifacts.create(artifactData);
       console.log('[E49-S4B] Cache created:', created.id);
     }
   } catch (e: any) {
