@@ -383,9 +383,11 @@ export async function restoreSessionFromParam(
 
 
     // Load shortlist AFTER conversation state is set so it has the right context
+    // FIX-PERSIST-AB: Pass journeyId explicitly so loadShortlist doesn't depend
+    // on React state (activeJourney) which may not have settled yet.
     if (typeof loadShortlist === 'function') {
       try {
-        await loadShortlist();
+        await loadShortlist(restoredContext?.journeyId);
       } catch (e) {
         console.warn('[RESTORE] loadShortlist failed:', e.message);
       }
@@ -429,7 +431,8 @@ export async function restoreMostRecentConversation(
   setSelectedSchool,
   isRestoringSessionRef,
   skipViewOverrideRef,
-  setSchoolAnalyses
+  setSchoolAnalyses,
+  loadShortlist
 ) {
   if (!user?.id) return;
   isRestoringSessionRef.current = true;
@@ -609,6 +612,15 @@ export async function restoreMostRecentConversation(
         schools: restoredSchools,
       }
     });
+
+    // FIX-PERSIST-AB: Load shortlist after conversation is set so hearts persist on dashboard resume
+    if (typeof loadShortlist === 'function') {
+      try {
+        await loadShortlist(ctx.journeyId);
+      } catch (e) {
+        console.warn('[RESTORE-LATEST] loadShortlist failed:', e.message);
+      }
+    }
 
     console.log('[RESTORE-LATEST] Restore complete — conversation:', latest.id, 'state:', restoredState);
   } catch (error) {

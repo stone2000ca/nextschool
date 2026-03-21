@@ -257,6 +257,23 @@ export const useMessageHandler = ({
       if (matchedSchool) { resolvedSchoolId = matchedSchool.id; }
     }
     if (resolvedSchoolId && resolvedSchoolId !== explicitSchoolId) { lastResolvedSchoolId = resolvedSchoolId; }
+
+      // FIX-PERSIST-AB: Pre-flight guard — deep dive requires a conversation record.
+      // If explicitSchoolId is set but conversationIdRef is still null (e.g. fresh
+      // GuidedIntro where ChatHistory hasn't been created yet), show a friendly
+      // message instead of letting orchestrate fail with "Something went wrong".
+      if (explicitSchoolId && !conversationIdRef.current) {
+        console.warn('[FIX-DD-PREFLIGHT] Deep dive requested but no conversationId yet — asking user to wait');
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "I'm still setting up your session — give me just a moment and then try again!",
+          timestamp: new Date().toISOString(),
+        }]);
+        setIsTyping(false);
+        isProcessing = false;
+        return;
+      }
+
       // Call orchestrateConversation with current schools context and user location
       const response = await invokeFunction('orchestrateConversation', {
         message: messageText,
@@ -523,11 +540,13 @@ export const useMessageHandler = ({
               });
               // BUG-RN-PERSIST Fix A2 + Fix 1: Patch both updatedContext and the ref immediately
               // so that deep dive closures read the real id without waiting for React re-render.
-              if (typeof chatHistoryRecord.id === 'string' && chatHistoryRecord.id.length > 0) {
-                updatedContext.conversationId = chatHistoryRecord.id;
-                conversationIdRef.current = chatHistoryRecord.id;
+              // FIX-PERSIST-AB: Accept any truthy id (numeric IDs from DB are valid) via String() coercion
+              if (chatHistoryRecord.id) {
+                const idStr = String(chatHistoryRecord.id);
+                updatedContext.conversationId = idStr;
+                conversationIdRef.current = idStr;
               } else {
-                console.warn('[E42-GUARD] Invalid chatHistoryRecord.id, skipping ref assignment:', chatHistoryRecord.id);
+                console.warn('[E42-GUARD] Falsy chatHistoryRecord.id after createConversation — skipping ref assignment. Value:', chatHistoryRecord.id, 'Type:', typeof chatHistoryRecord.id);
               }
               setCurrentConversation(prev => ({ ...(prev || {}), ...chatHistoryRecord, conversation_context: updatedContext }));
               console.log('[SESSION] Created ChatHistory with id:', chatHistoryRecord.id);
@@ -706,6 +725,16 @@ export const useMessageHandler = ({
                     },
                   }));
                 }
+              }
+              // FIX-PERSIST-AB: Second targeted DB persist — journeyId is now resolved
+              // The E42-PERSIST call above fires BEFORE this IIFE, so journeyId is missing
+              // from the initial payload. Patch it now so F5/resume restores shortlist.
+              const resolvedJourneyId = updatedContext.journeyId;
+              if (resolvedJourneyId && typeof conversationIdRef.current === 'string' && conversationIdRef.current) {
+                retryWithBackoff(() => updateConversation(conversationIdRef.current, {
+                  conversation_context: { ...updatedContext, journeyId: resolvedJourneyId }
+                })).catch(err => console.error('[FIX-PERSIST-AB] journeyId context patch failed:', err));
+                console.log('[FIX-PERSIST-AB] Patched journeyId into conversation_context:', resolvedJourneyId);
               }
             } catch (e) {
               console.error('[E29-003] FamilyJourney creation failed:', e.message);
