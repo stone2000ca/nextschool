@@ -37,7 +37,7 @@ export function useConsultantSession({
   const depsRef = useRef({});
 
   // ─── Derived ───
-  const sessionIdParam = searchParams.get('sessionId');
+  const sessionIdParam = searchParams.get('sessionId') || searchParams.get('session');
   const sessionParamProcessedRef = useRef(false);
 
   const isDevMode = typeof window !== 'undefined'
@@ -194,7 +194,7 @@ export function useConsultantSession({
         setSelectedConsultant, d.setRestoredSessionData, setMessages,
         d.setFamilyProfile, setSchools, setCurrentView, setOnboardingPhase,
         setCurrentConversation, setSessionRestored, setRestoringSession,
-        loadShortlistRef.current, isRestoringSessionRef, sessionParamProcessedRef,
+        loadShortlistRef, isRestoringSessionRef, sessionParamProcessedRef,
         setDebugInfo, d.setDeepDiveAnalysis, setSelectedSchool,
         d.setVisitPrepKit, d.setActionPlan, d.skipViewOverrideRef, d.setSchoolAnalyses
       );
@@ -237,7 +237,7 @@ export function useConsultantSession({
         isRestoringSessionRef,
         d.skipViewOverrideRef,
         d.setSchoolAnalyses,
-        loadShortlistRef.current // loadShortlist — passes explicit journeyId internally
+        loadShortlistRef // loadShortlist ref — resolved at call time in SessionRestorer
       );
     }
   }, [isAuthenticated, user?.id, sessionIdParam]);
