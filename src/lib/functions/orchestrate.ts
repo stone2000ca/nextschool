@@ -215,12 +215,13 @@ const CLASSIFY_INTENT_ACTION_PATTERNS: Array<{ hint: string; re: RegExp }> = [
   { hint: 'sort',        re: /\b(sort by|closest first|sort (by )?distance|sort (by )?tuition|order by)\b/i },
   { hint: 'open-panel',  re: /\b(open (my )?(shortlist|brief|comparison)|show (my )?(shortlist|brief))\b/i },
 ];
-function classifyIntentFn(message: string): { gate: 'ACTION' | 'CONVERSATION'; actionHint?: string } {
+function classifyIntentFn(message: string): { gate: 'ACTION' | 'ACTION_ADJACENT' | 'TASK_DRIVEN' | 'CLARIFICATION' | 'OFF_TOPIC' | 'CONVERSATION'; actionHint?: string } {
   if (!message || message.trim().length === 0) return { gate: 'CONVERSATION' };
   for (const { hint, re } of CLASSIFY_INTENT_ACTION_PATTERNS) {
     if (re.test(message)) return { gate: 'ACTION', actionHint: hint };
   }
-  return { gate: 'CONVERSATION' };
+  // Generous default (E52-B1): treat ambiguous messages as potentially task-related
+  return { gate: 'TASK_DRIVEN' };
 }
 
 function validateActions(rawToolCalls, validSchoolIds, conversationId) {

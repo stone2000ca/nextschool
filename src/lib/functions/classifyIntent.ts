@@ -2,7 +2,9 @@
 // Purpose: E52-B1 — Lightweight regex-based pre-classifier for all app states.
 //   Returns gate (6 types) + confidence + optional school refs in ~1-5ms (no LLM call).
 //   Used by orchestrateConversation.ts to fast-path route messages.
-// Last Modified: 2026-03-20
+//   Generous default: ambiguous messages fall through as TASK_DRIVEN/LOW so the AI
+//   treats them as potentially task-related rather than ignoring intent signals.
+// Last Modified: 2026-03-21
 
 import { detectOffTopic } from './detectOffTopic';
 
@@ -77,6 +79,6 @@ export function classifyIntentLogic(message: string, sessionState?: SessionState
     return { gate: 'CLARIFICATION', confidence: 'LOW' };
   }
 
-  // 5. Fallback — conversational
-  return { gate: 'CONVERSATION', confidence: 'HIGH' };
+  // 5. Fallback — generous default: treat ambiguous messages as potentially task-related (E52-B1)
+  return { gate: 'TASK_DRIVEN', confidence: 'LOW' };
 }
