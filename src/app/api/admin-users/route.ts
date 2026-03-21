@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const sort = req.nextUrl.searchParams.get('sort') || '-created_date'
+    const sort = req.nextUrl.searchParams.get('sort') || '-created_at'
     const descending = sort.startsWith('-')
     const field = descending ? sort.slice(1) : sort
 
