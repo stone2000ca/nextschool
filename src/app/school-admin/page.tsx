@@ -23,7 +23,7 @@ export default function SchoolAdminPage() {
         if (records && records.length > 0) {
           router.replace(`/schooladmin/${records[0].school_id}`)
         } else {
-          router.replace('/claim-school')
+          router.replace('/portal')
         }
       } catch (err) {
         console.error('Failed to resolve school admin record', err)
