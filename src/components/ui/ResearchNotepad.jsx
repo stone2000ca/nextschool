@@ -4,14 +4,6 @@ import VisitJourneySection from '@/components/chat/VisitJourneySection';
 
 // ─── Inline SVG Icons ─────────────────────────────────────────────────────────
 
-const ChevronIcon = ({ open }) => (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-    style={{ transition: 'transform 0.25s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
-
 const CheckIcon = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
     stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -82,98 +74,6 @@ function LoadingSkeleton() {
         <div key={i} style={{ ...shimmerStyle, height: 16, width: `${w}%`, marginBottom: 12 }} />
       ))}
       <div style={{ ...shimmerStyle, height: 80, marginTop: 16 }} />
-    </div>
-  );
-}
-
-// ─── Slide Toggle Hook ───────────────────────────────────────────────────────
-
-function useSlideToggle(isOpen, duration = '0.28s') {
-  const panelRef = useRef(null);
-  const isFirstRender = useRef(true);
-
-  useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-
-    // On first render, just set initial state without animation
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      panel.style.height = isOpen ? 'auto' : '0px';
-      panel.style.overflow = isOpen ? '' : 'hidden';
-      return;
-    }
-
-    if (isOpen) {
-      // Opening: measure scrollHeight, animate from 0 → scrollHeight, then set auto
-      panel.style.height = panel.scrollHeight + 'px';
-      panel.style.overflow = 'hidden';
-      const handler = () => {
-        panel.style.height = 'auto';
-        panel.style.overflow = '';
-        panel.removeEventListener('transitionend', handler);
-      };
-      panel.addEventListener('transitionend', handler);
-    } else {
-      // Closing: snapshot current height, force reflow, then animate to 0
-      panel.style.height = panel.scrollHeight + 'px';
-      panel.style.overflow = 'hidden';
-      panel.offsetHeight; // force reflow
-      panel.style.height = '0px';
-    }
-  }, [isOpen]);
-
-  const slideStyle = {
-    transition: `height ${duration} ease-out`,
-    overflow: 'hidden',
-  };
-
-  return { panelRef, slideStyle };
-}
-
-// ─── Collapsible Section ──────────────────────────────────────────────────────
-
-const SECTION_TINTS = {
-  '#0d9488': { border: '#0d9488', bg: 'linear-gradient(135deg, #f0fdfa, #e6fffa, #fff)' },  // teal — Deep Dive
-  '#ec4899': { border: '#ec4899', bg: 'linear-gradient(135deg, #fdf2f8, #fce7f3, #fff)' },  // pink — Community Pulse
-  '#ef4444': { border: '#ef4444', bg: 'linear-gradient(135deg, #fff5f5, #fee2e2, #fff)' },  // red — Key Dates
-  '#8b5cf6': { border: '#8b5cf6', bg: 'linear-gradient(135deg, #f5f3ff, #ede9fe, #fff)' },  // purple — Visit Prep
-  '#64748b': { border: '#64748b', bg: 'linear-gradient(135deg, #f8fafc, #f1f5f9, #fff)' },  // gray — Contact Log
-};
-
-function CollapsibleSection({ icon, label, color, children, defaultOpen = false, forceOpen, labelExtra }) {
-  const [open, setOpen] = useState(defaultOpen);
-  const tint = SECTION_TINTS[color] || {};
-  const tintBg = tint.bg || 'none';
-  const { panelRef, slideStyle } = useSlideToggle(open, '0.25s');
-
-  // Allow parent to force-open (for cascade animation)
-  useEffect(() => {
-    if (forceOpen !== undefined) setOpen(forceOpen);
-  }, [forceOpen]);
-
-  return (
-    <div style={{ borderTop: '1px solid #e8dfc0', marginTop: 0, borderLeft: tint.border ? `5px solid ${tint.border}` : 'none', background: open ? tintBg : 'none' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '13px 20px', background: tintBg, border: 'none', cursor: 'pointer',
-          textAlign: 'left',
-        }}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, fontWeight: 600, color: '#3d3020' }}>
-          <span style={{ color }}>{icon}</span>
-          {label}
-          {labelExtra}
-        </span>
-        <span style={{ color: '#a89060' }}><ChevronIcon open={open} /></span>
-      </button>
-      <div ref={panelRef} style={slideStyle}>
-        <div style={{ padding: '0 20px 16px' }}>
-          {children}
-        </div>
-      </div>
     </div>
   );
 }
